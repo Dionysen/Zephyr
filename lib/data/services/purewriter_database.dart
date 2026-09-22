@@ -34,7 +34,6 @@ class PureWriterDatabase {
     await close();
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
       sqfliteFfiInit();
-      databaseFactory = databaseFactoryFfi;
     }
     final selected = Directory(selectedPath);
     final root = path.basename(selected.path).toLowerCase() == 'app'
@@ -50,10 +49,14 @@ class PureWriterDatabase {
     }
     await _acquireLock(app);
     try {
-      _database = await openDatabase(
+      // Keep the FFI factory local to this service. Assigning it to sqflite's
+      // global default factory causes a warning and can affect other plugins.
+      _database = await databaseFactoryFfi.openDatabase(
         room.path,
-        version: 27,
-        onCreate: createIfMissing ? _createSchema : null,
+        options: OpenDatabaseOptions(
+          version: 27,
+          onCreate: createIfMissing ? _createSchema : null,
+        ),
       );
       _location = LibraryLocation(
         rootPath: root.path,
