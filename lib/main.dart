@@ -6,6 +6,10 @@ import 'data/services/purewriter_database.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final database = PureWriterDatabase();
-  await database.openDefaultLibrary();
-  runZephyr(database);
+  try {
+    await database.openDefaultLibrary();
+    runZephyr(database);
+  } on Object catch (error) {
+    runZephyr(database, startupError: error);
+  }
 }

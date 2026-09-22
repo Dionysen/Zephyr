@@ -6,9 +6,12 @@ import '../ui/core/zephyr_theme.dart';
 import '../ui/features/editor/view_models/library_view_model.dart';
 import '../ui/features/editor/views/library_page.dart';
 
-void runZephyr(PureWriterDatabase database) => runApp(
+void runZephyr(PureWriterDatabase database, {Object? startupError}) => runApp(
   ZephyrApp(
-    viewModel: LibraryViewModel(PureWriterWritingLibraryRepository(database)),
+    viewModel: LibraryViewModel(
+      PureWriterWritingLibraryRepository(database),
+      initialError: startupError,
+    ),
   ),
 );
 

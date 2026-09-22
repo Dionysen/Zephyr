@@ -1,3 +1,10 @@
+/// Raised when another Zephyr process currently owns a library's write lock.
+class LibraryInUseException implements Exception {
+  const LibraryInUseException(this.libraryPath);
+
+  final String libraryPath;
+}
+
 class WritingFolder {
   const WritingFolder({
     required this.id,

@@ -124,8 +124,11 @@ class PureWriterDatabase {
       await lock.writeString('zephyr:$pid');
       await lock.flush();
       _lock = lock;
-    } on Object {
+    } on FileSystemException catch (error) {
       await lock.close();
+      if (error.osError?.errorCode == 35) {
+        throw LibraryInUseException(app.parent.path);
+      }
       rethrow;
     }
   }
