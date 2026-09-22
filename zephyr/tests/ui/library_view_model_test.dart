@@ -28,6 +28,7 @@ class FakeLibraryRepository implements WritingLibraryRepository {
   @override
   Future<WritingLibrary> loadLibrary() async => WritingLibrary(
     folders: const [WritingFolder(id: 'Default', name: 'Default', rank: 0)],
+    categories: const [],
     articles: [
       ArticleSummary(
         id: saved.id,
@@ -48,4 +49,32 @@ class FakeLibraryRepository implements WritingLibraryRepository {
   Future<void> saveArticle(WritingArticle article) async {
     saved = article;
   }
+
+  @override
+  LibraryLocation? get location => null;
+  @override
+  Future<LibraryLocation> openLibrary(String rootPath) =>
+      throw UnimplementedError();
+  @override
+  Future<void> closeLibrary() async {}
+  @override
+  Future<WritingCategory> createCategory({
+    required String folderId,
+    required String name,
+  }) => throw UnimplementedError();
+  @override
+  Future<void> trashArticle(String articleId) async {}
+  @override
+  Future<void> restoreArticle(
+    String articleId, {
+    required String folderId,
+  }) async {}
+  @override
+  Future<List<ArticleHistory>> listHistory(String articleId) async => const [];
+  @override
+  Future<List<DailyWriting>> listDaily() async => const [];
+  @override
+  Future<Map<String, double>> readScrolls() async => const {};
+  @override
+  Future<void> writeScroll(String articleId, double offset) async {}
 }

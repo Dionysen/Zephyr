@@ -9,6 +9,59 @@ class WritingFolder {
   final int rank;
 }
 
+class WritingCategory {
+  const WritingCategory({
+    required this.id,
+    required this.folderId,
+    required this.name,
+    required this.rank,
+    required this.collapsed,
+  });
+  final String id;
+  final String folderId;
+  final String name;
+  final int rank;
+  final bool collapsed;
+}
+
+class SchemaStatus {
+  const SchemaStatus({
+    required this.userVersion,
+    required this.identityHash,
+    required this.writesAllowed,
+  });
+  final int userVersion;
+  final String identityHash;
+  final bool writesAllowed;
+  bool get isKnownV27 =>
+      userVersion == 27 && identityHash == 'af22c7c534a04acc4530d670ac9e43c4';
+}
+
+class LibraryLocation {
+  const LibraryLocation({required this.rootPath, required this.schema});
+  final String rootPath;
+  final SchemaStatus schema;
+}
+
+class ArticleHistory {
+  const ArticleHistory({required this.createdAt, required this.content});
+  final DateTime createdAt;
+  final String content;
+}
+
+class DailyWriting {
+  const DailyWriting({
+    required this.day,
+    required this.articleId,
+    required this.wordCount,
+    required this.updatedAt,
+  });
+  final DateTime day;
+  final String articleId;
+  final int wordCount;
+  final DateTime updatedAt;
+}
+
 class ArticleSummary {
   const ArticleSummary({
     required this.id,
@@ -37,10 +90,25 @@ class WritingArticle extends ArticleSummary {
     required this.content,
   });
   final String content;
+
+  WritingArticle copyWith({String? content}) => WritingArticle(
+    id: id,
+    title: title,
+    content: content ?? this.content,
+    summary: summary,
+    folderId: folderId,
+    categoryId: categoryId,
+    updatedAt: updatedAt,
+  );
 }
 
 class WritingLibrary {
-  const WritingLibrary({required this.folders, required this.articles});
+  const WritingLibrary({
+    required this.folders,
+    required this.categories,
+    required this.articles,
+  });
   final List<WritingFolder> folders;
+  final List<WritingCategory> categories;
   final List<ArticleSummary> articles;
 }

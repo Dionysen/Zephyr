@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../view_models/library_view_model.dart';
 
@@ -44,10 +45,20 @@ class _LibraryPageState extends State<LibraryPage> {
       }
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Zephyr'),
+          title: Text(
+            model.isReadOnly ? 'Zephyr — read-only library' : 'Zephyr',
+          ),
           actions: [
             IconButton(
-              onPressed: model.createArticle,
+              onPressed: () async {
+                final path = await FilePicker.getDirectoryPath();
+                if (path != null) await model.openLibrary(path);
+              },
+              icon: const Icon(Icons.folder_open),
+              tooltip: 'Open PureWriter library',
+            ),
+            IconButton(
+              onPressed: model.isReadOnly ? null : model.createArticle,
               icon: const Icon(Icons.add),
               tooltip: 'New article',
             ),
@@ -107,7 +118,9 @@ class _LibraryPageState extends State<LibraryPage> {
                           border: InputBorder.none,
                           hintText: article.title,
                         ),
-                        onChanged: model.updateContent,
+                        onChanged: model.isReadOnly
+                            ? null
+                            : model.updateContent,
                       ),
                     ),
             ),

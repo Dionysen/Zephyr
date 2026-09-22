@@ -15,6 +15,18 @@ class LibraryViewModel extends ChangeNotifier {
   WritingLibrary? get library => _library;
   WritingArticle? get article => _article;
   Object? get error => _error;
+  bool get isReadOnly => _repository.location?.schema.writesAllowed == false;
+
+  Future<void> openLibrary(String rootPath) async {
+    try {
+      await _repository.openLibrary(rootPath);
+      await load();
+    } on Object catch (error) {
+      _error = error;
+      notifyListeners();
+    }
+  }
+
   Future<void> load() async {
     try {
       _library = await _repository.loadLibrary();
@@ -33,6 +45,7 @@ class LibraryViewModel extends ChangeNotifier {
   }
 
   Future<void> createArticle() async {
+    if (isReadOnly) return;
     final folder = _library?.folders
         .where((item) => item.id != 'PW_Trash')
         .firstOrNull;
