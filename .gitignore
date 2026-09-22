@@ -4,6 +4,10 @@
 *.log
 *.pyc
 *.swp
+.DS_Store
+.idea/
+*.iml
+.widget_preview/
 .buildlog/
 .history
 
