@@ -13,6 +13,16 @@ void main() {
     expect(model.article?.id, 'article');
     expect(repository.saved.content, 'Updated text');
   });
+
+  test('switching books selects only that book chapter', () async {
+    final model = LibraryViewModel(FakeLibraryRepository());
+    await model.load();
+
+    await model.selectBook('book-b');
+
+    expect(model.selectedBook?.name, 'Book B');
+    expect(model.article?.id, 'article-b');
+  });
 }
 
 class FakeLibraryRepository implements WritingLibraryRepository {
@@ -25,10 +35,37 @@ class FakeLibraryRepository implements WritingLibraryRepository {
     categoryId: null,
     updatedAt: DateTime.utc(2026),
   );
+  late final WritingArticle _secondArticle = WritingArticle(
+    id: 'article-b',
+    title: 'Chapter B',
+    content: '',
+    summary: '',
+    folderId: 'book-b',
+    categoryId: 'volume-b',
+    updatedAt: DateTime.utc(2026),
+  );
   @override
   Future<WritingLibrary> loadLibrary() async => WritingLibrary(
-    folders: const [WritingFolder(id: 'Default', name: 'Default', rank: 0)],
-    categories: const [],
+    folders: const [
+      WritingFolder(id: 'Default', name: 'Book A', rank: 0),
+      WritingFolder(id: 'book-b', name: 'Book B', rank: 1),
+    ],
+    categories: const [
+      WritingCategory(
+        id: 'volume-a',
+        folderId: 'Default',
+        name: 'Volume A',
+        rank: 0,
+        collapsed: false,
+      ),
+      WritingCategory(
+        id: 'volume-b',
+        folderId: 'book-b',
+        name: 'Volume B',
+        rank: 0,
+        collapsed: false,
+      ),
+    ],
     articles: [
       ArticleSummary(
         id: saved.id,
@@ -38,10 +75,19 @@ class FakeLibraryRepository implements WritingLibraryRepository {
         categoryId: null,
         updatedAt: saved.updatedAt,
       ),
+      ArticleSummary(
+        id: _secondArticle.id,
+        title: _secondArticle.title,
+        summary: '',
+        folderId: _secondArticle.folderId,
+        categoryId: _secondArticle.categoryId,
+        updatedAt: _secondArticle.updatedAt,
+      ),
     ],
   );
   @override
-  Future<WritingArticle> getArticle(String id) async => saved;
+  Future<WritingArticle> getArticle(String id) async =>
+      id == saved.id ? saved : _secondArticle;
   @override
   Future<WritingArticle> createArticle({required String folderId}) async =>
       saved;

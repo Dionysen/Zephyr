@@ -15,35 +15,51 @@ class LibraryViewModel extends ChangeNotifier {
   Object? _error;
   Timer? _pendingSave;
   bool _isSidebarExpanded = true;
-  final Set<String> _expandedFolderIds = <String>{};
+  final Set<String> _expandedVolumeIds = <String>{};
+  String? _selectedBookId;
   WritingLibrary? get library => _library;
   WritingArticle? get article => _article;
   Object? get error => _error;
   bool get isLibraryInUse => _error is LibraryInUseException;
   bool get isReadOnly => _repository.location?.schema.writesAllowed == false;
   bool get isSidebarExpanded => _isSidebarExpanded;
-  String get bookName {
+  WritingFolder? get selectedBook =>
+      _library?.folders.where((book) => book.id == _selectedBookId).firstOrNull;
+  String get libraryName {
     final name = path.basename(_repository.location?.rootPath ?? '');
-    return name.isEmpty ? 'Untitled book' : name;
+    return name.isEmpty ? 'Untitled library' : name;
   }
 
-  bool isFolderExpanded(String folderId) =>
-      _expandedFolderIds.contains(folderId);
+  bool isVolumeExpanded(String volumeId) =>
+      _expandedVolumeIds.contains(volumeId);
 
   void toggleSidebar() {
     _isSidebarExpanded = !_isSidebarExpanded;
     notifyListeners();
   }
 
-  void toggleFolder(String folderId) {
-    if (!_expandedFolderIds.add(folderId)) _expandedFolderIds.remove(folderId);
+  void toggleVolume(String volumeId) {
+    if (!_expandedVolumeIds.add(volumeId)) _expandedVolumeIds.remove(volumeId);
+    notifyListeners();
+  }
+
+  Future<void> selectBook(String bookId) async {
+    if (_selectedBookId == bookId) return;
+    _selectedBookId = bookId;
+    _expandedVolumeIds
+      ..clear()
+      ..addAll(_volumesForSelectedBook.map((volume) => volume.id));
+    final firstChapter = _chaptersForSelectedBook.firstOrNull;
+    _article = firstChapter == null
+        ? null
+        : await _repository.getArticle(firstChapter.id);
     notifyListeners();
   }
 
   Future<void> openLibrary(String rootPath) async {
     try {
       await _repository.openLibrary(rootPath);
-      _expandedFolderIds.clear();
+      _expandedVolumeIds.clear();
       await load();
     } on Object catch (error) {
       _error = error;
@@ -54,10 +70,19 @@ class LibraryViewModel extends ChangeNotifier {
   Future<void> load() async {
     try {
       _library = await _repository.loadLibrary();
-      _expandedFolderIds.addAll(_library!.folders.map((folder) => folder.id));
-      if (_library!.articles.isNotEmpty) {
-        _article = await _repository.getArticle(_library!.articles.first.id);
-      }
+      _selectedBookId ??=
+          _library!.folders
+              .where((book) => book.id != 'PW_Trash')
+              .firstOrNull
+              ?.id ??
+          _library!.folders.firstOrNull?.id;
+      _expandedVolumeIds.addAll(
+        _volumesForSelectedBook.map((volume) => volume.id),
+      );
+      final firstChapter = _chaptersForSelectedBook.firstOrNull;
+      _article = firstChapter == null
+          ? null
+          : await _repository.getArticle(firstChapter.id);
     } on Object catch (error) {
       _error = error;
     }
@@ -71,11 +96,9 @@ class LibraryViewModel extends ChangeNotifier {
 
   Future<void> createArticle() async {
     if (isReadOnly) return;
-    final folder = _library?.folders
-        .where((item) => item.id != 'PW_Trash')
-        .firstOrNull;
-    if (folder == null) return;
-    _article = await _repository.createArticle(folderId: folder.id);
+    final book = selectedBook;
+    if (book == null || book.id == 'PW_Trash') return;
+    _article = await _repository.createArticle(folderId: book.id);
     await load();
     notifyListeners();
   }
@@ -108,4 +131,15 @@ class LibraryViewModel extends ChangeNotifier {
     _pendingSave?.cancel();
     super.dispose();
   }
+
+  Iterable<WritingCategory> get _volumesForSelectedBook =>
+      _library?.categories.where(
+        (volume) => volume.folderId == _selectedBookId,
+      ) ??
+      const [];
+  Iterable<ArticleSummary> get _chaptersForSelectedBook =>
+      _library?.articles.where(
+        (chapter) => chapter.folderId == _selectedBookId,
+      ) ??
+      const [];
 }

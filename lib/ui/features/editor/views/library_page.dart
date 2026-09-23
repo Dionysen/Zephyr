@@ -6,7 +6,6 @@ import '../view_models/library_view_model.dart';
 
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key, required this.viewModel});
-
   final LibraryViewModel viewModel;
 
   @override
@@ -14,7 +13,8 @@ class LibraryPage extends StatefulWidget {
 }
 
 class _LibraryPageState extends State<LibraryPage> {
-  static const _sidebarWidth = 328.0;
+  static const _desktopBreakpoint = 720.0;
+  static const _sidebarWidth = 320.0;
   final _controller = TextEditingController();
 
   @override
@@ -33,97 +33,225 @@ class _LibraryPageState extends State<LibraryPage> {
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: widget.viewModel,
-    builder: (context, _) => _buildPage(context, widget.viewModel),
+    builder: (context, _) {
+      final model = widget.viewModel;
+      if (model.error != null) {
+        return _ErrorPage(error: model.error!);
+      }
+      if (model.library == null) {
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      }
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < _desktopBreakpoint;
+          return _buildScaffold(context, model, compact);
+        },
+      );
+    },
   );
 
-  Widget _buildPage(BuildContext context, LibraryViewModel model) {
-    if (model.error != null) return _buildError(model);
-    final library = model.library;
-    if (library == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-    final article = model.article;
-    if (article != null && _controller.text != article.content) {
-      _controller.text = article.content;
-    }
+  Widget _buildScaffold(
+    BuildContext context,
+    LibraryViewModel model,
+    bool compact,
+  ) {
+    final library = model.library!;
+    final navigation = _BookNavigation(model: model, library: library);
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: _buildTitleBar(model),
-      body: Padding(
-        padding: const EdgeInsets.only(top: 64),
-        child: Row(
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOutCubic,
-              width: model.isSidebarExpanded ? _sidebarWidth : 0,
-              child: ClipRect(
-                child: _LibrarySidebar(
-                  model: model,
-                  library: library,
-                  onOpenLibrary: _openLibrary,
+      appBar: AppBar(
+        title: Text(model.libraryName),
+        actions: [
+          IconButton(
+            onPressed: _openLibrary,
+            icon: const Icon(Icons.folder_open_outlined),
+            tooltip: 'Open library',
+          ),
+          IconButton(
+            onPressed: model.isReadOnly ? null : model.createArticle,
+            icon: const Icon(Icons.note_add_outlined),
+            tooltip: 'New chapter',
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      drawer: compact ? Drawer(child: SafeArea(child: navigation)) : null,
+      body: compact
+          ? _Editor(model: model, controller: _controller)
+          : Row(
+              children: [
+                SizedBox(width: _sidebarWidth, child: navigation),
+                const VerticalDivider(width: 1),
+                Expanded(
+                  child: _Editor(model: model, controller: _controller),
                 ),
-              ),
+              ],
             ),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              width: model.isSidebarExpanded ? 1 : 0,
-              color: Theme.of(context).dividerColor,
+    );
+  }
+
+  Future<void> _openLibrary() async {
+    final root = await FilePicker.getDirectoryPath();
+    if (root != null) await widget.viewModel.openLibrary(root);
+  }
+}
+
+class _BookNavigation extends StatelessWidget {
+  const _BookNavigation({required this.model, required this.library});
+  final LibraryViewModel model;
+  final WritingLibrary library;
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = _entriesFor(model, library);
+    return Material(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: DropdownButton<String>(
+              value: model.selectedBook?.id,
+              isExpanded: true,
+              underline: const SizedBox.shrink(),
+              items: library.folders
+                  .map(
+                    (book) => DropdownMenuItem(
+                      value: book.id,
+                      child: Text(book.name, overflow: TextOverflow.ellipsis),
+                    ),
+                  )
+                  .toList(growable: false),
+              onChanged: (bookId) {
+                if (bookId != null) {
+                  model.selectBook(bookId);
+                }
+              },
             ),
-            Expanded(child: _buildEditor(context, model, article)),
-          ],
-        ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: entries.length,
+              itemBuilder: (context, index) =>
+                  _NavigationRow(entry: entries[index], model: model),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  PreferredSizeWidget _buildTitleBar(LibraryViewModel model) => AppBar(
-    toolbarHeight: 64,
-    leadingWidth: 132,
-    leading: Padding(
-      padding: const EdgeInsets.only(left: 72),
-      child: IconButton(
-        onPressed: model.toggleSidebar,
-        icon: Icon(model.isSidebarExpanded ? Icons.menu_open : Icons.menu),
-        tooltip: model.isSidebarExpanded ? 'Hide sidebar' : 'Show sidebar',
-      ),
-    ),
-    titleSpacing: 0,
-    centerTitle: true,
-    title: Text(
-      model.article?.title.isNotEmpty == true
-          ? model.article!.title
-          : model.bookName,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-    ),
-    actions: [
-      IconButton(
-        onPressed: _openLibrary,
-        icon: const Icon(Icons.folder_open_outlined),
-        tooltip: 'Open book',
-      ),
-      IconButton(
-        onPressed: model.isReadOnly ? null : model.createArticle,
-        icon: const Icon(Icons.note_add_outlined),
-        tooltip: 'New chapter',
-      ),
-      const SizedBox(width: 12),
-    ],
-  );
-
-  Widget _buildEditor(
-    BuildContext context,
+  List<_NavigationEntry> _entriesFor(
     LibraryViewModel model,
-    WritingArticle? article,
-  ) => article == null
-      ? const Center(
-          child: Text('Choose or create a chapter to begin writing.'),
-        )
-      : Padding(
-          padding: const EdgeInsets.fromLTRB(40, 30, 40, 24),
+    WritingLibrary library,
+  ) {
+    final bookId = model.selectedBook?.id;
+    if (bookId == null) return const [];
+    final entries = <_NavigationEntry>[];
+    final volumes = library.categories.where(
+      (volume) => volume.folderId == bookId,
+    );
+    final chapters = library.articles
+        .where((chapter) => chapter.folderId == bookId)
+        .toList(growable: false);
+    for (final volume in volumes) {
+      entries.add(_NavigationEntry.volume(volume));
+      if (model.isVolumeExpanded(volume.id)) {
+        entries.addAll(
+          chapters
+              .where((chapter) => chapter.categoryId == volume.id)
+              .map(_NavigationEntry.chapter),
+        );
+      }
+    }
+    final uncategorized = chapters.where(
+      (chapter) => chapter.categoryId == null,
+    );
+    if (uncategorized.isNotEmpty) {
+      entries.add(const _NavigationEntry.uncategorized());
+      entries.addAll(uncategorized.map(_NavigationEntry.chapter));
+    }
+    return entries;
+  }
+}
+
+class _NavigationRow extends StatelessWidget {
+  const _NavigationRow({required this.entry, required this.model});
+  final _NavigationEntry entry;
+  final LibraryViewModel model;
+
+  @override
+  Widget build(BuildContext context) => switch (entry) {
+    _VolumeEntry(:final volume) => ListTile(
+      dense: true,
+      leading: Icon(
+        model.isVolumeExpanded(volume.id)
+            ? Icons.keyboard_arrow_down
+            : Icons.keyboard_arrow_right,
+      ),
+      title: Text(volume.name, overflow: TextOverflow.ellipsis),
+      onTap: () => model.toggleVolume(volume.id),
+    ),
+    _UncategorizedEntry() => const Padding(
+      padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Text('Uncategorized'),
+    ),
+    _ChapterEntry(:final chapter) => ListTile(
+      dense: true,
+      contentPadding: const EdgeInsets.only(left: 44, right: 16),
+      leading: const Icon(Icons.description_outlined, size: 18),
+      selected: chapter.id == model.article?.id,
+      title: Text(chapter.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+      onTap: () => model.selectArticle(chapter.id),
+    ),
+  };
+}
+
+sealed class _NavigationEntry {
+  const _NavigationEntry();
+  factory _NavigationEntry.volume(WritingCategory volume) = _VolumeEntry;
+  factory _NavigationEntry.chapter(ArticleSummary chapter) = _ChapterEntry;
+  const factory _NavigationEntry.uncategorized() = _UncategorizedEntry;
+}
+
+class _VolumeEntry extends _NavigationEntry {
+  const _VolumeEntry(this.volume);
+  final WritingCategory volume;
+}
+
+class _ChapterEntry extends _NavigationEntry {
+  const _ChapterEntry(this.chapter);
+  final ArticleSummary chapter;
+}
+
+class _UncategorizedEntry extends _NavigationEntry {
+  const _UncategorizedEntry();
+}
+
+class _Editor extends StatelessWidget {
+  const _Editor({required this.model, required this.controller});
+  final LibraryViewModel model;
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final article = model.article;
+    if (article == null) {
+      return const Center(
+        child: Text('Choose or create a chapter to begin writing.'),
+      );
+    }
+    if (controller.text != article.content) {
+      controller.text = article.content;
+    }
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 900),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
           child: TextField(
-            controller: _controller,
+            controller: controller,
             expands: true,
             maxLines: null,
             minLines: null,
@@ -136,224 +264,23 @@ class _LibraryPageState extends State<LibraryPage> {
             ),
             onChanged: model.isReadOnly ? null : model.updateContent,
           ),
-        );
+        ),
+      ),
+    );
+  }
+}
 
-  Widget _buildError(LibraryViewModel model) => Scaffold(
+class _ErrorPage extends StatelessWidget {
+  const _ErrorPage({required this.error});
+  final Object error;
+  @override
+  Widget build(BuildContext context) => Scaffold(
     body: Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Text(
-          model.isLibraryInUse
-              ? 'This book is already open in another Zephyr window.\n'
-                    'Close that window before opening Zephyr again.'
-              : 'Could not open the book: ${model.error}',
+          'Could not open the library: $error',
           textAlign: TextAlign.center,
-        ),
-      ),
-    ),
-  );
-
-  Future<void> _openLibrary() async {
-    final path = await FilePicker.getDirectoryPath();
-    if (path != null) await widget.viewModel.openLibrary(path);
-  }
-}
-
-class _LibrarySidebar extends StatelessWidget {
-  const _LibrarySidebar({
-    required this.model,
-    required this.library,
-    required this.onOpenLibrary,
-  });
-
-  final LibraryViewModel model;
-  final WritingLibrary library;
-  final Future<void> Function() onOpenLibrary;
-
-  @override
-  Widget build(BuildContext context) => Material(
-    color: Theme.of(context).colorScheme.surfaceContainerLow,
-    child: Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: _BookPicker(
-            bookName: model.bookName,
-            onOpenLibrary: onOpenLibrary,
-          ),
-        ),
-        const Divider(height: 1),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            children: [
-              for (final folder in library.folders)
-                _FolderTreeNode(
-                  folder: folder,
-                  chapters: library.articles
-                      .where((article) => article.folderId == folder.id)
-                      .toList(growable: false),
-                  expanded: model.isFolderExpanded(folder.id),
-                  selectedArticleId: model.article?.id,
-                  onToggle: () => model.toggleFolder(folder.id),
-                  onSelect: model.selectArticle,
-                ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-class _BookPicker extends StatelessWidget {
-  const _BookPicker({required this.bookName, required this.onOpenLibrary});
-
-  final String bookName;
-  final Future<void> Function() onOpenLibrary;
-
-  @override
-  Widget build(BuildContext context) => PopupMenuButton<_BookMenuAction>(
-    tooltip: 'Choose book',
-    onSelected: (action) {
-      if (action == _BookMenuAction.open) onOpenLibrary();
-    },
-    itemBuilder: (context) => const [
-      PopupMenuItem(
-        enabled: false,
-        value: _BookMenuAction.current,
-        child: Text('Current book'),
-      ),
-      PopupMenuDivider(),
-      PopupMenuItem(
-        value: _BookMenuAction.open,
-        child: ListTile(
-          leading: Icon(Icons.folder_open_outlined),
-          title: Text('Open another book…'),
-          contentPadding: EdgeInsets.zero,
-        ),
-      ),
-    ],
-    child: Ink(
-      height: 42,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(9),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Row(
-          children: [
-            const Icon(Icons.menu_book_outlined, size: 20),
-            const SizedBox(width: 10),
-            Expanded(child: Text(bookName, overflow: TextOverflow.ellipsis)),
-            const Icon(Icons.keyboard_arrow_down),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-enum _BookMenuAction { current, open }
-
-class _FolderTreeNode extends StatelessWidget {
-  const _FolderTreeNode({
-    required this.folder,
-    required this.chapters,
-    required this.expanded,
-    required this.selectedArticleId,
-    required this.onToggle,
-    required this.onSelect,
-  });
-
-  final WritingFolder folder;
-  final List<ArticleSummary> chapters;
-  final bool expanded;
-  final String? selectedArticleId;
-  final VoidCallback onToggle;
-  final ValueChanged<String> onSelect;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      InkWell(
-        onTap: onToggle,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 9, 12, 9),
-          child: Row(
-            children: [
-              Icon(
-                expanded
-                    ? Icons.keyboard_arrow_down
-                    : Icons.keyboard_arrow_right,
-                size: 20,
-              ),
-              const SizedBox(width: 4),
-              Icon(
-                expanded ? Icons.folder_open_outlined : Icons.folder_outlined,
-                size: 19,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(folder.name, overflow: TextOverflow.ellipsis),
-              ),
-            ],
-          ),
-        ),
-      ),
-      AnimatedCrossFade(
-        duration: const Duration(milliseconds: 160),
-        crossFadeState: expanded
-            ? CrossFadeState.showSecond
-            : CrossFadeState.showFirst,
-        firstChild: const SizedBox.shrink(),
-        secondChild: Column(
-          children: [
-            for (final chapter in chapters)
-              _ChapterLeaf(
-                chapter: chapter,
-                selected: chapter.id == selectedArticleId,
-                onTap: () => onSelect(chapter.id),
-              ),
-          ],
-        ),
-      ),
-    ],
-  );
-}
-
-class _ChapterLeaf extends StatelessWidget {
-  const _ChapterLeaf({
-    required this.chapter,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final ArticleSummary chapter;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => InkWell(
-    onTap: onTap,
-    child: Ink(
-      color: selected ? Theme.of(context).colorScheme.secondaryContainer : null,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(44, 8, 16, 8),
-        child: Row(
-          children: [
-            const Icon(Icons.description_outlined, size: 18),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                chapter.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
         ),
       ),
     ),
