@@ -6,9 +6,11 @@ import '../../../../domain/models/theme_tokens.dart';
 import '../../../../domain/repositories/theme_preferences_repository.dart';
 
 class ThemeViewModel extends ChangeNotifier {
-  ThemeViewModel(this._repository);
+  ThemeViewModel(this._repository, {Future<void> Function()? onPersisted})
+    : _onPersisted = onPersisted == null ? null : (() => onPersisted());
 
   final ThemePreferencesRepository _repository;
+  final Future<void> Function()? _onPersisted;
   ThemeTokens _tokens = ThemeTokens.defaults;
   Timer? _pendingSave;
 
@@ -44,8 +46,17 @@ class ThemeViewModel extends ChangeNotifier {
   void _scheduleSave() {
     _pendingSave?.cancel();
     _pendingSave = Timer(const Duration(milliseconds: 250), () {
-      unawaited(_repository.save(_tokens));
+      unawaited(_save(_tokens));
     });
+  }
+
+  Future<void> _save(ThemeTokens tokens) async {
+    try {
+      await _repository.save(tokens);
+      await _onPersisted?.call();
+    } on Object {
+      // Appearance must never prevent opening a user's writing library.
+    }
   }
 
   @override

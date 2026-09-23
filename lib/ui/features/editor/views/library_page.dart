@@ -4,7 +4,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../../../../data/services/settings_window_service.dart';
 import '../../../../domain/models/purewriter_models.dart';
+import '../../../../domain/use_cases/paragraph_indentation.dart';
+import '../view_models/editor_preferences_view_model.dart';
 import '../view_models/library_view_model.dart';
 import '../../settings/view_models/theme_view_model.dart';
 import '../../settings/views/theme_settings_dialog.dart';
@@ -16,9 +19,11 @@ class LibraryPage extends StatefulWidget {
     super.key,
     required this.viewModel,
     required this.themeViewModel,
+    required this.editorPreferencesViewModel,
   });
   final LibraryViewModel viewModel;
   final ThemeViewModel themeViewModel;
+  final EditorPreferencesViewModel editorPreferencesViewModel;
 
   @override
   State<LibraryPage> createState() => _LibraryPageState();
@@ -26,6 +31,7 @@ class LibraryPage extends StatefulWidget {
 
 class _LibraryPageState extends State<LibraryPage> {
   final _controller = TextEditingController();
+  final _settingsWindowService = SettingsWindowService();
 
   @override
   void initState() {
@@ -55,15 +61,15 @@ class _LibraryPageState extends State<LibraryPage> {
                 model: model,
                 controller: _controller,
                 openLibrary: _openLibrary,
-                openSettings: () =>
-                    showThemeSettings(context, widget.themeViewModel),
+                openSettings: _openSettings,
+                editorPreferencesViewModel: widget.editorPreferencesViewModel,
               )
             : _DesktopWorkspace(
                 model: model,
                 controller: _controller,
                 openLibrary: _openLibrary,
-                openSettings: () =>
-                    showThemeSettings(context, widget.themeViewModel),
+                openSettings: _openSettings,
+                editorPreferencesViewModel: widget.editorPreferencesViewModel,
               ),
       );
     },
@@ -73,6 +79,22 @@ class _LibraryPageState extends State<LibraryPage> {
     final root = await FilePicker.getDirectoryPath();
     if (root != null) await widget.viewModel.openLibrary(root);
   }
+
+  Future<void> _openSettings() async {
+    final openedInWindow = await _settingsWindowService.open();
+    if (!mounted || openedInWindow) {
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SettingsWindowPage(
+          viewModel: widget.themeViewModel,
+          editorPreferencesViewModel: widget.editorPreferencesViewModel,
+          onClose: () => Navigator.of(context).pop(),
+        ),
+      ),
+    );
+  }
 }
 
 class _DesktopWorkspace extends StatelessWidget {
@@ -81,12 +103,14 @@ class _DesktopWorkspace extends StatelessWidget {
     required this.controller,
     required this.openLibrary,
     required this.openSettings,
+    required this.editorPreferencesViewModel,
   });
   static const sidebarWidth = 334.0;
   final LibraryViewModel model;
   final TextEditingController controller;
   final Future<void> Function() openLibrary;
   final VoidCallback openSettings;
+  final EditorPreferencesViewModel editorPreferencesViewModel;
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -116,7 +140,11 @@ class _DesktopWorkspace extends StatelessWidget {
                 children: [
                   _TitleBar(model: model),
                   Expanded(
-                    child: _Editor(model: model, controller: controller),
+                    child: _Editor(
+                      model: model,
+                      controller: controller,
+                      preferencesViewModel: editorPreferencesViewModel,
+                    ),
                   ),
                 ],
               ),
@@ -448,11 +476,13 @@ class _MobileWorkspace extends StatelessWidget {
     required this.controller,
     required this.openLibrary,
     required this.openSettings,
+    required this.editorPreferencesViewModel,
   });
   final LibraryViewModel model;
   final TextEditingController controller;
   final Future<void> Function() openLibrary;
   final VoidCallback openSettings;
+  final EditorPreferencesViewModel editorPreferencesViewModel;
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -478,14 +508,23 @@ class _MobileWorkspace extends StatelessWidget {
         ),
       ),
     ),
-    body: _Editor(model: model, controller: controller),
+    body: _Editor(
+      model: model,
+      controller: controller,
+      preferencesViewModel: editorPreferencesViewModel,
+    ),
   );
 }
 
 class _Editor extends StatelessWidget {
-  const _Editor({required this.model, required this.controller});
+  const _Editor({
+    required this.model,
+    required this.controller,
+    required this.preferencesViewModel,
+  });
   final LibraryViewModel model;
   final TextEditingController controller;
+  final EditorPreferencesViewModel preferencesViewModel;
 
   @override
   Widget build(BuildContext context) {
@@ -498,40 +537,87 @@ class _Editor extends StatelessWidget {
     if (controller.text != article.content) {
       controller.text = article.content;
     }
-    return Stack(
-      children: [
-        Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 900),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(42, 28, 42, 42),
-              child: TextField(
-                controller: controller,
-                expands: true,
-                maxLines: null,
-                minLines: null,
-                textAlignVertical: TextAlignVertical.top,
-                style: Theme.of(context).textTheme.bodyLarge
-                    ?.copyWith(height: 1.75),
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  hintText: 'Start writing...',
+    return ListenableBuilder(
+      listenable: preferencesViewModel,
+      builder: (context, _) {
+        final preferences = preferencesViewModel.preferences;
+        final formatted = applyParagraphIndentation(
+          controller.text,
+          preferences.firstLineIndent,
+        );
+        if (formatted != controller.text) {
+          controller.text = formatted;
+        }
+        return Stack(
+          children: [
+            SizedBox.expand(
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: preferences.maxContentWidth,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(42, 28, 42, 42),
+                    child: TextField(
+                      controller: controller,
+                      expands: true,
+                      maxLines: null,
+                      minLines: null,
+                      textAlignVertical: TextAlignVertical.top,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontFamily: preferences.fontFamily,
+                        fontSize: preferences.fontSize,
+                        height:
+                            preferences.lineHeight +
+                            preferences.paragraphSpacing / preferences.fontSize,
+                      ),
+                      decoration: const InputDecoration(
+                        filled: false,
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                        hintText: 'Start writing...',
+                      ),
+                      onChanged: model.isReadOnly
+                          ? null
+                          : (text) => _updateContent(
+                              text,
+                              preferences.firstLineIndent,
+                            ),
+                    ),
+                  ),
                 ),
-                onChanged: model.isReadOnly ? null : model.updateContent,
               ),
             ),
-          ),
-        ),
-        Positioned(
-          right: 18,
-          bottom: 14,
-          child: Text(
-            '${article.content.runes.length} characters',
-            style: Theme.of(context).textTheme.labelMedium,
-          ),
-        ),
-      ],
+            Positioned(
+              right: 18,
+              bottom: 14,
+              child: Text(
+                '${article.content.runes.length} characters',
+                style: Theme.of(context).textTheme.labelMedium,
+              ),
+            ),
+          ],
+        );
+      },
     );
+  }
+
+  void _updateContent(String text, int indent) {
+    final formatted = applyParagraphIndentation(text, indent);
+    if (formatted != text) {
+      final selection = controller.selection;
+      final offset = (selection.baseOffset + formatted.length - text.length)
+          .clamp(0, formatted.length)
+          .toInt();
+      controller.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: offset),
+      );
+    }
+    model.updateContent(formatted);
   }
 }
 

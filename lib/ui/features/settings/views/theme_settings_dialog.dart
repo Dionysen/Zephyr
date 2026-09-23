@@ -1,72 +1,73 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../../../../domain/models/editor_preferences.dart';
 import '../../../../domain/models/theme_tokens.dart';
+import '../../editor/view_models/editor_preferences_view_model.dart';
 import '../view_models/theme_view_model.dart';
-
-Future<void> showThemeSettings(
-  BuildContext context,
-  ThemeViewModel viewModel,
-) => showDialog<void>(
-  context: context,
-  builder: (_) => _SettingsDialog(viewModel: viewModel),
-);
 
 enum _SettingsPage { general, cloud, editor, shortcuts, theme, about }
 
-class _SettingsDialog extends StatefulWidget {
-  const _SettingsDialog({required this.viewModel});
+class SettingsWindowPage extends StatefulWidget {
+  const SettingsWindowPage({
+    super.key,
+    required this.viewModel,
+    required this.editorPreferencesViewModel,
+    required this.onClose,
+  });
   final ThemeViewModel viewModel;
+  final EditorPreferencesViewModel editorPreferencesViewModel;
+  final VoidCallback onClose;
 
   @override
-  State<_SettingsDialog> createState() => _SettingsDialogState();
+  State<SettingsWindowPage> createState() => _SettingsWindowPageState();
 }
 
-class _SettingsDialogState extends State<_SettingsDialog> {
+class _SettingsWindowPageState extends State<SettingsWindowPage> {
   _SettingsPage _page = _SettingsPage.theme;
   bool _editingTokens = false;
 
   @override
-  Widget build(BuildContext context) => Dialog(
-    insetPadding: const EdgeInsets.all(16),
-    child: ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 1120, maxHeight: 780),
-      child: SizedBox(
-        width: 1120,
-        height: 760,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            void selectPage(_SettingsPage page) {
-              setState(() {
-                _page = page;
-                _editingTokens = false;
-              });
-            }
+  Widget build(BuildContext context) => Scaffold(
+    body: LayoutBuilder(
+      builder: (context, constraints) {
+        void selectPage(_SettingsPage page) {
+          setState(() {
+            _page = page;
+            _editingTokens = false;
+          });
+          if (page == _SettingsPage.editor) {
+            unawaited(widget.editorPreferencesViewModel.loadSystemFonts());
+          }
+        }
 
-            final content = _SettingsContent(child: _buildPage());
-            if (constraints.maxWidth < 760) {
-              return Column(
-                children: [
-                  _CompactSettingsNavigation(
-                    selected: _page,
-                    onSelected: selectPage,
-                  ),
-                  const Divider(),
-                  Expanded(child: content),
-                ],
-              );
-            }
-            return Row(
-              children: [
-                _SettingsNavigation(selected: _page, onSelected: selectPage),
-                VerticalDivider(
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                ),
-                Expanded(child: content),
-              ],
-            );
-          },
-        ),
-      ),
+        final content = _SettingsContent(
+          onClose: widget.onClose,
+          child: _buildPage(),
+        );
+        if (constraints.maxWidth < 760) {
+          return Column(
+            children: [
+              _CompactSettingsNavigation(
+                selected: _page,
+                onSelected: selectPage,
+              ),
+              const Divider(),
+              Expanded(child: content),
+            ],
+          );
+        }
+        return Row(
+          children: [
+            _SettingsNavigation(selected: _page, onSelected: selectPage),
+            VerticalDivider(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+            Expanded(child: content),
+          ],
+        );
+      },
     ),
   );
 
@@ -79,13 +80,17 @@ class _SettingsDialogState extends State<_SettingsDialog> {
       viewModel: widget.viewModel,
       onCustomize: () => setState(() => _editingTokens = true),
     ),
+    _SettingsPage.editor => _EditorSettingsPage(
+      viewModel: widget.editorPreferencesViewModel,
+    ),
     _ => _SettingsPlaceholder(page: _page),
   };
 }
 
 class _SettingsContent extends StatelessWidget {
-  const _SettingsContent({required this.child});
+  const _SettingsContent({required this.child, required this.onClose});
   final Widget child;
+  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -101,7 +106,7 @@ class _SettingsContent extends StatelessWidget {
           top: 8,
           right: 8,
           child: IconButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: onClose,
             icon: const Icon(Icons.close),
             tooltip: 'Close settings',
           ),
@@ -560,6 +565,151 @@ class _TokenField extends StatelessWidget {
               if (value != null) onChanged(value);
             },
           ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _EditorSettingsPage extends StatelessWidget {
+  const _EditorSettingsPage({required this.viewModel});
+  final EditorPreferencesViewModel viewModel;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: viewModel,
+    builder: (context, _) {
+      final preferences = viewModel.preferences;
+      final selectedFont = viewModel.systemFonts
+          .where((font) => font.path == preferences.fontPath)
+          .firstOrNull;
+      return Scrollbar(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+          Text('Editor', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          Text(
+            'Typography and reading-column preferences apply immediately.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 24),
+          if (viewModel.isLoadingSystemFonts)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (viewModel.systemFonts.isEmpty)
+            const Text(
+              'No system fonts were found. The platform default will be used.',
+            )
+          else
+            DropdownButtonFormField<SystemFont>(
+              initialValue: selectedFont,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'System font'),
+              hint: const Text('Platform default'),
+              items: [
+                const DropdownMenuItem<SystemFont>(
+                  value: null,
+                  child: Text('Platform default'),
+                ),
+                ...viewModel.systemFonts.map(
+                  (font) =>
+                      DropdownMenuItem(value: font, child: Text(font.family)),
+                ),
+              ],
+              onChanged: viewModel.selectFont,
+            ),
+          const SizedBox(height: 18),
+          _EditorSlider(
+            label: 'Font size',
+            value: preferences.fontSize,
+            min: 12,
+            max: 32,
+            suffix: 'px',
+            onChanged: viewModel.updateFontSize,
+          ),
+          _EditorSlider(
+            label: 'Line height',
+            value: preferences.lineHeight,
+            min: 1.2,
+            max: 2.4,
+            suffix: '',
+            onChanged: viewModel.updateLineHeight,
+          ),
+          _EditorSlider(
+            label: 'Paragraph spacing',
+            value: preferences.paragraphSpacing,
+            min: 0,
+            max: 32,
+            suffix: 'px',
+            onChanged: viewModel.updateParagraphSpacing,
+          ),
+          _EditorSlider(
+            label: 'First-line indent',
+            value: preferences.firstLineIndent.toDouble(),
+            min: 0,
+            max: 4,
+            suffix: ' characters',
+            divisions: 4,
+            onChanged: (value) =>
+                viewModel.updateFirstLineIndent(value.round()),
+          ),
+          _EditorSlider(
+            label: 'Editor width',
+            value: preferences.maxContentWidth,
+            min: 480,
+            max: 1200,
+            suffix: 'px',
+            onChanged: viewModel.updateMaxContentWidth,
+          ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+class _EditorSlider extends StatelessWidget {
+  const _EditorSlider({
+    required this.label,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.suffix,
+    required this.onChanged,
+    this.divisions,
+  });
+  final String label;
+  final double value;
+  final double min;
+  final double max;
+  final String suffix;
+  final ValueChanged<double> onChanged;
+  final int? divisions;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 14),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(child: Text(label)),
+            Text(
+              '${value.toStringAsFixed(divisions == null ? 1 : 0)}$suffix',
+              style: Theme.of(context).textTheme.labelMedium,
+            ),
+          ],
+        ),
+        Slider(
+          value: value,
+          min: min,
+          max: max,
+          divisions: divisions,
+          onChanged: onChanged,
         ),
       ],
     ),

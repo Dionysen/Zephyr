@@ -1,3 +1,4 @@
+import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/models/purewriter_models.dart';
@@ -141,7 +142,9 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
       final original = rows.single;
       if (original['content'] == article.content) return;
       final now = DateTime.now().millisecondsSinceEpoch;
-      await transaction.insert('History', _historySnapshot(original, now));
+      if (await _hasHistoryTable(transaction)) {
+        await transaction.insert('History', _historySnapshot(original, now));
+      }
       await transaction.update(
         'Article',
         {
@@ -175,6 +178,11 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
       .take(200)
       .map(String.fromCharCode)
       .join();
+
+  Future<bool> _hasHistoryTable(DatabaseExecutor database) async =>
+      (await database.rawQuery(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'History' LIMIT 1",
+      )).isNotEmpty;
 
   Map<String, Object?> _historySnapshot(
     Map<String, Object?> article,
@@ -284,20 +292,22 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
 
   @override
   Future<List<ArticleHistory>> listHistory(String articleId) async =>
-      (await _store.database.query(
-            'History',
-            columns: ['createTime', 'article_content'],
-            where: 'article_id = ?',
-            whereArgs: [articleId],
-            orderBy: 'createTime DESC',
-          ))
-          .map(
-            (row) => ArticleHistory(
-              createdAt: _date(row['createTime']! as int),
-              content: row['article_content'] as String? ?? '',
-            ),
-          )
-          .toList(growable: false);
+      !(await _hasHistoryTable(_store.database))
+      ? const []
+      : (await _store.database.query(
+              'History',
+              columns: ['createTime', 'article_content'],
+              where: 'article_id = ?',
+              whereArgs: [articleId],
+              orderBy: 'createTime DESC',
+            ))
+            .map(
+              (row) => ArticleHistory(
+                createdAt: _date(row['createTime']! as int),
+                content: row['article_content'] as String? ?? '',
+              ),
+            )
+            .toList(growable: false);
 
   @override
   Future<List<DailyWriting>> listDaily() async =>
