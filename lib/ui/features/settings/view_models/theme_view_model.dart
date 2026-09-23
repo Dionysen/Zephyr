@@ -29,6 +29,12 @@ class ThemeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void applyPreset(ThemePreset preset) {
+    _tokens = ThemeTokens.presets[preset]!;
+    _scheduleSave();
+    notifyListeners();
+  }
+
   void restoreDefaults() {
     _tokens = ThemeTokens.defaults;
     _scheduleSave();

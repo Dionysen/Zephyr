@@ -11,42 +11,44 @@ ThemeData zephyrTheme(ThemeTokens tokens) {
   final primaryText = Color(tokens.primaryText);
   final mutedText = Color(tokens.mutedText);
   final accent = Color(tokens.accent);
+  final brightness = editor.computeLuminance() < .5
+      ? Brightness.dark
+      : Brightness.light;
   final selected = Color.alphaBlend(accent.withValues(alpha: .20), sidebar);
   final focus = Color.alphaBlend(accent.withValues(alpha: .5), border);
 
   return ThemeData(
     useMaterial3: true,
-    colorScheme: ColorScheme.dark(
-      primary: accent,
-      onPrimary: editor,
-      secondary: accent,
-      onSecondary: editor,
-      secondaryContainer: selected,
-      onSecondaryContainer: primaryText,
-      surface: editor,
-      onSurface: primaryText,
-      surfaceContainerLowest: sidebar,
-      surfaceContainerLow: Color.alphaBlend(
-        Colors.white.withValues(alpha: .02),
-        sidebar,
-      ),
-      surfaceContainer: Color.alphaBlend(
-        Colors.white.withValues(alpha: .03),
-        editor,
-      ),
-      surfaceContainerHigh: control,
-      surfaceContainerHighest: Color.alphaBlend(
-        Colors.white.withValues(alpha: .04),
-        control,
-      ),
-      onSurfaceVariant: mutedText,
-      outline: border,
-      outlineVariant: Color.alphaBlend(
-        Colors.black.withValues(alpha: .18),
-        border,
-      ),
-      error: const Color(0xFFFFB4AB),
-    ),
+    colorScheme: ColorScheme.fromSeed(seedColor: accent, brightness: brightness)
+        .copyWith(
+          primary: accent,
+          secondary: accent,
+          secondaryContainer: selected,
+          onSecondaryContainer: primaryText,
+          surface: editor,
+          onSurface: primaryText,
+          surfaceContainerLowest: sidebar,
+          surfaceContainerLow: Color.alphaBlend(
+            Colors.white.withValues(alpha: .02),
+            sidebar,
+          ),
+          surfaceContainer: Color.alphaBlend(
+            Colors.white.withValues(alpha: .03),
+            editor,
+          ),
+          surfaceContainerHigh: control,
+          surfaceContainerHighest: Color.alphaBlend(
+            Colors.white.withValues(alpha: .04),
+            control,
+          ),
+          onSurfaceVariant: mutedText,
+          outline: border,
+          outlineVariant: Color.alphaBlend(
+            Colors.black.withValues(alpha: .18),
+            border,
+          ),
+          error: const Color(0xFFFFB4AB),
+        ),
     scaffoldBackgroundColor: editor,
     dividerTheme: DividerThemeData(color: border, space: 1),
     iconTheme: IconThemeData(

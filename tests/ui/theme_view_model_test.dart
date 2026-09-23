@@ -34,6 +34,15 @@ void main() {
     expect(model.tokens.editorSurface, ThemeTokens.defaults.editorSurface);
     expect(model.tokens.accent, ThemeTokens.defaults.accent);
   });
+
+  test('applying a preset replaces the complete semantic palette', () {
+    final model = ThemeViewModel(_ThemeRepository(ThemeTokens.defaults));
+
+    model.applyPreset(ThemePreset.purple);
+
+    expect(model.tokens, ThemeTokens.presets[ThemePreset.purple]);
+    expect(model.tokens.preset, ThemePreset.purple);
+  });
 }
 
 class _ThemeRepository implements ThemePreferencesRepository {
