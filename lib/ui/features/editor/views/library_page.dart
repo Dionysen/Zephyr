@@ -169,37 +169,42 @@ class _Sidebar extends StatelessWidget {
   final Future<void> Function() openLibrary;
 
   @override
-  Widget build(BuildContext context) => Material(
-    color: Theme.of(context).colorScheme.surfaceContainerLowest,
-    child: Column(
-      children: [
-        SizedBox(
-          height: _TitleBar.height,
-          child: Row(
-            children: [
-              IconButton(
-                onPressed: model.toggleSidebar,
-                icon: const Icon(Icons.menu_open),
-                tooltip: 'Hide sidebar',
-              ),
-              const Expanded(child: DragToMoveArea(child: SizedBox.expand())),
-            ],
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      border: Border(right: BorderSide(color: Theme.of(context).dividerColor)),
+    ),
+    child: Material(
+      color: Theme.of(context).colorScheme.surfaceContainerLowest,
+      child: Column(
+        children: [
+          SizedBox(
+            height: _TitleBar.height,
+            child: Row(
+              children: [
+                IconButton(
+                  onPressed: model.toggleSidebar,
+                  icon: const Icon(Icons.menu_open),
+                  tooltip: 'Hide sidebar',
+                ),
+                const Expanded(child: DragToMoveArea(child: SizedBox.expand())),
+              ],
+            ),
           ),
-        ),
-        _BookPicker(model: model, library: model.library!),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: IconButton(
-            onPressed: model.isReadOnly ? null : model.createArticle,
-            icon: const Icon(Icons.note_add_outlined),
-            tooltip: 'New chapter',
+          _BookPicker(model: model, library: model.library!),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: IconButton(
+              onPressed: model.isReadOnly ? null : model.createArticle,
+              icon: const Icon(Icons.note_add_outlined),
+              tooltip: 'New chapter',
+            ),
           ),
-        ),
-        Expanded(
-          child: _ChapterTree(model: model, library: model.library!),
-        ),
-        _DirectoryPill(model: model, openLibrary: openLibrary),
-      ],
+          Expanded(
+            child: _ChapterTree(model: model, library: model.library!),
+          ),
+          _DirectoryPill(model: model, openLibrary: openLibrary),
+        ],
+      ),
     ),
   );
 }
@@ -286,7 +291,10 @@ class _VolumeRow extends StatelessWidget {
     padding: const EdgeInsets.fromLTRB(10, 4, 10, 0),
     child: Material(
       color: Theme.of(context).colorScheme.surfaceContainerHigh,
-      borderRadius: BorderRadius.circular(6),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(6),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(6),
         onTap: () => model.toggleVolume(volume.id),
@@ -369,7 +377,10 @@ class _DirectoryPill extends StatelessWidget {
     padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
     child: Material(
       color: Theme.of(context).colorScheme.surfaceContainerHigh,
-      borderRadius: BorderRadius.circular(28),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(28),
+        side: BorderSide(color: Theme.of(context).colorScheme.outline),
+      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(28),
         onTap: openLibrary,
