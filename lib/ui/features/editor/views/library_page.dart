@@ -6,12 +6,19 @@ import 'package:window_manager/window_manager.dart';
 
 import '../../../../domain/models/purewriter_models.dart';
 import '../view_models/library_view_model.dart';
+import '../../settings/view_models/theme_view_model.dart';
+import '../../settings/views/theme_settings_dialog.dart';
 
 /// The presentation-only writing workspace. Document state belongs to the
 /// ViewModel; this widget only renders and animates it.
 class LibraryPage extends StatefulWidget {
-  const LibraryPage({super.key, required this.viewModel});
+  const LibraryPage({
+    super.key,
+    required this.viewModel,
+    required this.themeViewModel,
+  });
   final LibraryViewModel viewModel;
+  final ThemeViewModel themeViewModel;
 
   @override
   State<LibraryPage> createState() => _LibraryPageState();
@@ -48,11 +55,15 @@ class _LibraryPageState extends State<LibraryPage> {
                 model: model,
                 controller: _controller,
                 openLibrary: _openLibrary,
+                openSettings: () =>
+                    showThemeSettings(context, widget.themeViewModel),
               )
             : _DesktopWorkspace(
                 model: model,
                 controller: _controller,
                 openLibrary: _openLibrary,
+                openSettings: () =>
+                    showThemeSettings(context, widget.themeViewModel),
               ),
       );
     },
@@ -69,11 +80,13 @@ class _DesktopWorkspace extends StatelessWidget {
     required this.model,
     required this.controller,
     required this.openLibrary,
+    required this.openSettings,
   });
   static const sidebarWidth = 334.0;
   final LibraryViewModel model;
   final TextEditingController controller;
   final Future<void> Function() openLibrary;
+  final VoidCallback openSettings;
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -90,7 +103,11 @@ class _DesktopWorkspace extends StatelessWidget {
                   alignment: Alignment.topLeft,
                   minWidth: sidebarWidth,
                   maxWidth: sidebarWidth,
-                  child: _Sidebar(model: model, openLibrary: openLibrary),
+                  child: _Sidebar(
+                    model: model,
+                    openLibrary: openLibrary,
+                    openSettings: openSettings,
+                  ),
                 ),
               ),
             ),
@@ -164,9 +181,14 @@ class _TitleBar extends StatelessWidget {
 }
 
 class _Sidebar extends StatelessWidget {
-  const _Sidebar({required this.model, required this.openLibrary});
+  const _Sidebar({
+    required this.model,
+    required this.openLibrary,
+    required this.openSettings,
+  });
   final LibraryViewModel model;
   final Future<void> Function() openLibrary;
+  final VoidCallback openSettings;
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
@@ -202,7 +224,11 @@ class _Sidebar extends StatelessWidget {
           Expanded(
             child: _ChapterTree(model: model, library: model.library!),
           ),
-          _DirectoryPill(model: model, openLibrary: openLibrary),
+          _DirectoryPill(
+            model: model,
+            openLibrary: openLibrary,
+            openSettings: openSettings,
+          ),
         ],
       ),
     ),
@@ -368,9 +394,14 @@ class _ChapterRow extends StatelessWidget {
 }
 
 class _DirectoryPill extends StatelessWidget {
-  const _DirectoryPill({required this.model, required this.openLibrary});
+  const _DirectoryPill({
+    required this.model,
+    required this.openLibrary,
+    required this.openSettings,
+  });
   final LibraryViewModel model;
   final Future<void> Function() openLibrary;
+  final VoidCallback openSettings;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -397,7 +428,12 @@ class _DirectoryPill extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const Icon(Icons.settings_outlined, size: 19),
+              IconButton(
+                onPressed: openSettings,
+                icon: const Icon(Icons.settings_outlined, size: 19),
+                tooltip: 'Theme settings',
+                visualDensity: VisualDensity.compact,
+              ),
             ],
           ),
         ),
@@ -411,10 +447,12 @@ class _MobileWorkspace extends StatelessWidget {
     required this.model,
     required this.controller,
     required this.openLibrary,
+    required this.openSettings,
   });
   final LibraryViewModel model;
   final TextEditingController controller;
   final Future<void> Function() openLibrary;
+  final VoidCallback openSettings;
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -433,7 +471,11 @@ class _MobileWorkspace extends StatelessWidget {
     ),
     drawer: Drawer(
       child: SafeArea(
-        child: _Sidebar(model: model, openLibrary: openLibrary),
+        child: _Sidebar(
+          model: model,
+          openLibrary: openLibrary,
+          openSettings: openSettings,
+        ),
       ),
     ),
     body: _Editor(model: model, controller: controller),
