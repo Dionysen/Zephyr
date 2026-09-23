@@ -23,6 +23,16 @@ void main() {
     expect(model.selectedBook?.name, 'Book B');
     expect(model.article?.id, 'article-b');
   });
+
+  test('sidebar visibility is an explicit presentation state', () {
+    final model = LibraryViewModel(FakeLibraryRepository());
+
+    expect(model.isSidebarExpanded, isTrue);
+    model.toggleSidebar();
+    expect(model.isSidebarExpanded, isFalse);
+    model.toggleSidebar();
+    expect(model.isSidebarExpanded, isTrue);
+  });
 }
 
 class FakeLibraryRepository implements WritingLibraryRepository {
