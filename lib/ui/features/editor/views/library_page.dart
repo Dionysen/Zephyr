@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:window_manager/window_manager.dart';
 
 import '../../../../domain/models/purewriter_models.dart';
 import '../view_models/library_view_model.dart';
@@ -58,22 +61,30 @@ class _LibraryPageState extends State<LibraryPage> {
     final library = model.library!;
     final navigation = _BookNavigation(model: model, library: library);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(model.libraryName),
-        actions: [
-          IconButton(
-            onPressed: _openLibrary,
-            icon: const Icon(Icons.folder_open_outlined),
-            tooltip: 'Open library',
-          ),
-          IconButton(
-            onPressed: model.isReadOnly ? null : model.createArticle,
-            icon: const Icon(Icons.note_add_outlined),
-            tooltip: 'New chapter',
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
+      appBar: Platform.isWindows
+          ? PreferredSize(
+              preferredSize: const Size.fromHeight(_WindowsTitleBar.height),
+              child: _WindowsTitleBar(
+                model: model,
+                onOpenLibrary: _openLibrary,
+              ),
+            )
+          : AppBar(
+              title: Text(model.libraryName),
+              actions: [
+                IconButton(
+                  onPressed: _openLibrary,
+                  icon: const Icon(Icons.folder_open_outlined),
+                  tooltip: 'Open library',
+                ),
+                IconButton(
+                  onPressed: model.isReadOnly ? null : model.createArticle,
+                  icon: const Icon(Icons.note_add_outlined),
+                  tooltip: 'New chapter',
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
       drawer: compact ? Drawer(child: SafeArea(child: navigation)) : null,
       body: compact
           ? _Editor(model: model, controller: _controller)
@@ -92,6 +103,71 @@ class _LibraryPageState extends State<LibraryPage> {
   Future<void> _openLibrary() async {
     final root = await FilePicker.getDirectoryPath();
     if (root != null) await widget.viewModel.openLibrary(root);
+  }
+}
+
+/// Windows-only client-area title bar. Caption buttons stay in the dedicated
+/// window layer; only the empty left region starts a window drag.
+class _WindowsTitleBar extends StatelessWidget {
+  const _WindowsTitleBar({required this.model, required this.onOpenLibrary});
+
+  static const height = 40.0;
+  final LibraryViewModel model;
+  final Future<void> Function() onOpenLibrary;
+
+  @override
+  Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    return Material(
+      color: Theme.of(context).colorScheme.surface,
+      child: SizedBox(
+        height: height,
+        child: Row(
+          children: [
+            Expanded(
+              child: DragToMoveArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.edit_note_outlined, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          model.article?.title.isNotEmpty == true
+                              ? model.article!.title
+                              : model.libraryName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelLarge,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            IconButton(
+              onPressed: onOpenLibrary,
+              icon: const Icon(Icons.folder_open_outlined, size: 20),
+              tooltip: 'Open library',
+            ),
+            IconButton(
+              onPressed: model.isReadOnly ? null : model.createArticle,
+              icon: const Icon(Icons.note_add_outlined, size: 20),
+              tooltip: 'New chapter',
+            ),
+            SizedBox(
+              width: 138,
+              child: WindowCaption(
+                brightness: brightness,
+                backgroundColor: Colors.transparent,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
