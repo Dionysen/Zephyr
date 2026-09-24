@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Prewarm the desktop settings window after the writing library is ready, reuse a single hidden settings engine, skip unused font registration in that window, and add timeline markers for settings startup and display.
+- Fixed editor settings scrolling on desktop by pairing the scrollbar with its list scroll controller.
+- Keep the desktop settings window alive when closed (hide + prevent native destroy), restore focus on reopen, and match the main window immersive title bar.
+- Register `window_manager` for desktop multi-window child engines on Windows so the settings window can start and use the custom title bar.
+- Reduce settings-window resize flicker on Windows with themed native backdrop, dark `WM_ERASEBKGND` handling, and non-erasing Flutter view resizing for multi-window children while keeping hidden-title-bar resize borders.
 - Load system fonts only when the editor settings page opens, reuse the hidden settings window, and make editor settings scroll instead of overflowing in smaller windows.
 - Fixed the settings child window startup by using its registered multi-window controller instead of the main-window-only plugin.
 - Open settings in a dedicated non-modal desktop window and synchronize saved appearance and editor preferences with the writing window.

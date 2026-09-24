@@ -7,12 +7,14 @@ import 'package:window_manager/window_manager.dart';
 
 import 'app/zephyr_app.dart';
 import 'data/services/purewriter_database.dart';
+import 'data/services/settings_window_bootstrap.dart';
 import 'data/services/settings_window_service.dart';
 
 Future<void> main(List<String> arguments) async {
   WidgetsFlutterBinding.ensureInitialized();
   final settingsWindowId = _settingsWindowId(arguments);
   if (settingsWindowId != null) {
+    await bootstrapDesktopSettingsWindow();
     _initializeSettingsWindow(settingsWindowId);
     runSettingsWindow(settingsWindowId);
     return;
@@ -49,7 +51,13 @@ void _initializeSettingsWindow(int windowId) {
       case 'isSettingsWindow':
         return true;
       case 'activate':
+      case 'focus':
         await WindowController.fromWindowId(windowId).show();
+        try {
+          await windowManager.focus();
+        } on Object {
+          // window_manager is optional when sub-window plugins are unavailable.
+        }
         return true;
     }
     return null;

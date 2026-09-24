@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:window_manager/window_manager.dart';
 
 import '../../../../domain/models/editor_preferences.dart';
 import '../../../../domain/models/theme_tokens.dart';
@@ -30,44 +32,49 @@ class _SettingsWindowPageState extends State<SettingsWindowPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    body: LayoutBuilder(
-      builder: (context, constraints) {
-        void selectPage(_SettingsPage page) {
-          setState(() {
-            _page = page;
-            _editingTokens = false;
-          });
-          if (page == _SettingsPage.editor) {
-            unawaited(widget.editorPreferencesViewModel.loadSystemFonts());
-          }
-        }
+    backgroundColor: Theme.of(context).colorScheme.surface,
+    body: Column(
+      children: [
+        _SettingsWindowTitleBar(onClose: widget.onClose),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              void selectPage(_SettingsPage page) {
+                setState(() {
+                  _page = page;
+                  _editingTokens = false;
+                });
+                if (page == _SettingsPage.editor) {
+                  unawaited(widget.editorPreferencesViewModel.loadSystemFonts());
+                }
+              }
 
-        final content = _SettingsContent(
-          onClose: widget.onClose,
-          child: _buildPage(),
-        );
-        if (constraints.maxWidth < 760) {
-          return Column(
-            children: [
-              _CompactSettingsNavigation(
-                selected: _page,
-                onSelected: selectPage,
-              ),
-              const Divider(),
-              Expanded(child: content),
-            ],
-          );
-        }
-        return Row(
-          children: [
-            _SettingsNavigation(selected: _page, onSelected: selectPage),
-            VerticalDivider(
-              color: Theme.of(context).colorScheme.outlineVariant,
-            ),
-            Expanded(child: content),
-          ],
-        );
-      },
+              final content = _SettingsContent(child: _buildPage());
+              if (constraints.maxWidth < 760) {
+                return Column(
+                  children: [
+                    _CompactSettingsNavigation(
+                      selected: _page,
+                      onSelected: selectPage,
+                    ),
+                    const Divider(),
+                    Expanded(child: content),
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  _SettingsNavigation(selected: _page, onSelected: selectPage),
+                  VerticalDivider(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                  Expanded(child: content),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
     ),
   );
 
@@ -87,31 +94,67 @@ class _SettingsWindowPageState extends State<SettingsWindowPage> {
   };
 }
 
-class _SettingsContent extends StatelessWidget {
-  const _SettingsContent({required this.child, required this.onClose});
-  final Widget child;
+class _SettingsWindowTitleBar extends StatelessWidget {
+  const _SettingsWindowTitleBar({required this.onClose});
+  static const height = 42.0;
   final VoidCallback onClose;
 
   @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.surface,
+      child: SizedBox(
+        height: height,
+        child: Stack(
+          children: [
+            const DragToMoveArea(child: SizedBox.expand()),
+            Center(
+              child: Text(
+                'Settings',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleSmall,
+              ),
+            ),
+            if (Platform.isWindows)
+              Align(
+                alignment: Alignment.centerRight,
+                child: SizedBox(
+                  width: 138,
+                  child: WindowCaption(
+                    brightness: theme.brightness,
+                    backgroundColor: Colors.transparent,
+                  ),
+                ),
+              )
+            else
+              Align(
+                alignment: Alignment.centerRight,
+                child: IconButton(
+                  onPressed: onClose,
+                  icon: const Icon(Icons.close),
+                  tooltip: 'Close settings',
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsContent extends StatelessWidget {
+  const _SettingsContent({required this.child});
+  final Widget child;
+
+  @override
   Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) => Stack(
-      children: [
-        Padding(
-          padding: constraints.maxWidth < 760
-              ? const EdgeInsets.fromLTRB(24, 48, 24, 24)
-              : const EdgeInsets.fromLTRB(56, 52, 56, 36),
-          child: child,
-        ),
-        Positioned(
-          top: 8,
-          right: 8,
-          child: IconButton(
-            onPressed: onClose,
-            icon: const Icon(Icons.close),
-            tooltip: 'Close settings',
-          ),
-        ),
-      ],
+    builder: (context, constraints) => Padding(
+      padding: constraints.maxWidth < 760
+          ? const EdgeInsets.fromLTRB(24, 16, 24, 24)
+          : const EdgeInsets.fromLTRB(56, 20, 56, 36),
+      child: child,
     ),
   );
 }
@@ -571,20 +614,36 @@ class _TokenField extends StatelessWidget {
   );
 }
 
-class _EditorSettingsPage extends StatelessWidget {
+class _EditorSettingsPage extends StatefulWidget {
   const _EditorSettingsPage({required this.viewModel});
   final EditorPreferencesViewModel viewModel;
 
   @override
+  State<_EditorSettingsPage> createState() => _EditorSettingsPageState();
+}
+
+class _EditorSettingsPageState extends State<_EditorSettingsPage> {
+  final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: viewModel,
+    listenable: widget.viewModel,
     builder: (context, _) {
+      final viewModel = widget.viewModel;
       final preferences = viewModel.preferences;
       final selectedFont = viewModel.systemFonts
           .where((font) => font.path == preferences.fontPath)
           .firstOrNull;
       return Scrollbar(
+        controller: _scrollController,
         child: ListView(
+          controller: _scrollController,
           padding: EdgeInsets.zero,
           children: [
           Text('Editor', style: Theme.of(context).textTheme.titleLarge),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -31,7 +32,8 @@ class LibraryPage extends StatefulWidget {
 
 class _LibraryPageState extends State<LibraryPage> {
   final _controller = TextEditingController();
-  final _settingsWindowService = SettingsWindowService();
+  final _settingsWindowService = SettingsWindowService.instance;
+  bool _settingsPrewarmScheduled = false;
 
   @override
   void initState() {
@@ -55,6 +57,7 @@ class _LibraryPageState extends State<LibraryPage> {
       if (model.library == null) {
         return const Scaffold(body: Center(child: CircularProgressIndicator()));
       }
+      _scheduleSettingsPrewarm();
       return LayoutBuilder(
         builder: (context, constraints) => constraints.maxWidth < 720
             ? _MobileWorkspace(
@@ -74,6 +77,16 @@ class _LibraryPageState extends State<LibraryPage> {
       );
     },
   );
+
+  void _scheduleSettingsPrewarm() {
+    if (_settingsPrewarmScheduled) return;
+    _settingsPrewarmScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(const Duration(milliseconds: 700), () {
+        if (mounted) unawaited(_settingsWindowService.prewarm());
+      });
+    });
+  }
 
   Future<void> _openLibrary() async {
     final root = await FilePicker.getDirectoryPath();

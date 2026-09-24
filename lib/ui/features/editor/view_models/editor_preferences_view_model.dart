@@ -24,10 +24,10 @@ class EditorPreferencesViewModel extends ChangeNotifier {
   List<SystemFont> get systemFonts => _systemFonts;
   bool get isLoadingSystemFonts => _isLoadingSystemFonts;
 
-  Future<void> load() async {
+  Future<void> load({bool loadSavedFont = true}) async {
     try {
       _preferences = await _preferencesRepository.load();
-      await _loadSavedFont();
+      if (loadSavedFont) await _loadSavedFont();
       notifyListeners();
     } on Object {
       // Formatting preferences must not block a writing session.

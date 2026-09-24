@@ -15,6 +15,8 @@ import '../ui/features/editor/view_models/library_view_model.dart';
 import '../ui/features/editor/view_models/editor_preferences_view_model.dart';
 import '../ui/features/editor/views/library_page.dart';
 import '../ui/features/settings/view_models/theme_view_model.dart';
+import '../ui/features/settings/views/settings_window_chrome.dart';
+import '../ui/features/settings/views/settings_window_shell.dart';
 import '../ui/features/settings/views/theme_settings_dialog.dart';
 
 void runZephyr(PureWriterDatabase database, {Object? startupError}) {
@@ -49,17 +51,28 @@ void runSettingsWindow(int windowId) {
   final themeViewModel = ThemeViewModel(
     FileThemePreferencesRepository(ThemeFileStorage()),
     onPersisted: _notifyMainWindow,
-  )..load();
+  );
   final editorPreferencesViewModel = EditorPreferencesViewModel(
     FileEditorPreferencesRepository(EditorPreferencesFileStorage()),
     FileSystemFontRepository(),
     onPersisted: _notifyMainWindow,
-  )..load();
+  );
+  unawaited(
+    Future.wait([
+      themeViewModel.load(),
+      editorPreferencesViewModel.load(loadSavedFont: false),
+    ]),
+  );
+  void hideSettingsWindow() {
+    unawaited(WindowController.fromWindowId(windowId).hide());
+  }
+
   runApp(
     SettingsWindowApp(
+      windowId: windowId,
       themeViewModel: themeViewModel,
       editorPreferencesViewModel: editorPreferencesViewModel,
-      onClose: () => unawaited(WindowController.fromWindowId(windowId).hide()),
+      onClose: hideSettingsWindow,
     ),
   );
 }
@@ -97,11 +110,13 @@ class ZephyrApp extends StatelessWidget {
 class SettingsWindowApp extends StatelessWidget {
   const SettingsWindowApp({
     super.key,
+    required this.windowId,
     required this.themeViewModel,
     required this.editorPreferencesViewModel,
     required this.onClose,
   });
 
+  final int windowId;
   final ThemeViewModel themeViewModel;
   final EditorPreferencesViewModel editorPreferencesViewModel;
   final VoidCallback onClose;
@@ -113,10 +128,16 @@ class SettingsWindowApp extends StatelessWidget {
       title: 'Zephyr Settings',
       debugShowCheckedModeBanner: false,
       theme: zephyrTheme(themeViewModel.tokens),
-      home: SettingsWindowPage(
-        viewModel: themeViewModel,
-        editorPreferencesViewModel: editorPreferencesViewModel,
-        onClose: onClose,
+      home: SettingsWindowShell(
+        windowId: windowId,
+        child: SettingsWindowChrome(
+          viewModel: themeViewModel,
+          child: SettingsWindowPage(
+            viewModel: themeViewModel,
+            editorPreferencesViewModel: editorPreferencesViewModel,
+            onClose: onClose,
+          ),
+        ),
       ),
     ),
   );
