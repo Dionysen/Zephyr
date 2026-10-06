@@ -1,3 +1,4 @@
+import '../../domain/models/settings_navigation.dart';
 import '../../domain/models/settings_section.dart';
 import '../../domain/repositories/settings_navigation_repository.dart';
 import '../services/settings_navigation_file_storage.dart';
@@ -8,19 +9,28 @@ class FileSettingsNavigationRepository implements SettingsNavigationRepository {
   final SettingsNavigationFileStorage _storage;
 
   @override
-  Future<SettingsSection> load() async {
+  Future<SettingsNavigation> load() async {
     final values = await _storage.read();
     if (values == null) {
-      return SettingsSection.theme;
+      return SettingsNavigation.defaults;
     }
     final name = values['section'];
-    return SettingsSection.values
-            .where((section) => section.name == name)
-            .firstOrNull ??
-        SettingsSection.theme;
+    final width = values['sidebarWidth'];
+    return SettingsNavigation.clamped(
+      section:
+          SettingsSection.values
+              .where((section) => section.name == name)
+              .firstOrNull ??
+          SettingsSection.theme,
+      sidebarWidth: width is num
+          ? width.toDouble()
+          : SettingsNavigation.defaultSidebarWidth,
+    );
   }
 
   @override
-  Future<void> save(SettingsSection section) =>
-      _storage.write({'section': section.name});
+  Future<void> save(SettingsNavigation navigation) => _storage.write({
+    'section': navigation.section.name,
+    'sidebarWidth': navigation.sidebarWidth,
+  });
 }

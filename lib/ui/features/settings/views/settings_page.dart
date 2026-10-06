@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../../domain/models/settings_navigation.dart';
 import '../../../core/breakpoints.dart';
 import '../../../core/window_chrome.dart';
+import '../../../core/zephyr_resize_handle.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../workspace/views/workspace_sidebar.dart';
 import '../models/settings_section.dart';
@@ -48,6 +50,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 final compact = ZephyrBreakpoints.isCompact(
                   constraints.maxWidth,
                 );
+                final maxSidebarWidth = _maxSidebarWidth(constraints.maxWidth);
+                final sidebarWidth = scope.settings.sidebarWidth.clamp(
+                  SettingsNavigation.minSidebarWidth,
+                  maxSidebarWidth,
+                );
                 final content = _SettingsBody(
                   compact: compact,
                   child: _buildSection(scope, section),
@@ -68,20 +75,38 @@ class _SettingsPageState extends State<SettingsPage> {
                     ],
                   );
                 }
-                return Column(
+                return Row(
                   children: [
-                    const _SettingsHeader(),
+                    SizedBox(
+                      width: sidebarWidth,
+                      child: Material(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerLowest,
+                        child: _SettingsNavigation(
+                          selected: section,
+                          onSelected: _select,
+                          onBack: () => Navigator.of(context).maybePop(),
+                        ),
+                      ),
+                    ),
+                    ZephyrResizeHandle(
+                      onDragStart: () =>
+                          scope.settings.setSidebarResizing(true),
+                      onDragUpdate: (delta) => scope.settings.resizeSidebar(
+                        (sidebarWidth + delta).clamp(
+                          SettingsNavigation.minSidebarWidth,
+                          maxSidebarWidth,
+                        ),
+                      ),
+                      onDragEnd: () => scope.settings.setSidebarResizing(false),
+                      onDragCancel: () =>
+                          scope.settings.setSidebarResizing(false),
+                    ),
                     Expanded(
-                      child: Row(
+                      child: Column(
                         children: [
-                          _SettingsNavigation(
-                            selected: section,
-                            onSelected: _select,
-                            onBack: () => Navigator.of(context).maybePop(),
-                          ),
-                          VerticalDivider(
-                            color: Theme.of(context).colorScheme.outlineVariant,
-                          ),
+                          const _SettingsHeader(),
                           Expanded(child: content),
                         ],
                       ),
@@ -124,6 +149,12 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         _ => _SettingsPlaceholder(section: section),
       };
+
+  double _maxSidebarWidth(double pageWidth) =>
+      (pageWidth - 480 - ZephyrResizeHandle.width).clamp(
+        SettingsNavigation.minSidebarWidth,
+        SettingsNavigation.maxSidebarWidth,
+      );
 }
 
 class _SettingsHeader extends StatelessWidget {
@@ -188,30 +219,37 @@ class _SettingsNavigation extends StatelessWidget {
   final VoidCallback onBack;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-    width: 250,
-    child: Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(14, 16, 14, 12),
-          child: TextField(
-            readOnly: true,
-            decoration: const InputDecoration(
-              prefixIcon: Icon(Icons.search, size: 19),
-              hintText: 'Search settings',
-            ),
+  Widget build(BuildContext context) => Column(
+    children: [
+      SizedBox(
+        height: WorkspaceHeader.height,
+        child: Row(
+          children: [
+            if (WindowChrome.leadingChromeInset > 0)
+              SizedBox(width: WindowChrome.leadingChromeInset),
+            const Expanded(child: WindowDragArea(child: SizedBox.expand())),
+          ],
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(14, 4, 14, 12),
+        child: TextField(
+          readOnly: true,
+          decoration: const InputDecoration(
+            prefixIcon: Icon(Icons.search, size: 19),
+            hintText: 'Search settings',
           ),
         ),
-        for (final section in SettingsSection.values)
-          _SettingsNavigationItem(
-            section: section,
-            selected: section == selected,
-            onTap: () => onSelected(section),
-          ),
-        const Spacer(),
-        _SettingsBackButton(onPressed: onBack),
-      ],
-    ),
+      ),
+      for (final section in SettingsSection.values)
+        _SettingsNavigationItem(
+          section: section,
+          selected: section == selected,
+          onTap: () => onSelected(section),
+        ),
+      const Spacer(),
+      _SettingsBackButton(onPressed: onBack),
+    ],
   );
 }
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../domain/models/purewriter_models.dart';
 import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_dropdown.dart';
+import '../../../core/zephyr_resize_handle.dart';
 import '../../editor/view_models/library_view_model.dart';
 
 enum SidebarMode { docked, drawer }
@@ -370,40 +371,21 @@ class SidebarResizeHandle extends StatelessWidget {
     required this.maxWidth,
   });
 
-  static const width = 6.0;
+  static const width = ZephyrResizeHandle.width;
 
   final LibraryViewModel model;
   final double maxWidth;
 
   @override
-  Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.outline;
-    return MouseRegion(
-      cursor: SystemMouseCursors.resizeColumn,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onHorizontalDragStart: (_) => model.setSidebarResizing(true),
-        onHorizontalDragUpdate: (details) => model.resizeSidebar(
-          (model.sidebarWidth + details.delta.dx).clamp(
-            LibraryViewModel.minSidebarWidth,
-            maxWidth,
-          ),
-        ),
-        onHorizontalDragEnd: (_) => model.setSidebarResizing(false),
-        onHorizontalDragCancel: () => model.setSidebarResizing(false),
-        child: SizedBox(
-          width: width,
-          child: Center(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: .55),
-                borderRadius: BorderRadius.circular(1),
-              ),
-              child: const SizedBox(width: 1),
-            ),
-          ),
-        ),
+  Widget build(BuildContext context) => ZephyrResizeHandle(
+    onDragStart: () => model.setSidebarResizing(true),
+    onDragUpdate: (delta) => model.resizeSidebar(
+      (model.sidebarWidth + delta).clamp(
+        LibraryViewModel.minSidebarWidth,
+        maxWidth,
       ),
-    );
-  }
+    ),
+    onDragEnd: () => model.setSidebarResizing(false),
+    onDragCancel: () => model.setSidebarResizing(false),
+  );
 }

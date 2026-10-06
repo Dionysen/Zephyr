@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/domain/models/editor_preferences.dart';
 import 'package:zephyr/domain/models/purewriter_models.dart';
-import 'package:zephyr/domain/models/settings_section.dart';
+import 'package:zephyr/domain/models/settings_navigation.dart';
 import 'package:zephyr/domain/models/theme_tokens.dart';
 import 'package:zephyr/domain/repositories/editor_preferences_repository.dart';
 import 'package:zephyr/domain/repositories/settings_navigation_repository.dart';
@@ -214,14 +214,14 @@ class _PreferencesRepository implements EditorPreferencesRepository {
 }
 
 class _SettingsRepository implements SettingsNavigationRepository {
-  SettingsSection section = SettingsSection.theme;
+  SettingsNavigation navigation = SettingsNavigation.defaults;
 
   @override
-  Future<SettingsSection> load() async => section;
+  Future<SettingsNavigation> load() async => navigation;
 
   @override
-  Future<void> save(SettingsSection section) async {
-    this.section = section;
+  Future<void> save(SettingsNavigation navigation) async {
+    this.navigation = navigation;
   }
 }
 

@@ -1,6 +1,6 @@
-import '../models/settings_section.dart';
+import '../models/settings_navigation.dart';
 
 abstract interface class SettingsNavigationRepository {
-  Future<SettingsSection> load();
-  Future<void> save(SettingsSection section);
+  Future<SettingsNavigation> load();
+  Future<void> save(SettingsNavigation navigation);
 }
