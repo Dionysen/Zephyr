@@ -24,6 +24,8 @@ class LibraryViewModel extends ChangeNotifier {
   bool _isSidebarExpanded = true;
   bool _isResizingSidebar = false;
   double _sidebarWidth = WorkspaceLayout.defaults.sidebarWidth;
+  String? _lastLibraryRoot;
+  String? _lastLibraryBookmark;
   final Set<String> _expandedVolumeIds = <String>{};
   String? _selectedBookId;
   static const minSidebarWidth = WorkspaceLayout.minSidebarWidth;
@@ -109,9 +111,14 @@ class LibraryViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> openLibrary(String rootPath) async {
+  Future<void> openLibrary(String rootPath, {String? bookmark}) async {
     try {
       await _repository.openLibrary(rootPath);
+      _lastLibraryRoot = _repository.location?.rootPath ?? rootPath;
+      if (bookmark != null) {
+        _lastLibraryBookmark = bookmark;
+      }
+      await _saveLayout();
       _expandedVolumeIds.clear();
       await load();
     } on Object catch (error) {
@@ -188,6 +195,8 @@ class LibraryViewModel extends ChangeNotifier {
     try {
       final layout = await layoutRepository.load();
       _sidebarWidth = layout.sidebarWidth;
+      _lastLibraryRoot = layout.lastLibraryRoot;
+      _lastLibraryBookmark = layout.lastLibraryBookmark;
     } on Object {
       // Layout preferences must not block a writing session.
     }
@@ -206,7 +215,11 @@ class LibraryViewModel extends ChangeNotifier {
   Future<void> _saveLayout() async {
     try {
       await _layoutRepository?.save(
-        WorkspaceLayout(sidebarWidth: _sidebarWidth),
+        WorkspaceLayout(
+          sidebarWidth: _sidebarWidth,
+          lastLibraryRoot: _lastLibraryRoot,
+          lastLibraryBookmark: _lastLibraryBookmark,
+        ),
       );
     } on Object {
       // The in-memory width remains usable if layout storage is unavailable.

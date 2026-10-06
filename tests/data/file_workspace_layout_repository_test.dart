@@ -15,10 +15,18 @@ void main() {
       WorkspaceLayoutFileStorage(directoryProvider: () async => directory),
     );
 
-    await repository.save(const WorkspaceLayout(sidebarWidth: 412));
+    await repository.save(
+      const WorkspaceLayout(
+        sidebarWidth: 412,
+        lastLibraryRoot: '/lib/a',
+        lastLibraryBookmark: 'bookmark-data',
+      ),
+    );
     final actual = await repository.load();
 
     expect(actual.sidebarWidth, 412);
+    expect(actual.lastLibraryRoot, '/lib/a');
+    expect(actual.lastLibraryBookmark, 'bookmark-data');
   });
 
   test('clamps an out-of-range stored width', () async {

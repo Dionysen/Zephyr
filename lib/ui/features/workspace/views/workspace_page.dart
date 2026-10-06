@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+
+import '../../../../data/services/folder_bookmark.dart';
 
 import '../../../core/breakpoints.dart';
 import '../../../core/zephyr_scope.dart';
@@ -143,10 +147,26 @@ class _WorkspacePageState extends State<WorkspacePage> {
   }
 
   Future<void> _openLibrary() async {
-    final root = await FilePicker.getDirectoryPath();
-    if (root != null && mounted) {
-      await ZephyrScope.of(context).library.openLibrary(root);
+    final picked = await _pickLibraryFolder();
+    if (picked != null && mounted) {
+      await ZephyrScope.of(context).library
+          .openLibrary(picked.path, bookmark: picked.bookmark);
     }
+  }
+
+  Future<PickedLibraryFolder?> _pickLibraryFolder() async {
+    if (Platform.isMacOS) {
+      try {
+        return await FolderBookmarkAccess().pickDirectory();
+      } on Object {
+        // Native folder chrome is optional in tests and unsupported embeds.
+      }
+    }
+    final root = await FilePicker.getDirectoryPath();
+    if (root == null) {
+      return null;
+    }
+    return PickedLibraryFolder(path: root);
   }
 
   void _openSettings() {

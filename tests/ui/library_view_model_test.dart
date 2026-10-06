@@ -36,6 +36,18 @@ void main() {
     expect(model.isSidebarExpanded, isTrue);
   });
 
+  test('remembers the last opened library folder', () async {
+    final library = FakeLibraryRepository();
+    final layout = FakeLayoutRepository(WorkspaceLayout.defaults);
+    final model = LibraryViewModel(library, layoutRepository: layout);
+
+    await model.openLibrary('/writing/book', bookmark: 'bookmark-data');
+
+    expect(library.openedRoot, '/writing/book');
+    expect(layout.layout.lastLibraryRoot, '/writing/book');
+    expect(layout.layout.lastLibraryBookmark, 'bookmark-data');
+  });
+
   test('loads a previously saved sidebar width', () async {
     final model = LibraryViewModel(
       FakeLibraryRepository(),
@@ -136,11 +148,25 @@ class FakeLibraryRepository implements WritingLibraryRepository {
     saved = article;
   }
 
+  String? openedRoot;
+  LibraryLocation? _location;
+
   @override
-  LibraryLocation? get location => null;
+  LibraryLocation? get location => _location;
   @override
-  Future<LibraryLocation> openLibrary(String rootPath) =>
-      throw UnimplementedError();
+  Future<LibraryLocation> openLibrary(String rootPath) async {
+    openedRoot = rootPath;
+    _location = LibraryLocation(
+      rootPath: rootPath,
+      schema: const SchemaStatus(
+        userVersion: 27,
+        identityHash: 'test',
+        writesAllowed: true,
+      ),
+    );
+    return _location!;
+  }
+
   @override
   Future<void> closeLibrary() async {}
   @override

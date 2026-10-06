@@ -12,6 +12,7 @@ import '../data/services/editor_preferences_file_storage.dart';
 import '../data/services/purewriter_database.dart';
 import '../data/services/theme_file_storage.dart';
 import '../data/services/workspace_layout_file_storage.dart';
+import '../domain/repositories/workspace_layout_repository.dart';
 import '../ui/core/window_chrome.dart';
 import '../ui/core/zephyr_scope.dart';
 import '../ui/core/zephyr_theme.dart';
@@ -20,15 +21,20 @@ import '../ui/features/editor/view_models/library_view_model.dart';
 import '../ui/features/settings/view_models/theme_view_model.dart';
 import '../ui/features/workspace/views/workspace_page.dart';
 
-void runZephyr(PureWriterDatabase database, {Object? startupError}) {
+void runZephyr(
+  PureWriterDatabase database, {
+  Object? startupError,
+  WorkspaceLayoutRepository? layoutRepository,
+}) {
+  final layout =
+      layoutRepository ??
+      FileWorkspaceLayoutRepository(WorkspaceLayoutFileStorage());
   runApp(
     ZephyrApp(
       library: LibraryViewModel(
         PureWriterWritingLibraryRepository(database),
         initialError: startupError,
-        layoutRepository: FileWorkspaceLayoutRepository(
-          WorkspaceLayoutFileStorage(),
-        ),
+        layoutRepository: layout,
       ),
       theme: ThemeViewModel(FileThemePreferencesRepository(ThemeFileStorage()))
         ..load(),

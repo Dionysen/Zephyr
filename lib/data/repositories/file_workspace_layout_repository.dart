@@ -14,13 +14,25 @@ class FileWorkspaceLayoutRepository implements WorkspaceLayoutRepository {
       return WorkspaceLayout.defaults;
     }
     final width = values['sidebarWidth'];
-    if (width is! num) {
-      throw const FormatException('Invalid sidebarWidth preference.');
-    }
-    return WorkspaceLayout.clamped(width.toDouble());
+    final lastRoot = values['lastLibraryRoot'];
+    final bookmark = values['lastLibraryBookmark'];
+    return WorkspaceLayout(
+      sidebarWidth: width is num
+          ? WorkspaceLayout.clamped(width.toDouble()).sidebarWidth
+          : WorkspaceLayout.defaultSidebarWidth,
+      lastLibraryRoot: lastRoot is String && lastRoot.isNotEmpty
+          ? lastRoot
+          : null,
+      lastLibraryBookmark: bookmark is String && bookmark.isNotEmpty
+          ? bookmark
+          : null,
+    );
   }
 
   @override
-  Future<void> save(WorkspaceLayout layout) =>
-      _storage.write({'sidebarWidth': layout.sidebarWidth});
+  Future<void> save(WorkspaceLayout layout) => _storage.write({
+    'sidebarWidth': layout.sidebarWidth,
+    'lastLibraryRoot': layout.lastLibraryRoot,
+    'lastLibraryBookmark': layout.lastLibraryBookmark,
+  });
 }
