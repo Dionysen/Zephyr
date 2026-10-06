@@ -54,4 +54,10 @@ class SystemFont {
   const SystemFont({required this.family, required this.path});
   final String family;
   final String path;
+
+  @override
+  bool operator ==(Object other) => other is SystemFont && other.path == path;
+
+  @override
+  int get hashCode => path.hashCode;
 }

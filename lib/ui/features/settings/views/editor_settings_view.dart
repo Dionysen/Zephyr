@@ -53,21 +53,9 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
                 'No system fonts were found. The platform default will be used.',
               )
             else
-              DropdownButtonFormField<SystemFont>(
-                initialValue: selectedFont,
-                isExpanded: true,
-                decoration: const InputDecoration(labelText: 'System font'),
-                hint: const Text('Platform default'),
-                items: [
-                  const DropdownMenuItem<SystemFont>(
-                    value: null,
-                    child: Text('Platform default'),
-                  ),
-                  ...viewModel.systemFonts.map(
-                    (font) =>
-                        DropdownMenuItem(value: font, child: Text(font.family)),
-                  ),
-                ],
+              _FontPickerField(
+                fonts: viewModel.systemFonts,
+                selected: selectedFont,
                 onChanged: viewModel.selectFont,
               ),
             const SizedBox(height: 18),
@@ -118,6 +106,134 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
       );
     },
   );
+}
+
+class _FontPickerField extends StatelessWidget {
+  const _FontPickerField({
+    required this.fonts,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final List<SystemFont> fonts;
+  final SystemFont? selected;
+  final ValueChanged<SystemFont?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return InputDecorator(
+      decoration: const InputDecoration(labelText: 'System font'),
+      child: InkWell(
+        onTap: () => _openPicker(context),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                selected?.family ?? 'Platform default',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const Icon(Icons.arrow_drop_down),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openPicker(BuildContext context) async {
+    final result = await showDialog<_FontPick>(
+      context: context,
+      builder: (context) => _FontPickerDialog(fonts: fonts, selected: selected),
+    );
+    if (result == null) {
+      return;
+    }
+    onChanged(result.font);
+  }
+}
+
+class _FontPick {
+  const _FontPick(this.font);
+  final SystemFont? font;
+}
+
+class _FontPickerDialog extends StatefulWidget {
+  const _FontPickerDialog({required this.fonts, required this.selected});
+
+  final List<SystemFont> fonts;
+  final SystemFont? selected;
+
+  @override
+  State<_FontPickerDialog> createState() => _FontPickerDialogState();
+}
+
+class _FontPickerDialogState extends State<_FontPickerDialog> {
+  final _query = TextEditingController();
+
+  @override
+  void dispose() {
+    _query.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final needle = _query.text.trim().toLowerCase();
+    final matches = needle.isEmpty
+        ? widget.fonts
+        : widget.fonts
+              .where((font) => font.family.toLowerCase().contains(needle))
+              .toList();
+    return AlertDialog(
+      title: const Text('System font'),
+      content: SizedBox(
+        width: 420,
+        height: 480,
+        child: Column(
+          children: [
+            TextField(
+              controller: _query,
+              autofocus: true,
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.search),
+                hintText: 'Search fonts',
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: ListView.builder(
+                itemCount: matches.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return ListTile(
+                      title: const Text('Platform default'),
+                      selected: widget.selected == null,
+                      onTap: () =>
+                          Navigator.pop(context, const _FontPick(null)),
+                    );
+                  }
+                  final font = matches[index - 1];
+                  return ListTile(
+                    title: Text(font.family),
+                    selected: font.path == widget.selected?.path,
+                    onTap: () => Navigator.pop(context, _FontPick(font)),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+      ],
+    );
+  }
 }
 
 class _EditorSlider extends StatelessWidget {

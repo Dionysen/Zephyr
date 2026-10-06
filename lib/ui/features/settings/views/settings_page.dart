@@ -39,29 +39,29 @@ class _SettingsPageState extends State<SettingsPage> {
             if (compact) {
               return Column(
                 children: [
-                  _SettingsHeader(
-                    onClose: () => Navigator.of(context).maybePop(),
-                  ),
+                  const _SettingsHeader(),
                   _CompactSettingsNavigation(
                     selected: _section,
                     onSelected: _select,
                   ),
                   const Divider(),
                   Expanded(child: content),
+                  _SettingsBackButton(
+                    onPressed: () => Navigator.of(context).maybePop(),
+                  ),
                 ],
               );
             }
             return Column(
               children: [
-                _SettingsHeader(
-                  onClose: () => Navigator.of(context).maybePop(),
-                ),
+                const _SettingsHeader(),
                 Expanded(
                   child: Row(
                     children: [
                       _SettingsNavigation(
                         selected: _section,
                         onSelected: _select,
+                        onBack: () => Navigator.of(context).maybePop(),
                       ),
                       VerticalDivider(
                         color: Theme.of(context).colorScheme.outlineVariant,
@@ -105,9 +105,7 @@ class _SettingsPageState extends State<SettingsPage> {
 }
 
 class _SettingsHeader extends StatelessWidget {
-  const _SettingsHeader({required this.onClose});
-
-  final VoidCallback onClose;
+  const _SettingsHeader();
 
   @override
   Widget build(BuildContext context) {
@@ -118,15 +116,10 @@ class _SettingsHeader extends StatelessWidget {
         height: WorkspaceHeader.height,
         child: Stack(
           children: [
-            Row(
+            const Row(
               children: [
-                const Expanded(child: WindowDragArea(child: SizedBox.expand())),
-                IconButton(
-                  onPressed: onClose,
-                  icon: const Icon(Icons.close),
-                  tooltip: 'Close settings',
-                ),
-                const WindowCaptionButtons(),
+                Expanded(child: WindowDragArea(child: SizedBox.expand())),
+                WindowCaptionButtons(),
               ],
             ),
             IgnorePointer(
@@ -162,10 +155,15 @@ class _SettingsBody extends StatelessWidget {
 }
 
 class _SettingsNavigation extends StatelessWidget {
-  const _SettingsNavigation({required this.selected, required this.onSelected});
+  const _SettingsNavigation({
+    required this.selected,
+    required this.onSelected,
+    required this.onBack,
+  });
 
   final SettingsSection selected;
   final ValueChanged<SettingsSection> onSelected;
+  final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -189,6 +187,7 @@ class _SettingsNavigation extends StatelessWidget {
             onTap: () => onSelected(section),
           ),
         const Spacer(),
+        _SettingsBackButton(onPressed: onBack),
       ],
     ),
   );
@@ -274,6 +273,26 @@ class _SettingsNavigationItem extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    ),
+  );
+}
+
+class _SettingsBackButton extends StatelessWidget {
+  const _SettingsBackButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
+    child: SizedBox(
+      width: double.infinity,
+      height: 40,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: const Icon(Icons.arrow_back),
+        label: const Text('Back'),
       ),
     ),
   );

@@ -1,4 +1,5 @@
 import Cocoa
+import CoreText
 import FlutterMacOS
 
 class MainFlutterWindow: NSWindow {
@@ -17,6 +18,7 @@ class MainFlutterWindow: NSWindow {
     RegisterGeneratedPlugins(registry: flutterViewController)
     registerFolderBookmarkChannel(flutterViewController)
     registerWindowChromeChannel(flutterViewController)
+    registerSystemFontsChannel(flutterViewController)
 
     super.awakeFromNib()
   }
@@ -68,6 +70,81 @@ class MainFlutterWindow: NSWindow {
       "centerY": Double(centerY),
       "leading": Double(leading),
     ]
+  }
+
+  private func registerSystemFontsChannel(
+    _ controller: FlutterViewController
+  ) {
+    let channel = FlutterMethodChannel(
+      name: "zephyr/system_fonts",
+      binaryMessenger: controller.engine.binaryMessenger
+    )
+    channel.setMethodCallHandler { [weak self] call, result in
+      guard let self else {
+        result(
+          FlutterError(
+            code: "unavailable",
+            message: "Window was released.",
+            details: nil
+          )
+        )
+        return
+      }
+      switch call.method {
+      case "listFonts":
+        DispatchQueue.global(qos: .userInitiated).async {
+          let fonts = self.listSystemFonts()
+          DispatchQueue.main.async { result(fonts) }
+        }
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+  }
+
+  /// Families from the macOS font registry, including .ttc collections and
+  /// user fonts, with a file path Flutter can register.
+  private func listSystemFonts() -> [[String: String]] {
+    let manager = NSFontManager.shared
+    var fonts: [[String: String]] = []
+    var seen = Set<String>()
+    for family in manager.availableFontFamilies.sorted() {
+      if family.hasPrefix(".") || !seen.insert(family.lowercased()).inserted {
+        continue
+      }
+      guard let font = representativeFont(in: family),
+            let url = CTFontCopyAttribute(font, kCTFontURLAttribute) as? URL
+      else {
+        continue
+      }
+      let path = url.path
+      guard !path.isEmpty, FileManager.default.isReadableFile(atPath: path)
+      else {
+        continue
+      }
+      fonts.append(["family": family, "path": path])
+    }
+    return fonts
+  }
+
+  private func representativeFont(in family: String) -> CTFont? {
+    let manager = NSFontManager.shared
+    if let font = manager.font(
+      withFamily: family,
+      traits: [],
+      weight: 5,
+      size: 12
+    ) {
+      return font as CTFont
+    }
+    guard let members = manager.availableMembers(ofFontFamily: family),
+          let first = members.first,
+          let postScript = first.first as? String,
+          let font = NSFont(name: postScript, size: 12)
+    else {
+      return nil
+    }
+    return font as CTFont
   }
 
   private func registerFolderBookmarkChannel(
