@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/domain/models/purewriter_models.dart';
+import 'package:zephyr/domain/models/workspace_layout.dart';
+import 'package:zephyr/domain/repositories/workspace_layout_repository.dart';
 import 'package:zephyr/domain/repositories/writing_library_repository.dart';
 import 'package:zephyr/ui/features/editor/view_models/library_view_model.dart';
 
@@ -33,6 +35,34 @@ void main() {
     model.toggleSidebar();
     expect(model.isSidebarExpanded, isTrue);
   });
+
+  test('loads a previously saved sidebar width', () async {
+    final model = LibraryViewModel(
+      FakeLibraryRepository(),
+      layoutRepository: FakeLayoutRepository(
+        const WorkspaceLayout(sidebarWidth: 412),
+      ),
+    );
+
+    await model.load();
+
+    expect(model.sidebarWidth, 412);
+  });
+
+  test(
+    'toggleAllVolumes expands or collapses every volume in the book',
+    () async {
+      final model = LibraryViewModel(FakeLibraryRepository());
+      await model.load();
+
+      expect(model.areAllVolumesExpanded, isTrue);
+      model.toggleAllVolumes();
+      expect(model.areAllVolumesExpanded, isFalse);
+      expect(model.isVolumeExpanded('volume-a'), isFalse);
+      model.toggleAllVolumes();
+      expect(model.areAllVolumesExpanded, isTrue);
+    },
+  );
 }
 
 class FakeLibraryRepository implements WritingLibraryRepository {
@@ -133,4 +163,18 @@ class FakeLibraryRepository implements WritingLibraryRepository {
   Future<Map<String, double>> readScrolls() async => const {};
   @override
   Future<void> writeScroll(String articleId, double offset) async {}
+}
+
+class FakeLayoutRepository implements WorkspaceLayoutRepository {
+  FakeLayoutRepository(this.layout);
+
+  WorkspaceLayout layout;
+
+  @override
+  Future<WorkspaceLayout> load() async => layout;
+
+  @override
+  Future<void> save(WorkspaceLayout layout) async {
+    this.layout = layout;
+  }
 }

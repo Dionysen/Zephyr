@@ -59,6 +59,7 @@ class _WorkspacePageState extends State<WorkspacePage> {
             return Scaffold(
               drawer: compact
                   ? Drawer(
+                      width: model.sidebarWidth,
                       child: SafeArea(
                         child: WorkspaceSidebar(
                           model: model,
@@ -83,18 +84,21 @@ class _WorkspacePageState extends State<WorkspacePage> {
                         ],
                       )
                     : Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           AnimatedContainer(
-                            duration: const Duration(milliseconds: 180),
+                            duration: model.isResizingSidebar
+                                ? Duration.zero
+                                : const Duration(milliseconds: 180),
                             curve: Curves.easeOutCubic,
                             width: model.isSidebarExpanded
-                                ? WorkspaceSidebar.width
+                                ? model.sidebarWidth
                                 : 0,
                             child: ClipRect(
                               child: OverflowBox(
                                 alignment: Alignment.topLeft,
-                                minWidth: WorkspaceSidebar.width,
-                                maxWidth: WorkspaceSidebar.width,
+                                minWidth: model.sidebarWidth,
+                                maxWidth: model.sidebarWidth,
                                 child: WorkspaceSidebar(
                                   model: model,
                                   mode: SidebarMode.docked,
@@ -104,6 +108,11 @@ class _WorkspacePageState extends State<WorkspacePage> {
                               ),
                             ),
                           ),
+                          if (model.isSidebarExpanded)
+                            SidebarResizeHandle(
+                              model: model,
+                              maxWidth: _maxSidebarWidth(constraints.maxWidth),
+                            ),
                           Expanded(
                             child: Stack(
                               children: [
@@ -143,6 +152,14 @@ class _WorkspacePageState extends State<WorkspacePage> {
   void _openSettings() {
     Navigator.of(context)
         .push(MaterialPageRoute<void>(builder: (_) => const SettingsPage()));
+  }
+
+  double _maxSidebarWidth(double workspaceWidth) {
+    final available = workspaceWidth - 360 - SidebarResizeHandle.width;
+    return available.clamp(
+      LibraryViewModel.minSidebarWidth,
+      LibraryViewModel.maxSidebarWidth,
+    );
   }
 }
 

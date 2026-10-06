@@ -23,9 +23,10 @@ void main() {
     await tester.pumpWidget(_app());
     await tester.pumpAndSettle();
 
-    expect(find.text('Book A'), findsOneWidget);
-    expect(find.byTooltip('Hide sidebar'), findsOneWidget);
-    expect(find.byTooltip('Open library'), findsNothing);
+    await tester.tap(find.byTooltip('Collapse all'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Expand all'), findsOneWidget);
+    expect(find.text('Volume A'), findsOneWidget);
   });
 
   testWidgets('compact layout uses a drawer instead of a second workspace', (
@@ -41,10 +42,12 @@ void main() {
 
     expect(find.byTooltip('Open library'), findsOneWidget);
     expect(find.byTooltip('Hide sidebar'), findsNothing);
+    expect(find.byTooltip('Collapse all'), findsNothing);
 
     await tester.tap(find.byTooltip('Open library'));
     await tester.pumpAndSettle();
     expect(find.text('Book A'), findsOneWidget);
+    expect(find.byTooltip('Collapse all'), findsOneWidget);
   });
 
   testWidgets('settings open as an in-app route on every layout', (

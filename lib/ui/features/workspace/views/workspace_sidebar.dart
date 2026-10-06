@@ -15,8 +15,6 @@ class WorkspaceSidebar extends StatelessWidget {
     required this.openSettings,
   });
 
-  static const width = 334.0;
-
   final LibraryViewModel model;
   final SidebarMode mode;
   final Future<void> Function() openLibrary;
@@ -47,11 +45,27 @@ class WorkspaceSidebar extends StatelessWidget {
           ),
           _BookPicker(model: model, library: model.library!),
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: IconButton(
-              onPressed: model.isReadOnly ? null : model.createArticle,
-              icon: const Icon(Icons.note_add_outlined),
-              tooltip: 'New chapter',
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+            child: Row(
+              children: [
+                IconButton(
+                  onPressed: model.hasVolumes ? model.toggleAllVolumes : null,
+                  icon: Icon(
+                    model.areAllVolumesExpanded
+                        ? Icons.unfold_less
+                        : Icons.unfold_more,
+                  ),
+                  tooltip: model.areAllVolumesExpanded
+                      ? 'Collapse all'
+                      : 'Expand all',
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: model.isReadOnly ? null : model.createArticle,
+                  icon: const Icon(Icons.note_add_outlined),
+                  tooltip: 'New chapter',
+                ),
+              ],
             ),
           ),
           Expanded(
@@ -337,3 +351,48 @@ class _LibraryDock extends StatelessWidget {
 }
 
 enum _LooseChapters { label }
+
+class SidebarResizeHandle extends StatelessWidget {
+  const SidebarResizeHandle({
+    super.key,
+    required this.model,
+    required this.maxWidth,
+  });
+
+  static const width = 6.0;
+
+  final LibraryViewModel model;
+  final double maxWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.outline;
+    return MouseRegion(
+      cursor: SystemMouseCursors.resizeColumn,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onHorizontalDragStart: (_) => model.setSidebarResizing(true),
+        onHorizontalDragUpdate: (details) => model.resizeSidebar(
+          (model.sidebarWidth + details.delta.dx).clamp(
+            LibraryViewModel.minSidebarWidth,
+            maxWidth,
+          ),
+        ),
+        onHorizontalDragEnd: (_) => model.setSidebarResizing(false),
+        onHorizontalDragCancel: () => model.setSidebarResizing(false),
+        child: SizedBox(
+          width: width,
+          child: Center(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: .55),
+                borderRadius: BorderRadius.circular(1),
+              ),
+              child: const SizedBox(width: 1),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

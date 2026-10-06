@@ -6,10 +6,12 @@ import 'package:window_manager/window_manager.dart';
 import '../data/repositories/file_editor_preferences_repository.dart';
 import '../data/repositories/file_system_font_repository.dart';
 import '../data/repositories/file_theme_preferences_repository.dart';
+import '../data/repositories/file_workspace_layout_repository.dart';
 import '../data/repositories/purewriter_writing_library_repository.dart';
 import '../data/services/editor_preferences_file_storage.dart';
 import '../data/services/purewriter_database.dart';
 import '../data/services/theme_file_storage.dart';
+import '../data/services/workspace_layout_file_storage.dart';
 import '../ui/core/window_chrome.dart';
 import '../ui/core/zephyr_scope.dart';
 import '../ui/core/zephyr_theme.dart';
@@ -24,6 +26,9 @@ void runZephyr(PureWriterDatabase database, {Object? startupError}) {
       library: LibraryViewModel(
         PureWriterWritingLibraryRepository(database),
         initialError: startupError,
+        layoutRepository: FileWorkspaceLayoutRepository(
+          WorkspaceLayoutFileStorage(),
+        ),
       ),
       theme: ThemeViewModel(FileThemePreferencesRepository(ThemeFileStorage()))
         ..load(),
