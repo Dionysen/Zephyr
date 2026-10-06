@@ -20,6 +20,7 @@ class WorkspaceEditor extends StatefulWidget {
 
 class _WorkspaceEditorState extends State<WorkspaceEditor> {
   final _controller = TextEditingController();
+  final _scrollController = ScrollController();
   String? _articleId;
   int? _indent;
 
@@ -44,6 +45,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   void dispose() {
     widget.preferences.removeListener(_onPreferences);
     _controller.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -87,54 +89,74 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
       );
     }
     final preferences = widget.preferences.preferences;
-    return Stack(
-      children: [
-        SizedBox.expand(
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: preferences.maxContentWidth,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(42, 28, 42, 42),
-                child: TextField(
-                  controller: _controller,
-                  expands: true,
-                  maxLines: null,
-                  minLines: null,
-                  readOnly: widget.model.isReadOnly,
-                  textAlignVertical: TextAlignVertical.top,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontFamily: preferences.fontFamily,
-                    fontSize: preferences.fontSize,
-                    height:
-                        preferences.lineHeight +
-                        preferences.paragraphSpacing / preferences.fontSize,
+    return MouseRegion(
+      cursor: SystemMouseCursors.text,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final horizontal =
+                    ((constraints.maxWidth - preferences.maxContentWidth) / 2)
+                        .clamp(42.0, double.infinity);
+                return Scrollbar(
+                  controller: _scrollController,
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    primary: false,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                        minWidth: constraints.maxWidth,
+                      ),
+                      child: TextField(
+                        controller: _controller,
+                        maxLines: null,
+                        readOnly: widget.model.isReadOnly,
+                        mouseCursor: SystemMouseCursors.text,
+                        textAlignVertical: TextAlignVertical.top,
+                        keyboardType: TextInputType.multiline,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontFamily: preferences.fontFamily,
+                          fontSize: preferences.fontSize,
+                          height:
+                              preferences.lineHeight +
+                              preferences.paragraphSpacing /
+                                  preferences.fontSize,
+                        ),
+                        decoration: InputDecoration(
+                          filled: false,
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          contentPadding: EdgeInsets.fromLTRB(
+                            horizontal,
+                            28,
+                            horizontal,
+                            48,
+                          ),
+                          hintText: 'Start writing...',
+                        ),
+                        onChanged: widget.model.isReadOnly ? null : _onChanged,
+                      ),
+                    ),
                   ),
-                  decoration: const InputDecoration(
-                    filled: false,
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
-                    hintText: 'Start writing...',
-                  ),
-                  onChanged: widget.model.isReadOnly ? null : _onChanged,
-                ),
+                );
+              },
+            ),
+          ),
+          Positioned(
+            right: 18,
+            bottom: 14,
+            child: IgnorePointer(
+              child: Text(
+                '${article.content.runes.length} characters',
+                style: Theme.of(context).textTheme.labelMedium,
               ),
             ),
           ),
-        ),
-        Positioned(
-          right: 18,
-          bottom: 14,
-          child: Text(
-            '${article.content.runes.length} characters',
-            style: Theme.of(context).textTheme.labelMedium,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
