@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../features/editor/view_models/editor_preferences_view_model.dart';
 import '../features/editor/view_models/library_view_model.dart';
+import '../features/settings/view_models/settings_view_model.dart';
 import '../features/settings/view_models/theme_view_model.dart';
 
 /// Application-scoped view models. Feature widgets read this instead of
@@ -12,12 +13,14 @@ class ZephyrScope extends InheritedWidget {
     required this.library,
     required this.theme,
     required this.editorPreferences,
+    required this.settings,
     required super.child,
   });
 
   final LibraryViewModel library;
   final ThemeViewModel theme;
   final EditorPreferencesViewModel editorPreferences;
+  final SettingsViewModel settings;
 
   static ZephyrScope of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<ZephyrScope>();
@@ -29,5 +32,6 @@ class ZephyrScope extends InheritedWidget {
   bool updateShouldNotify(ZephyrScope oldWidget) =>
       library != oldWidget.library ||
       theme != oldWidget.theme ||
-      editorPreferences != oldWidget.editorPreferences;
+      editorPreferences != oldWidget.editorPreferences ||
+      settings != oldWidget.settings;
 }

@@ -20,88 +20,110 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  var _section = SettingsSection.theme;
   var _editingTokens = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _ensureEditorFonts(ZephyrScope.of(context));
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final scope = ZephyrScope.of(context);
-    return Scaffold(
-      body: SafeArea(
-        top: !WindowChrome.isDesktop,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final compact = ZephyrBreakpoints.isCompact(constraints.maxWidth);
-            final content = _SettingsBody(
-              compact: compact,
-              child: _buildSection(scope),
-            );
-            if (compact) {
-              return Column(
-                children: [
-                  const _SettingsHeader(),
-                  _CompactSettingsNavigation(
-                    selected: _section,
-                    onSelected: _select,
-                  ),
-                  const Divider(),
-                  Expanded(child: content),
-                  _SettingsBackButton(
-                    onPressed: () => Navigator.of(context).maybePop(),
-                  ),
-                ],
-              );
-            }
-            return Column(
-              children: [
-                const _SettingsHeader(),
-                Expanded(
-                  child: Row(
+    return ListenableBuilder(
+      listenable: scope.settings,
+      builder: (context, _) {
+        final section = scope.settings.section;
+        return Scaffold(
+          body: SafeArea(
+            top: !WindowChrome.isDesktop,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = ZephyrBreakpoints.isCompact(
+                  constraints.maxWidth,
+                );
+                final content = _SettingsBody(
+                  compact: compact,
+                  child: _buildSection(scope, section),
+                );
+                if (compact) {
+                  return Column(
                     children: [
-                      _SettingsNavigation(
-                        selected: _section,
+                      const _SettingsHeader(),
+                      _CompactSettingsNavigation(
+                        selected: section,
                         onSelected: _select,
-                        onBack: () => Navigator.of(context).maybePop(),
                       ),
-                      VerticalDivider(
-                        color: Theme.of(context).colorScheme.outlineVariant,
-                      ),
+                      const Divider(),
                       Expanded(child: content),
+                      _SettingsBackButton(
+                        onPressed: () => Navigator.of(context).maybePop(),
+                      ),
                     ],
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
+                  );
+                }
+                return Column(
+                  children: [
+                    const _SettingsHeader(),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          _SettingsNavigation(
+                            selected: section,
+                            onSelected: _select,
+                            onBack: () => Navigator.of(context).maybePop(),
+                          ),
+                          VerticalDivider(
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                          ),
+                          Expanded(child: content),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 
   void _select(SettingsSection section) {
-    setState(() {
-      _section = section;
-      _editingTokens = false;
-    });
-    if (section == SettingsSection.editor) {
-      unawaited(ZephyrScope.of(context).editorPreferences.loadSystemFonts());
+    setState(() => _editingTokens = false);
+    final scope = ZephyrScope.of(context);
+    scope.settings.select(section);
+    _ensureEditorFonts(scope);
+  }
+
+  void _ensureEditorFonts(ZephyrScope scope) {
+    if (scope.settings.section == SettingsSection.editor) {
+      unawaited(scope.editorPreferences.loadSystemFonts());
     }
   }
 
-  Widget _buildSection(ZephyrScope scope) => switch (_section) {
-    SettingsSection.theme when _editingTokens => ThemeTokenEditor(
-      viewModel: scope.theme,
-      onBack: () => setState(() => _editingTokens = false),
-    ),
-    SettingsSection.theme => ThemeCatalog(
-      viewModel: scope.theme,
-      onCustomize: () => setState(() => _editingTokens = true),
-    ),
-    SettingsSection.editor => EditorSettingsView(
-      viewModel: scope.editorPreferences,
-    ),
-    _ => _SettingsPlaceholder(section: _section),
-  };
+  Widget _buildSection(ZephyrScope scope, SettingsSection section) =>
+      switch (section) {
+        SettingsSection.theme when _editingTokens => ThemeTokenEditor(
+          viewModel: scope.theme,
+          onBack: () => setState(() => _editingTokens = false),
+        ),
+        SettingsSection.theme => ThemeCatalog(
+          viewModel: scope.theme,
+          onCustomize: () => setState(() => _editingTokens = true),
+        ),
+        SettingsSection.editor => EditorSettingsView(
+          viewModel: scope.editorPreferences,
+        ),
+        _ => _SettingsPlaceholder(section: section),
+      };
 }
 
 class _SettingsHeader extends StatelessWidget {

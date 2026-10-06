@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-enum SettingsSection { general, cloud, editor, shortcuts, theme, about }
+import '../../../../domain/models/settings_section.dart';
+
+export '../../../../domain/models/settings_section.dart';
 
 extension SettingsSectionLabels on SettingsSection {
   String get title => switch (this) {

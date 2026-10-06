@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/domain/models/editor_preferences.dart';
 import 'package:zephyr/domain/models/purewriter_models.dart';
+import 'package:zephyr/domain/models/settings_section.dart';
 import 'package:zephyr/domain/models/theme_tokens.dart';
 import 'package:zephyr/domain/repositories/editor_preferences_repository.dart';
+import 'package:zephyr/domain/repositories/settings_navigation_repository.dart';
 import 'package:zephyr/domain/repositories/theme_preferences_repository.dart';
 import 'package:zephyr/domain/repositories/writing_library_repository.dart';
 import 'package:zephyr/ui/core/zephyr_scope.dart';
 import 'package:zephyr/ui/core/zephyr_theme.dart';
 import 'package:zephyr/ui/features/editor/view_models/editor_preferences_view_model.dart';
 import 'package:zephyr/ui/features/editor/view_models/library_view_model.dart';
+import 'package:zephyr/ui/features/settings/view_models/settings_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/theme_view_model.dart';
 import 'package:zephyr/ui/features/workspace/views/workspace_page.dart';
 
@@ -67,6 +70,30 @@ void main() {
     expect(find.text('Appearance'), findsOneWidget);
     expect(find.text('Theme'), findsWidgets);
   });
+
+  testWidgets('settings restore the last opened group', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Editor').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Font size'), findsOneWidget);
+
+    await tester.tap(find.text('Back'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Font size'), findsOneWidget);
+    expect(find.text('Appearance'), findsNothing);
+  });
 }
 
 Widget _app() {
@@ -76,10 +103,12 @@ Widget _app() {
     _PreferencesRepository(),
     _FontRepository(),
   );
+  final settings = SettingsViewModel(_SettingsRepository());
   return ZephyrScope(
     library: library,
     theme: theme,
     editorPreferences: editorPreferences,
+    settings: settings,
     child: MaterialApp(
       theme: zephyrTheme(theme.tokens),
       home: const WorkspacePage(),
@@ -182,6 +211,18 @@ class _PreferencesRepository implements EditorPreferencesRepository {
 
   @override
   Future<void> save(EditorPreferences preferences) async {}
+}
+
+class _SettingsRepository implements SettingsNavigationRepository {
+  SettingsSection section = SettingsSection.theme;
+
+  @override
+  Future<SettingsSection> load() async => section;
+
+  @override
+  Future<void> save(SettingsSection section) async {
+    this.section = section;
+  }
 }
 
 class _FontRepository implements SystemFontRepository {

@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../data/repositories/file_editor_preferences_repository.dart';
+import '../data/repositories/file_settings_navigation_repository.dart';
 import '../data/repositories/file_system_font_repository.dart';
 import '../data/repositories/file_theme_preferences_repository.dart';
 import '../data/repositories/file_workspace_layout_repository.dart';
 import '../data/repositories/purewriter_writing_library_repository.dart';
 import '../data/services/editor_preferences_file_storage.dart';
 import '../data/services/purewriter_database.dart';
+import '../data/services/settings_navigation_file_storage.dart';
 import '../data/services/theme_file_storage.dart';
 import '../data/services/workspace_layout_file_storage.dart';
 import '../domain/repositories/workspace_layout_repository.dart';
@@ -19,6 +21,7 @@ import '../ui/core/zephyr_scope.dart';
 import '../ui/core/zephyr_theme.dart';
 import '../ui/features/editor/view_models/editor_preferences_view_model.dart';
 import '../ui/features/editor/view_models/library_view_model.dart';
+import '../ui/features/settings/view_models/settings_view_model.dart';
 import '../ui/features/settings/view_models/theme_view_model.dart';
 import '../ui/features/workspace/views/workspace_page.dart';
 
@@ -43,6 +46,9 @@ void runZephyr(
         FileEditorPreferencesRepository(EditorPreferencesFileStorage()),
         FileSystemFontRepository(),
       )..load(),
+      settings: SettingsViewModel(
+        FileSettingsNavigationRepository(SettingsNavigationFileStorage()),
+      )..load(),
     ),
   );
 }
@@ -53,17 +59,20 @@ class ZephyrApp extends StatelessWidget {
     required this.library,
     required this.theme,
     required this.editorPreferences,
+    required this.settings,
   });
 
   final LibraryViewModel library;
   final ThemeViewModel theme;
   final EditorPreferencesViewModel editorPreferences;
+  final SettingsViewModel settings;
 
   @override
   Widget build(BuildContext context) => ZephyrScope(
     library: library,
     theme: theme,
     editorPreferences: editorPreferences,
+    settings: settings,
     child: ListenableBuilder(
       listenable: theme,
       builder: (context, _) => MaterialApp(
