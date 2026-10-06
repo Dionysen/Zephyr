@@ -145,6 +145,23 @@ ThemeData zephyrTheme(ThemeTokens tokens) {
       decoration: BoxDecoration(color: control),
       textStyle: TextStyle(color: primaryText),
     ),
+    menuTheme: MenuThemeData(
+      style: MenuStyle(
+        backgroundColor: WidgetStatePropertyAll(control),
+        surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+        shadowColor: WidgetStatePropertyAll(
+          Colors.black.withValues(alpha: .32),
+        ),
+        elevation: const WidgetStatePropertyAll(6),
+        padding: const WidgetStatePropertyAll(
+          EdgeInsets.symmetric(vertical: ZephyrControls.menuInsets),
+        ),
+        shape: WidgetStatePropertyAll(
+          ZephyrControls.menuShape.copyWith(side: BorderSide(color: border)),
+        ),
+        visualDensity: VisualDensity.compact,
+      ),
+    ),
     splashFactory: NoSplash.splashFactory,
     highlightColor: accent.withValues(alpha: .08),
   );

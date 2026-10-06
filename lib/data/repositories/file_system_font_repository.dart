@@ -12,10 +12,8 @@ import '../services/system_font_catalog.dart';
 /// user-installed families appear under their Font Book names. Other desktops
 /// scan common font directories, including .ttc/.otc.
 class FileSystemFontRepository implements SystemFontRepository {
-  FileSystemFontRepository({
-    SystemFontCatalog? catalog,
-    this._directories,
-  }) : _catalog = catalog ?? SystemFontCatalog();
+  FileSystemFontRepository({SystemFontCatalog? catalog, this._directories})
+    : _catalog = catalog ?? SystemFontCatalog();
 
   final SystemFontCatalog _catalog;
   final Iterable<Directory>? _directories;

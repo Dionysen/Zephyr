@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../domain/models/purewriter_models.dart';
 import '../../../core/window_chrome.dart';
+import '../../../core/zephyr_dropdown.dart';
 import '../../editor/view_models/library_view_model.dart';
 
 enum SidebarMode { docked, drawer }
@@ -165,23 +166,16 @@ class _BookPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
-    child: DropdownButtonFormField<String>(
-      initialValue: model.selectedBook?.id,
-      isExpanded: true,
-      borderRadius: BorderRadius.circular(8),
-      decoration: const InputDecoration(
-        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        border: OutlineInputBorder(),
-      ),
-      items: library.folders
-          .where((book) => book.id != 'PW_Trash')
-          .map(
-            (book) => DropdownMenuItem(value: book.id, child: Text(book.name)),
-          )
-          .toList(growable: false),
-      onChanged: (id) {
-        if (id != null) model.selectBook(id);
-      },
+    child: ZephyrDropdown<String>(
+      value: model.selectedBook?.id,
+      hint: 'Select a book',
+      items: [
+        for (final book in library.folders.where(
+          (book) => book.id != 'PW_Trash',
+        ))
+          ZephyrDropdownItem(value: book.id, label: book.name),
+      ],
+      onChanged: model.selectBook,
     ),
   );
 }

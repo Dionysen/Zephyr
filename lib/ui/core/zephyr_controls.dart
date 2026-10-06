@@ -24,4 +24,10 @@ abstract final class ZephyrControls {
       isCircular ? buttonSize / 2 : buttonRadius,
     ),
   );
+
+  static const double fieldHeight = 36;
+  static const double menuInsets = 4;
+
+  static OutlinedBorder get menuShape =>
+      RoundedRectangleBorder(borderRadius: BorderRadius.circular(buttonRadius));
 }
