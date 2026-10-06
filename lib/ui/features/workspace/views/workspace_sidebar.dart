@@ -33,6 +33,8 @@ class WorkspaceSidebar extends StatelessWidget {
             height: WorkspaceHeader.height,
             child: Row(
               children: [
+                if (WindowChrome.leadingChromeInset > 0)
+                  SizedBox(width: WindowChrome.leadingChromeInset),
                 if (mode == SidebarMode.docked)
                   IconButton(
                     onPressed: model.toggleSidebar,
@@ -87,17 +89,22 @@ class WorkspaceHeader extends StatelessWidget {
     super.key,
     required this.model,
     this.showMenuButton = false,
+    this.showSidebarToggle = false,
   });
 
   static const height = 42.0;
 
   final LibraryViewModel model;
   final bool showMenuButton;
+  final bool showSidebarToggle;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final title = model.article?.title.trim();
+    final leadingInset = showSidebarToggle
+        ? WindowChrome.leadingChromeInset
+        : 0.0;
     return Material(
       color: theme.colorScheme.surface,
       child: SizedBox(
@@ -105,19 +112,31 @@ class WorkspaceHeader extends StatelessWidget {
         child: Stack(
           children: [
             const WindowDragArea(child: SizedBox.expand()),
-            if (showMenuButton)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                  onPressed: () => Scaffold.of(context).openDrawer(),
-                  icon: const Icon(Icons.menu),
-                  tooltip: 'Open library',
-                ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (leadingInset > 0) SizedBox(width: leadingInset),
+                  if (showMenuButton)
+                    IconButton(
+                      onPressed: () => Scaffold.of(context).openDrawer(),
+                      icon: const Icon(Icons.menu),
+                      tooltip: 'Open library',
+                    ),
+                  if (showSidebarToggle)
+                    IconButton(
+                      onPressed: model.toggleSidebar,
+                      icon: const Icon(Icons.menu_open),
+                      tooltip: 'Open sidebar',
+                    ),
+                ],
               ),
+            ),
             Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: showMenuButton ? 48 : 16,
+                  horizontal: showMenuButton || showSidebarToggle ? 48 : 16,
                 ),
                 child: Text(
                   title?.isNotEmpty == true ? title! : 'Untitled',

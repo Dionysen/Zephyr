@@ -122,7 +122,11 @@ class _WorkspacePageState extends State<WorkspacePage> {
                               children: [
                                 Column(
                                   children: [
-                                    WorkspaceHeader(model: model),
+                                    WorkspaceHeader(
+                                      model: model,
+                                      showSidebarToggle:
+                                          !model.isSidebarExpanded,
+                                    ),
                                     Expanded(
                                       child: WorkspaceEditor(
                                         model: model,
@@ -131,8 +135,6 @@ class _WorkspacePageState extends State<WorkspacePage> {
                                     ),
                                   ],
                                 ),
-                                if (!model.isSidebarExpanded)
-                                  const _OpenSidebarButton(),
                               ],
                             ),
                           ),
@@ -181,20 +183,6 @@ class _WorkspacePageState extends State<WorkspacePage> {
       LibraryViewModel.maxSidebarWidth,
     );
   }
-}
-
-class _OpenSidebarButton extends StatelessWidget {
-  const _OpenSidebarButton();
-
-  @override
-  Widget build(BuildContext context) => Align(
-    alignment: Alignment.topLeft,
-    child: IconButton(
-      onPressed: ZephyrScope.of(context).library.toggleSidebar,
-      icon: const Icon(Icons.menu_open),
-      tooltip: 'Open sidebar',
-    ),
-  );
 }
 
 class _LibraryErrorPage extends StatelessWidget {

@@ -15,6 +15,14 @@ abstract final class WindowChrome {
   }
 
   static bool get usesCaptionButtons => isDesktop && Platform.isWindows;
+
+  static bool get usesMacOSTrafficLights => isDesktop && Platform.isMacOS;
+
+  /// Native close/minimize/zoom cluster in a hidden macOS title bar.
+  static const macOSTrafficLightInset = 80.0;
+
+  static double get leadingChromeInset =>
+      usesMacOSTrafficLights ? macOSTrafficLightInset : 0;
 }
 
 class WindowDragArea extends StatelessWidget {
