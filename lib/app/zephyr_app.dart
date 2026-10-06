@@ -14,6 +14,7 @@ import '../data/services/theme_file_storage.dart';
 import '../data/services/workspace_layout_file_storage.dart';
 import '../domain/repositories/workspace_layout_repository.dart';
 import '../ui/core/window_chrome.dart';
+import '../ui/core/zephyr_controls.dart';
 import '../ui/core/zephyr_scope.dart';
 import '../ui/core/zephyr_theme.dart';
 import '../ui/features/editor/view_models/editor_preferences_view_model.dart';
@@ -85,7 +86,7 @@ Future<void> initializeDesktopWindow() async {
   await windowManager.ensureInitialized();
   const options = WindowOptions(
     size: Size(1280, 800),
-    minimumSize: Size(720, 520),
+    minimumSize: ZephyrControls.minWindowSize,
     center: true,
     title: 'Zephyr',
     titleBarStyle: TitleBarStyle.hidden,

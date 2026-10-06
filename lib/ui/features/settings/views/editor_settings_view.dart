@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../domain/models/editor_preferences.dart';
+import '../../../core/zephyr_dropdown.dart';
+import '../../../core/zephyr_settings.dart';
 import '../../editor/view_models/editor_preferences_view_model.dart';
 
 class EditorSettingsView extends StatefulWidget {
@@ -27,9 +28,6 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
     builder: (context, _) {
       final viewModel = widget.viewModel;
       final preferences = viewModel.preferences;
-      final selectedFont = viewModel.systemFonts
-          .where((font) => font.path == preferences.fontPath)
-          .firstOrNull;
       return Scrollbar(
         controller: _scrollController,
         child: ListView(
@@ -43,23 +41,8 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 24),
-            if (viewModel.isLoadingSystemFonts)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (viewModel.systemFonts.isEmpty)
-              const Text(
-                'No system fonts were found. The platform default will be used.',
-              )
-            else
-              _FontPickerField(
-                fonts: viewModel.systemFonts,
-                selected: selectedFont,
-                onChanged: viewModel.selectFont,
-              ),
-            const SizedBox(height: 18),
-            _EditorSlider(
+            _FontRow(viewModel: viewModel),
+            ZephyrSettingsSlider(
               label: 'Font size',
               value: preferences.fontSize,
               min: 12,
@@ -67,15 +50,14 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
               suffix: 'px',
               onChanged: viewModel.updateFontSize,
             ),
-            _EditorSlider(
+            ZephyrSettingsSlider(
               label: 'Line height',
               value: preferences.lineHeight,
               min: 1.2,
               max: 2.4,
-              suffix: '',
               onChanged: viewModel.updateLineHeight,
             ),
-            _EditorSlider(
+            ZephyrSettingsSlider(
               label: 'Paragraph spacing',
               value: preferences.paragraphSpacing,
               min: 0,
@@ -83,17 +65,17 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
               suffix: 'px',
               onChanged: viewModel.updateParagraphSpacing,
             ),
-            _EditorSlider(
+            ZephyrSettingsSlider(
               label: 'First-line indent',
               value: preferences.firstLineIndent.toDouble(),
               min: 0,
               max: 4,
-              suffix: ' characters',
+              suffix: ' ch',
               divisions: 4,
               onChanged: (value) =>
                   viewModel.updateFirstLineIndent(value.round()),
             ),
-            _EditorSlider(
+            ZephyrSettingsSlider(
               label: 'Editor width',
               value: preferences.maxContentWidth,
               min: 480,
@@ -108,176 +90,51 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
   );
 }
 
-class _FontPickerField extends StatelessWidget {
-  const _FontPickerField({
-    required this.fonts,
-    required this.selected,
-    required this.onChanged,
-  });
+class _FontRow extends StatelessWidget {
+  const _FontRow({required this.viewModel});
 
-  final List<SystemFont> fonts;
-  final SystemFont? selected;
-  final ValueChanged<SystemFont?> onChanged;
+  final EditorPreferencesViewModel viewModel;
 
   @override
   Widget build(BuildContext context) {
-    return InputDecorator(
-      decoration: const InputDecoration(labelText: 'System font'),
-      child: InkWell(
-        onTap: () => _openPicker(context),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                selected?.family ?? 'Platform default',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const Icon(Icons.arrow_drop_down),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _openPicker(BuildContext context) async {
-    final result = await showDialog<_FontPick>(
-      context: context,
-      builder: (context) => _FontPickerDialog(fonts: fonts, selected: selected),
-    );
-    if (result == null) {
-      return;
+    if (viewModel.isLoadingSystemFonts) {
+      return const ZephyrSettingsRow(
+        label: 'Font',
+        child: LinearProgressIndicator(),
+      );
     }
-    onChanged(result.font);
-  }
-}
-
-class _FontPick {
-  const _FontPick(this.font);
-  final SystemFont? font;
-}
-
-class _FontPickerDialog extends StatefulWidget {
-  const _FontPickerDialog({required this.fonts, required this.selected});
-
-  final List<SystemFont> fonts;
-  final SystemFont? selected;
-
-  @override
-  State<_FontPickerDialog> createState() => _FontPickerDialogState();
-}
-
-class _FontPickerDialogState extends State<_FontPickerDialog> {
-  final _query = TextEditingController();
-
-  @override
-  void dispose() {
-    _query.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final needle = _query.text.trim().toLowerCase();
-    final matches = needle.isEmpty
-        ? widget.fonts
-        : widget.fonts
-              .where((font) => font.family.toLowerCase().contains(needle))
-              .toList();
-    return AlertDialog(
-      title: const Text('System font'),
-      content: SizedBox(
-        width: 420,
-        height: 480,
-        child: Column(
-          children: [
-            TextField(
-              controller: _query,
-              autofocus: true,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Search fonts',
-              ),
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: ListView.builder(
-                itemCount: matches.length + 1,
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return ListTile(
-                      title: const Text('Platform default'),
-                      selected: widget.selected == null,
-                      onTap: () =>
-                          Navigator.pop(context, const _FontPick(null)),
-                    );
-                  }
-                  final font = matches[index - 1];
-                  return ListTile(
-                    title: Text(font.family),
-                    selected: font.path == widget.selected?.path,
-                    onTap: () => Navigator.pop(context, _FontPick(font)),
-                  );
-                },
-              ),
-            ),
-          ],
+    if (viewModel.systemFonts.isEmpty) {
+      return ZephyrSettingsRow(
+        label: 'Font',
+        child: Text(
+          'Platform default',
+          style: Theme.of(context).textTheme.bodySmall,
         ),
+      );
+    }
+    final fonts = viewModel.systemFonts;
+    final selectedPath = viewModel.preferences.fontPath ?? '';
+    return ZephyrSettingsRow(
+      label: 'Font',
+      child: ZephyrDropdown<String>(
+        value: selectedPath,
+        hint: 'Platform default',
+        items: [
+          const ZephyrDropdownItem(value: '', label: 'Platform default'),
+          for (final font in fonts)
+            ZephyrDropdownItem(value: font.path, label: font.family),
+        ],
+        onChanged: (path) {
+          if (path.isEmpty) {
+            viewModel.selectFont(null);
+            return;
+          }
+          final font = fonts.where((item) => item.path == path).firstOrNull;
+          if (font != null) {
+            viewModel.selectFont(font);
+          }
+        },
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-      ],
     );
   }
-}
-
-class _EditorSlider extends StatelessWidget {
-  const _EditorSlider({
-    required this.label,
-    required this.value,
-    required this.min,
-    required this.max,
-    required this.suffix,
-    required this.onChanged,
-    this.divisions,
-  });
-
-  final String label;
-  final double value;
-  final double min;
-  final double max;
-  final String suffix;
-  final ValueChanged<double> onChanged;
-  final int? divisions;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 14),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(child: Text(label)),
-            Text(
-              '${value.toStringAsFixed(divisions == null ? 1 : 0)}$suffix',
-              style: Theme.of(context).textTheme.labelMedium,
-            ),
-          ],
-        ),
-        Slider(
-          value: value,
-          min: min,
-          max: max,
-          divisions: divisions,
-          onChanged: onChanged,
-        ),
-      ],
-    ),
-  );
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../domain/models/theme_tokens.dart';
+import '../../../core/zephyr_settings.dart';
 import '../view_models/theme_view_model.dart';
 
 class ThemeCatalog extends StatelessWidget {
@@ -344,22 +345,20 @@ class _TokenField extends StatelessWidget {
   final ValueChanged<int> onChanged;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
+  Widget build(BuildContext context) => ZephyrSettingsRow(
+    label: label,
     child: Row(
       children: [
         Container(
-          width: 30,
-          height: 30,
+          width: 22,
+          height: 22,
           decoration: BoxDecoration(
             color: Color(value),
             borderRadius: BorderRadius.circular(5),
             border: Border.all(color: Theme.of(context).colorScheme.outline),
           ),
         ),
-        const SizedBox(width: 12),
-        SizedBox(width: 165, child: Text(label)),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Expanded(
           child: TextField(
             controller: controller,
