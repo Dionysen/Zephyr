@@ -1,7 +1,7 @@
-import 'dart:async';
+import 'dart:io';
 
-import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:flutter/material.dart';
+import 'package:window_manager/window_manager.dart';
 
 import '../data/repositories/file_editor_preferences_repository.dart';
 import '../data/repositories/file_system_font_repository.dart';
@@ -10,114 +10,80 @@ import '../data/repositories/purewriter_writing_library_repository.dart';
 import '../data/services/editor_preferences_file_storage.dart';
 import '../data/services/purewriter_database.dart';
 import '../data/services/theme_file_storage.dart';
+import '../ui/core/window_chrome.dart';
+import '../ui/core/zephyr_scope.dart';
 import '../ui/core/zephyr_theme.dart';
-import '../ui/features/editor/view_models/library_view_model.dart';
 import '../ui/features/editor/view_models/editor_preferences_view_model.dart';
-import '../ui/features/editor/views/library_page.dart';
+import '../ui/features/editor/view_models/library_view_model.dart';
 import '../ui/features/settings/view_models/theme_view_model.dart';
-import '../ui/features/settings/views/theme_settings_dialog.dart';
+import '../ui/features/workspace/views/workspace_page.dart';
 
 void runZephyr(PureWriterDatabase database, {Object? startupError}) {
-  final themeViewModel = ThemeViewModel(
-    FileThemePreferencesRepository(ThemeFileStorage()),
-  )..load();
-  final editorPreferencesViewModel = EditorPreferencesViewModel(
-    FileEditorPreferencesRepository(EditorPreferencesFileStorage()),
-    FileSystemFontRepository(),
-  )..load();
-  DesktopMultiWindow.setMethodHandler((call, _) async {
-    if (call.method == 'reloadPreferences') {
-      await Future.wait([
-        themeViewModel.load(),
-        editorPreferencesViewModel.load(),
-      ]);
-    }
-  });
   runApp(
     ZephyrApp(
-      viewModel: LibraryViewModel(
+      library: LibraryViewModel(
         PureWriterWritingLibraryRepository(database),
         initialError: startupError,
       ),
-      themeViewModel: themeViewModel,
-      editorPreferencesViewModel: editorPreferencesViewModel,
+      theme: ThemeViewModel(FileThemePreferencesRepository(ThemeFileStorage()))
+        ..load(),
+      editorPreferences: EditorPreferencesViewModel(
+        FileEditorPreferencesRepository(EditorPreferencesFileStorage()),
+        FileSystemFontRepository(),
+      )..load(),
     ),
   );
 }
-
-void runSettingsWindow(int windowId) {
-  final themeViewModel = ThemeViewModel(
-    FileThemePreferencesRepository(ThemeFileStorage()),
-    onPersisted: _notifyMainWindow,
-  )..load();
-  final editorPreferencesViewModel = EditorPreferencesViewModel(
-    FileEditorPreferencesRepository(EditorPreferencesFileStorage()),
-    FileSystemFontRepository(),
-    onPersisted: _notifyMainWindow,
-  )..load();
-  runApp(
-    SettingsWindowApp(
-      themeViewModel: themeViewModel,
-      editorPreferencesViewModel: editorPreferencesViewModel,
-      onClose: () => unawaited(WindowController.fromWindowId(windowId).hide()),
-    ),
-  );
-}
-
-Future<void> _notifyMainWindow() =>
-    DesktopMultiWindow.invokeMethod(0, 'reloadPreferences');
 
 class ZephyrApp extends StatelessWidget {
   const ZephyrApp({
     super.key,
-    required this.viewModel,
-    required this.themeViewModel,
-    required this.editorPreferencesViewModel,
+    required this.library,
+    required this.theme,
+    required this.editorPreferences,
   });
-  final LibraryViewModel viewModel;
-  final ThemeViewModel themeViewModel;
-  final EditorPreferencesViewModel editorPreferencesViewModel;
+
+  final LibraryViewModel library;
+  final ThemeViewModel theme;
+  final EditorPreferencesViewModel editorPreferences;
 
   @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: themeViewModel,
-    builder: (context, _) => MaterialApp(
-      title: 'Zephyr',
-      debugShowCheckedModeBanner: false,
-      theme: zephyrTheme(themeViewModel.tokens),
-      home: LibraryPage(
-        viewModel: viewModel,
-        themeViewModel: themeViewModel,
-        editorPreferencesViewModel: editorPreferencesViewModel,
+  Widget build(BuildContext context) => ZephyrScope(
+    library: library,
+    theme: theme,
+    editorPreferences: editorPreferences,
+    child: ListenableBuilder(
+      listenable: theme,
+      builder: (context, _) => MaterialApp(
+        title: 'Zephyr',
+        debugShowCheckedModeBanner: false,
+        theme: zephyrTheme(theme.tokens),
+        home: const WorkspacePage(),
       ),
     ),
   );
 }
 
-class SettingsWindowApp extends StatelessWidget {
-  const SettingsWindowApp({
-    super.key,
-    required this.themeViewModel,
-    required this.editorPreferencesViewModel,
-    required this.onClose,
-  });
-
-  final ThemeViewModel themeViewModel;
-  final EditorPreferencesViewModel editorPreferencesViewModel;
-  final VoidCallback onClose;
-
-  @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: themeViewModel,
-    builder: (context, _) => MaterialApp(
-      title: 'Zephyr Settings',
-      debugShowCheckedModeBanner: false,
-      theme: zephyrTheme(themeViewModel.tokens),
-      home: SettingsWindowPage(
-        viewModel: themeViewModel,
-        editorPreferencesViewModel: editorPreferencesViewModel,
-        onClose: onClose,
-      ),
-    ),
+Future<void> initializeDesktopWindow() async {
+  if (!WindowChrome.isDesktop) {
+    return;
+  }
+  await windowManager.ensureInitialized();
+  const options = WindowOptions(
+    size: Size(1280, 800),
+    minimumSize: Size(720, 520),
+    center: true,
+    title: 'Zephyr',
+    titleBarStyle: TitleBarStyle.hidden,
   );
+  await windowManager.waitUntilReadyToShow(options, () async {
+    if (Platform.isWindows) {
+      await windowManager.setTitleBarStyle(
+        TitleBarStyle.hidden,
+        windowButtonVisibility: false,
+      );
+    }
+    await windowManager.show();
+    await windowManager.focus();
+  });
 }

@@ -1,0 +1,180 @@
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+
+import '../../../core/breakpoints.dart';
+import '../../../core/zephyr_scope.dart';
+import '../../editor/view_models/library_view_model.dart';
+import '../../settings/views/settings_page.dart';
+import 'workspace_editor.dart';
+import 'workspace_sidebar.dart';
+
+/// Adaptive writing workspace. Compact and expanded layouts share the same
+/// sidebar, header, and editor rather than forking platform-specific pages.
+class WorkspacePage extends StatefulWidget {
+  const WorkspacePage({super.key});
+
+  @override
+  State<WorkspacePage> createState() => _WorkspacePageState();
+}
+
+class _WorkspacePageState extends State<WorkspacePage> {
+  LibraryViewModel? _library;
+  var _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _library = ZephyrScope.of(context).library;
+    if (_started) {
+      return;
+    }
+    _started = true;
+    _library!.load();
+  }
+
+  @override
+  void dispose() {
+    _library?.save();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = ZephyrScope.of(context);
+    return ListenableBuilder(
+      listenable: scope.library,
+      builder: (context, _) {
+        final model = scope.library;
+        if (model.error != null) {
+          return _LibraryErrorPage(error: model.error!);
+        }
+        if (model.library == null) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = ZephyrBreakpoints.isCompact(constraints.maxWidth);
+            return Scaffold(
+              drawer: compact
+                  ? Drawer(
+                      child: SafeArea(
+                        child: WorkspaceSidebar(
+                          model: model,
+                          mode: SidebarMode.drawer,
+                          openLibrary: _openLibrary,
+                          openSettings: _openSettings,
+                        ),
+                      ),
+                    )
+                  : null,
+              body: SafeArea(
+                child: compact
+                    ? Column(
+                        children: [
+                          WorkspaceHeader(model: model, showMenuButton: true),
+                          Expanded(
+                            child: WorkspaceEditor(
+                              model: model,
+                              preferences: scope.editorPreferences,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeOutCubic,
+                            width: model.isSidebarExpanded
+                                ? WorkspaceSidebar.width
+                                : 0,
+                            child: ClipRect(
+                              child: OverflowBox(
+                                alignment: Alignment.topLeft,
+                                minWidth: WorkspaceSidebar.width,
+                                maxWidth: WorkspaceSidebar.width,
+                                child: WorkspaceSidebar(
+                                  model: model,
+                                  mode: SidebarMode.docked,
+                                  openLibrary: _openLibrary,
+                                  openSettings: _openSettings,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Stack(
+                              children: [
+                                Column(
+                                  children: [
+                                    WorkspaceHeader(model: model),
+                                    Expanded(
+                                      child: WorkspaceEditor(
+                                        model: model,
+                                        preferences: scope.editorPreferences,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (!model.isSidebarExpanded)
+                                  const _OpenSidebarButton(),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _openLibrary() async {
+    final root = await FilePicker.getDirectoryPath();
+    if (root != null && mounted) {
+      await ZephyrScope.of(context).library.openLibrary(root);
+    }
+  }
+
+  void _openSettings() {
+    Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => const SettingsPage()));
+  }
+}
+
+class _OpenSidebarButton extends StatelessWidget {
+  const _OpenSidebarButton();
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.topLeft,
+    child: IconButton(
+      onPressed: ZephyrScope.of(context).library.toggleSidebar,
+      icon: const Icon(Icons.menu_open),
+      tooltip: 'Open sidebar',
+    ),
+  );
+}
+
+class _LibraryErrorPage extends StatelessWidget {
+  const _LibraryErrorPage({required this.error});
+
+  final Object error;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          'Could not open library: $error',
+          textAlign: TextAlign.center,
+        ),
+      ),
+    ),
+  );
+}
