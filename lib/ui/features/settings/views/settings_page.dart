@@ -118,27 +118,25 @@ class _SettingsHeader extends StatelessWidget {
         height: WorkspaceHeader.height,
         child: Stack(
           children: [
-            const WindowDragArea(child: SizedBox.expand()),
-            Center(
-              child: Text(
-                'Settings',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleSmall,
-              ),
+            Row(
+              children: [
+                const Expanded(child: WindowDragArea(child: SizedBox.expand())),
+                IconButton(
+                  onPressed: onClose,
+                  icon: const Icon(Icons.close),
+                  tooltip: 'Close settings',
+                ),
+                const WindowCaptionButtons(),
+              ],
             ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    onPressed: onClose,
-                    icon: const Icon(Icons.close),
-                    tooltip: 'Close settings',
-                  ),
-                  const WindowCaptionButtons(),
-                ],
+            IgnorePointer(
+              child: Center(
+                child: Text(
+                  'Settings',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall,
+                ),
               ),
             ),
           ],

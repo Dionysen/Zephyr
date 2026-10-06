@@ -112,45 +112,42 @@ class WorkspaceHeader extends StatelessWidget {
         height: height,
         child: Stack(
           children: [
-            const WindowDragArea(child: SizedBox.expand()),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  if (leadingInset > 0) SizedBox(width: leadingInset),
-                  if (showMenuButton)
-                    IconButton(
-                      onPressed: () => Scaffold.of(context).openDrawer(),
-                      icon: const Icon(Icons.menu),
-                      tooltip: 'Open library',
-                    ),
-                  if (showSidebarToggle)
-                    IconButton(
-                      onPressed: model.toggleSidebar,
-                      icon: const Icon(Icons.menu_open),
-                      tooltip: 'Open sidebar',
-                    ),
-                ],
-              ),
+            Row(
+              children: [
+                if (leadingInset > 0)
+                  WindowDragArea(
+                    child: SizedBox(width: leadingInset, height: height),
+                  ),
+                if (showMenuButton)
+                  IconButton(
+                    onPressed: () => Scaffold.of(context).openDrawer(),
+                    icon: const Icon(Icons.menu),
+                    tooltip: 'Open library',
+                  ),
+                if (showSidebarToggle)
+                  IconButton(
+                    onPressed: model.toggleSidebar,
+                    icon: const Icon(Icons.menu_open),
+                    tooltip: 'Open sidebar',
+                  ),
+                const Expanded(child: WindowDragArea(child: SizedBox.expand())),
+                const WindowCaptionButtons(),
+              ],
             ),
-            Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: showMenuButton || showSidebarToggle ? 48 : 16,
-                ),
-                child: Text(
-                  title?.isNotEmpty == true ? title! : 'Untitled',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall,
+            IgnorePointer(
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: showMenuButton || showSidebarToggle ? 48 : 16,
+                  ),
+                  child: Text(
+                    title?.isNotEmpty == true ? title! : 'Untitled',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall,
+                  ),
                 ),
               ),
-            ),
-            const Align(
-              alignment: Alignment.centerRight,
-              child: WindowCaptionButtons(),
             ),
           ],
         ),
