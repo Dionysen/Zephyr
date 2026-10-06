@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/models/theme_tokens.dart';
+import 'zephyr_controls.dart';
 
 /// Builds the writing-shell theme from user-owned semantic tokens.
 ThemeData zephyrTheme(ThemeTokens tokens) {
@@ -53,7 +54,42 @@ ThemeData zephyrTheme(ThemeTokens tokens) {
     dividerTheme: DividerThemeData(color: border, space: 1),
     iconTheme: IconThemeData(
       color: primaryText.withValues(alpha: .76),
-      size: 19,
+      size: ZephyrControls.iconSize,
+    ),
+    iconButtonTheme: IconButtonThemeData(
+      style: IconButton.styleFrom(
+        foregroundColor: primaryText.withValues(alpha: .76),
+        iconSize: ZephyrControls.iconSize,
+        padding: EdgeInsets.zero,
+        minimumSize: const Size(
+          ZephyrControls.buttonSize,
+          ZephyrControls.buttonSize,
+        ),
+        fixedSize: const Size(
+          ZephyrControls.buttonSize,
+          ZephyrControls.buttonSize,
+        ),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.standard,
+        shape: ZephyrControls.iconButtonShape,
+        overlayColor: accent.withValues(alpha: .12),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: primaryText,
+        iconSize: ZephyrControls.iconSize,
+        shape: ZephyrControls.labeledButtonShape,
+        visualDensity: VisualDensity.compact,
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: primaryText,
+        iconSize: ZephyrControls.iconSize,
+        shape: ZephyrControls.labeledButtonShape,
+        visualDensity: VisualDensity.compact,
+      ),
     ),
     textTheme: TextTheme(
       titleLarge: TextStyle(

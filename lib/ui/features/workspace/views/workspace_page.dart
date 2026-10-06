@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../../data/services/folder_bookmark.dart';
 
 import '../../../core/breakpoints.dart';
+import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../settings/views/settings_page.dart';
@@ -75,6 +76,7 @@ class _WorkspacePageState extends State<WorkspacePage> {
                     )
                   : null,
               body: SafeArea(
+                top: !WindowChrome.isDesktop,
                 child: compact
                     ? Column(
                         children: [

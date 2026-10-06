@@ -1,9 +1,13 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
+
+import 'zephyr_controls.dart';
 
 /// Isolates desktop window dragging and caption buttons from feature widgets.
 abstract final class WindowChrome {
@@ -18,11 +22,42 @@ abstract final class WindowChrome {
 
   static bool get usesMacOSTrafficLights => isDesktop && Platform.isMacOS;
 
-  /// Native close/minimize/zoom cluster in a hidden macOS title bar.
+  /// Fallback until [syncNativeMetrics] reads the real traffic-light frames.
   static const macOSTrafficLightInset = 80.0;
 
+  static double _macOSLeadingInset = macOSTrafficLightInset;
+  static double _macOSTitleBarHeight = ZephyrControls.buttonSize;
+
   static double get leadingChromeInset =>
-      usesMacOSTrafficLights ? macOSTrafficLightInset : 0;
+      usesMacOSTrafficLights ? _macOSLeadingInset : 0;
+
+  /// On macOS this is tall enough that a [ZephyrControls.buttonSize] control
+  /// can share a vertical center with the native traffic lights.
+  static double get titleBarHeight =>
+      usesMacOSTrafficLights ? _macOSTitleBarHeight : 36;
+
+  static Future<void> syncNativeMetrics() async {
+    if (!usesMacOSTrafficLights) {
+      return;
+    }
+    try {
+      const channel = MethodChannel('zephyr/window_chrome');
+      final metrics = await channel.invokeMapMethod<String, dynamic>('metrics');
+      if (metrics == null) {
+        return;
+      }
+      final centerY = (metrics['centerY'] as num?)?.toDouble();
+      final leading = (metrics['leading'] as num?)?.toDouble();
+      if (centerY != null && centerY > 0) {
+        _macOSTitleBarHeight = math.max(ZephyrControls.buttonSize, centerY * 2);
+      }
+      if (leading != null && leading > 0) {
+        _macOSLeadingInset = leading;
+      }
+    } on Object {
+      // Native chrome is optional when the embedder has no method channel.
+    }
+  }
 }
 
 class WindowDragArea extends StatelessWidget {

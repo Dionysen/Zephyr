@@ -99,5 +99,6 @@ Future<void> initializeDesktopWindow() async {
     }
     await windowManager.show();
     await windowManager.focus();
+    await WindowChrome.syncNativeMetrics();
   });
 }

@@ -16,8 +16,58 @@ class MainFlutterWindow: NSWindow {
 
     RegisterGeneratedPlugins(registry: flutterViewController)
     registerFolderBookmarkChannel(flutterViewController)
+    registerWindowChromeChannel(flutterViewController)
 
     super.awakeFromNib()
+  }
+
+  private func registerWindowChromeChannel(
+    _ controller: FlutterViewController
+  ) {
+    let channel = FlutterMethodChannel(
+      name: "zephyr/window_chrome",
+      binaryMessenger: controller.engine.binaryMessenger
+    )
+    channel.setMethodCallHandler { [weak self] call, result in
+      guard let self else {
+        result(
+          FlutterError(
+            code: "unavailable",
+            message: "Window was released.",
+            details: nil
+          )
+        )
+        return
+      }
+      switch call.method {
+      case "metrics":
+        result(self.chromeMetrics())
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+  }
+
+  /// Distances from the Flutter content view origin so toolbar controls can
+  /// share a vertical center with the native traffic lights.
+  private func chromeMetrics() -> [String: Double] {
+    contentView?.layoutSubtreeIfNeeded()
+    guard
+      let closeButton = standardWindowButton(.closeButton),
+      let zoomButton = standardWindowButton(.zoomButton),
+      let contentView
+    else {
+      return ["centerY": 14, "leading": 80]
+    }
+    let closeInWindow = closeButton.convert(closeButton.bounds, to: nil)
+    let zoomInWindow = zoomButton.convert(zoomButton.bounds, to: nil)
+    let contentInWindow = contentView.convert(contentView.bounds, to: nil)
+    let centerY = contentInWindow.maxY - closeInWindow.midY
+    let leading = zoomInWindow.maxX - contentInWindow.minX + 8
+    return [
+      "centerY": Double(centerY),
+      "leading": Double(leading),
+    ]
   }
 
   private func registerFolderBookmarkChannel(

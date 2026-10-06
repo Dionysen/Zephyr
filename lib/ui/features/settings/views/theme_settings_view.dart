@@ -92,7 +92,7 @@ class ThemeCatalog extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: OutlinedButton.icon(
               onPressed: onCustomize,
-              icon: const Icon(Icons.tune, size: 18),
+              icon: const Icon(Icons.tune),
               label: const Text('Customize tokens'),
             ),
           ),
@@ -140,7 +140,7 @@ class _ThemeTokenEditorState extends State<ThemeTokenEditor> {
       children: [
         TextButton.icon(
           onPressed: widget.onBack,
-          icon: const Icon(Icons.arrow_back, size: 18),
+          icon: const Icon(Icons.arrow_back),
           label: const Text('Back to themes'),
         ),
         const SizedBox(height: 8),

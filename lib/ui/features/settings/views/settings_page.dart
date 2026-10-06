@@ -28,6 +28,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final scope = ZephyrScope.of(context);
     return Scaffold(
       body: SafeArea(
+        top: !WindowChrome.isDesktop,
         child: LayoutBuilder(
           builder: (context, constraints) {
             final compact = ZephyrBreakpoints.isCompact(constraints.maxWidth);

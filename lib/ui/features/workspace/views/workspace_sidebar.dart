@@ -32,6 +32,7 @@ class WorkspaceSidebar extends StatelessWidget {
           SizedBox(
             height: WorkspaceHeader.height,
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 if (WindowChrome.leadingChromeInset > 0)
                   SizedBox(width: WindowChrome.leadingChromeInset),
@@ -92,7 +93,7 @@ class WorkspaceHeader extends StatelessWidget {
     this.showSidebarToggle = false,
   });
 
-  static const height = 42.0;
+  static double get height => WindowChrome.titleBarHeight;
 
   final LibraryViewModel model;
   final bool showMenuButton;
@@ -116,6 +117,7 @@ class WorkspaceHeader extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   if (leadingInset > 0) SizedBox(width: leadingInset),
                   if (showMenuButton)
@@ -346,7 +348,7 @@ class _LibraryDock extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Row(
             children: [
-              const Icon(Icons.menu_book_outlined, size: 19),
+              const Icon(Icons.menu_book_outlined),
               const SizedBox(width: 9),
               Expanded(
                 child: Text(
@@ -357,9 +359,8 @@ class _LibraryDock extends StatelessWidget {
               ),
               IconButton(
                 onPressed: openSettings,
-                icon: const Icon(Icons.settings_outlined, size: 19),
+                icon: const Icon(Icons.settings_outlined),
                 tooltip: 'Settings',
-                visualDensity: VisualDensity.compact,
               ),
             ],
           ),
