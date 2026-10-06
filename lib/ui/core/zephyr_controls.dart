@@ -30,8 +30,8 @@ abstract final class ZephyrControls {
 
   /// Settings rows: label | control. Keep the window wide enough that the
   /// control column can still host a slider or dropdown.
-  static const int settingsLabelFlex = 2;
-  static const int settingsControlFlex = 5;
+  static const int settingsLabelFlex = 5;
+  static const int settingsControlFlex = 3;
   static const Size minWindowSize = Size(920, 580);
 
   static OutlinedBorder get menuShape =>

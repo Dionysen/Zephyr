@@ -44,6 +44,7 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
             _FontRow(viewModel: viewModel),
             ZephyrSettingsSlider(
               label: 'Font size',
+              description: 'Size of the writing-column body text.',
               value: preferences.fontSize,
               min: 12,
               max: 32,
@@ -52,6 +53,7 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
             ),
             ZephyrSettingsSlider(
               label: 'Line height',
+              description: 'Vertical spacing between lines in a paragraph.',
               value: preferences.lineHeight,
               min: 1.2,
               max: 2.4,
@@ -59,6 +61,7 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
             ),
             ZephyrSettingsSlider(
               label: 'Paragraph spacing',
+              description: 'Extra space inserted between paragraphs.',
               value: preferences.paragraphSpacing,
               min: 0,
               max: 32,
@@ -67,6 +70,8 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
             ),
             ZephyrSettingsSlider(
               label: 'First-line indent',
+              description:
+                  'Indent applied to the first line of each paragraph.',
               value: preferences.firstLineIndent.toDouble(),
               min: 0,
               max: 4,
@@ -77,10 +82,12 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
             ),
             ZephyrSettingsSlider(
               label: 'Editor width',
+              description: 'Maximum width of the reading column.',
               value: preferences.maxContentWidth,
               min: 480,
               max: 1200,
               suffix: 'px',
+              showDivider: false,
               onChanged: viewModel.updateMaxContentWidth,
             ),
           ],
@@ -100,12 +107,14 @@ class _FontRow extends StatelessWidget {
     if (viewModel.isLoadingSystemFonts) {
       return const ZephyrSettingsRow(
         label: 'Font',
+        description: 'Typeface used in the writing editor.',
         child: LinearProgressIndicator(),
       );
     }
     if (viewModel.systemFonts.isEmpty) {
       return ZephyrSettingsRow(
         label: 'Font',
+        description: 'Typeface used in the writing editor.',
         child: Text(
           'Platform default',
           style: Theme.of(context).textTheme.bodySmall,
@@ -116,6 +125,7 @@ class _FontRow extends StatelessWidget {
     final selectedPath = viewModel.preferences.fontPath ?? '';
     return ZephyrSettingsRow(
       label: 'Font',
+      description: 'Typeface used in the writing editor.',
       child: ZephyrDropdown<String>(
         value: selectedPath,
         hint: 'Platform default',

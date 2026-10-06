@@ -2,44 +2,63 @@ import 'package:flutter/material.dart';
 
 import 'zephyr_controls.dart';
 
-/// One settings line: label on the left, control on the right.
+/// One settings line: title and hint on the left, control on the right.
 class ZephyrSettingsRow extends StatelessWidget {
   const ZephyrSettingsRow({
     super.key,
     required this.label,
     required this.child,
+    this.description,
+    this.showDivider = true,
   });
 
   final String label;
+  final String? description;
   final Widget child;
+  final bool showDivider;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Expanded(
-            flex: ZephyrControls.settingsLabelFlex,
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            flex: ZephyrControls.settingsControlFlex,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                minHeight: ZephyrControls.fieldHeight,
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            children: [
+              Expanded(
+                flex: ZephyrControls.settingsLabelFlex,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall,
+                    ),
+                    if (description != null) ...[
+                      const SizedBox(height: 2),
+                      Text(description!, style: theme.textTheme.bodySmall),
+                    ],
+                  ],
+                ),
               ),
-              child: Align(alignment: Alignment.centerLeft, child: child),
-            ),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: ZephyrControls.settingsControlFlex,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minHeight: ZephyrControls.fieldHeight,
+                  ),
+                  child: Align(alignment: Alignment.centerLeft, child: child),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        if (showDivider) const Divider(),
+      ],
     );
   }
 }
@@ -52,23 +71,29 @@ class ZephyrSettingsSlider extends StatelessWidget {
     required this.min,
     required this.max,
     required this.onChanged,
+    this.description,
     this.suffix = '',
     this.divisions,
+    this.showDivider = true,
   });
 
   final String label;
+  final String? description;
   final double value;
   final double min;
   final double max;
   final String suffix;
   final ValueChanged<double> onChanged;
   final int? divisions;
+  final bool showDivider;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return ZephyrSettingsRow(
       label: label,
+      description: description,
+      showDivider: showDivider,
       child: Row(
         children: [
           Expanded(

@@ -158,9 +158,11 @@ class _ThemeTokenEditorState extends State<ThemeTokenEditor> {
               for (final token in ThemeToken.values)
                 _TokenField(
                   label: _tokenLabel(token),
+                  description: _tokenDescription(token),
                   controller: _controllers[token]!,
                   value: widget.viewModel.tokens.valueOf(token),
                   onChanged: (value) => widget.viewModel.update(token, value),
+                  showDivider: token != ThemeToken.values.last,
                 ),
             ],
           ),
@@ -334,19 +336,25 @@ class _PreviewLines extends StatelessWidget {
 class _TokenField extends StatelessWidget {
   const _TokenField({
     required this.label,
+    required this.description,
     required this.controller,
     required this.value,
     required this.onChanged,
+    this.showDivider = true,
   });
 
   final String label;
+  final String description;
   final TextEditingController controller;
   final int value;
   final ValueChanged<int> onChanged;
+  final bool showDivider;
 
   @override
   Widget build(BuildContext context) => ZephyrSettingsRow(
     label: label,
+    description: description,
+    showDivider: showDivider,
     child: Row(
       children: [
         Container(
@@ -398,6 +406,16 @@ String _tokenLabel(ThemeToken token) => switch (token) {
   ThemeToken.primaryText => 'Primary text',
   ThemeToken.mutedText => 'Muted text',
   ThemeToken.accent => 'Accent',
+};
+
+String _tokenDescription(ThemeToken token) => switch (token) {
+  ThemeToken.editorSurface => 'Background of the writing column.',
+  ThemeToken.sidebarSurface => 'Background of side panels and chrome.',
+  ThemeToken.controlSurface => 'Fill color for fields, menus, and cards.',
+  ThemeToken.border => 'Hairlines around controls and dividers.',
+  ThemeToken.primaryText => 'Default title and body copy color.',
+  ThemeToken.mutedText => 'Dimmer copy used for setting hints and captions.',
+  ThemeToken.accent => 'Interactive highlights and selected states.',
 };
 
 String _hex(int value) =>
