@@ -58,7 +58,10 @@ class ZephyrApp extends StatelessWidget {
         title: 'Zephyr',
         debugShowCheckedModeBanner: false,
         theme: zephyrTheme(theme.tokens),
-        home: const WorkspacePage(),
+        home: DesktopWindowBackdrop(
+          color: Color(theme.tokens.editorSurface),
+          child: const WorkspacePage(),
+        ),
       ),
     ),
   );

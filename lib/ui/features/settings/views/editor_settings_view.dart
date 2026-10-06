@@ -3,21 +3,37 @@ import 'package:flutter/material.dart';
 import '../../../../domain/models/editor_preferences.dart';
 import '../../editor/view_models/editor_preferences_view_model.dart';
 
-class EditorSettingsView extends StatelessWidget {
+class EditorSettingsView extends StatefulWidget {
   const EditorSettingsView({super.key, required this.viewModel});
 
   final EditorPreferencesViewModel viewModel;
 
   @override
+  State<EditorSettingsView> createState() => _EditorSettingsViewState();
+}
+
+class _EditorSettingsViewState extends State<EditorSettingsView> {
+  final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: viewModel,
+    listenable: widget.viewModel,
     builder: (context, _) {
+      final viewModel = widget.viewModel;
       final preferences = viewModel.preferences;
       final selectedFont = viewModel.systemFonts
           .where((font) => font.path == preferences.fontPath)
           .firstOrNull;
       return Scrollbar(
+        controller: _scrollController,
         child: ListView(
+          controller: _scrollController,
           padding: EdgeInsets.zero,
           children: [
             Text('Editor', style: Theme.of(context).textTheme.titleLarge),

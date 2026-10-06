@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/breakpoints.dart';
+import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_scope.dart';
+import '../../workspace/views/workspace_sidebar.dart';
 import '../models/settings_section.dart';
 import 'editor_settings_view.dart';
 import 'theme_settings_view.dart';
@@ -30,13 +32,15 @@ class _SettingsPageState extends State<SettingsPage> {
           builder: (context, constraints) {
             final compact = ZephyrBreakpoints.isCompact(constraints.maxWidth);
             final content = _SettingsBody(
-              onClose: () => Navigator.of(context).maybePop(),
               compact: compact,
               child: _buildSection(scope),
             );
             if (compact) {
               return Column(
                 children: [
+                  _SettingsHeader(
+                    onClose: () => Navigator.of(context).maybePop(),
+                  ),
                   _CompactSettingsNavigation(
                     selected: _section,
                     onSelected: _select,
@@ -46,13 +50,25 @@ class _SettingsPageState extends State<SettingsPage> {
                 ],
               );
             }
-            return Row(
+            return Column(
               children: [
-                _SettingsNavigation(selected: _section, onSelected: _select),
-                VerticalDivider(
-                  color: Theme.of(context).colorScheme.outlineVariant,
+                _SettingsHeader(
+                  onClose: () => Navigator.of(context).maybePop(),
                 ),
-                Expanded(child: content),
+                Expanded(
+                  child: Row(
+                    children: [
+                      _SettingsNavigation(
+                        selected: _section,
+                        onSelected: _select,
+                      ),
+                      VerticalDivider(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
+                      Expanded(child: content),
+                    ],
+                  ),
+                ),
               ],
             );
           },
@@ -87,36 +103,62 @@ class _SettingsPageState extends State<SettingsPage> {
   };
 }
 
+class _SettingsHeader extends StatelessWidget {
+  const _SettingsHeader({required this.onClose});
+
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.surface,
+      child: SizedBox(
+        height: WorkspaceHeader.height,
+        child: Stack(
+          children: [
+            const WindowDragArea(child: SizedBox.expand()),
+            Center(
+              child: Text(
+                'Settings',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleSmall,
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    onPressed: onClose,
+                    icon: const Icon(Icons.close),
+                    tooltip: 'Close settings',
+                  ),
+                  const WindowCaptionButtons(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _SettingsBody extends StatelessWidget {
-  const _SettingsBody({
-    required this.child,
-    required this.onClose,
-    required this.compact,
-  });
+  const _SettingsBody({required this.child, required this.compact});
 
   final Widget child;
-  final VoidCallback onClose;
   final bool compact;
 
   @override
-  Widget build(BuildContext context) => Stack(
-    children: [
-      Padding(
-        padding: compact
-            ? const EdgeInsets.fromLTRB(24, 48, 24, 24)
-            : const EdgeInsets.fromLTRB(56, 52, 56, 36),
-        child: child,
-      ),
-      Positioned(
-        top: 8,
-        right: 8,
-        child: IconButton(
-          onPressed: onClose,
-          icon: const Icon(Icons.close),
-          tooltip: 'Close settings',
-        ),
-      ),
-    ],
+  Widget build(BuildContext context) => Padding(
+    padding: compact
+        ? const EdgeInsets.fromLTRB(24, 16, 24, 24)
+        : const EdgeInsets.fromLTRB(56, 20, 56, 36),
+    child: child,
   );
 }
 

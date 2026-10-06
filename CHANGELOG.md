@@ -2,9 +2,9 @@
 
 ## Unreleased
 
-- Load system fonts only when the editor settings page opens, reuse the hidden settings window, and make editor settings scroll instead of overflowing in smaller windows.
-- Fixed the settings child window startup by using its registered multi-window controller instead of the main-window-only plugin.
-- Open settings in a dedicated non-modal desktop window and synchronize saved appearance and editor preferences with the writing window.
+- Replaced the desktop-only settings child window with a shared in-app settings route so appearance stays live against the writing workspace on every platform.
+- Pair the editor settings scrollbar with its list scroll controller, and keep native window backdrop color in sync with the active theme.
+- Load system fonts only when the editor settings page opens, and skip unused font registration until a writing session needs it.
 - Fixed editor startup notifications during widget construction and made history snapshots conditional on the compatible `History` table being present.
 
 ## 0.1.0 - Unreleased
