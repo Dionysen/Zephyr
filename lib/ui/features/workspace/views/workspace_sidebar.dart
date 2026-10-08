@@ -8,6 +8,7 @@ import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_controls.dart';
 import '../../../core/zephyr_dropdown.dart';
 import '../../../core/zephyr_resize_handle.dart';
+import '../../../core/zephyr_swipe_drawer.dart';
 import '../../../core/zephyr_theme.dart';
 import '../../editor/view_models/library_view_model.dart';
 
@@ -117,6 +118,7 @@ class WorkspaceHeader extends StatelessWidget {
     required this.model,
     this.showMenuButton = false,
     this.showSidebarToggle = false,
+    this.onOpenMenu,
   });
 
   static double get height => WindowChrome.titleBarHeight;
@@ -124,6 +126,7 @@ class WorkspaceHeader extends StatelessWidget {
   final LibraryViewModel model;
   final bool showMenuButton;
   final bool showSidebarToggle;
+  final VoidCallback? onOpenMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +149,8 @@ class WorkspaceHeader extends StatelessWidget {
                   ),
                 if (showMenuButton)
                   IconButton(
-                    onPressed: () => Scaffold.of(context).openDrawer(),
+                    onPressed: onOpenMenu ??
+                        () => Scaffold.maybeOf(context)?.openDrawer(),
                     icon: const Icon(Icons.menu),
                     tooltip: 'Open library',
                   ),
@@ -797,6 +801,11 @@ class _ChapterRow extends StatelessWidget {
           borderRadius: radius,
           onTap: () {
             model.selectArticle(chapter.id);
+            final swipe = ZephyrSwipeDrawer.maybeOf(context);
+            if (swipe != null) {
+              swipe.close();
+              return;
+            }
             final scaffold = Scaffold.maybeOf(context);
             if (scaffold != null && scaffold.isDrawerOpen) {
               scaffold.closeDrawer();
