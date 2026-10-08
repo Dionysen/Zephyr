@@ -12,4 +12,15 @@ void main() {
   test('removes indentation when the preference is zero', () {
     expect(applyParagraphIndentation('　　First\n　Second', 0), 'First\nSecond');
   });
+
+  test('counts leading ideographic indent', () {
+    expect(leadingIdeographicIndentCount('　　Hello'), 2);
+    expect(leadingIdeographicIndentCount('Hello'), 0);
+    expect(leadingIdeographicIndentCount(''), 0);
+  });
+
+  test('builds an ideographic indent prefix', () {
+    expect(ideographicIndent(2), '　　');
+    expect(ideographicIndent(0), '');
+  });
 }

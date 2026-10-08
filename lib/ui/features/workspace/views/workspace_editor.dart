@@ -4,6 +4,7 @@ import 'package:super_editor/super_editor.dart';
 import '../../../../domain/use_cases/paragraph_indentation.dart';
 import '../../editor/view_models/editor_preferences_view_model.dart';
 import '../../editor/view_models/library_view_model.dart';
+import 'paragraph_indent_editing.dart';
 import 'plain_text_document.dart';
 
 class WorkspaceEditor extends StatefulWidget {
@@ -93,7 +94,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   void _rebuildEditor(String content) {
     _tearDownEditor();
     final document = documentFromPlainText(content);
-    final editor = createDefaultDocumentEditor(document: document);
+    final editor = createZephyrDocumentEditor(document: document);
     editor.addListener(_editListener);
     _editor = editor;
   }
@@ -121,25 +122,12 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     if (editor == null || widget.model.isReadOnly) return;
     if (changeList.isEmpty) return;
 
+    // Preserve per-paragraph indent from Enter/Tab editing; preference changes
+    // still reformat through [_applyIndent].
     final plain = plainTextFromDocument(editor.document);
-    final formatted = applyParagraphIndentation(
-      plain,
-      widget.preferences.preferences.firstLineIndent,
-    );
-    if (formatted == _lastEmitted) return;
-
-    if (formatted != plain) {
-      // Indent rules changed the text; reload document while preserving caret
-      // as best-effort by rebuilding (caret reset is acceptable for indent).
-      _lastEmitted = formatted;
-      _rebuildEditor(formatted);
-      setState(() {});
-      widget.model.updateContent(formatted);
-      return;
-    }
-
-    _lastEmitted = formatted;
-    widget.model.updateContent(formatted);
+    if (plain == _lastEmitted) return;
+    _lastEmitted = plain;
+    widget.model.updateContent(plain);
   }
 
   Stylesheet _stylesheet(BuildContext context, double horizontalPadding) {
@@ -235,6 +223,12 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
                         documentOverlayBuilders: documentOverlays,
                         androidHandleColor: cursorColor,
                         iOSHandleColor: cursorColor,
+                        keyboardActions: [
+                          tabToInsertFirstLineIndent(
+                            () => widget.preferences.preferences.firstLineIndent,
+                          ),
+                          ...defaultImeKeyboardActions,
+                        ],
                         contentTapDelegateFactories: const [],
                       );
                 return Scrollbar(

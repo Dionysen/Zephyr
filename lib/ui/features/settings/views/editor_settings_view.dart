@@ -73,7 +73,8 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
             ZephyrSettingsSlider(
               label: 'First-line indent',
               description:
-                  'Indent applied to the first line of each paragraph.',
+                  'Width inserted by Tab, and applied when opening chapters. '
+                  'Enter copies the previous paragraph\'s indent.',
               value: preferences.firstLineIndent.toDouble(),
               min: 0,
               max: 4,
