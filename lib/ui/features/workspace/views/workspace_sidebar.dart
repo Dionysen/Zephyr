@@ -795,7 +795,13 @@ class _ChapterRow extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: radius),
         child: InkWell(
           borderRadius: radius,
-          onTap: () => model.selectArticle(chapter.id),
+          onTap: () {
+            model.selectArticle(chapter.id);
+            final scaffold = Scaffold.maybeOf(context);
+            if (scaffold != null && scaffold.isDrawerOpen) {
+              scaffold.closeDrawer();
+            }
+          },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 6),
             child: Column(

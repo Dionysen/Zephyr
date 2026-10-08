@@ -62,7 +62,15 @@ class _WorkspacePageState extends State<WorkspacePage> {
         return LayoutBuilder(
           builder: (context, constraints) {
             final compact = ZephyrBreakpoints.isCompact(constraints.maxWidth);
+            // Full-width open-drag so Material's DrawerController can scrub the
+            // drawer with the finger (not only animate open on release). A thin
+            // edge is often stolen by system back gestures on mobile.
+            final edgeDragWidth = compact
+                ? constraints.maxWidth
+                : MediaQuery.paddingOf(context).left + 56;
             return Scaffold(
+              drawerEnableOpenDragGesture: compact,
+              drawerEdgeDragWidth: edgeDragWidth,
               drawer: compact
                   ? Drawer(
                       width: model.sidebarWidth,
@@ -81,7 +89,10 @@ class _WorkspacePageState extends State<WorkspacePage> {
                 child: compact
                     ? Column(
                         children: [
-                          WorkspaceHeader(model: model, showMenuButton: true),
+                          WorkspaceHeader(
+                            model: model,
+                            showMenuButton: true,
+                          ),
                           Expanded(
                             child: WorkspaceEditor(
                               model: model,
