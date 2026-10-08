@@ -37,6 +37,7 @@ class ThemeCatalog extends StatelessWidget {
               children: [
                 ZephyrSettingsChoiceTile<String>(
                   title: '主题模式',
+                  subtitle: '选择浅色、深色，或跟随系统外观。',
                   selected: isLight ? 'light' : 'dark',
                   choices: const [
                     ZephyrSettingsChoice(value: 'system', label: '跟随系统'),
@@ -122,6 +123,7 @@ class ThemeCatalog extends StatelessWidget {
               children: [
                 ZephyrSettingsValueTile(
                   title: '自定义颜色',
+                  subtitle: '调整主题语义色，修改后立即生效。',
                   valueText: '',
                   showDivider: false,
                   onTap: onCustomize,

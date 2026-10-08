@@ -68,6 +68,7 @@ class FontFilePickerRow extends StatelessWidget {
       if (compact) {
         return ZephyrSettingsListTile(
           title: label,
+          subtitle: description,
           showDivider: showDivider,
           trailing: const SizedBox(
             width: 18,
@@ -92,6 +93,7 @@ class FontFilePickerRow extends StatelessWidget {
       ];
       return ZephyrSettingsChoiceTile<String>(
         title: label,
+        subtitle: description,
         choices: choices,
         selected: selectedPath ?? '',
         valueLabel: _selectedLabel,

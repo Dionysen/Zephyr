@@ -28,9 +28,11 @@ class ZephyrSettingsListTile extends StatelessWidget {
     final titleStyle = theme.textTheme.titleSmall?.copyWith(
       color: enabled ? null : theme.disabledColor,
     );
-    final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
+    final subtitleStyle = theme.textTheme.labelSmall?.copyWith(
+      fontSize: 11,
+      height: 1.3,
       color: enabled
-          ? theme.colorScheme.onSurfaceVariant
+          ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.72)
           : theme.disabledColor,
     );
 
@@ -55,10 +57,10 @@ class ZephyrSettingsListTile extends StatelessWidget {
                           style: titleStyle,
                         ),
                         if (subtitle != null && subtitle!.isNotEmpty) ...[
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 3),
                           Text(
                             subtitle!,
-                            maxLines: 2,
+                            maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                             style: subtitleStyle,
                           ),

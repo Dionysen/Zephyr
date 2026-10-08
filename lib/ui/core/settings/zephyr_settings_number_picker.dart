@@ -238,7 +238,7 @@ class ZephyrSettingsNumberTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ZephyrSettingsValueTile(
       title: title,
-      subtitle: null,
+      subtitle: subtitle,
       valueText: _format(value),
       showDivider: showDivider,
       onTap: () => _open(context),
