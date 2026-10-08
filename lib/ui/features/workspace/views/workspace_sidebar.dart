@@ -241,6 +241,7 @@ class _VolumeRow extends StatelessWidget {
 
   static const _radius = 6.0;
   static const _listInset = 6.0;
+  static const _volumeGap = 6.0;
 
   final WritingCategory volume;
   final LibraryViewModel model;
@@ -250,7 +251,7 @@ class _VolumeRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(_listInset, 2, _listInset, 0),
+      padding: const EdgeInsets.fromLTRB(_listInset, _volumeGap, _listInset, 0),
       child: Material(
         color: theme.colorScheme.surfaceContainerHigh,
         shape: RoundedRectangleBorder(
