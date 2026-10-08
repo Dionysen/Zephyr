@@ -25,11 +25,18 @@ abstract final class WindowChrome {
   /// Fallback until [syncNativeMetrics] reads the real traffic-light frames.
   static const macOSTrafficLightInset = 80.0;
 
+  /// Matches the vertical inset of a [ZephyrControls.buttonSize] control
+  /// centered in [titleBarHeight] on Windows: (36 - 28) / 2.
+  static const windowsLeadingInset = 4.0;
+
   static double _macOSLeadingInset = macOSTrafficLightInset;
   static double _macOSTitleBarHeight = ZephyrControls.buttonSize;
 
-  static double get leadingChromeInset =>
-      usesMacOSTrafficLights ? _macOSLeadingInset : 0;
+  static double get leadingChromeInset {
+    if (usesMacOSTrafficLights) return _macOSLeadingInset;
+    if (isDesktop && Platform.isWindows) return windowsLeadingInset;
+    return 0;
+  }
 
   /// On macOS this is tall enough that a [ZephyrControls.buttonSize] control
   /// can share a vertical center with the native traffic lights.

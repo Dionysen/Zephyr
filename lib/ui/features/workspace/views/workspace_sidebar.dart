@@ -213,7 +213,13 @@ class _ChapterTree extends StatelessWidget {
       padding: const EdgeInsets.only(top: 2, bottom: 12),
       itemCount: entries.length,
       itemBuilder: (context, index) => switch (entries[index]) {
-        WritingCategory volume => _VolumeRow(volume: volume, model: model),
+        WritingCategory volume => _VolumeRow(
+          volume: volume,
+          model: model,
+          chapterCount: chapters
+              .where((item) => item.categoryId == volume.id)
+              .length,
+        ),
         ArticleSummary chapter => _ChapterRow(chapter: chapter, model: model),
         _LooseChapters() => const Padding(
           padding: EdgeInsets.fromLTRB(18, 14, 18, 4),
@@ -226,86 +232,109 @@ class _ChapterTree extends StatelessWidget {
 }
 
 class _VolumeRow extends StatelessWidget {
-  const _VolumeRow({required this.volume, required this.model});
+  const _VolumeRow({
+    required this.volume,
+    required this.model,
+    required this.chapterCount,
+  });
+
+  static const _radius = 6.0;
 
   final WritingCategory volume;
   final LibraryViewModel model;
+  final int chapterCount;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(10, 4, 10, 0),
-    child: Material(
-      color: Theme.of(context).colorScheme.surfaceContainerHigh,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(6),
-        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(6),
-        onTap: () => model.toggleVolume(volume.id),
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Row(
-            children: [
-              Icon(
-                model.isVolumeExpanded(volume.id)
-                    ? Icons.keyboard_arrow_down
-                    : Icons.keyboard_arrow_right,
-                size: 18,
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  volume.name,
-                  style: Theme.of(context).textTheme.titleSmall,
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 4, 10, 0),
+      child: Material(
+        color: theme.colorScheme.surfaceContainerHigh,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(_radius),
+          side: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(_radius),
+          onTap: () => model.toggleVolume(volume.id),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              children: [
+                Icon(
+                  model.isVolumeExpanded(volume.id)
+                      ? Icons.keyboard_arrow_down
+                      : Icons.keyboard_arrow_right,
+                  size: 18,
                 ),
-              ),
-            ],
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(volume.name, style: theme.textTheme.titleSmall),
+                ),
+                Text(
+                  '$chapterCount',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _ChapterRow extends StatelessWidget {
   const _ChapterRow({required this.chapter, required this.model});
+
+  static const _radius = 6.0;
 
   final ArticleSummary chapter;
   final LibraryViewModel model;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final selected = chapter.id == model.article?.id;
     final date = chapter.updatedAt;
     final dateText =
         '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-    return Material(
-      color: chapter.id == model.article?.id
-          ? Theme.of(context).colorScheme.secondaryContainer
-                .withValues(alpha: .42)
-          : Colors.transparent,
-      child: InkWell(
-        onTap: () => model.selectArticle(chapter.id),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(40, 9, 16, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                chapter.title.isEmpty ? 'Untitled' : chapter.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              if (chapter.summary.isNotEmpty)
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 4, 10, 0),
+      child: Material(
+        color: selected
+            ? theme.colorScheme.secondaryContainer.withValues(alpha: .42)
+            : Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(_radius),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(_radius),
+          onTap: () => model.selectArticle(chapter.id),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(30, 9, 12, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  chapter.summary,
+                  chapter.title.isEmpty ? 'Untitled' : chapter.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: theme.textTheme.titleSmall,
                 ),
-              Text(dateText, style: Theme.of(context).textTheme.labelSmall),
-            ],
+                if (chapter.summary.isNotEmpty)
+                  Text(
+                    chapter.summary,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall,
+                  ),
+                Text(dateText, style: theme.textTheme.labelSmall),
+              ],
+            ),
           ),
         ),
       ),
