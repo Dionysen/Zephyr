@@ -364,8 +364,9 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
                                       _highlighted == null;
                                   void onSelect() =>
                                       widget.onSelected(item.value);
+                                  final custom = widget.itemBuilder;
                                   final row =
-                                      widget.itemBuilder?.call(
+                                      custom?.call(
                                         context,
                                         item: item,
                                         selected: selected,
@@ -379,17 +380,26 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
                                         ),
                                         label: item.label,
                                       );
+                                  // Custom rows own their hit targets (e.g. an
+                                  // edit control) so they are not wrapped in a
+                                  // parent InkWell that would steal taps.
                                   return Material(
                                     color: highlighted || selected
                                         ? theme.colorScheme.secondaryContainer
                                         : Colors.transparent,
-                                    child: InkWell(
-                                      onTap: onSelect,
-                                      child: SizedBox(
-                                        height: ZephyrControls.fieldHeight,
-                                        child: row,
-                                      ),
-                                    ),
+                                    child: custom != null
+                                        ? SizedBox(
+                                            height: ZephyrControls.fieldHeight,
+                                            child: row,
+                                          )
+                                        : InkWell(
+                                            onTap: onSelect,
+                                            child: SizedBox(
+                                              height:
+                                                  ZephyrControls.fieldHeight,
+                                              child: row,
+                                            ),
+                                          ),
                                   );
                                 },
                               ),

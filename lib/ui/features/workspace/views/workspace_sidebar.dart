@@ -169,6 +169,7 @@ class _BookPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hostContext = context;
     final books = library.folders
         .where((book) => book.id != 'PW_Trash')
         .toList(growable: false);
@@ -238,28 +239,40 @@ class _BookPicker extends StatelessWidget {
               final book = bookById[item.value];
               final subtitle = item.subtitle;
               final theme = Theme.of(context);
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(8, 0, 4, 0),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.menu_book_outlined,
-                      size: ZephyrControls.iconSize,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        item.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleSmall,
+              return Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: onSelect,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.menu_book_outlined,
+                              size: ZephyrControls.iconSize,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                item.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleSmall,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Row(
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (subtitle != null && subtitle.isNotEmpty)
+                        if (subtitle != null && subtitle.isNotEmpty) ...[
+                          const SizedBox(width: 8),
                           ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 96),
                             child: Text(
@@ -272,42 +285,45 @@ class _BookPicker extends StatelessWidget {
                               ),
                             ),
                           ),
-                        if (subtitle != null && subtitle.isNotEmpty)
                           const SizedBox(width: 6),
-                        // Avoid IconButton tooltips here: their OverlayPortal
-                        // conflicts with CompositedTransformFollower.
+                        ],
                         SizedBox(
                           width: ZephyrControls.buttonSize,
                           height: ZephyrControls.buttonSize,
-                          child: InkWell(
-                            customBorder: ZephyrControls.iconButtonShape,
-                            onTap: model.isReadOnly || book == null
-                                ? null
-                                : () {
-                                    onDismiss();
-                                    WidgetsBinding.instance.addPostFrameCallback(
-                                      (_) {
-                                        if (!context.mounted) return;
-                                        unawaited(
-                                          _editBook(
-                                            context,
-                                            model: model,
-                                            book: book,
-                                          ),
-                                        );
-                                      },
-                                    );
-                                  },
-                            child: Icon(
-                              Icons.edit_outlined,
-                              size: ZephyrControls.iconSize,
+                          child: Material(
+                            type: MaterialType.transparency,
+                            child: InkWell(
+                              customBorder: ZephyrControls.iconButtonShape,
+                              onTap: model.isReadOnly || book == null
+                                  ? null
+                                  : () {
+                                      final editing = book;
+                                      onDismiss();
+                                      WidgetsBinding.instance
+                                          .addPostFrameCallback((_) {
+                                            if (!hostContext.mounted) {
+                                              return;
+                                            }
+                                            unawaited(
+                                              _editBook(
+                                                hostContext,
+                                                model: model,
+                                                book: editing,
+                                              ),
+                                            );
+                                          });
+                                    },
+                              child: Icon(
+                                Icons.edit_outlined,
+                                size: ZephyrControls.iconSize,
+                              ),
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               );
             },
       ),
@@ -332,6 +348,7 @@ Future<void> _editBook(
 }) async {
   final result = await showDialog<_BookEditResult>(
     context: context,
+    barrierDismissible: true,
     builder: (context) => _EditBookDialog(book: book),
   );
   if (result == null) return;
@@ -367,6 +384,7 @@ class _EditBookDialogState extends State<_EditBookDialog> {
   late final TextEditingController _name;
   late final TextEditingController _description;
   late final TextEditingController _tags;
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
@@ -384,56 +402,81 @@ class _EditBookDialogState extends State<_EditBookDialog> {
     super.dispose();
   }
 
+  void _submit() {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+    Navigator.of(context).pop(
+      _BookEditResult(
+        name: _name.text.trim(),
+        description: _description.text.trim(),
+        tags: _tags.text.trim(),
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Edit book'),
-    content: SizedBox(
-      width: 360,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _name,
-            autofocus: true,
-            decoration: const InputDecoration(labelText: 'Name'),
-            textInputAction: TextInputAction.next,
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _tags,
-            decoration: const InputDecoration(
-              labelText: 'Tags',
-              hintText: 'e.g. 文学',
-            ),
-            textInputAction: TextInputAction.next,
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _description,
-            decoration: const InputDecoration(labelText: 'Description'),
-            minLines: 2,
-            maxLines: 4,
-          ),
-        ],
-      ),
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.of(context).pop(),
-        child: const Text('Cancel'),
-      ),
-      TextButton(
-        onPressed: () => Navigator.of(context).pop(
-          _BookEditResult(
-            name: _name.text,
-            description: _description.text,
-            tags: _tags.text,
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AlertDialog(
+      title: Text('编辑书籍', style: theme.textTheme.titleLarge),
+      content: SizedBox(
+        width: 380,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextFormField(
+                controller: _name,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: '书名',
+                  hintText: '输入书名',
+                ),
+                textInputAction: TextInputAction.next,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return '请输入书名';
+                  }
+                  return null;
+                },
+                onFieldSubmitted: (_) => _submit(),
+              ),
+              const SizedBox(height: 14),
+              TextFormField(
+                controller: _tags,
+                decoration: const InputDecoration(
+                  labelText: '标签',
+                  hintText: '例如：文学',
+                ),
+                textInputAction: TextInputAction.next,
+              ),
+              const SizedBox(height: 14),
+              TextFormField(
+                controller: _description,
+                decoration: const InputDecoration(
+                  labelText: '简介',
+                  hintText: '简要说明这本书',
+                  alignLabelWithHint: true,
+                ),
+                minLines: 3,
+                maxLines: 5,
+              ),
+            ],
           ),
         ),
-        child: const Text('Save'),
       ),
-    ],
-  );
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+        FilledButton(onPressed: _submit, child: const Text('保存')),
+      ],
+    );
+  }
 }
 
 class _ChapterTree extends StatelessWidget {
