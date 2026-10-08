@@ -240,6 +240,7 @@ class _VolumeRow extends StatelessWidget {
   });
 
   static const _radius = 6.0;
+  static const _listInset = 6.0;
 
   final WritingCategory volume;
   final LibraryViewModel model;
@@ -249,7 +250,7 @@ class _VolumeRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 4, 10, 0),
+      padding: const EdgeInsets.fromLTRB(_listInset, 2, _listInset, 0),
       child: Material(
         color: theme.colorScheme.surfaceContainerHigh,
         shape: RoundedRectangleBorder(
@@ -263,7 +264,7 @@ class _VolumeRow extends StatelessWidget {
           borderRadius: BorderRadius.circular(_radius),
           onTap: () => model.toggleVolume(volume.id),
           child: Padding(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Row(
               children: [
                 Icon(
@@ -295,6 +296,8 @@ class _ChapterRow extends StatelessWidget {
   const _ChapterRow({required this.chapter, required this.model});
 
   static const _radius = 6.0;
+  static const _listInset = 6.0;
+  static const _lineGap = 4.0;
 
   final ArticleSummary chapter;
   final LibraryViewModel model;
@@ -307,7 +310,7 @@ class _ChapterRow extends StatelessWidget {
     final dateText =
         '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 4, 10, 0),
+      padding: const EdgeInsets.fromLTRB(_listInset, 2, _listInset, 0),
       child: Material(
         color: selected
             ? theme.colorScheme.secondaryContainer.withValues(alpha: .42)
@@ -319,7 +322,7 @@ class _ChapterRow extends StatelessWidget {
           borderRadius: BorderRadius.circular(_radius),
           onTap: () => model.selectArticle(chapter.id),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(30, 9, 12, 8),
+            padding: const EdgeInsets.fromLTRB(28, 6, 8, 6),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -327,16 +330,22 @@ class _ChapterRow extends StatelessWidget {
                   chapter.title.isEmpty ? 'Untitled' : chapter.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall,
+                  style: theme.textTheme.titleSmall?.copyWith(height: 1.35),
                 ),
-                if (chapter.summary.isNotEmpty)
+                if (chapter.summary.isNotEmpty) ...[
+                  const SizedBox(height: _lineGap),
                   Text(
                     chapter.summary,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall,
+                    style: theme.textTheme.bodySmall?.copyWith(height: 1.4),
                   ),
-                Text(dateText, style: theme.textTheme.labelSmall),
+                ],
+                const SizedBox(height: _lineGap),
+                Text(
+                  dateText,
+                  style: theme.textTheme.labelSmall?.copyWith(height: 1.35),
+                ),
               ],
             ),
           ),
