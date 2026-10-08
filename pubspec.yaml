@@ -43,6 +43,11 @@ dependencies:
   window_manager: ^0.5.2
   super_editor: ^0.3.0-dev.52
 
+# Patched selection painting so TextStyle.height does not overlap highlights.
+dependency_overrides:
+  super_text_layout:
+    path: third_party/super_text_layout
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
