@@ -20,6 +20,11 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
       primaryText: _color(values, 'primaryText'),
       mutedText: _color(values, 'mutedText'),
       accent: _color(values, 'accent'),
+      cursor: _color(
+        values,
+        'cursor',
+        fallback: ThemeTokens.defaults.cursor,
+      ),
     );
   }
 
@@ -54,14 +59,16 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'primaryText': tokens.primaryText,
     'mutedText': tokens.mutedText,
     'accent': tokens.accent,
+    'cursor': tokens.cursor,
     'uiFontFamily': ui.fontFamily,
     'uiFontPath': ui.fontPath,
     'uiFontSize': ui.fontSize,
     'uiCornerRadius': ui.cornerRadius,
   });
 
-  int _color(Map<String, Object?> values, String key) {
+  int _color(Map<String, Object?> values, String key, {int? fallback}) {
     final value = values[key];
+    if (value == null && fallback != null) return fallback;
     if (value is! int || value < 0 || value > 0xFFFFFFFF) {
       throw FormatException('Invalid $key token.');
     }

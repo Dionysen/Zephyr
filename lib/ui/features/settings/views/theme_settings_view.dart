@@ -482,6 +482,7 @@ String _tokenLabel(ThemeToken token) => switch (token) {
   ThemeToken.primaryText => 'Primary text',
   ThemeToken.mutedText => 'Muted text',
   ThemeToken.accent => 'Accent',
+  ThemeToken.cursor => 'Cursor',
 };
 
 String _tokenDescription(ThemeToken token) => switch (token) {
@@ -492,6 +493,7 @@ String _tokenDescription(ThemeToken token) => switch (token) {
   ThemeToken.primaryText => 'Default title and body copy color.',
   ThemeToken.mutedText => 'Dimmer copy used for setting hints and captions.',
   ThemeToken.accent => 'Interactive highlights and selected states.',
+  ThemeToken.cursor => 'Caret color in the writing editor.',
 };
 
 String _hex(int value) =>

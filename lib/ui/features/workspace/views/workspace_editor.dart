@@ -187,9 +187,10 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
       );
     }
     final preferences = widget.preferences.preferences;
-    final selectionColor = Theme.of(
-      context,
-    ).colorScheme.primary.withValues(alpha: 0.35);
+    final theme = Theme.of(context);
+    final selectionColor = theme.colorScheme.primary.withValues(alpha: 0.35);
+    final cursorColor =
+        theme.textSelectionTheme.cursorColor ?? theme.colorScheme.onSurface;
     return MouseRegion(
       cursor: SystemMouseCursors.text,
       child: Stack(
@@ -204,6 +205,19 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
                 final selectionStyle = SelectionStyles(
                   selectionColor: selectionColor,
                 );
+                final documentOverlays = [
+                  const SuperEditorIosToolbarFocalPointDocumentLayerBuilder(),
+                  SuperEditorIosHandlesDocumentLayerBuilder(
+                    handleColor: cursorColor,
+                  ),
+                  const SuperEditorAndroidToolbarFocalPointDocumentLayerBuilder(),
+                  SuperEditorAndroidHandlesDocumentLayerBuilder(
+                    caretColor: cursorColor,
+                  ),
+                  DefaultCaretOverlayBuilder(
+                    caretStyle: CaretStyle(width: 2, color: cursorColor),
+                  ),
+                ];
                 final child = widget.model.isReadOnly
                     ? SuperReader(
                         editor: editor,
@@ -218,6 +232,9 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
                         scrollController: _scrollController,
                         stylesheet: stylesheet,
                         selectionStyle: selectionStyle,
+                        documentOverlayBuilders: documentOverlays,
+                        androidHandleColor: cursorColor,
+                        iOSHandleColor: cursorColor,
                         contentTapDelegateFactories: const [],
                       );
                 return Scrollbar(

@@ -10,6 +10,7 @@ enum ThemeToken {
   primaryText,
   mutedText,
   accent,
+  cursor,
 }
 
 enum ThemePreset {
@@ -33,6 +34,7 @@ class ThemeTokens {
     required this.primaryText,
     required this.mutedText,
     required this.accent,
+    required this.cursor,
   });
 
   static const defaults = ThemeTokens(
@@ -43,6 +45,7 @@ class ThemeTokens {
     primaryText: 0xFFE8E8E8,
     mutedText: 0xFF858585,
     accent: 0xFF9ACBA7,
+    cursor: 0xFFFFFFFF,
   );
 
   static const presets = <ThemePreset, ThemeTokens>{
@@ -54,6 +57,7 @@ class ThemeTokens {
       primaryText: 0xFF25272A,
       mutedText: 0xFF70757D,
       accent: 0xFF2563EB,
+      cursor: 0xFF25272A,
     ),
     ThemePreset.grey: ThemeTokens(
       editorSurface: 0xFFF8FAFC,
@@ -63,6 +67,7 @@ class ThemeTokens {
       primaryText: 0xFF293241,
       mutedText: 0xFF718096,
       accent: 0xFF475569,
+      cursor: 0xFF293241,
     ),
     ThemePreset.slate: ThemeTokens(
       editorSurface: 0xFFFAFAFA,
@@ -72,6 +77,7 @@ class ThemeTokens {
       primaryText: 0xFF34343A,
       mutedText: 0xFF777780,
       accent: 0xFF4B5563,
+      cursor: 0xFF34343A,
     ),
     ThemePreset.claude: ThemeTokens(
       editorSurface: 0xFFFCFAF7,
@@ -81,6 +87,7 @@ class ThemeTokens {
       primaryText: 0xFF39312B,
       mutedText: 0xFF82756A,
       accent: 0xFFB85C16,
+      cursor: 0xFF39312B,
     ),
     ThemePreset.mint: ThemeTokens(
       editorSurface: 0xFFFBFDFC,
@@ -90,6 +97,7 @@ class ThemeTokens {
       primaryText: 0xFF253A32,
       mutedText: 0xFF6A8277,
       accent: 0xFF2FA36F,
+      cursor: 0xFF253A32,
     ),
     ThemePreset.purple: ThemeTokens(
       editorSurface: 0xFFFCF9FF,
@@ -99,6 +107,7 @@ class ThemeTokens {
       primaryText: 0xFF382D4A,
       mutedText: 0xFF7E708F,
       accent: 0xFF7C3AED,
+      cursor: 0xFF382D4A,
     ),
     ThemePreset.hermes: ThemeTokens(
       editorSurface: 0xFFF7F7FF,
@@ -108,6 +117,7 @@ class ThemeTokens {
       primaryText: 0xFF252D50,
       mutedText: 0xFF70769A,
       accent: 0xFF1D4ED8,
+      cursor: 0xFF252D50,
     ),
     ThemePreset.ocean: ThemeTokens(
       editorSurface: 0xFF161923,
@@ -117,6 +127,7 @@ class ThemeTokens {
       primaryText: 0xFFE4E8F0,
       mutedText: 0xFF8B95A7,
       accent: 0xFF73A5FF,
+      cursor: 0xFFFFFFFF,
     ),
     ThemePreset.darkModern: defaults,
   };
@@ -128,6 +139,7 @@ class ThemeTokens {
   final int primaryText;
   final int mutedText;
   final int accent;
+  final int cursor;
 
   ThemePreset? get preset => ThemePreset.values
       .where((candidate) => presets[candidate] == this)
@@ -141,6 +153,7 @@ class ThemeTokens {
     ThemeToken.primaryText => primaryText,
     ThemeToken.mutedText => mutedText,
     ThemeToken.accent => accent,
+    ThemeToken.cursor => cursor,
   };
 
   ThemeTokens withValue(ThemeToken token, int value) => switch (token) {
@@ -151,6 +164,7 @@ class ThemeTokens {
     ThemeToken.primaryText => copyWith(primaryText: value),
     ThemeToken.mutedText => copyWith(mutedText: value),
     ThemeToken.accent => copyWith(accent: value),
+    ThemeToken.cursor => copyWith(cursor: value),
   };
 
   ThemeTokens copyWith({
@@ -161,6 +175,7 @@ class ThemeTokens {
     int? primaryText,
     int? mutedText,
     int? accent,
+    int? cursor,
   }) => ThemeTokens(
     editorSurface: editorSurface ?? this.editorSurface,
     sidebarSurface: sidebarSurface ?? this.sidebarSurface,
@@ -169,6 +184,7 @@ class ThemeTokens {
     primaryText: primaryText ?? this.primaryText,
     mutedText: mutedText ?? this.mutedText,
     accent: accent ?? this.accent,
+    cursor: cursor ?? this.cursor,
   );
 
   @override
@@ -180,7 +196,8 @@ class ThemeTokens {
       border == other.border &&
       primaryText == other.primaryText &&
       mutedText == other.mutedText &&
-      accent == other.accent;
+      accent == other.accent &&
+      cursor == other.cursor;
 
   @override
   int get hashCode => Object.hash(
@@ -191,5 +208,6 @@ class ThemeTokens {
     primaryText,
     mutedText,
     accent,
+    cursor,
   );
 }

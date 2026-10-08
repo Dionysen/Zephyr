@@ -60,6 +60,7 @@ ThemeData zephyrTheme(
   final primaryText = Color(tokens.primaryText);
   final mutedText = Color(tokens.mutedText);
   final accent = Color(tokens.accent);
+  final cursor = Color(tokens.cursor);
   final brightness = editor.computeLuminance() < .5
       ? Brightness.dark
       : Brightness.light;
@@ -204,6 +205,11 @@ ThemeData zephyrTheme(
       foregroundColor: primaryText,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
+    ),
+    textSelectionTheme: TextSelectionThemeData(
+      cursorColor: cursor,
+      selectionColor: accent.withValues(alpha: .35),
+      selectionHandleColor: cursor,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,

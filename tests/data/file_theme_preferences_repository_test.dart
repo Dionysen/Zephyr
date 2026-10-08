@@ -25,6 +25,7 @@ void main() {
         primaryText: 0xFFEEF0F2,
         mutedText: 0xFF818283,
         accent: 0xFFAABBCC,
+        cursor: 0xFFFFFFFF,
       );
       const expectedUi = UiPreferences(
         fontFamily: 'Inter',
@@ -65,10 +66,12 @@ void main() {
     final repository = FileThemePreferencesRepository(storage);
 
     final ui = await repository.loadUi();
+    final tokens = await repository.loadTokens();
 
     expect(ui.fontSize, UiPreferences.defaults.fontSize);
     expect(ui.cornerRadius, UiPreferences.defaults.cornerRadius);
     expect(ui.fontFamily, isNull);
     expect(ui.fontPath, isNull);
+    expect(tokens.cursor, ThemeTokens.defaults.cursor);
   });
 }

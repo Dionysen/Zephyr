@@ -15,6 +15,7 @@ void main() {
         primaryText: 0xFFEEEEEE,
         mutedText: 0xFF888888,
         accent: 0xFF00AA00,
+        cursor: 0xFFFFFFFF,
       ),
     );
     final model = ThemeViewModel(repository);
