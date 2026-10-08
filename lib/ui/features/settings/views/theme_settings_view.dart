@@ -12,10 +12,12 @@ class ThemeCatalog extends StatelessWidget {
     super.key,
     required this.viewModel,
     required this.onCustomize,
+    this.compact = false,
   });
 
   final ThemeViewModel viewModel;
   final VoidCallback onCustomize;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -24,6 +26,112 @@ class ThemeCatalog extends StatelessWidget {
       final active = viewModel.tokens.preset;
       final isLight =
           Color(viewModel.tokens.editorSurface).computeLuminance() > .5;
+      final defaults = UiPreferences.defaults;
+
+      if (compact) {
+        // Non-scrollable fragment; the parent settings page owns scrolling.
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ZephyrSettingsSection(
+              children: [
+                ZephyrSettingsChoiceTile<String>(
+                  title: '主题模式',
+                  selected: isLight ? 'light' : 'dark',
+                  choices: const [
+                    ZephyrSettingsChoice(value: 'system', label: '跟随系统'),
+                    ZephyrSettingsChoice(value: 'light', label: '浅色'),
+                    ZephyrSettingsChoice(value: 'dark', label: '深色'),
+                  ],
+                  valueLabel: isLight ? '浅色' : '深色',
+                  onSelected: (mode) {
+                    if (mode == 'system') {
+                      final dark = MediaQuery.platformBrightnessOf(context) ==
+                          Brightness.dark;
+                      viewModel.applyPreset(
+                        dark ? ThemePreset.darkModern : ThemePreset.light,
+                      );
+                      return;
+                    }
+                    viewModel.applyPreset(
+                      mode == 'light'
+                          ? ThemePreset.light
+                          : ThemePreset.darkModern,
+                    );
+                  },
+                ),
+                FontFilePickerRow(
+                  label: 'UI 字体',
+                  description: '用于界面与侧边栏的字体。',
+                  fonts: viewModel.systemFonts,
+                  selectedPath: viewModel.ui.fontPath,
+                  isLoading: viewModel.isLoadingSystemFonts,
+                  onSelected: viewModel.selectUiFont,
+                  onImportPath: viewModel.importUiFontFromPath,
+                  compact: true,
+                ),
+                ZephyrSettingsAdaptiveNumber(
+                  compact: true,
+                  title: 'UI 字体大小',
+                  description: '侧边栏、设置与界面文字大小。',
+                  value: viewModel.ui.fontSize,
+                  min: 11,
+                  max: 18,
+                  defaultValue: defaults.fontSize,
+                  suffix: 'px',
+                  divisions: 7,
+                  onChanged: viewModel.updateUiFontSize,
+                ),
+                ZephyrSettingsAdaptiveNumber(
+                  compact: true,
+                  title: '圆角',
+                  description: '按钮、菜单、卡片与输入框的圆角。',
+                  value: viewModel.ui.cornerRadius,
+                  min: UiPreferences.minCornerRadius,
+                  max: UiPreferences.maxCornerRadius,
+                  defaultValue: defaults.cornerRadius,
+                  suffix: 'px',
+                  divisions: 20,
+                  showDivider: false,
+                  onChanged: viewModel.updateCornerRadius,
+                ),
+              ],
+            ),
+            ZephyrSettingsSection(
+              title: '主题预设',
+              footer: active == null
+                  ? '当前：自定义'
+                  : '当前：${_presetTitle(active)}',
+              children: [
+                for (var i = 0; i < ThemePreset.values.length; i++)
+                  ZephyrSettingsListTile(
+                    title: _presetTitle(ThemePreset.values[i]),
+                    showDivider: i != ThemePreset.values.length - 1,
+                    trailing: ThemePreset.values[i] == active
+                        ? Icon(
+                            Icons.check,
+                            color: Theme.of(context).colorScheme.primary,
+                          )
+                        : null,
+                    onTap: () =>
+                        viewModel.applyPreset(ThemePreset.values[i]),
+                  ),
+              ],
+            ),
+            ZephyrSettingsSection(
+              children: [
+                ZephyrSettingsValueTile(
+                  title: '自定义颜色',
+                  valueText: '',
+                  showDivider: false,
+                  onTap: onCustomize,
+                ),
+              ],
+            ),
+          ],
+        );
+      }
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -72,22 +180,29 @@ class ThemeCatalog extends StatelessWidget {
             onSelected: viewModel.selectUiFont,
             onImportPath: viewModel.importUiFontFromPath,
           ),
-          ZephyrSettingsSlider(
-            label: 'UI font size',
+          ZephyrSettingsAdaptiveNumber(
+            compact: false,
+            title: 'UI font size',
             description: 'Size of sidebar, settings, and chrome text.',
             value: viewModel.ui.fontSize,
             min: 11,
             max: 18,
+            defaultValue: defaults.fontSize,
             suffix: 'px',
+            divisions: 7,
             onChanged: viewModel.updateUiFontSize,
           ),
-          ZephyrSettingsSlider(
-            label: 'Corner radius',
-            description: 'Shared roundness for buttons, menus, cards, and fields.',
+          ZephyrSettingsAdaptiveNumber(
+            compact: false,
+            title: 'Corner radius',
+            description:
+                'Shared roundness for buttons, menus, cards, and fields.',
             value: viewModel.ui.cornerRadius,
             min: UiPreferences.minCornerRadius,
             max: UiPreferences.maxCornerRadius,
+            defaultValue: defaults.cornerRadius,
             suffix: 'px',
+            divisions: 20,
             onChanged: viewModel.updateCornerRadius,
           ),
           const SizedBox(height: 10),
@@ -141,10 +256,12 @@ class ThemeTokenEditor extends StatefulWidget {
     super.key,
     required this.viewModel,
     required this.onBack,
+    this.showBackButton = true,
   });
 
   final ThemeViewModel viewModel;
   final VoidCallback onBack;
+  final bool showBackButton;
 
   @override
   State<ThemeTokenEditor> createState() => _ThemeTokenEditorState();
@@ -172,12 +289,14 @@ class _ThemeTokenEditorState extends State<ThemeTokenEditor> {
     builder: (context, _) => Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextButton.icon(
-          onPressed: widget.onBack,
-          icon: const Icon(Icons.arrow_back),
-          label: const Text('Back to themes'),
-        ),
-        const SizedBox(height: 8),
+        if (widget.showBackButton) ...[
+          TextButton.icon(
+            onPressed: widget.onBack,
+            icon: const Icon(Icons.arrow_back),
+            label: const Text('Back to themes'),
+          ),
+          const SizedBox(height: 8),
+        ],
         Text('Theme tokens', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 8),
         Text(

@@ -7,6 +7,7 @@ import '../../../core/breakpoints.dart';
 import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_resize_handle.dart';
 import '../../../core/zephyr_scope.dart';
+import '../../../core/zephyr_settings.dart';
 import '../../../core/zephyr_theme.dart';
 import '../../workspace/views/workspace_sidebar.dart';
 import '../models/settings_section.dart';
@@ -32,7 +33,9 @@ class _SettingsPageState extends State<SettingsPage> {
       if (!mounted) {
         return;
       }
-      _ensureEditorFonts(ZephyrScope.of(context));
+      final scope = ZephyrScope.of(context);
+      unawaited(scope.editorPreferences.loadSystemFonts());
+      unawaited(scope.theme.loadSystemFonts());
     });
   }
 
@@ -56,26 +59,48 @@ class _SettingsPageState extends State<SettingsPage> {
                   SettingsNavigation.minSidebarWidth,
                   maxSidebarWidth,
                 );
-                final content = _SettingsBody(
-                  compact: compact,
-                  child: _buildSection(scope, section),
-                );
                 if (compact) {
                   return Column(
                     children: [
-                      const _SettingsHeader(),
-                      _CompactSettingsNavigation(
-                        selected: section,
-                        onSelected: _select,
+                      ZephyrSettingsAppBar(
+                        title: _editingTokens ? '自定义颜色' : '设置',
+                        onBack: () {
+                          if (_editingTokens) {
+                            setState(() => _editingTokens = false);
+                            return;
+                          }
+                          Navigator.of(context).maybePop();
+                        },
                       ),
-                      const Divider(),
-                      Expanded(child: content),
-                      _SettingsBackButton(
-                        onPressed: () => Navigator.of(context).maybePop(),
+                      Expanded(
+                        child: _editingTokens
+                            ? Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  12,
+                                  16,
+                                  24,
+                                ),
+                                child: ThemeTokenEditor(
+                                  viewModel: scope.theme,
+                                  showBackButton: false,
+                                  onBack: () =>
+                                      setState(() => _editingTokens = false),
+                                ),
+                              )
+                            : _CompactSettingsList(
+                                scope: scope,
+                                onCustomizeTheme: () =>
+                                    setState(() => _editingTokens = true),
+                              ),
                       ),
                     ],
                   );
                 }
+                final content = _SettingsBody(
+                  compact: false,
+                  child: _buildDesktopSection(scope, section),
+                );
                 return Row(
                   children: [
                     SizedBox(
@@ -100,14 +125,15 @@ class _SettingsPageState extends State<SettingsPage> {
                           maxSidebarWidth,
                         ),
                       ),
-                      onDragEnd: () => scope.settings.setSidebarResizing(false),
+                      onDragEnd: () =>
+                          scope.settings.setSidebarResizing(false),
                       onDragCancel: () =>
                           scope.settings.setSidebarResizing(false),
                     ),
                     Expanded(
                       child: Column(
                         children: [
-                          const _SettingsHeader(),
+                          const _DesktopSettingsHeader(),
                           Expanded(child: content),
                         ],
                       ),
@@ -126,11 +152,7 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() => _editingTokens = false);
     final scope = ZephyrScope.of(context);
     scope.settings.select(section);
-    _ensureEditorFonts(scope);
-  }
-
-  void _ensureEditorFonts(ZephyrScope scope) {
-    switch (scope.settings.section) {
+    switch (section) {
       case SettingsSection.editor:
         unawaited(scope.editorPreferences.loadSystemFonts());
       case SettingsSection.theme:
@@ -140,7 +162,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  Widget _buildSection(ZephyrScope scope, SettingsSection section) =>
+  Widget _buildDesktopSection(ZephyrScope scope, SettingsSection section) =>
       switch (section) {
         SettingsSection.theme when _editingTokens => ThemeTokenEditor(
           viewModel: scope.theme,
@@ -163,8 +185,54 @@ class _SettingsPageState extends State<SettingsPage> {
       );
 }
 
-class _SettingsHeader extends StatelessWidget {
-  const _SettingsHeader();
+/// Single scroll of every settings category; icons/titles act as dividers.
+class _CompactSettingsList extends StatelessWidget {
+  const _CompactSettingsList({
+    required this.scope,
+    required this.onCustomizeTheme,
+  });
+
+  final ZephyrScope scope;
+  final VoidCallback onCustomizeTheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+      children: [
+        for (final section in SettingsSection.values) ...[
+          ZephyrSettingsCategoryHeader(
+            icon: section.icon,
+            title: section.compactTitle,
+          ),
+          switch (section) {
+            SettingsSection.theme => ThemeCatalog(
+              viewModel: scope.theme,
+              compact: true,
+              onCustomize: onCustomizeTheme,
+            ),
+            SettingsSection.editor => EditorSettingsView(
+              viewModel: scope.editorPreferences,
+              compact: true,
+            ),
+            _ => ZephyrSettingsSection(
+              children: [
+                ZephyrSettingsListTile(
+                  title: '即将推出',
+                  subtitle: '此分组的设置项稍后加入。',
+                  showDivider: false,
+                ),
+              ],
+            ),
+          },
+        ],
+      ],
+    );
+  }
+}
+
+class _DesktopSettingsHeader extends StatelessWidget {
+  const _DesktopSettingsHeader();
 
   @override
   Widget build(BuildContext context) {
@@ -207,7 +275,7 @@ class _SettingsBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: compact
-        ? const EdgeInsets.fromLTRB(24, 16, 24, 24)
+        ? const EdgeInsets.fromLTRB(16, 12, 16, 24)
         : const EdgeInsets.fromLTRB(56, 20, 56, 36),
     child: child,
   );
@@ -254,53 +322,19 @@ class _SettingsNavigation extends StatelessWidget {
           onTap: () => onSelected(section),
         ),
       const Spacer(),
-      _SettingsBackButton(onPressed: onBack),
-    ],
-  );
-}
-
-class _CompactSettingsNavigation extends StatelessWidget {
-  const _CompactSettingsNavigation({
-    required this.selected,
-    required this.onSelected,
-  });
-
-  final SettingsSection selected;
-  final ValueChanged<SettingsSection> onSelected;
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-    height: 58,
-    child: ListView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      children: [
-        for (final section in SettingsSection.values)
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: Material(
-              color: section == selected
-                  ? Theme.of(context).colorScheme.secondaryContainer
-                  : Colors.transparent,
-              borderRadius: context.zephyrBorderRadius,
-              child: InkWell(
-                borderRadius: context.zephyrBorderRadius,
-                onTap: () => onSelected(section),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Row(
-                    children: [
-                      Icon(section.icon, size: 17),
-                      const SizedBox(width: 6),
-                      Text(section.title),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
+        child: SizedBox(
+          width: double.infinity,
+          height: 40,
+          child: OutlinedButton.icon(
+            onPressed: onBack,
+            icon: const Icon(Icons.arrow_back),
+            label: const Text('Back'),
           ),
-      ],
-    ),
+        ),
+      ),
+    ],
   );
 }
 
@@ -339,26 +373,6 @@ class _SettingsNavigationItem extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    ),
-  );
-}
-
-class _SettingsBackButton extends StatelessWidget {
-  const _SettingsBackButton({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
-    child: SizedBox(
-      width: double.infinity,
-      height: 40,
-      child: OutlinedButton.icon(
-        onPressed: onPressed,
-        icon: const Icon(Icons.arrow_back),
-        label: const Text('Back'),
       ),
     ),
   );

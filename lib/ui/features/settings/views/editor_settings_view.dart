@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 
+import '../../../../domain/models/editor_preferences.dart';
 import '../../../core/zephyr_settings.dart';
 import '../../editor/view_models/editor_preferences_view_model.dart';
 import 'font_file_picker.dart';
 
 class EditorSettingsView extends StatefulWidget {
-  const EditorSettingsView({super.key, required this.viewModel});
+  const EditorSettingsView({
+    super.key,
+    required this.viewModel,
+    this.compact = false,
+  });
 
   final EditorPreferencesViewModel viewModel;
+  final bool compact;
 
   @override
   State<EditorSettingsView> createState() => _EditorSettingsViewState();
@@ -28,6 +34,109 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
     builder: (context, _) {
       final viewModel = widget.viewModel;
       final preferences = viewModel.preferences;
+      final compact = widget.compact;
+      final defaults = EditorPreferences.defaults;
+
+      final fontPicker = FontFilePickerRow(
+        label: compact ? '字体' : 'Font',
+        description: compact
+            ? '写作区正文字体；从文件导入会复制到应用目录。'
+            : 'Typeface used in the writing editor. Files are copied into '
+                  'the app so the original can be deleted.',
+        fonts: viewModel.systemFonts,
+        selectedPath: preferences.fontPath,
+        isLoading: viewModel.isLoadingSystemFonts,
+        onSelected: viewModel.selectFont,
+        onImportPath: viewModel.importFontFromPath,
+        compact: compact,
+      );
+
+      final numbers = <Widget>[
+        ZephyrSettingsAdaptiveNumber(
+          compact: compact,
+          title: compact ? '字体大小' : 'Font size',
+          description: compact
+              ? '写作区正文字号。'
+              : 'Size of the writing-column body text.',
+          value: preferences.fontSize,
+          min: 12,
+          max: 32,
+          defaultValue: defaults.fontSize,
+          suffix: 'px',
+          divisions: 20,
+          onChanged: viewModel.updateFontSize,
+        ),
+        ZephyrSettingsAdaptiveNumber(
+          compact: compact,
+          title: compact ? '行高' : 'Line height',
+          description: compact
+              ? '段内行距倍数。'
+              : 'Uniform line-height multiplier within a paragraph.',
+          value: preferences.lineHeight,
+          min: 1.2,
+          max: 2.4,
+          defaultValue: defaults.lineHeight,
+          suffix: '×',
+          onChanged: viewModel.updateLineHeight,
+        ),
+        ZephyrSettingsAdaptiveNumber(
+          compact: compact,
+          title: compact ? '段间距' : 'Paragraph spacing',
+          description: compact
+              ? '段落之间的间距（字号倍数）。'
+              : 'Gap between paragraphs, as a font-size multiplier.',
+          value: preferences.paragraphSpacing,
+          min: 0,
+          max: 2.5,
+          defaultValue: defaults.paragraphSpacing,
+          suffix: '×',
+          onChanged: viewModel.updateParagraphSpacing,
+        ),
+        ZephyrSettingsAdaptiveNumber(
+          compact: compact,
+          title: compact ? '首行缩进' : 'First-line indent',
+          description: compact
+              ? 'Tab 插入的缩进宽度；打开章节时也会应用。'
+              : 'Width inserted by Tab, and applied when opening chapters. '
+                    'Enter copies the previous paragraph\'s indent.',
+          value: preferences.firstLineIndent.toDouble(),
+          min: 0,
+          max: 4,
+          defaultValue: defaults.firstLineIndent.toDouble(),
+          suffix: ' ch',
+          divisions: 4,
+          onChanged: (value) => viewModel.updateFirstLineIndent(value.round()),
+        ),
+        ZephyrSettingsAdaptiveNumber(
+          compact: compact,
+          title: compact ? '栏宽' : 'Editor width',
+          description: compact
+              ? '阅读栏最大宽度。'
+              : 'Maximum width of the reading column.',
+          value: preferences.maxContentWidth,
+          min: 480,
+          max: 1200,
+          defaultValue: defaults.maxContentWidth,
+          suffix: 'px',
+          divisions: 72,
+          showDivider: false,
+          onChanged: viewModel.updateMaxContentWidth,
+        ),
+      ];
+
+      if (compact) {
+        // Non-scrollable fragment; the parent settings page owns scrolling.
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ZephyrSettingsSection(
+              footer: '更改会立即应用到写作区。',
+              children: [fontPicker, ...numbers],
+            ),
+          ],
+        );
+      }
+
       return Scrollbar(
         controller: _scrollController,
         child: ListView(
@@ -41,68 +150,8 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 24),
-            FontFilePickerRow(
-              label: 'Font',
-              description:
-                  'Typeface used in the writing editor. Files are copied into '
-                  'the app so the original can be deleted.',
-              fonts: viewModel.systemFonts,
-              selectedPath: preferences.fontPath,
-              isLoading: viewModel.isLoadingSystemFonts,
-              onSelected: viewModel.selectFont,
-              onImportPath: viewModel.importFontFromPath,
-            ),
-            ZephyrSettingsSlider(
-              label: 'Font size',
-              description: 'Size of the writing-column body text.',
-              value: preferences.fontSize,
-              min: 12,
-              max: 32,
-              suffix: 'px',
-              onChanged: viewModel.updateFontSize,
-            ),
-            ZephyrSettingsSlider(
-              label: 'Line height',
-              description: 'Uniform line-height multiplier within a paragraph.',
-              value: preferences.lineHeight,
-              min: 1.2,
-              max: 2.4,
-              suffix: '×',
-              onChanged: viewModel.updateLineHeight,
-            ),
-            ZephyrSettingsSlider(
-              label: 'Paragraph spacing',
-              description:
-                  'Gap between paragraphs, as a font-size multiplier.',
-              value: preferences.paragraphSpacing,
-              min: 0,
-              max: 2.5,
-              suffix: '×',
-              onChanged: viewModel.updateParagraphSpacing,
-            ),
-            ZephyrSettingsSlider(
-              label: 'First-line indent',
-              description:
-                  'Width inserted by Tab, and applied when opening chapters. '
-                  'Enter copies the previous paragraph\'s indent.',
-              value: preferences.firstLineIndent.toDouble(),
-              min: 0,
-              max: 4,
-              suffix: ' ch',
-              divisions: 4,
-              onChanged: (value) =>
-                  viewModel.updateFirstLineIndent(value.round()),
-            ),
-            ZephyrSettingsSlider(
-              label: 'Editor width',
-              description: 'Maximum width of the reading column.',
-              value: preferences.maxContentWidth,
-              min: 480,
-              max: 1200,
-              suffix: 'px',
-              showDivider: false,
-              onChanged: viewModel.updateMaxContentWidth,
-            ),
+            fontPicker,
+            ...numbers,
           ],
         ),
       );

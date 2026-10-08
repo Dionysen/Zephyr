@@ -14,6 +14,16 @@ extension SettingsSectionLabels on SettingsSection {
     SettingsSection.about => 'About',
   };
 
+  /// Mobile category divider label.
+  String get compactTitle => switch (this) {
+    SettingsSection.general => '通用',
+    SettingsSection.cloud => '云同步',
+    SettingsSection.editor => '编辑器',
+    SettingsSection.shortcuts => '快捷键',
+    SettingsSection.theme => '外观',
+    SettingsSection.about => '关于',
+  };
+
   IconData get icon => switch (this) {
     SettingsSection.general => Icons.tune,
     SettingsSection.cloud => Icons.cloud_outlined,

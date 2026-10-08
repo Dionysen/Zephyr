@@ -12,7 +12,7 @@ class UiPreferences {
   static const defaults = UiPreferences(
     fontFamily: null,
     fontPath: null,
-    fontSize: 13,
+    fontSize: 16,
     cornerRadius: 8,
   );
 
