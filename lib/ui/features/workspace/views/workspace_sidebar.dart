@@ -38,78 +38,228 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
   LibraryViewModel get model => widget.model;
 
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
-      border: Border(right: BorderSide(color: Theme.of(context).dividerColor)),
-    ),
-    child: Material(
-      color: Theme.of(context).colorScheme.surfaceContainerLowest,
-      child: Column(
-        children: [
-          SizedBox(
-            height: WorkspaceHeader.height,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                if (WindowChrome.leadingChromeInset > 0)
-                  SizedBox(width: WindowChrome.leadingChromeInset),
-                if (widget.mode == SidebarMode.docked)
-                  IconButton(
-                    onPressed: model.toggleSidebar,
-                    icon: const Icon(Icons.menu_open),
-                    tooltip: 'Hide sidebar',
-                  ),
-                const Expanded(child: WindowDragArea(child: SizedBox.expand())),
-              ],
-            ),
-          ),
-          _BookPicker(model: model, library: model.library!),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  onPressed: model.hasVolumes
-                      ? () => _chapterTreeKey.currentState?.toggleAllVolumes()
-                      : null,
-                  icon: Icon(
-                    model.areAllVolumesExpanded
-                        ? Icons.unfold_less
-                        : Icons.unfold_more,
-                  ),
-                  tooltip: model.areAllVolumesExpanded
-                      ? 'Collapse all'
-                      : 'Expand all',
+  Widget build(BuildContext context) {
+    final drawer = widget.mode == SidebarMode.drawer;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(right: BorderSide(color: Theme.of(context).dividerColor)),
+      ),
+      child: Material(
+        color: Theme.of(context).colorScheme.surfaceContainerLowest,
+        child: Column(
+          children: [
+            if (drawer)
+              _DrawerSidebarHeader(
+                model: model,
+                onToggleAllVolumes: model.hasVolumes
+                    ? () => _chapterTreeKey.currentState?.toggleAllVolumes()
+                    : null,
+              )
+            else ...[
+              SizedBox(
+                height: WorkspaceHeader.height,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    if (WindowChrome.leadingChromeInset > 0)
+                      SizedBox(width: WindowChrome.leadingChromeInset),
+                    IconButton(
+                      onPressed: model.toggleSidebar,
+                      icon: const Icon(Icons.menu_open),
+                      tooltip: 'Hide sidebar',
+                    ),
+                    const Expanded(
+                      child: WindowDragArea(child: SizedBox.expand()),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 4),
-                IconButton(
-                  onPressed:
-                      model.isReadOnly || model.selectedBook?.isTrash == true
-                      ? null
-                      : model.createArticle,
-                  icon: const Icon(Icons.note_add_outlined),
-                  tooltip: 'New chapter',
+              ),
+              WorkspaceBookPicker(model: model, library: model.library!),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      onPressed: model.hasVolumes
+                          ? () =>
+                                _chapterTreeKey.currentState?.toggleAllVolumes()
+                          : null,
+                      icon: Icon(
+                        model.areAllVolumesExpanded
+                            ? Icons.unfold_less
+                            : Icons.unfold_more,
+                      ),
+                      tooltip: model.areAllVolumesExpanded
+                          ? 'Collapse all'
+                          : 'Expand all',
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      onPressed:
+                          model.isReadOnly ||
+                              model.selectedBook?.isTrash == true
+                          ? null
+                          : model.createArticle,
+                      icon: const Icon(Icons.note_add_outlined),
+                      tooltip: 'New chapter',
+                    ),
+                  ],
                 ),
-              ],
+              ),
+            ],
+            Expanded(
+              child: _ChapterTree(
+                key: _chapterTreeKey,
+                model: model,
+                library: model.library!,
+              ),
             ),
-          ),
-          Expanded(
-            child: _ChapterTree(
-              key: _chapterTreeKey,
+            _LibraryDock(
               model: model,
-              library: model.library!,
+              openLibrary: widget.openLibrary,
+              openSettings: widget.openSettings,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Mobile drawer header: book name + chapter count on the left, tools on the right.
+class _DrawerSidebarHeader extends StatelessWidget {
+  const _DrawerSidebarHeader({
+    required this.model,
+    required this.onToggleAllVolumes,
+  });
+
+  final LibraryViewModel model;
+  final VoidCallback? onToggleAllVolumes;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final book = model.selectedBook;
+    final stats = book == null ? null : model.bookStats(book.id);
+    final meta = stats == null
+        ? null
+        : '${stats.volumes}卷 ${stats.chapters}章';
+    final isTrash = book?.isTrash == true;
+    final titleColor = isTrash ? theme.colorScheme.error : null;
+    final metaColor = isTrash
+        ? theme.colorScheme.error
+        : theme.colorScheme.onSurfaceVariant;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 10, 6, 6),
+      child: Row(
+        children: [
+          if (isTrash) ...[
+            Icon(
+              Icons.delete_outline,
+              size: ZephyrControls.iconSize,
+              color: theme.colorScheme.error,
+            ),
+            const SizedBox(width: 8),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  book?.name ?? 'Select a book',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: titleColor,
+                  ),
+                ),
+                if (meta != null)
+                  Text(
+                    meta,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: metaColor,
+                    ),
+                  ),
+              ],
             ),
           ),
-          _LibraryDock(
-            model: model,
-            openLibrary: widget.openLibrary,
-            openSettings: widget.openSettings,
+          IconButton(
+            onPressed: onToggleAllVolumes,
+            icon: Icon(
+              model.areAllVolumesExpanded
+                  ? Icons.unfold_less
+                  : Icons.unfold_more,
+            ),
+            tooltip: model.areAllVolumesExpanded
+                ? 'Collapse all'
+                : 'Expand all',
+          ),
+          IconButton(
+            onPressed: model.isReadOnly || isTrash ? null : model.createArticle,
+            icon: const Icon(Icons.note_add_outlined),
+            tooltip: 'New chapter',
           ),
         ],
       ),
-    ),
-  );
+    );
+  }
+}
+
+/// Floating book picker for the compact editor surface.
+class WorkspaceMobileBookBar extends StatelessWidget {
+  const WorkspaceMobileBookBar({
+    super.key,
+    required this.model,
+    required this.onOpenMenu,
+  });
+
+  static const height = 52.0;
+
+  final LibraryViewModel model;
+  final VoidCallback onOpenMenu;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final library = model.library;
+    if (library == null) return const SizedBox.shrink();
+    final radius = context.zephyrBorderRadius;
+
+    return Material(
+      elevation: 2,
+      shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.28),
+      color: theme.colorScheme.surface.withValues(alpha: 0.94),
+      shape: RoundedRectangleBorder(
+        borderRadius: radius,
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: SizedBox(
+        height: height,
+        child: Row(
+          children: [
+            IconButton(
+              onPressed: onOpenMenu,
+              icon: const Icon(Icons.menu),
+              tooltip: 'Open library',
+            ),
+            Expanded(
+              child: WorkspaceBookPicker(
+                model: model,
+                library: library,
+                dense: true,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class WorkspaceHeader extends StatelessWidget {
@@ -186,11 +336,17 @@ class WorkspaceHeader extends StatelessWidget {
   }
 }
 
-class _BookPicker extends StatelessWidget {
-  const _BookPicker({required this.model, required this.library});
+class WorkspaceBookPicker extends StatelessWidget {
+  const WorkspaceBookPicker({
+    super.key,
+    required this.model,
+    required this.library,
+    this.dense = false,
+  });
 
   final LibraryViewModel model;
   final WritingLibrary library;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
@@ -198,7 +354,9 @@ class _BookPicker extends StatelessWidget {
     final books = library.folders;
     final bookById = {for (final book in books) book.id: book};
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
+      padding: dense
+          ? const EdgeInsets.fromLTRB(0, 0, 8, 0)
+          : const EdgeInsets.fromLTRB(10, 8, 10, 4),
       child: ZephyrDropdown<String>(
         value: model.selectedBook?.id,
         hint: 'Select a book',
@@ -213,16 +371,14 @@ class _BookPicker extends StatelessWidget {
         onChanged: model.selectBook,
         triggerBuilder: (context, {required selected, required isOpen}) {
           final book = selected == null ? null : bookById[selected.value];
-          final stats = book == null
-              ? null
-              : model.bookStats(book.id);
+          final stats = book == null ? null : model.bookStats(book.id);
           final meta = stats == null
               ? null
               : '${stats.volumes}卷 ${stats.chapters}章';
           final theme = Theme.of(context);
           final isTrash = book?.isTrash == true;
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
+            padding: EdgeInsets.symmetric(horizontal: dense ? 4 : 10),
             child: Row(
               children: [
                 if (isTrash) ...[

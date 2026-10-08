@@ -91,22 +91,32 @@ class _WorkspacePageState extends State<WorkspacePage> {
                           ),
                         ),
                         body: Builder(
-                          builder: (context) => Column(
-                            children: [
-                              WorkspaceHeader(
-                                model: model,
-                                showMenuButton: true,
-                                onOpenMenu: () =>
-                                    ZephyrSwipeDrawer.of(context).open(),
-                              ),
-                              Expanded(
-                                child: WorkspaceEditor(
-                                  model: model,
-                                  preferences: scope.editorPreferences,
+                          builder: (context) {
+                            const barInset = 8.0;
+                            const topOverlay =
+                                barInset + WorkspaceMobileBookBar.height + 6;
+                            return Stack(
+                              children: [
+                                Positioned.fill(
+                                  child: WorkspaceEditor(
+                                    model: model,
+                                    preferences: scope.editorPreferences,
+                                    contentTopInset: topOverlay,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
+                                Positioned(
+                                  top: barInset,
+                                  left: 12,
+                                  right: 12,
+                                  child: WorkspaceMobileBookBar(
+                                    model: model,
+                                    onOpenMenu: () =>
+                                        ZephyrSwipeDrawer.of(context).open(),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ),
                     ),

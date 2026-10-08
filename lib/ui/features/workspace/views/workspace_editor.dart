@@ -13,10 +13,14 @@ class WorkspaceEditor extends StatefulWidget {
     super.key,
     required this.model,
     required this.preferences,
+    this.contentTopInset = 0,
   });
 
   final LibraryViewModel model;
   final EditorPreferencesViewModel preferences;
+
+  /// Extra top padding so content clears a floating overlay (e.g. mobile book bar).
+  final double contentTopInset;
 
   @override
   State<WorkspaceEditor> createState() => _WorkspaceEditorState();
@@ -128,6 +132,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
 
   EditorTypography _typography(BuildContext context, EditorPreferences prefs) {
     final color = Theme.of(context).colorScheme.onSurface;
+    final top = 28 + widget.contentTopInset;
     return EditorTypography(
       color: color,
       fontSize: prefs.fontSize,
@@ -136,7 +141,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
       paragraphSpacing: prefs.paragraphSpacing,
       maxContentWidth: prefs.maxContentWidth,
       firstLineIndent: prefs.firstLineIndent,
-      documentPadding: const EdgeInsets.fromLTRB(42, 28, 42, 48),
+      documentPadding: EdgeInsets.fromLTRB(42, top, 42, 48),
     );
   }
 
