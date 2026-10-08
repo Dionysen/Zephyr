@@ -441,6 +441,8 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                           behavior: HitTestBehavior.translucent,
                           onTapDown: (details) {
                             _focusNode.requestFocus();
+                            // Always re-show IME: focus may already be true
+                            // after the user dismissed the soft keyboard.
                             _attachIme();
                             _gestures.handleTapDown(
                               details,

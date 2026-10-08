@@ -22,16 +22,19 @@ class PlainTextInputClient with TextInputClient, DeltaTextInputClient {
   bool get attached => _connection?.attached ?? false;
 
   void attach() {
-    if (attached) return;
-    _connection = TextInput.attach(
-      this,
-      const TextInputConfiguration(
-        inputType: TextInputType.multiline,
-        inputAction: TextInputAction.newline,
-        keyboardAppearance: Brightness.light,
-        enableDeltaModel: true,
-      ),
-    );
+    // Keep an existing connection; the soft keyboard can be dismissed while
+    // focus remains, so every attach must call [show] again.
+    if (!attached) {
+      _connection = TextInput.attach(
+        this,
+        const TextInputConfiguration(
+          inputType: TextInputType.multiline,
+          inputAction: TextInputAction.newline,
+          keyboardAppearance: Brightness.light,
+          enableDeltaModel: true,
+        ),
+      );
+    }
     _connection!.show();
     markImeDirty();
     syncImeIfNeeded();
