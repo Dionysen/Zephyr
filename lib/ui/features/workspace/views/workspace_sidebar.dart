@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../domain/models/purewriter_models.dart';
 import '../../../core/window_chrome.dart';
+import '../../../core/zephyr_controls.dart';
 import '../../../core/zephyr_dropdown.dart';
 import '../../../core/zephyr_resize_handle.dart';
 import '../../editor/view_models/library_view_model.dart';
@@ -253,7 +254,10 @@ class _VolumeRow extends StatelessWidget {
         color: theme.colorScheme.surfaceContainerHigh,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(_radius),
-          side: BorderSide(color: theme.colorScheme.outlineVariant),
+          side: BorderSide(
+            color: theme.colorScheme.outline,
+            width: ZephyrControls.borderWidth,
+          ),
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(_radius),

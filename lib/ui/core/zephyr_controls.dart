@@ -28,6 +28,9 @@ abstract final class ZephyrControls {
   static const double fieldHeight = 36;
   static const double menuInsets = 4;
 
+  /// Hairline width for themed outlines, cards, and dividers.
+  static const double borderWidth = 1;
+
   /// Settings rows: label | control. Keep the window wide enough that the
   /// control column can still host a slider or dropdown.
   static const int settingsLabelFlex = 5;

@@ -51,7 +51,11 @@ ThemeData zephyrTheme(ThemeTokens tokens) {
           error: const Color(0xFFFFB4AB),
         ),
     scaffoldBackgroundColor: editor,
-    dividerTheme: DividerThemeData(color: border, space: 1),
+    dividerTheme: DividerThemeData(
+      color: border,
+      thickness: ZephyrControls.borderWidth,
+      space: 1,
+    ),
     iconTheme: IconThemeData(
       color: primaryText.withValues(alpha: .76),
       size: ZephyrControls.iconSize,
@@ -125,11 +129,17 @@ ThemeData zephyrTheme(ThemeTokens tokens) {
       fillColor: control,
       isDense: true,
       enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: border),
+        borderSide: BorderSide(
+          color: border,
+          width: ZephyrControls.borderWidth,
+        ),
         borderRadius: const BorderRadius.all(Radius.circular(6)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: focus),
+        borderSide: BorderSide(
+          color: focus,
+          width: ZephyrControls.borderWidth,
+        ),
         borderRadius: const BorderRadius.all(Radius.circular(6)),
       ),
       hintStyle: TextStyle(color: mutedText.withValues(alpha: .78)),
@@ -138,7 +148,7 @@ ThemeData zephyrTheme(ThemeTokens tokens) {
       backgroundColor: control,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        side: BorderSide(color: border),
+        side: BorderSide(color: border, width: ZephyrControls.borderWidth),
       ),
     ),
     tooltipTheme: TooltipThemeData(
@@ -157,7 +167,12 @@ ThemeData zephyrTheme(ThemeTokens tokens) {
           EdgeInsets.symmetric(vertical: ZephyrControls.menuInsets),
         ),
         shape: WidgetStatePropertyAll(
-          ZephyrControls.menuShape.copyWith(side: BorderSide(color: border)),
+          ZephyrControls.menuShape.copyWith(
+            side: BorderSide(
+              color: border,
+              width: ZephyrControls.borderWidth,
+            ),
+          ),
         ),
         visualDensity: VisualDensity.compact,
       ),
