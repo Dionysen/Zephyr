@@ -1,5 +1,96 @@
 package com.zephyr.zephyr
 
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
+import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry
+import org.apache.commons.compress.archivers.sevenz.SevenZFile
+import java.io.File
+import java.io.FileOutputStream
 
-class MainActivity : FlutterActivity()
+class MainActivity : FlutterActivity() {
+    private val storageChannel = "zephyr/android_storage"
+    private val backupChannel = "zephyr/purewriter_backup"
+
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, storageChannel)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "hasFullAccess" -> result.success(hasFullExternalStorageAccess())
+                    "requestFullAccess" -> {
+                        requestFullExternalStorageAccess()
+                        result.success(null)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, backupChannel)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "restorePwb" -> {
+                        try {
+                            val pwbPath = call.argument<String>("pwbPath")
+                            val destinationPath = call.argument<String>("destinationPath")
+                            if (pwbPath.isNullOrEmpty() || destinationPath.isNullOrEmpty()) {
+                                result.error("bad_args", "pwbPath and destinationPath required", null)
+                                return@setMethodCallHandler
+                            }
+                            restorePwb(File(pwbPath), File(destinationPath))
+                            result.success(null)
+                        } catch (error: Exception) {
+                            result.error("restore_failed", error.message, null)
+                        }
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    private fun hasFullExternalStorageAccess(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Environment.isExternalStorageManager()
+        } else {
+            true
+        }
+    }
+
+    private fun requestFullExternalStorageAccess() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+        val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+            data = Uri.parse("package:$packageName")
+        }
+        startActivity(intent)
+    }
+
+    private fun restorePwb(pwb: File, destination: File) {
+        SevenZFile.builder().setFile(pwb).get().use { archive ->
+            var entry: SevenZArchiveEntry? = archive.nextEntry
+            var restored = false
+            while (entry != null) {
+                val name = entry.name ?: ""
+                if (!entry.isDirectory && name.lowercase().endsWith(".db")) {
+                    destination.parentFile?.mkdirs()
+                    FileOutputStream(destination).use { output ->
+                        val buffer = ByteArray(64 * 1024)
+                        var read: Int
+                        while (archive.read(buffer).also { read = it } > 0) {
+                            output.write(buffer, 0, read)
+                        }
+                    }
+                    restored = true
+                    break
+                }
+                entry = archive.nextEntry
+            }
+            if (!restored) {
+                throw IllegalStateException("PureWriter backup contains no .db database.")
+            }
+        }
+    }
+}

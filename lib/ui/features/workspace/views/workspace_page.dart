@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../data/services/android_storage_access.dart';
 import '../../../../data/services/folder_bookmark.dart';
 
 import '../../../core/breakpoints.dart';
@@ -159,6 +160,15 @@ class _WorkspacePageState extends State<WorkspacePage> {
   }
 
   Future<PickedLibraryFolder?> _pickLibraryFolder() async {
+    if (Platform.isAndroid) {
+      // PureWriter libraries under Documents need all-files access to open
+      // App/Room.db with dart:io / sqflite.
+      try {
+        await AndroidStorageAccess().ensureFullAccess();
+      } on Object {
+        // Settings intent is best-effort; picker may still succeed.
+      }
+    }
     if (Platform.isMacOS) {
       try {
         return await FolderBookmarkAccess().pickDirectory();

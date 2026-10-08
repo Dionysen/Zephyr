@@ -3,18 +3,24 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../domain/models/purewriter_models.dart';
+import 'purewriter_backup.dart';
 
 /// Owns one PureWriter library connection and its cross-process `.zephyr-lock`.
 class PureWriterDatabase {
-  PureWriterDatabase({Future<Directory> Function()? supportDirectory})
-    : _supportDirectory = supportDirectory ?? getApplicationSupportDirectory;
+  PureWriterDatabase({
+    Future<Directory> Function()? supportDirectory,
+    PureWriterBackup? backups,
+  }) : _supportDirectory = supportDirectory ?? getApplicationSupportDirectory,
+       _backups = backups ?? PureWriterBackup();
   static const defaultFolderId = 'Default';
   static const trashFolderId = WritingFolder.trashId;
   static const identityHash = 'af22c7c534a04acc4530d670ac9e43c4';
   final Future<Directory> Function() _supportDirectory;
+  final PureWriterBackup _backups;
   Database? _database;
   RandomAccessFile? _lock;
   LibraryLocation? _location;
@@ -26,46 +32,69 @@ class PureWriterDatabase {
   Future<LibraryLocation> openDefaultLibrary() async =>
       openLibrary((await _supportDirectory()).path, createIfMissing: true);
 
-  /// Opens a library root containing `App/Room.db`; an `App` directory is also
-  /// accepted.
+  /// Opens a PureWriter library root.
   ///
-  /// When [createIfMissing] is true and `App/Room.db` is absent, creates a new
-  /// writable PureWriter v27 library in place (used for folder picking and the
-  /// default application-support library).
+  /// Accepted layouts (Android / desktop PureWriter):
+  /// - `{root}/App/Room.db` with optional `{root}/Backups/`
+  /// - selecting the `App` directory itself
+  ///
+  /// Directory names are matched case-insensitively so Android `App` +
+  /// `Backups` trees open the same way as desktop libraries.
+  ///
+  /// When `App/Room.db` is missing but `Backups/*.pwb` exist, restores the
+  /// newest backup instead of creating an empty library. When
+  /// [createIfMissing] is true and neither exists, creates a new writable
+  /// PureWriter v27 library (and an empty `Backups` folder).
   Future<LibraryLocation> openLibrary(
     String selectedPath, {
     bool createIfMissing = false,
   }) async {
     await close();
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-      sqfliteFfiInit();
-    }
-    final selected = Directory(selectedPath);
-    final root = path.basename(selected.path).toLowerCase() == 'app'
-        ? selected.parent
-        : selected;
-    final app = Directory(path.join(root.path, 'App'));
-    final room = File(path.join(app.path, 'Room.db'));
-    final isNewLibrary = !room.existsSync();
+    final resolved = resolvePureWriterLibrary(selectedPath);
+    var isNewLibrary = !resolved.room.existsSync();
+    final latestBackup = _backups.findLatestBackup(resolved.root);
     if (isNewLibrary) {
-      if (!createIfMissing) {
-        throw ArgumentError('Expected App/Room.db in $selectedPath');
+      if (latestBackup != null) {
+        await resolved.app.create(recursive: true);
+        await _backups.restoreRoomDb(
+          pwb: latestBackup,
+          destinationRoomDb: resolved.room,
+        );
+        isNewLibrary = false;
+      } else if (!createIfMissing) {
+        throw ArgumentError(
+          'Expected App/Room.db (with optional Backups/) in $selectedPath',
+        );
+      } else {
+        await resolved.app.create(recursive: true);
+        await Directory(
+          path.join(resolved.root.path, 'Backups'),
+        ).create(recursive: true);
       }
-      await app.create(recursive: true);
+    } else if (latestBackup != null &&
+        _looksLikeEmptyStubLibrary(resolved.room, latestBackup)) {
+      // Android PureWriter often keeps the live corpus in Backups while App/
+      // only has a tiny placeholder Room.db — never keep the stub.
+      await _backups.restoreRoomDb(
+        pwb: latestBackup,
+        destinationRoomDb: resolved.room,
+      );
+      isNewLibrary = false;
     }
-    await _acquireLock(app);
+    await _acquireLock(resolved.app);
     try {
-      // Keep the FFI factory local to this service. Assigning it to sqflite's
-      // global default factory causes a warning and can affect other plugins.
-      _database = await databaseFactoryFfi.openDatabase(
-        room.path,
-        options: OpenDatabaseOptions(
-          version: 27,
-          onCreate: isNewLibrary ? _createSchema : null,
-        ),
+      // Keep the factory local to this service. Assigning FFI as sqflite's
+      // global default causes a warning and can affect other plugins.
+      final options = isNewLibrary
+          ? OpenDatabaseOptions(version: 27, onCreate: _createSchema)
+          // Open existing PureWriter databases as-is; do not bump user_version.
+          : OpenDatabaseOptions();
+      _database = await _libraryDatabaseFactory.openDatabase(
+        resolved.room.path,
+        options: options,
       );
       _location = LibraryLocation(
-        rootPath: root.path,
+        rootPath: resolved.root.path,
         schema: await _readSchema(_database!),
       );
       return _location!;
@@ -106,7 +135,12 @@ class PureWriterDatabase {
     );
   }
 
-  Directory get _app => Directory(path.join(_location!.rootPath, 'App'));
+  Directory get _app {
+    final root = Directory(_location!.rootPath);
+    return findChildDirectory(root, 'app') ??
+        Directory(path.join(root.path, 'App'));
+  }
+
   Future<void> close() async {
     final db = _database;
     _database = null;
@@ -121,8 +155,17 @@ class PureWriterDatabase {
   }
 
   Future<void> _acquireLock(Directory app) async {
-    final lock = await File(path.join(app.path, '.zephyr-lock'))
-        .open(mode: FileMode.append);
+    final lockFile = File(path.join(app.path, '.zephyr-lock'));
+    // Mobile / shared storage often rejects POSIX flock; keep a soft marker.
+    if (Platform.isAndroid || Platform.isIOS) {
+      try {
+        await lockFile.writeAsString('zephyr:$pid', flush: true);
+      } on Object {
+        // Best-effort only; still open the library for reading/writing.
+      }
+      return;
+    }
+    final lock = await lockFile.open(mode: FileMode.append);
     try {
       await lock.lock(FileLock.exclusive);
       await lock.setPosition(0);
@@ -198,6 +241,104 @@ class PureWriterDatabase {
     }
   }
 }
+
+/// True when [room] is a tiny placeholder compared to a much larger `.pwb`.
+bool _looksLikeEmptyStubLibrary(File room, File latestBackup) {
+  final roomSize = room.existsSync() ? room.lengthSync() : 0;
+  final backupSize = latestBackup.lengthSync();
+  // Fresh Zephyr stubs are ~100KB; real PureWriter libraries / backups are
+  // hundreds of KB to multiple MB once they contain books.
+  return roomSize > 0 && roomSize < 200 * 1024 && backupSize > roomSize * 3;
+}
+
+/// Platform database factory: native sqflite on mobile, FFI on desktop.
+DatabaseFactory get _libraryDatabaseFactory {
+  if (Platform.isAndroid || Platform.isIOS) {
+    return databaseFactory;
+  }
+  sqfliteFfiInit();
+  return databaseFactoryFfi;
+}
+
+/// Resolved PureWriter on-disk layout for a user-selected path.
+class ResolvedPureWriterLibrary {
+  const ResolvedPureWriterLibrary({
+    required this.root,
+    required this.app,
+    required this.room,
+  });
+
+  final Directory root;
+  final Directory app;
+  final File room;
+}
+
+/// Maps a picked folder to `{root}/App/Room.db`, tolerating `App` selection and
+/// case differences used on Android (`App`, `Backups`).
+ResolvedPureWriterLibrary resolvePureWriterLibrary(String selectedPath) {
+  final selected = Directory(selectedPath);
+
+  if (_isNamed(selected, 'app')) {
+    final room = findChildFile(selected, 'room.db');
+    if (room != null) {
+      return ResolvedPureWriterLibrary(
+        root: selected.parent,
+        app: selected,
+        room: room,
+      );
+    }
+  }
+
+  final appUnderSelected = findChildDirectory(selected, 'app');
+  if (appUnderSelected != null) {
+    final room = findChildFile(appUnderSelected, 'room.db') ??
+        File(path.join(appUnderSelected.path, 'Room.db'));
+    return ResolvedPureWriterLibrary(
+      root: selected,
+      app: appUnderSelected,
+      room: room,
+    );
+  }
+
+  final roomInSelected = findChildFile(selected, 'room.db');
+  if (roomInSelected != null) {
+    return ResolvedPureWriterLibrary(
+      root: selected.parent,
+      app: selected,
+      room: roomInSelected,
+    );
+  }
+
+  final app = Directory(path.join(selected.path, 'App'));
+  return ResolvedPureWriterLibrary(
+    root: selected,
+    app: app,
+    room: File(path.join(app.path, 'Room.db')),
+  );
+}
+
+Directory? findChildDirectory(Directory parent, String name) {
+  if (!parent.existsSync()) return null;
+  for (final entity in parent.listSync(followLinks: false)) {
+    if (entity is Directory && _isNamed(entity, name)) {
+      return entity;
+    }
+  }
+  return null;
+}
+
+File? findChildFile(Directory parent, String name) {
+  if (!parent.existsSync()) return null;
+  for (final entity in parent.listSync(followLinks: false)) {
+    if (entity is File && _isNamed(entity, name)) {
+      return entity;
+    }
+  }
+  return null;
+}
+
+bool _isNamed(FileSystemEntity entity, String name) =>
+    path.basename(entity.path).toLowerCase() == name.toLowerCase();
 
 const _schema = '''
 CREATE TABLE Folder (id TEXT NOT NULL PRIMARY KEY, name TEXT NOT NULL, createdTime INTEGER NOT NULL, description TEXT, rank INTEGER NOT NULL, deleted INTEGER NOT NULL, deletedTime INTEGER NOT NULL, selectedArticleId TEXT, selectedArticleId1 TEXT, selectedOutlineId TEXT, extension TEXT, updateTime INTEGER NOT NULL, rankUpdateTime INTEGER NOT NULL, autoChapter INTEGER NOT NULL, autoChapterUpdateTime INTEGER NOT NULL, autoChapterResetForCategory INTEGER NOT NULL, autoChapterResetForCategoryUpdateTime INTEGER NOT NULL, autoChapterReplaceBadPrefix INTEGER NOT NULL, autoChapterReplaceBadPrefixUpdateTime INTEGER NOT NULL, tags TEXT, tagsUpdateTime INTEGER NOT NULL, rankMode TEXT, rankModeUpdateTime INTEGER NOT NULL DEFAULT 0);
