@@ -240,88 +240,87 @@ class _BookPicker extends StatelessWidget {
               final book = bookById[item.value];
               final subtitle = item.subtitle;
               final theme = Theme.of(context);
-              return Row(
+              return Stack(
+                fit: StackFit.expand,
                 children: [
-                  Expanded(
-                    child: InkWell(
-                      onTap: onSelect,
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 8),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.menu_book_outlined,
-                              size: ZephyrControls.iconSize,
+                  InkWell(
+                    onTap: onSelect,
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: 8,
+                        right: ZephyrControls.buttonSize + 4,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.menu_book_outlined,
+                            size: ZephyrControls.iconSize,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              item.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleSmall,
                             ),
+                          ),
+                          if (subtitle != null && subtitle.isNotEmpty) ...[
                             const SizedBox(width: 8),
-                            Expanded(
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 96),
                               child: Text(
-                                item.label,
+                                subtitle,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.titleSmall,
+                                textAlign: TextAlign.right,
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
                               ),
                             ),
+                            const SizedBox(width: 6),
                           ],
-                        ),
+                        ],
                       ),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (subtitle != null && subtitle.isNotEmpty) ...[
-                          const SizedBox(width: 8),
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 96),
-                            child: Text(
-                              subtitle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.right,
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                        ],
-                        SizedBox(
-                          width: ZephyrControls.buttonSize,
-                          height: ZephyrControls.buttonSize,
-                          child: Material(
-                            type: MaterialType.transparency,
-                            child: InkWell(
-                              customBorder: hostContext.zephyrShape.iconButtonShape,
-                              onTap: model.isReadOnly || book == null
-                                  ? null
-                                  : () {
-                                      final editing = book;
-                                      onDismiss();
-                                      WidgetsBinding.instance
-                                          .addPostFrameCallback((_) {
-                                            if (!hostContext.mounted) {
-                                              return;
-                                            }
-                                            unawaited(
-                                              _editBook(
-                                                hostContext,
-                                                model: model,
-                                                book: editing,
-                                              ),
-                                            );
-                                          });
-                                    },
-                              child: Icon(
-                                Icons.edit_outlined,
-                                size: ZephyrControls.iconSize,
-                              ),
-                            ),
-                          ),
+                  Positioned(
+                    top:
+                        (ZephyrControls.fieldHeight - ZephyrControls.buttonSize) /
+                        2,
+                    right: 4,
+                    width: ZephyrControls.buttonSize,
+                    height: ZephyrControls.buttonSize,
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: InkWell(
+                        customBorder: hostContext.zephyrShape.iconButtonShape,
+                        onTap: model.isReadOnly || book == null
+                            ? null
+                            : () {
+                                final editing = book;
+                                onDismiss();
+                                WidgetsBinding.instance.addPostFrameCallback((
+                                  _,
+                                ) {
+                                  if (!hostContext.mounted) {
+                                    return;
+                                  }
+                                  unawaited(
+                                    _editBook(
+                                      hostContext,
+                                      model: model,
+                                      book: editing,
+                                    ),
+                                  );
+                                });
+                              },
+                        child: Icon(
+                          Icons.edit_outlined,
+                          size: ZephyrControls.iconSize,
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ],

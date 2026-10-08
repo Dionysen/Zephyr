@@ -18,6 +18,48 @@ import 'package:zephyr/ui/features/settings/view_models/theme_view_model.dart';
 import 'package:zephyr/ui/features/workspace/views/workspace_page.dart';
 
 void main() {
+  testWidgets(
+    'book row selects across its full width while the overlaid edit button stays separate',
+    (tester) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final library = LibraryViewModel(_LibraryRepository());
+      await tester.pumpWidget(_app(library: library));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Book A'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Fiction'));
+      await tester.pumpAndSettle();
+      expect(library.selectedBook?.id, 'book-b');
+
+      await tester.tap(find.text('Book B').first);
+      await tester.pumpAndSettle();
+      final bookRow = find
+          .ancestor(
+            of: find.text('Book A').last,
+            matching: find.byType(InkWell),
+          )
+          .first;
+      final rowRect = tester.getRect(bookRow);
+      final editRect = tester.getRect(find.byIcon(Icons.edit_outlined).first);
+      expect(rowRect.contains(editRect.center), isTrue);
+      await tester.tapAt(Offset(rowRect.right - 2, rowRect.bottom - 2));
+      await tester.pumpAndSettle();
+      expect(library.selectedBook?.id, 'Default');
+
+      await tester.tap(find.text('Book A').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.edit_outlined).last);
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(library.selectedBook?.id, 'Default');
+    },
+  );
+
   testWidgets('wide layout docks the shared sidebar', (tester) async {
     tester.view.physicalSize = const Size(1200, 800);
     tester.view.devicePixelRatio = 1;
@@ -125,8 +167,8 @@ void main() {
   });
 }
 
-Widget _app() {
-  final library = LibraryViewModel(_LibraryRepository());
+Widget _app({LibraryViewModel? library}) {
+  library ??= LibraryViewModel(_LibraryRepository());
   final theme = ThemeViewModel(_ThemeRepository());
   final editorPreferences = EditorPreferencesViewModel(
     _PreferencesRepository(),
@@ -148,7 +190,10 @@ Widget _app() {
 class _LibraryRepository implements WritingLibraryRepository {
   @override
   Future<WritingLibrary> loadLibrary() async => WritingLibrary(
-    folders: const [WritingFolder(id: 'Default', name: 'Book A', rank: 0)],
+    folders: const [
+      WritingFolder(id: 'Default', name: 'Book A', rank: 0),
+      WritingFolder(id: 'book-b', name: 'Book B', rank: 1, tags: 'Fiction'),
+    ],
     categories: const [
       WritingCategory(
         id: 'volume-a',

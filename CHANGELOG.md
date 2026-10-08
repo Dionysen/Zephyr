@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Restored full-item book selection in the dropdown, with the edit button layered above the selection area.
 - Replaced the desktop-only settings child window with a shared in-app settings route so appearance stays live against the writing workspace on every platform.
 - Pair the editor settings scrollbar with its list scroll controller, and keep native window backdrop color in sync with the active theme.
 - Load system fonts only when the editor settings page opens, and skip unused font registration until a writing session needs it.
