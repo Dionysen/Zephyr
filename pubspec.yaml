@@ -52,6 +52,8 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_svg: ^2.3.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -94,3 +96,27 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Generate platform icons from branding/app_icon.svg:
+#   dart run tool/generate_app_icons.dart
+flutter_launcher_icons:
+  # Rounded (iOS continuous corner) for desktop / web branding.
+  image_path: branding/app_icon.png
+  # Full-bleed square — iOS/Android apply their own masks.
+  image_path_ios: branding/app_icon_square.png
+  image_path_android: branding/app_icon_square.png
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  web:
+    generate: true
+  windows:
+    generate: true
+    icon_size: 256
+  macos:
+    generate: true
+  linux:
+    generate: true
+  adaptive_icon_background: "#0E0E0E"
+  adaptive_icon_foreground: branding/app_icon_square.png
+
