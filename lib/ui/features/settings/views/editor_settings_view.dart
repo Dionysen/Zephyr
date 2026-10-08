@@ -111,14 +111,16 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
           compact: compact,
           title: compact ? '栏宽' : 'Editor width',
           description: compact
-              ? '阅读栏最大宽度。'
+              ? '阅读栏最大宽度；侧边距最小 12。'
               : 'Maximum width of the reading column.',
           value: preferences.maxContentWidth,
-          min: 480,
+          // Compact screens are often < 480px; a lower floor lets the control
+          // actually widen/narrow the column against the 12px gutter.
+          min: compact ? 240 : 480,
           max: 1200,
           defaultValue: defaults.maxContentWidth,
           suffix: 'px',
-          divisions: 72,
+          divisions: compact ? 96 : 72,
           showDivider: false,
           onChanged: viewModel.updateMaxContentWidth,
         ),

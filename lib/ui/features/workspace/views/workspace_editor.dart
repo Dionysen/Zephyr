@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../domain/models/editor_preferences.dart';
 import '../../../../domain/use_cases/paragraph_indentation.dart';
+import '../../../core/breakpoints.dart';
 import '../../editor/plain_text/input/plain_text_editing_controller.dart';
 import '../../editor/plain_text/layout/editor_typography.dart';
 import '../../editor/plain_text/zephyr_plain_text_editor.dart';
@@ -130,9 +131,20 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     widget.model.updateContent(plain);
   }
 
+  /// Compact layouts keep a 12px floor so “editor width” can widen to the
+  /// screen edge; desktop keeps the wider reading gutter.
+  static const _compactHorizontalPadding = 12.0;
+  static const _expandedHorizontalPadding = 42.0;
+
   EditorTypography _typography(BuildContext context, EditorPreferences prefs) {
     final color = Theme.of(context).colorScheme.onSurface;
     final top = 28 + widget.contentTopInset;
+    final compact = ZephyrBreakpoints.isCompact(
+      MediaQuery.sizeOf(context).width,
+    );
+    final horizontal = compact
+        ? _compactHorizontalPadding
+        : _expandedHorizontalPadding;
     return EditorTypography(
       color: color,
       fontSize: prefs.fontSize,
@@ -141,7 +153,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
       paragraphSpacing: prefs.paragraphSpacing,
       maxContentWidth: prefs.maxContentWidth,
       firstLineIndent: prefs.firstLineIndent,
-      documentPadding: EdgeInsets.fromLTRB(42, top, 42, 48),
+      documentPadding: EdgeInsets.fromLTRB(horizontal, top, horizontal, 48),
     );
   }
 
