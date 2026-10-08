@@ -744,7 +744,7 @@ class _VolumeRow extends StatelessWidget {
           borderRadius: radius,
           onTap: onToggle,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
             child: Row(
               children: [
                 Icon(
@@ -776,8 +776,9 @@ class _ChapterRow extends StatelessWidget {
   const _ChapterRow({required this.chapter, required this.model});
 
   static const _listInset = 6.0;
-  static const _lineGap = 4.0;
-  static const _previewDateGap = 2.0;
+  static const _lineGap = 2.0;
+  static const _previewDateGap = 4.0;
+  static const _textHeight = 1.15;
 
   final ArticleSummary chapter;
   final LibraryViewModel model;
@@ -789,7 +790,11 @@ class _ChapterRow extends StatelessWidget {
     final activeArticle = model.article?.id == chapter.id ? model.article : null;
     final selected = activeArticle != null;
     final metaText =
-        '${_formatDate(chapter.createdAt)} - ${_formatDate(activeArticle?.updatedAt ?? chapter.updatedAt)} - ${activeArticle?.wordCount ?? chapter.wordCount}字';
+        '创建于${_formatDate(chapter.createdAt)} - 修改于${_formatDate(activeArticle?.updatedAt ?? chapter.updatedAt)} - ${activeArticle?.wordCount ?? chapter.wordCount}字';
+    final preview = chapter.summary
+        .replaceAll(RegExp(r'[\r\n]+'), ' ')
+        .replaceAll('\u3000', '')
+        .trim();
     return Padding(
       padding: const EdgeInsets.fromLTRB(_listInset, 2, _listInset, 0),
       child: Material(
@@ -812,7 +817,7 @@ class _ChapterRow extends StatelessWidget {
             }
           },
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -820,15 +825,19 @@ class _ChapterRow extends StatelessWidget {
                   chapter.title.isEmpty ? 'Untitled' : chapter.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall?.copyWith(height: 1.35),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    height: _textHeight,
+                  ),
                 ),
-                if (chapter.summary.isNotEmpty) ...[
+                if (preview.isNotEmpty) ...[
                   const SizedBox(height: _lineGap),
                   Text(
-                    chapter.summary.replaceAll(RegExp(r'[\r\n\u3000]'), ''),
-                    maxLines: 1,
+                    preview,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(height: 1.35),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      height: _textHeight,
+                    ),
                   ),
                   const SizedBox(height: _previewDateGap),
                 ] else
@@ -837,7 +846,9 @@ class _ChapterRow extends StatelessWidget {
                   metaText,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelSmall?.copyWith(height: 1.35),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    height: _textHeight,
+                  ),
                 ),
               ],
             ),
