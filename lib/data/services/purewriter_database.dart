@@ -26,7 +26,12 @@ class PureWriterDatabase {
   Future<LibraryLocation> openDefaultLibrary() async =>
       openLibrary((await _supportDirectory()).path, createIfMissing: true);
 
-  /// Opens a library root containing `App/Room.db`; an `App` directory is also accepted.
+  /// Opens a library root containing `App/Room.db`; an `App` directory is also
+  /// accepted.
+  ///
+  /// When [createIfMissing] is true and `App/Room.db` is absent, creates a new
+  /// writable PureWriter v27 library in place (used for folder picking and the
+  /// default application-support library).
   Future<LibraryLocation> openLibrary(
     String selectedPath, {
     bool createIfMissing = false,
@@ -41,7 +46,8 @@ class PureWriterDatabase {
         : selected;
     final app = Directory(path.join(root.path, 'App'));
     final room = File(path.join(app.path, 'Room.db'));
-    if (!room.existsSync()) {
+    final isNewLibrary = !room.existsSync();
+    if (isNewLibrary) {
       if (!createIfMissing) {
         throw ArgumentError('Expected App/Room.db in $selectedPath');
       }
@@ -55,7 +61,7 @@ class PureWriterDatabase {
         room.path,
         options: OpenDatabaseOptions(
           version: 27,
-          onCreate: createIfMissing ? _createSchema : null,
+          onCreate: isNewLibrary ? _createSchema : null,
         ),
       );
       _location = LibraryLocation(

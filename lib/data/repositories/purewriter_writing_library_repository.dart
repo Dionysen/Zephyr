@@ -16,7 +16,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
 
   @override
   Future<LibraryLocation> openLibrary(String rootPath) =>
-      _store.openLibrary(rootPath);
+      _store.openLibrary(rootPath, createIfMissing: true);
 
   @override
   Future<void> closeLibrary() => _store.close();

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as path;
 import 'package:zephyr/data/repositories/purewriter_writing_library_repository.dart';
 import 'package:zephyr/data/services/purewriter_database.dart';
 
@@ -38,6 +39,47 @@ void main() {
         'UserMessage',
         'Setting',
       ]),
+    );
+  });
+
+  test('creates App/Room.db when opening an empty folder as a new library', () async {
+    final emptyRoot = await Directory.systemTemp.createTemp(
+      'zephyr-empty-library-',
+    );
+    addTearDown(() => emptyRoot.delete(recursive: true));
+    final folder = await Directory(
+      path.join(emptyRoot.path, 'My Library'),
+    ).create();
+    final store = PureWriterDatabase(supportDirectory: () async => emptyRoot);
+    addTearDown(store.close);
+
+    final repository = PureWriterWritingLibraryRepository(store);
+    final location = await repository.openLibrary(folder.path);
+
+    expect(location.rootPath, folder.path);
+    expect(location.schema.writesAllowed, isTrue);
+    expect(
+      File(path.join(folder.path, 'App', 'Room.db')).existsSync(),
+      isTrue,
+    );
+    final library = await repository.loadLibrary();
+    expect(
+      library.folders.any((item) => item.id == PureWriterDatabase.defaultFolderId),
+      isTrue,
+    );
+  });
+
+  test('refuses to invent a library when createIfMissing is false', () async {
+    final emptyRoot = await Directory.systemTemp.createTemp(
+      'zephyr-missing-library-',
+    );
+    addTearDown(() => emptyRoot.delete(recursive: true));
+    final store = PureWriterDatabase(supportDirectory: () async => emptyRoot);
+    addTearDown(store.close);
+
+    expect(
+      () => store.openLibrary(emptyRoot.path),
+      throwsA(isA<ArgumentError>()),
     );
   });
 
