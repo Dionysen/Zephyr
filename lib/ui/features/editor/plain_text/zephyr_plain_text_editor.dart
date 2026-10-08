@@ -54,6 +54,8 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   late final AnimationController _caretBlink;
   bool _showCaret = true;
   bool _selecting = false;
+  bool _draggingHandle = false;
+  final GlobalKey _documentStackKey = GlobalKey();
   String _lastText = '';
   TextSelection _lastSelection = const TextSelection.collapsed(offset: 0);
 
@@ -389,6 +391,11 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
             controller: _scrollController,
             child: SingleChildScrollView(
               controller: _scrollController,
+              // Lock scrolling while a selection handle owns the pointer;
+              // otherwise the scroll drag wins the arena and "eats" the handle.
+              physics: _draggingHandle
+                  ? const NeverScrollableScrollPhysics()
+                  : null,
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   minWidth: constraints.maxWidth,
@@ -398,140 +405,123 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                       : 0,
                 ),
                 child: Stack(
+                  key: _documentStackKey,
                   clipBehavior: Clip.none,
                   children: [
-                MouseRegion(
-                  cursor: SystemMouseCursors.text,
-                  child: Listener(
-                    behavior: HitTestBehavior.translucent,
-                    onPointerDown: widget.readOnly
-                        ? null
-                        : (event) {
-                            if (event.kind == PointerDeviceKind.mouse &&
-                                event.buttons == kPrimaryButton) {
-                              _selecting = true;
-                              _focusNode.requestFocus();
-                              _attachIme();
-                              _gestures.handleDragStart(event.localPosition);
-                            }
+                    MouseRegion(
+                      cursor: SystemMouseCursors.text,
+                      child: Listener(
+                        behavior: HitTestBehavior.translucent,
+                        onPointerDown: widget.readOnly
+                            ? null
+                            : (event) {
+                                if (event.kind == PointerDeviceKind.mouse &&
+                                    event.buttons == kPrimaryButton) {
+                                  _selecting = true;
+                                  _focusNode.requestFocus();
+                                  _attachIme();
+                                  _gestures.handleDragStart(event.localPosition);
+                                }
+                              },
+                        onPointerMove: widget.readOnly
+                            ? null
+                            : (event) {
+                                if (!_selecting) return;
+                                if (event.kind == PointerDeviceKind.mouse &&
+                                    event.buttons == kPrimaryButton) {
+                                  _gestures.handleDragUpdate(
+                                    event.localPosition,
+                                    selecting: true,
+                                  );
+                                }
+                              },
+                        onPointerUp: (_) => _selecting = false,
+                        onPointerCancel: (_) => _selecting = false,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.translucent,
+                          onTapDown: (details) {
+                            _focusNode.requestFocus();
+                            _attachIme();
+                            _gestures.handleTapDown(
+                              details,
+                              details.localPosition,
+                            );
                           },
-                    onPointerMove: widget.readOnly
-                        ? null
-                        : (event) {
-                            if (!_selecting) return;
-                            if (event.kind == PointerDeviceKind.mouse &&
-                                event.buttons == kPrimaryButton) {
-                              _gestures.handleDragUpdate(
-                                event.localPosition,
-                                selecting: true,
-                              );
-                            }
-                          },
-                    onPointerUp: (_) => _selecting = false,
-                    onPointerCancel: (_) => _selecting = false,
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.translucent,
-                      onTapDown: (details) {
-                        _focusNode.requestFocus();
-                        _attachIme();
-                        _gestures.handleTapDown(
-                          details,
-                          details.localPosition,
-                        );
-                      },
-                      onLongPressStart: widget.readOnly
-                          ? null
-                          : (details) {
-                              _selecting = true;
-                              _focusNode.requestFocus();
-                              _gestures.handleDragStart(
-                                details.localPosition,
-                              );
-                            },
-                      onLongPressMoveUpdate: widget.readOnly
-                          ? null
-                          : (details) {
-                              _gestures.handleDragUpdate(
-                                details.localPosition,
-                                selecting: true,
-                              );
-                            },
-                      onLongPressEnd: (_) => _selecting = false,
-                      child: Semantics(
-                      textField: true,
-                      multiline: true,
-                      readOnly: widget.readOnly,
-                      value: widget.controller.text,
-                      child: SizedBox(
-                        width: constraints.maxWidth,
-                        height: () {
-                          final doc = _engine.totalHeight;
-                          final minH = constraints.maxHeight.isFinite
-                              ? constraints.maxHeight
-                              : 0.0;
-                          return doc < minH ? minH : doc;
-                        }(),
-                        child: PlainTextEditorRenderWidget(
-                          controller: widget.controller,
-                          engine: _engine,
-                          typography: widget.typography,
-                          cursorColor: widget.cursorColor,
-                          selectionColor: widget.selectionColor,
-                          showCaret: _focusNode.hasFocus && _showCaret,
-                          readOnly: widget.readOnly,
-                          decorations: widget.decorations,
-                          viewportHeight: viewportHeight,
-                          scrollOffset: scrollOffset,
+                          onLongPressStart: widget.readOnly
+                              ? null
+                              : (details) {
+                                  _selecting = true;
+                                  _focusNode.requestFocus();
+                                  _gestures.handleDragStart(
+                                    details.localPosition,
+                                  );
+                                },
+                          onLongPressMoveUpdate: widget.readOnly
+                              ? null
+                              : (details) {
+                                  _gestures.handleDragUpdate(
+                                    details.localPosition,
+                                    selecting: true,
+                                  );
+                                },
+                          onLongPressEnd: (_) => _selecting = false,
+                          child: Semantics(
+                            textField: true,
+                            multiline: true,
+                            readOnly: widget.readOnly,
+                            value: widget.controller.text,
+                            child: SizedBox(
+                              width: constraints.maxWidth,
+                              height: () {
+                                final doc = _engine.totalHeight;
+                                final minH = constraints.maxHeight.isFinite
+                                    ? constraints.maxHeight
+                                    : 0.0;
+                                return doc < minH ? minH : doc;
+                              }(),
+                              child: PlainTextEditorRenderWidget(
+                                controller: widget.controller,
+                                engine: _engine,
+                                typography: widget.typography,
+                                cursorColor: widget.cursorColor,
+                                selectionColor: widget.selectionColor,
+                                showCaret: _focusNode.hasFocus && _showCaret,
+                                readOnly: widget.readOnly,
+                                decorations: widget.decorations,
+                                viewportHeight: viewportHeight,
+                                scrollOffset: scrollOffset,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                    ),
-                  ),
-                ),
-                if (baseCaret != null)
-                  _SelectionHandle(
-                    color: widget.cursorColor,
-                    top: baseCaret.bottom,
-                    left: baseCaret.left,
-                    isBase: true,
-                    onDrag: (delta) {
-                      final rect = _engine.caretRectForOffset(
-                            selection.baseOffset,
-                          ) ??
-                          baseCaret;
-                      final next = _engine.offsetForPosition(
-                        Offset(rect.left + delta.dx, rect.center.dy + delta.dy),
-                      );
-                      widget.controller.setSelection(
-                        TextSelection(
-                          baseOffset: next,
-                          extentOffset: selection.extentOffset,
-                        ),
-                      );
-                    },
-                  ),
-                if (extentCaret != null)
-                  _SelectionHandle(
-                    color: widget.cursorColor,
-                    top: extentCaret.bottom,
-                    left: extentCaret.left,
-                    isBase: false,
-                    onDrag: (delta) {
-                      final rect = _engine.caretRectForOffset(
-                            selection.extentOffset,
-                          ) ??
-                          extentCaret;
-                      final next = _engine.offsetForPosition(
-                        Offset(rect.left + delta.dx, rect.center.dy + delta.dy),
-                      );
-                      widget.controller.setSelection(
-                        TextSelection(
-                          baseOffset: selection.baseOffset,
-                          extentOffset: next,
-                        ),
-                      );
-                    },
-                  ),
+                    if (baseCaret != null)
+                      _SelectionHandle(
+                        color: widget.cursorColor,
+                        top: baseCaret.bottom,
+                        left: baseCaret.left,
+                        isBase: true,
+                        onDragStart: () =>
+                            setState(() => _draggingHandle = true),
+                        onDragEnd: () =>
+                            setState(() => _draggingHandle = false),
+                        onDragGlobal: (global) =>
+                            _moveSelectionHandle(global, isBase: true),
+                      ),
+                    if (extentCaret != null)
+                      _SelectionHandle(
+                        color: widget.cursorColor,
+                        top: extentCaret.bottom,
+                        left: extentCaret.left,
+                        isBase: false,
+                        onDragStart: () =>
+                            setState(() => _draggingHandle = true),
+                        onDragEnd: () =>
+                            setState(() => _draggingHandle = false),
+                        onDragGlobal: (global) =>
+                            _moveSelectionHandle(global, isBase: false),
+                      ),
                   ],
                 ),
               ),
@@ -541,42 +531,108 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
       ),
     );
   }
+
+  void _moveSelectionHandle(Offset globalPosition, {required bool isBase}) {
+    final box =
+        _documentStackKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    final local = box.globalToLocal(globalPosition);
+    final next = _engine.offsetForPosition(local);
+    final sel = widget.controller.selection;
+    if (isBase) {
+      widget.controller.setSelection(
+        TextSelection(baseOffset: next, extentOffset: sel.extentOffset),
+      );
+    } else {
+      widget.controller.setSelection(
+        TextSelection(baseOffset: sel.baseOffset, extentOffset: next),
+      );
+    }
+  }
 }
 
-class _SelectionHandle extends StatelessWidget {
+/// Mobile selection endpoint. Uses raw [Listener] events so the scroll view
+/// cannot steal the pointer via the gesture arena.
+class _SelectionHandle extends StatefulWidget {
   const _SelectionHandle({
     required this.color,
     required this.top,
     required this.left,
     required this.isBase,
-    required this.onDrag,
+    required this.onDragStart,
+    required this.onDragEnd,
+    required this.onDragGlobal,
   });
 
   final Color color;
   final double top;
   final double left;
   final bool isBase;
-  final ValueChanged<Offset> onDrag;
+  final VoidCallback onDragStart;
+  final VoidCallback onDragEnd;
+  final ValueChanged<Offset> onDragGlobal;
+
+  @override
+  State<_SelectionHandle> createState() => _SelectionHandleState();
+}
+
+class _SelectionHandleState extends State<_SelectionHandle> {
+  int? _activePointer;
+  static const double _hitSize = 48;
+  static const double _visualSize = 22;
+
+  Offset _aimPoint(Offset globalPosition) {
+    // Knobs sit under the caret; aim at the text line above the finger.
+    return globalPosition.translate(0, -_hitSize * 0.35);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      top: top,
-      left: left - 10,
-      child: GestureDetector(
-        onPanUpdate: (details) => onDrag(details.delta),
-        child: Column(
-          children: [
-            if (!isBase) const SizedBox(height: 0),
-            Container(
-              width: 20,
-              height: 20,
+      top: widget.top - 4,
+      left: widget.left - _hitSize / 2,
+      child: Listener(
+        behavior: HitTestBehavior.opaque,
+        onPointerDown: (event) {
+          _activePointer = event.pointer;
+          widget.onDragStart();
+        },
+        onPointerMove: (event) {
+          if (event.pointer != _activePointer) return;
+          widget.onDragGlobal(_aimPoint(event.position));
+        },
+        onPointerUp: (event) {
+          if (event.pointer != _activePointer) return;
+          _activePointer = null;
+          widget.onDragEnd();
+        },
+        onPointerCancel: (event) {
+          if (event.pointer != _activePointer) return;
+          _activePointer = null;
+          widget.onDragEnd();
+        },
+        child: SizedBox(
+          width: _hitSize,
+          height: _hitSize,
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: Container(
+              width: _visualSize,
+              height: _visualSize,
               decoration: BoxDecoration(
-                color: color,
+                color: widget.color,
                 shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x66000000),
+                    blurRadius: 4,
+                    offset: Offset(0, 1),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

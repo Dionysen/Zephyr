@@ -92,7 +92,8 @@ class PlainTextInputClient with TextInputClient, DeltaTextInputClient {
     var value = controller.editingValue;
     for (final delta in textEditingDeltas) {
       if (delta is TextEditingDeltaInsertion && delta.textInserted == '\n') {
-        controller.setSelection(delta.selection);
+        // Do not apply delta.selection: it is post-insert against IME-local
+        // text and can clamp to the document end before we insert.
         controller.insertNewlineWithIndent();
         value = controller.editingValue;
         continue;

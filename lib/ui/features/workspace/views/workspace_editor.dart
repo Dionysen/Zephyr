@@ -85,11 +85,20 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     if (article.id == _articleId && content == _lastEmitted) {
       return;
     }
+    // Enter inserts an indent-only new paragraph; applyParagraphIndentation
+    // normalizes those lines to empty, which would otherwise look like an
+    // external edit and reset the caret to the document end via setText.
+    if (article.id == _articleId &&
+        applyParagraphIndentation(_controller.text, _indent!) == content) {
+      return;
+    }
 
+    final keepSelection =
+        article.id == _articleId ? _controller.selection : null;
     _articleId = article.id;
     _lastEmitted = content;
     _suppressControllerNotify = true;
-    _controller.setText(content);
+    _controller.setText(content, selection: keepSelection);
     _suppressControllerNotify = false;
   }
 
@@ -100,9 +109,10 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
       setState(() {});
       return;
     }
+    final selection = _controller.selection;
     _lastEmitted = formatted;
     _suppressControllerNotify = true;
-    _controller.setText(formatted, recordUndo: true);
+    _controller.setText(formatted, selection: selection, recordUndo: true);
     _suppressControllerNotify = false;
     setState(() {});
     widget.model.updateContent(formatted);

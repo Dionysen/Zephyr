@@ -14,6 +14,16 @@ void main() {
     expect(controller.selection.extentOffset, controller.text.length);
   });
 
+  test('Enter mid-document keeps the caret on the new paragraph', () {
+    final controller = PlainTextEditingController(text: '　　Hello\n　　World');
+    // Caret at end of first paragraph (after "Hello").
+    controller.setSelection(const TextSelection.collapsed(offset: 7));
+    controller.insertNewlineWithIndent();
+
+    expect(controller.text, '　　Hello\n　　\n　　World');
+    expect(controller.selection.extentOffset, 10); // after inherited indent
+  });
+
   test('Enter does not add indent when the previous paragraph has none', () {
     final controller = PlainTextEditingController(text: 'Hello');
     controller.setSelection(
