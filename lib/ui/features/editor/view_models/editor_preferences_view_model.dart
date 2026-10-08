@@ -63,6 +63,22 @@ class EditorPreferencesViewModel extends ChangeNotifier {
     }
   }
 
+  /// Imports a font file into the app directory, then selects it.
+  Future<bool> importFontFromPath(String sourcePath) async {
+    final imported = await _fontRepository.importFont(sourcePath);
+    if (imported == null) {
+      return false;
+    }
+    try {
+      _systemFonts = await _fontRepository.listFonts();
+    } on Object {
+      // Selection can still proceed with the imported path alone.
+    }
+    await selectFont(imported);
+    notifyListeners();
+    return _preferences.fontPath == imported.path;
+  }
+
   void updateFontSize(double value) =>
       _update(_preferences.copyWith(fontSize: value));
   void updateLineHeight(double value) =>

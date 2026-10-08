@@ -16,12 +16,40 @@ void main() {
     final fonts = await FileSystemFontRepository(
       catalog: _EmptyCatalog(),
       directories: [root],
+      importedFontsDirectory: () async =>
+          Directory('${root.path}/imported-empty'),
     ).listFonts();
 
     expect(fonts.map((font) => font.family).toSet(), {
       'PingFang',
       'SourceHanSerif',
     });
+  });
+
+  test('importFont copies into the app fonts directory', () async {
+    final root = await Directory.systemTemp.createTemp('zephyr-import-fonts');
+    addTearDown(() => root.delete(recursive: true));
+    final importedDir = Directory('${root.path}/imported');
+    final source = File('${root.path}/SourceHan.ttf');
+    await source.writeAsBytes(List<int>.generate(64, (i) => i));
+
+    final repository = FileSystemFontRepository(
+      catalog: _EmptyCatalog(),
+      directories: const [],
+      importedFontsDirectory: () async => importedDir,
+    );
+
+    final imported = await repository.importFont(source.path);
+    expect(imported, isNotNull);
+    expect(imported!.family, 'SourceHan');
+    expect(imported.path.startsWith(importedDir.path), isTrue);
+    expect(File(imported.path).existsSync(), isTrue);
+
+    // Original may be deleted; the app copy still lists.
+    await source.delete();
+    final fonts = await repository.listFonts();
+    expect(fonts.single.path, imported.path);
+    expect(fonts.single.family, 'SourceHan');
   });
 }
 

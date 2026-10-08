@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../../../domain/models/theme_tokens.dart';
 import '../../../../domain/models/ui_preferences.dart';
-import '../../../core/zephyr_dropdown.dart';
 import '../../../core/zephyr_settings.dart';
 import '../../../core/zephyr_theme.dart';
 import '../view_models/theme_view_model.dart';
+import 'font_file_picker.dart';
 
 class ThemeCatalog extends StatelessWidget {
   const ThemeCatalog({
@@ -61,7 +61,17 @@ class ThemeCatalog extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          _UiFontRow(viewModel: viewModel),
+          FontFilePickerRow(
+            label: 'UI font',
+            description:
+                'Typeface used by the writing shell chrome. Files are copied '
+                'into the app so the original can be deleted.',
+            fonts: viewModel.systemFonts,
+            selectedPath: viewModel.ui.fontPath,
+            isLoading: viewModel.isLoadingSystemFonts,
+            onSelected: viewModel.selectUiFont,
+            onImportPath: viewModel.importUiFontFromPath,
+          ),
           ZephyrSettingsSlider(
             label: 'UI font size',
             description: 'Size of sidebar, settings, and chrome text.',
@@ -124,58 +134,6 @@ class ThemeCatalog extends StatelessWidget {
       );
     },
   );
-}
-
-class _UiFontRow extends StatelessWidget {
-  const _UiFontRow({required this.viewModel});
-
-  final ThemeViewModel viewModel;
-
-  @override
-  Widget build(BuildContext context) {
-    if (viewModel.isLoadingSystemFonts) {
-      return const ZephyrSettingsRow(
-        label: 'UI font',
-        description: 'Typeface used by the writing shell chrome.',
-        child: LinearProgressIndicator(),
-      );
-    }
-    if (viewModel.systemFonts.isEmpty) {
-      return ZephyrSettingsRow(
-        label: 'UI font',
-        description: 'Typeface used by the writing shell chrome.',
-        child: Text(
-          'Platform default',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-      );
-    }
-    final fonts = viewModel.systemFonts;
-    final selectedPath = viewModel.ui.fontPath ?? '';
-    return ZephyrSettingsRow(
-      label: 'UI font',
-      description: 'Typeface used by the writing shell chrome.',
-      child: ZephyrDropdown<String>(
-        value: selectedPath,
-        hint: 'Platform default',
-        items: [
-          const ZephyrDropdownItem(value: '', label: 'Platform default'),
-          for (final font in fonts)
-            ZephyrDropdownItem(value: font.path, label: font.family),
-        ],
-        onChanged: (path) {
-          if (path.isEmpty) {
-            viewModel.selectUiFont(null);
-            return;
-          }
-          final font = fonts.where((item) => item.path == path).firstOrNull;
-          if (font != null) {
-            viewModel.selectUiFont(font);
-          }
-        },
-      ),
-    );
-  }
 }
 
 class ThemeTokenEditor extends StatefulWidget {

@@ -91,6 +91,24 @@ class ThemeViewModel extends ChangeNotifier {
     }
   }
 
+  /// Imports a font file into the app directory, then selects it for UI chrome.
+  Future<bool> importUiFontFromPath(String sourcePath) async {
+    final fonts = _fonts;
+    if (fonts == null) return false;
+    final imported = await fonts.importFont(sourcePath);
+    if (imported == null) {
+      return false;
+    }
+    try {
+      _systemFonts = await fonts.listFonts();
+    } on Object {
+      // Selection can still proceed with the imported path alone.
+    }
+    await selectUiFont(imported);
+    notifyListeners();
+    return _ui.fontPath == imported.path;
+  }
+
   void updateUiFontSize(double value) =>
       _updateUi(_ui.copyWith(fontSize: value));
 

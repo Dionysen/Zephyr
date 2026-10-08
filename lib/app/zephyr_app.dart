@@ -37,6 +37,7 @@ void runZephyr(
   final layout =
       layoutRepository ??
       FileWorkspaceLayoutRepository(WorkspaceLayoutFileStorage());
+  final fonts = FileSystemFontRepository();
   runApp(
     ZephyrApp(
       library: LibraryViewModel(
@@ -46,11 +47,11 @@ void runZephyr(
       ),
       theme: ThemeViewModel(
         FileThemePreferencesRepository(ThemeFileStorage()),
-        fontRepository: FileSystemFontRepository(),
+        fontRepository: fonts,
       )..load(),
       editorPreferences: EditorPreferencesViewModel(
         FileEditorPreferencesRepository(EditorPreferencesFileStorage()),
-        FileSystemFontRepository(),
+        fonts,
       )..load(),
       settings: SettingsViewModel(
         FileSettingsNavigationRepository(SettingsNavigationFileStorage()),

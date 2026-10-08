@@ -1,29 +1,34 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../../domain/models/editor_preferences.dart';
 import '../../domain/repositories/editor_preferences_repository.dart';
 import '../services/system_font_catalog.dart';
 
-/// Desktop font discovery and loading.
+/// Font discovery, user imports, and [FontLoader] registration.
 ///
-/// macOS prefers the system font registry so collection fonts (.ttc) and
-/// user-installed families appear under their Font Book names. Other desktops
-/// scan common font directories, including .ttc/.otc.
+/// Desktop can list system fonts; every platform can import a font file into
+/// the app support `fonts/` directory so the choice survives deleting the
+/// original file.
 class FileSystemFontRepository implements SystemFontRepository {
-  FileSystemFontRepository({SystemFontCatalog? catalog, this._directories})
-    : _catalog = catalog ?? SystemFontCatalog();
+  FileSystemFontRepository({
+    SystemFontCatalog? catalog,
+    this._directories,
+    Future<Directory> Function()? importedFontsDirectory,
+  }) : _catalog = catalog ?? SystemFontCatalog(),
+       _importedFontsDirectory =
+           importedFontsDirectory ?? _defaultImportedFontsDirectory;
 
   final SystemFontCatalog _catalog;
   final Iterable<Directory>? _directories;
+  final Future<Directory> Function() _importedFontsDirectory;
   final Map<String, String> _loadedFamilies = {};
 
   @override
   Future<List<SystemFont>> listFonts() async {
-    if (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux) {
-      return const [];
-    }
     // Prefer registry/catalog names over bare file stems for the same path.
     final byPath = <String, SystemFont>{};
     final byFamily = <String, SystemFont>{};
@@ -43,11 +48,16 @@ class FileSystemFontRepository implements SystemFontRepository {
       byFamily[familyKey] = font;
     }
 
-    for (final font in await _catalog.listFonts()) {
+    for (final font in await _listImportedFonts()) {
       add(font);
     }
-    for (final font in await _listDirectoryFonts()) {
-      add(font);
+    if (_supportsSystemFontDiscovery) {
+      for (final font in await _catalog.listFonts()) {
+        add(font);
+      }
+      for (final font in await _listDirectoryFonts()) {
+        add(font);
+      }
     }
     final fonts = byPath.values.toList()
       ..sort(
@@ -59,9 +69,6 @@ class FileSystemFontRepository implements SystemFontRepository {
 
   @override
   Future<String?> loadFont(SystemFont font) async {
-    if (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux) {
-      return null;
-    }
     final known = _loadedFamilies[font.path];
     if (known != null) {
       return known;
@@ -80,6 +87,64 @@ class FileSystemFontRepository implements SystemFontRepository {
     } on Object {
       return null;
     }
+  }
+
+  @override
+  Future<SystemFont?> importFont(String sourcePath) async {
+    if (!_isFontFile(sourcePath)) {
+      return null;
+    }
+    final source = File(sourcePath);
+    if (!await source.exists()) {
+      return null;
+    }
+
+    late final List<int> bytes;
+    try {
+      bytes = await source.readAsBytes();
+    } on Object {
+      return null;
+    }
+    if (bytes.isEmpty) {
+      return null;
+    }
+
+    final dir = await _importedFontsDirectory();
+    await dir.create(recursive: true);
+    final digest = Object.hashAll(bytes);
+    final originalName = p
+        .basename(sourcePath)
+        .replaceAll(RegExp(r'[^\w.\-]+'), '_');
+    final dest = File(p.join(dir.path, '${digest}_$originalName'));
+    if (!await dest.exists()) {
+      await dest.writeAsBytes(bytes, flush: true);
+    }
+
+    return SystemFont(
+      family: _displayName(sourcePath),
+      path: dest.path,
+    );
+  }
+
+  Future<List<SystemFont>> _listImportedFonts() async {
+    final fonts = <SystemFont>[];
+    try {
+      final root = await _importedFontsDirectory();
+      if (!await root.exists()) {
+        return fonts;
+      }
+      await for (final entity in root.list(followLinks: false)) {
+        if (entity is! File || !_isFontFile(entity.path)) {
+          continue;
+        }
+        fonts.add(
+          SystemFont(family: _displayName(entity.path), path: entity.path),
+        );
+      }
+    } on Object {
+      // Support directory may be unavailable in tests or restricted embeds.
+    }
+    return fonts;
   }
 
   Future<List<SystemFont>> _listDirectoryFonts() async {
@@ -132,6 +197,14 @@ class FileSystemFontRepository implements SystemFontRepository {
   }
 }
 
+bool get _supportsSystemFontDiscovery =>
+    Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+
+Future<Directory> _defaultImportedFontsDirectory() async {
+  final support = await getApplicationSupportDirectory();
+  return Directory(p.join(support.path, 'fonts'));
+}
+
 bool _isFontFile(String path) {
   final lower = path.toLowerCase();
   return lower.endsWith('.ttf') ||
@@ -141,7 +214,12 @@ bool _isFontFile(String path) {
 }
 
 String _displayName(String path) {
-  final fileName = Uri.file(path).pathSegments.last;
+  var fileName = p.basename(path);
+  // Imported copies are stored as `<hash>_<originalName>`.
+  fileName = fileName.replaceFirst(RegExp(r'^-?\d+_'), '');
+  if (fileName.isEmpty) {
+    fileName = p.basename(path);
+  }
   return fileName.replaceFirst(
     RegExp(r'\.(ttf|otf|ttc|otc)$', caseSensitive: false),
     '',

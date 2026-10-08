@@ -538,4 +538,7 @@ class _FontRepository implements SystemFontRepository {
 
   @override
   Future<String?> loadFont(SystemFont font) async => null;
+
+  @override
+  Future<SystemFont?> importFont(String sourcePath) async => null;
 }

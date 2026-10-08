@@ -8,4 +8,8 @@ abstract interface class EditorPreferencesRepository {
 abstract interface class SystemFontRepository {
   Future<List<SystemFont>> listFonts();
   Future<String?> loadFont(SystemFont font);
+
+  /// Copies [sourcePath] into the app fonts directory and returns the durable
+  /// font identity. The original file may be deleted afterwards.
+  Future<SystemFont?> importFont(String sourcePath);
 }

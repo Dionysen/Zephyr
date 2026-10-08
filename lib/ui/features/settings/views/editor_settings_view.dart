@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/zephyr_dropdown.dart';
 import '../../../core/zephyr_settings.dart';
 import '../../editor/view_models/editor_preferences_view_model.dart';
+import 'font_file_picker.dart';
 
 class EditorSettingsView extends StatefulWidget {
   const EditorSettingsView({super.key, required this.viewModel});
@@ -41,7 +41,17 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 24),
-            _FontRow(viewModel: viewModel),
+            FontFilePickerRow(
+              label: 'Font',
+              description:
+                  'Typeface used in the writing editor. Files are copied into '
+                  'the app so the original can be deleted.',
+              fonts: viewModel.systemFonts,
+              selectedPath: preferences.fontPath,
+              isLoading: viewModel.isLoadingSystemFonts,
+              onSelected: viewModel.selectFont,
+              onImportPath: viewModel.importFontFromPath,
+            ),
             ZephyrSettingsSlider(
               label: 'Font size',
               description: 'Size of the writing-column body text.',
@@ -98,56 +108,4 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
       );
     },
   );
-}
-
-class _FontRow extends StatelessWidget {
-  const _FontRow({required this.viewModel});
-
-  final EditorPreferencesViewModel viewModel;
-
-  @override
-  Widget build(BuildContext context) {
-    if (viewModel.isLoadingSystemFonts) {
-      return const ZephyrSettingsRow(
-        label: 'Font',
-        description: 'Typeface used in the writing editor.',
-        child: LinearProgressIndicator(),
-      );
-    }
-    if (viewModel.systemFonts.isEmpty) {
-      return ZephyrSettingsRow(
-        label: 'Font',
-        description: 'Typeface used in the writing editor.',
-        child: Text(
-          'Platform default',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-      );
-    }
-    final fonts = viewModel.systemFonts;
-    final selectedPath = viewModel.preferences.fontPath ?? '';
-    return ZephyrSettingsRow(
-      label: 'Font',
-      description: 'Typeface used in the writing editor.',
-      child: ZephyrDropdown<String>(
-        value: selectedPath,
-        hint: 'Platform default',
-        items: [
-          const ZephyrDropdownItem(value: '', label: 'Platform default'),
-          for (final font in fonts)
-            ZephyrDropdownItem(value: font.path, label: font.family),
-        ],
-        onChanged: (path) {
-          if (path.isEmpty) {
-            viewModel.selectFont(null);
-            return;
-          }
-          final font = fonts.where((item) => item.path == path).firstOrNull;
-          if (font != null) {
-            viewModel.selectFont(font);
-          }
-        },
-      ),
-    );
-  }
 }
