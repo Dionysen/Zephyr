@@ -1,24 +1,29 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:super_editor/super_editor.dart';
-import 'package:zephyr/ui/features/workspace/views/plain_text_document.dart';
+import 'package:zephyr/ui/features/editor/plain_text/document/plain_text_document.dart';
 
 void main() {
-  test('round-trips plain text through document nodes', () {
+  test('splits paragraphs on newlines and keeps empties', () {
     const source = 'First\n\nThird line';
-    final document = documentFromPlainText(source);
-    expect(document.nodeCount, 3);
-    expect(plainTextFromDocument(document), source);
+    final document = PlainTextDocument(source);
+    expect(document.paragraphs, ['First', '', 'Third line']);
+    expect(document.paragraphStarts(), [0, 6, 7]);
   });
 
-  test('empty text becomes a single empty paragraph', () {
-    final document = documentFromPlainText('');
-    expect(document.nodeCount, 1);
-    expect(document.getNodeAt(0), isA<ParagraphNode>());
-    expect(plainTextFromDocument(document), '');
+  test('empty text is a single empty paragraph', () {
+    const document = PlainTextDocument('');
+    expect(document.paragraphs, ['']);
+    expect(document.paragraphStarts(), [0]);
   });
 
-  test('preserves ideographic indent spaces', () {
-    const source = '　　Indented\nNext';
-    expect(plainTextFromDocument(documentFromPlainText(source)), source);
+  test('replaceRange updates text', () {
+    final next = const PlainTextDocument('Hello').replaceRange(0, 5, 'Hi');
+    expect(next.text, 'Hi');
+  });
+
+  test('paragraphIndexForOffset maps through newlines', () {
+    const document = PlainTextDocument('ab\ncd\ne');
+    expect(document.paragraphIndexForOffset(0), 0);
+    expect(document.paragraphIndexForOffset(3), 1);
+    expect(document.paragraphIndexForOffset(6), 2);
   });
 }

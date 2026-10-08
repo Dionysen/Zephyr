@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:super_editor/super_editor.dart';
 
+import '../../../../domain/models/editor_preferences.dart';
 import '../../../../domain/use_cases/paragraph_indentation.dart';
+import '../../editor/plain_text/input/plain_text_editing_controller.dart';
+import '../../editor/plain_text/layout/editor_typography.dart';
+import '../../editor/plain_text/zephyr_plain_text_editor.dart';
 import '../../editor/view_models/editor_preferences_view_model.dart';
 import '../../editor/view_models/library_view_model.dart';
-import 'paragraph_indent_editing.dart';
-import 'plain_text_document.dart';
 
 class WorkspaceEditor extends StatefulWidget {
   const WorkspaceEditor({
@@ -24,18 +25,18 @@ class WorkspaceEditor extends StatefulWidget {
 class _WorkspaceEditorState extends State<WorkspaceEditor> {
   final _scrollController = ScrollController();
   final _focusNode = FocusNode();
-  final _editListener = _ContentEditListener();
+  final _controller = PlainTextEditingController();
 
-  Editor? _editor;
   String? _articleId;
   int? _indent;
   String _lastEmitted = '';
+  var _suppressControllerNotify = false;
 
   @override
   void initState() {
     super.initState();
-    _editListener.onChanged = _onDocumentEdited;
     widget.preferences.addListener(_onPreferences);
+    _controller.addListener(_onControllerChanged);
     _syncFromModel();
   }
 
@@ -52,18 +53,11 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   @override
   void dispose() {
     widget.preferences.removeListener(_onPreferences);
-    _tearDownEditor();
+    _controller.removeListener(_onControllerChanged);
+    _controller.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
     super.dispose();
-  }
-
-  void _tearDownEditor() {
-    final editor = _editor;
-    if (editor == null) return;
-    editor.removeListener(_editListener);
-    editor.dispose();
-    _editor = null;
   }
 
   void _onPreferences() {
@@ -79,184 +73,107 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     final article = widget.model.article;
     if (article == null) {
       _articleId = null;
-      _tearDownEditor();
+      _suppressControllerNotify = true;
+      _controller.setText('');
+      _suppressControllerNotify = false;
+      _lastEmitted = '';
       return;
     }
-    if (article.id == _articleId && _editor != null) return;
-
-    _articleId = article.id;
     _indent = widget.preferences.preferences.firstLineIndent;
     final content = applyParagraphIndentation(article.content, _indent!);
-    _lastEmitted = content;
-    _rebuildEditor(content);
-  }
+    // Ignore model echoes of our own edits.
+    if (article.id == _articleId && content == _lastEmitted) {
+      return;
+    }
 
-  void _rebuildEditor(String content) {
-    _tearDownEditor();
-    final document = documentFromPlainText(content);
-    final editor = createZephyrDocumentEditor(document: document);
-    editor.addListener(_editListener);
-    _editor = editor;
+    _articleId = article.id;
+    _lastEmitted = content;
+    _suppressControllerNotify = true;
+    _controller.setText(content);
+    _suppressControllerNotify = false;
   }
 
   void _applyIndent(int indent) {
     _indent = indent;
-    final editor = _editor;
-    if (editor == null) return;
-    final formatted = applyParagraphIndentation(
-      plainTextFromDocument(editor.document),
-      indent,
-    );
+    final formatted = applyParagraphIndentation(_controller.text, indent);
     if (formatted == _lastEmitted) {
       setState(() {});
       return;
     }
     _lastEmitted = formatted;
-    _rebuildEditor(formatted);
+    _suppressControllerNotify = true;
+    _controller.setText(formatted, recordUndo: true);
+    _suppressControllerNotify = false;
     setState(() {});
     widget.model.updateContent(formatted);
   }
 
-  void _onDocumentEdited(List<EditEvent> changeList) {
-    final editor = _editor;
-    if (editor == null || widget.model.isReadOnly) return;
-    if (changeList.isEmpty) return;
-
-    // Preserve per-paragraph indent from Enter/Tab editing; preference changes
-    // still reformat through [_applyIndent].
-    final plain = plainTextFromDocument(editor.document);
+  void _onControllerChanged() {
+    if (_suppressControllerNotify || widget.model.isReadOnly) return;
+    final plain = _controller.text;
     if (plain == _lastEmitted) return;
     _lastEmitted = plain;
     widget.model.updateContent(plain);
   }
 
-  Stylesheet _stylesheet(BuildContext context, double horizontalPadding) {
-    final preferences = widget.preferences.preferences;
+  EditorTypography _typography(BuildContext context, EditorPreferences prefs) {
     final color = Theme.of(context).colorScheme.onSurface;
-    final gap = preferences.fontSize * preferences.paragraphSpacing;
-    return Stylesheet(
-      documentPadding: EdgeInsets.fromLTRB(
-        horizontalPadding,
-        28,
-        horizontalPadding,
-        48,
-      ),
-      inlineTextStyler: defaultInlineTextStyler,
-      inlineWidgetBuilders: defaultInlineWidgetBuilderChain,
-      rules: [
-        StyleRule(BlockSelector.all, (doc, node) {
-          return {
-            Styles.maxWidth: preferences.maxContentWidth,
-            Styles.textStyle: TextStyle(
-              color: color,
-              fontSize: preferences.fontSize,
-              height: preferences.lineHeight,
-              fontFamily: preferences.fontFamily,
-            ),
-          };
-        }),
-        StyleRule(const BlockSelector('paragraph'), (doc, node) {
-          final index = doc.getNodeIndexById(node.id);
-          return {
-            Styles.padding: CascadingPadding.only(top: index <= 0 ? 0 : gap),
-          };
-        }),
-      ],
+    return EditorTypography(
+      color: color,
+      fontSize: prefs.fontSize,
+      fontFamily: prefs.fontFamily,
+      lineHeight: prefs.lineHeight,
+      paragraphSpacing: prefs.paragraphSpacing,
+      maxContentWidth: prefs.maxContentWidth,
+      firstLineIndent: prefs.firstLineIndent,
+      documentPadding: const EdgeInsets.fromLTRB(42, 28, 42, 48),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final article = widget.model.article;
-    final editor = _editor;
-    if (article == null || editor == null) {
+    if (article == null) {
       return const Center(
         child: Text('Choose or create a chapter to begin writing.'),
       );
     }
+
     final preferences = widget.preferences.preferences;
     final theme = Theme.of(context);
     final selectionColor = theme.colorScheme.primary.withValues(alpha: 0.35);
     final cursorColor =
         theme.textSelectionTheme.cursorColor ?? theme.colorScheme.onSurface;
-    return MouseRegion(
-      cursor: SystemMouseCursors.text,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final horizontal =
-                    ((constraints.maxWidth - preferences.maxContentWidth) / 2)
-                        .clamp(42.0, double.infinity);
-                final stylesheet = _stylesheet(context, horizontal);
-                final selectionStyle = SelectionStyles(
-                  selectionColor: selectionColor,
-                );
-                final documentOverlays = [
-                  const SuperEditorIosToolbarFocalPointDocumentLayerBuilder(),
-                  SuperEditorIosHandlesDocumentLayerBuilder(
-                    handleColor: cursorColor,
-                  ),
-                  const SuperEditorAndroidToolbarFocalPointDocumentLayerBuilder(),
-                  SuperEditorAndroidHandlesDocumentLayerBuilder(
-                    caretColor: cursorColor,
-                  ),
-                  DefaultCaretOverlayBuilder(
-                    caretStyle: CaretStyle(width: 2, color: cursorColor),
-                  ),
-                ];
-                final child = widget.model.isReadOnly
-                    ? SuperReader(
-                        editor: editor,
-                        focusNode: _focusNode,
-                        scrollController: _scrollController,
-                        stylesheet: stylesheet,
-                        selectionStyle: selectionStyle,
-                      )
-                    : SuperEditor(
-                        editor: editor,
-                        focusNode: _focusNode,
-                        scrollController: _scrollController,
-                        stylesheet: stylesheet,
-                        selectionStyle: selectionStyle,
-                        documentOverlayBuilders: documentOverlays,
-                        androidHandleColor: cursorColor,
-                        iOSHandleColor: cursorColor,
-                        keyboardActions: [
-                          tabToInsertFirstLineIndent(
-                            () => widget.preferences.preferences.firstLineIndent,
-                          ),
-                          ...defaultImeKeyboardActions,
-                        ],
-                        contentTapDelegateFactories: const [],
-                      );
-                return Scrollbar(
-                  controller: _scrollController,
-                  child: child,
-                );
-              },
+    final typography = _typography(context, preferences);
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: RepaintBoundary(
+            child: ZephyrPlainTextEditor(
+              controller: _controller,
+              typography: typography,
+              scrollController: _scrollController,
+              focusNode: _focusNode,
+              readOnly: widget.model.isReadOnly,
+              cursorColor: cursorColor,
+              selectionColor: selectionColor,
+              onTextChanged: (_) {},
+              onSelectionChanged: (_) {},
             ),
           ),
-          Positioned(
-            right: 18,
-            bottom: 14,
-            child: IgnorePointer(
-              child: Text(
-                '${article.content.runes.length} characters',
-                style: Theme.of(context).textTheme.labelMedium,
-              ),
+        ),
+        Positioned(
+          right: 18,
+          bottom: 14,
+          child: IgnorePointer(
+            child: Text(
+              '${article.wordCount} characters',
+              style: Theme.of(context).textTheme.labelMedium,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
-}
-
-class _ContentEditListener implements EditListener {
-  void Function(List<EditEvent> changeList)? onChanged;
-
-  @override
-  void onEdit(List<EditEvent> changeList) => onChanged?.call(changeList);
 }

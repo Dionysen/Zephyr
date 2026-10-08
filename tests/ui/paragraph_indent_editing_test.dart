@@ -1,94 +1,41 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:super_editor/super_editor.dart';
-import 'package:zephyr/ui/features/workspace/views/paragraph_indent_editing.dart';
-import 'package:zephyr/ui/features/workspace/views/plain_text_document.dart';
+import 'package:zephyr/ui/features/editor/plain_text/input/plain_text_editing_controller.dart';
 
 void main() {
   test('Enter inherits leading ideographic indent from the previous paragraph', () {
-    final document = documentFromPlainText('　　Hello');
-    final editor = createZephyrDocumentEditor(document: document);
-    final first = document.getNodeAt(0)! as TextNode;
-
-    editor.execute([
-      ChangeSelectionRequest(
-        DocumentSelection.collapsed(
-          position: DocumentPosition(
-            nodeId: first.id,
-            nodePosition: TextNodePosition(offset: first.text.length),
-          ),
-        ),
-        SelectionChangeType.placeCaret,
-        SelectionReason.userInteraction,
-      ),
-      InsertNewlineAtCaretRequest(Editor.createNodeId()),
-    ]);
-
-    expect(document.nodeCount, 2);
-    final newNode = document.getNodeAt(1)! as ParagraphNode;
-    expect(newNode.text.toPlainText(), '　　');
-    expect(
-      editor.composer.selection,
-      DocumentSelection.collapsed(
-        position: DocumentPosition(
-          nodeId: newNode.id,
-          nodePosition: const TextNodePosition(offset: 2),
-        ),
-      ),
+    final controller = PlainTextEditingController(text: '　　Hello');
+    controller.setSelection(
+      TextSelection.collapsed(offset: controller.text.length),
     );
+    controller.insertNewlineWithIndent();
+
+    expect(controller.text, '　　Hello\n　　');
+    expect(controller.selection.extentOffset, controller.text.length);
   });
 
   test('Enter does not add indent when the previous paragraph has none', () {
-    final document = documentFromPlainText('Hello');
-    final editor = createZephyrDocumentEditor(document: document);
-    final first = document.getNodeAt(0)! as TextNode;
-
-    editor.execute([
-      ChangeSelectionRequest(
-        DocumentSelection.collapsed(
-          position: DocumentPosition(
-            nodeId: first.id,
-            nodePosition: TextNodePosition(offset: first.text.length),
-          ),
-        ),
-        SelectionChangeType.placeCaret,
-        SelectionReason.userInteraction,
-      ),
-      InsertNewlineAtCaretRequest(Editor.createNodeId()),
-    ]);
-
-    expect(
-      (document.getNodeAt(1)! as ParagraphNode).text.toPlainText(),
-      isEmpty,
+    final controller = PlainTextEditingController(text: 'Hello');
+    controller.setSelection(
+      TextSelection.collapsed(offset: controller.text.length),
     );
+    controller.insertNewlineWithIndent();
+
+    expect(controller.text, 'Hello\n');
   });
 
   test('splitting mid-paragraph prefixes the carried text with inherited indent', () {
-    final document = documentFromPlainText('　　HelloWorld');
-    final editor = createZephyrDocumentEditor(document: document);
-    final first = document.getNodeAt(0)! as TextNode;
+    final controller = PlainTextEditingController(text: '　　HelloWorld');
+    controller.setSelection(const TextSelection.collapsed(offset: 7));
+    controller.insertNewlineWithIndent();
 
-    editor.execute([
-      ChangeSelectionRequest(
-        DocumentSelection.collapsed(
-          position: DocumentPosition(
-            nodeId: first.id,
-            // After "　　Hello"
-            nodePosition: const TextNodePosition(offset: 7),
-          ),
-        ),
-        SelectionChangeType.placeCaret,
-        SelectionReason.userInteraction,
-      ),
-      InsertNewlineAtCaretRequest(Editor.createNodeId()),
-    ]);
+    expect(controller.text, '　　Hello\n　　World');
+  });
 
-    expect(
-      (document.getNodeAt(0)! as ParagraphNode).text.toPlainText(),
-      '　　Hello',
-    );
-    expect(
-      (document.getNodeAt(1)! as ParagraphNode).text.toPlainText(),
-      '　　World',
-    );
+  test('Tab inserts configured ideographic indent', () {
+    final controller = PlainTextEditingController(text: '');
+    controller.firstLineIndent = 2;
+    controller.insertTabIndent();
+    expect(controller.text, '　　');
   });
 }
