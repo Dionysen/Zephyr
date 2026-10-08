@@ -12,7 +12,7 @@ class PureWriterDatabase {
   PureWriterDatabase({Future<Directory> Function()? supportDirectory})
     : _supportDirectory = supportDirectory ?? getApplicationSupportDirectory;
   static const defaultFolderId = 'Default';
-  static const trashFolderId = 'PW_Trash';
+  static const trashFolderId = WritingFolder.trashId;
   static const identityHash = 'af22c7c534a04acc4530d670ac9e43c4';
   final Future<Directory> Function() _supportDirectory;
   Database? _database;

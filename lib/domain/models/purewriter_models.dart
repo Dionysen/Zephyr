@@ -6,6 +6,8 @@ class LibraryInUseException implements Exception {
 }
 
 class WritingFolder {
+  static const trashId = 'PW_Trash';
+
   const WritingFolder({
     required this.id,
     required this.name,
@@ -18,6 +20,8 @@ class WritingFolder {
   final int rank;
   final String description;
   final String tags;
+
+  bool get isTrash => id == trashId;
 
   WritingFolder copyWith({
     String? name,

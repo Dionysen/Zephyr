@@ -70,7 +70,10 @@ class WorkspaceSidebar extends StatelessWidget {
                 ),
                 const Spacer(),
                 IconButton(
-                  onPressed: model.isReadOnly ? null : model.createArticle,
+                  onPressed:
+                      model.isReadOnly || model.selectedBook?.isTrash == true
+                      ? null
+                      : model.createArticle,
                   icon: const Icon(Icons.note_add_outlined),
                   tooltip: 'New chapter',
                 ),
@@ -171,9 +174,7 @@ class _BookPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hostContext = context;
-    final books = library.folders
-        .where((book) => book.id != 'PW_Trash')
-        .toList(growable: false);
+    final books = library.folders;
     final bookById = {for (final book in books) book.id: book};
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
@@ -198,16 +199,27 @@ class _BookPicker extends StatelessWidget {
               ? null
               : '${stats.volumes}卷 ${stats.chapters}章';
           final theme = Theme.of(context);
+          final isTrash = book?.isTrash == true;
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Row(
               children: [
+                if (isTrash) ...[
+                  Icon(
+                    Icons.delete_outline,
+                    size: ZephyrControls.iconSize,
+                    color: theme.colorScheme.error,
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 Expanded(
                   child: Text(
                     selected?.label ?? 'Select a book',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: isTrash ? theme.colorScheme.error : null,
+                    ),
                   ),
                 ),
                 if (meta != null) ...[
@@ -215,7 +227,9 @@ class _BookPicker extends StatelessWidget {
                   Text(
                     meta,
                     style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                      color: isTrash
+                          ? theme.colorScheme.error
+                          : theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -240,6 +254,8 @@ class _BookPicker extends StatelessWidget {
               final book = bookById[item.value];
               final subtitle = item.subtitle;
               final theme = Theme.of(context);
+              final isTrash = book?.isTrash == true;
+              final trashColor = theme.colorScheme.error;
               return Stack(
                 fit: StackFit.expand,
                 children: [
@@ -253,8 +269,11 @@ class _BookPicker extends StatelessWidget {
                       child: Row(
                         children: [
                           Icon(
-                            Icons.menu_book_outlined,
+                            isTrash
+                                ? Icons.delete_outline
+                                : Icons.menu_book_outlined,
                             size: ZephyrControls.iconSize,
+                            color: isTrash ? trashColor : null,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -262,7 +281,9 @@ class _BookPicker extends StatelessWidget {
                               item.label,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleSmall,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                color: isTrash ? trashColor : null,
+                              ),
                             ),
                           ),
                           if (subtitle != null && subtitle.isNotEmpty) ...[
@@ -275,7 +296,9 @@ class _BookPicker extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.right,
                                 style: theme.textTheme.labelMedium?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
+                                  color: isTrash
+                                      ? trashColor
+                                      : theme.colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ),
@@ -285,44 +308,46 @@ class _BookPicker extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Positioned(
-                    top:
-                        (ZephyrControls.fieldHeight - ZephyrControls.buttonSize) /
-                        2,
-                    right: 4,
-                    width: ZephyrControls.buttonSize,
-                    height: ZephyrControls.buttonSize,
-                    child: Material(
-                      type: MaterialType.transparency,
-                      child: InkWell(
-                        customBorder: hostContext.zephyrShape.iconButtonShape,
-                        onTap: model.isReadOnly || book == null
-                            ? null
-                            : () {
-                                final editing = book;
-                                onDismiss();
-                                WidgetsBinding.instance.addPostFrameCallback((
-                                  _,
-                                ) {
-                                  if (!hostContext.mounted) {
-                                    return;
-                                  }
-                                  unawaited(
-                                    _editBook(
-                                      hostContext,
-                                      model: model,
-                                      book: editing,
-                                    ),
-                                  );
-                                });
-                              },
-                        child: Icon(
-                          Icons.edit_outlined,
-                          size: ZephyrControls.iconSize,
+                  if (!isTrash)
+                    Positioned(
+                      top:
+                          (ZephyrControls.fieldHeight -
+                              ZephyrControls.buttonSize) /
+                          2,
+                      right: 4,
+                      width: ZephyrControls.buttonSize,
+                      height: ZephyrControls.buttonSize,
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: InkWell(
+                          customBorder: hostContext.zephyrShape.iconButtonShape,
+                          onTap: model.isReadOnly || book == null
+                              ? null
+                              : () {
+                                  final editing = book;
+                                  onDismiss();
+                                  WidgetsBinding.instance.addPostFrameCallback((
+                                    _,
+                                  ) {
+                                    if (!hostContext.mounted) {
+                                      return;
+                                    }
+                                    unawaited(
+                                      _editBook(
+                                        hostContext,
+                                        model: model,
+                                        book: editing,
+                                      ),
+                                    );
+                                  });
+                                },
+                          child: Icon(
+                            Icons.edit_outlined,
+                            size: ZephyrControls.iconSize,
+                          ),
                         ),
                       ),
                     ),
-                  ),
                 ],
               );
             },
@@ -492,20 +517,20 @@ class _ChapterTree extends StatelessWidget {
     final chapters = library.articles
         .where((item) => item.folderId == bookId)
         .toList();
+    final isTrash = bookId == WritingFolder.trashId;
     final entries = <Object>[];
     for (final volume in library.categories.where(
-      (item) => item.folderId == bookId,
+      (item) => !isTrash && item.folderId == bookId,
     )) {
       entries.add(volume);
       if (model.isVolumeExpanded(volume.id)) {
         entries.addAll(chapters.where((item) => item.categoryId == volume.id));
       }
     }
-    final loose = chapters.where((item) => item.categoryId == null);
+    final loose = chapters.where((item) => isTrash || item.categoryId == null);
     if (loose.isNotEmpty) {
-      entries
-        ..add(_LooseChapters.label)
-        ..addAll(loose);
+      if (!isTrash) entries.add(_LooseChapters.label);
+      entries.addAll(loose);
     }
     return ListView.builder(
       padding: const EdgeInsets.only(top: 2, bottom: 12),

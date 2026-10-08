@@ -18,6 +18,56 @@ import 'package:zephyr/ui/features/settings/view_models/theme_view_model.dart';
 import 'package:zephyr/ui/features/workspace/views/workspace_page.dart';
 
 void main() {
+  testWidgets('trash appears in the book picker and shows discarded chapters', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final library = LibraryViewModel(_LibraryRepository());
+    await tester.pumpWidget(_app(library: library));
+    await tester.pumpAndSettle();
+    expect(library.selectedBook?.id, 'Default');
+
+    await tester.tap(find.text('Book A'));
+    await tester.pumpAndSettle();
+    final trashLabel = tester.widget<Text>(find.text('Trash'));
+    final trashContext = tester.element(find.text('Trash'));
+    final trashColor = Theme.of(trashContext).colorScheme.error;
+    expect(trashLabel.style?.color, trashColor);
+    expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+    expect(find.byIcon(Icons.edit_outlined), findsNWidgets(2));
+
+    await tester.tap(find.text('Trash'));
+    await tester.pumpAndSettle();
+    expect(library.selectedBook?.id, WritingFolder.trashId);
+    final selectedTrash = tester.widget<Text>(find.text('Trash'));
+    expect(selectedTrash.style?.color, trashColor);
+    expect(
+      find.ancestor(
+        of: find.text('Discarded chapter'),
+        matching: find.byType(InkWell),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+    expect(
+      tester
+          .widget<IconButton>(
+            find
+                .ancestor(
+                  of: find.byIcon(Icons.note_add_outlined),
+                  matching: find.byType(IconButton),
+                )
+                .first,
+          )
+          .onPressed,
+      isNull,
+    );
+  });
+
   testWidgets(
     'book row selects across its full width while the overlaid edit button stays separate',
     (tester) async {
@@ -193,6 +243,7 @@ class _LibraryRepository implements WritingLibraryRepository {
     folders: const [
       WritingFolder(id: 'Default', name: 'Book A', rank: 0),
       WritingFolder(id: 'book-b', name: 'Book B', rank: 1, tags: 'Fiction'),
+      WritingFolder(id: WritingFolder.trashId, name: 'Trash', rank: 2),
     ],
     categories: const [
       WritingCategory(
@@ -214,21 +265,36 @@ class _LibraryRepository implements WritingLibraryRepository {
         updatedAt: DateTime.utc(2026, 1, 2),
         wordCount: 42,
       ),
+      ArticleSummary(
+        id: 'trashed',
+        title: 'Discarded chapter',
+        summary: 'Discarded content',
+        folderId: WritingFolder.trashId,
+        categoryId: 'volume-a',
+        createdAt: DateTime.utc(2025, 12, 19),
+        updatedAt: DateTime.utc(2026, 1, 2),
+        wordCount: 17,
+      ),
     ],
   );
 
   @override
-  Future<WritingArticle> getArticle(String id) async => WritingArticle(
-    id: 'article',
-    title: 'Chapter A',
-    content: 'Hello',
-    summary: '',
-    folderId: 'Default',
-    categoryId: 'volume-a',
-    createdAt: DateTime.utc(2025, 12, 19),
-    updatedAt: DateTime.utc(2026, 1, 2),
-    wordCount: 42,
-  );
+  Future<WritingArticle> getArticle(String id) async {
+    final summary = (await loadLibrary()).articles.singleWhere(
+      (article) => article.id == id,
+    );
+    return WritingArticle(
+      id: summary.id,
+      title: summary.title,
+      content: id == 'trashed' ? 'Discarded content' : 'Hello',
+      summary: summary.summary,
+      folderId: summary.folderId,
+      categoryId: summary.categoryId,
+      createdAt: summary.createdAt,
+      updatedAt: summary.updatedAt,
+      wordCount: summary.wordCount,
+    );
+  }
 
   @override
   Future<WritingArticle> createArticle({required String folderId}) async =>

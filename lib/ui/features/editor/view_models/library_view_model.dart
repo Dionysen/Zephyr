@@ -160,7 +160,7 @@ class LibraryViewModel extends ChangeNotifier {
       _library = await _repository.loadLibrary();
       _selectedBookId ??=
           _library!.folders
-              .where((book) => book.id != 'PW_Trash')
+              .where((book) => !book.isTrash)
               .firstOrNull
               ?.id ??
           _library!.folders.firstOrNull?.id;
@@ -185,7 +185,7 @@ class LibraryViewModel extends ChangeNotifier {
   Future<void> createArticle() async {
     if (isReadOnly) return;
     final book = selectedBook;
-    if (book == null || book.id == 'PW_Trash') return;
+    if (book == null || book.isTrash) return;
     _article = await _repository.createArticle(folderId: book.id);
     await load();
     notifyListeners();
