@@ -129,8 +129,13 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _ensureEditorFonts(ZephyrScope scope) {
-    if (scope.settings.section == SettingsSection.editor) {
-      unawaited(scope.editorPreferences.loadSystemFonts());
+    switch (scope.settings.section) {
+      case SettingsSection.editor:
+        unawaited(scope.editorPreferences.loadSystemFonts());
+      case SettingsSection.theme:
+        unawaited(scope.theme.loadSystemFonts());
+      case _:
+        break;
     }
   }
 

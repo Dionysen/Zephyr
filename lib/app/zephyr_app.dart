@@ -40,8 +40,10 @@ void runZephyr(
         initialError: startupError,
         layoutRepository: layout,
       ),
-      theme: ThemeViewModel(FileThemePreferencesRepository(ThemeFileStorage()))
-        ..load(),
+      theme: ThemeViewModel(
+        FileThemePreferencesRepository(ThemeFileStorage()),
+        fontRepository: FileSystemFontRepository(),
+      )..load(),
       editorPreferences: EditorPreferencesViewModel(
         FileEditorPreferencesRepository(EditorPreferencesFileStorage()),
         FileSystemFontRepository(),
@@ -78,7 +80,7 @@ class ZephyrApp extends StatelessWidget {
       builder: (context, _) => MaterialApp(
         title: 'Zephyr',
         debugShowCheckedModeBanner: false,
-        theme: zephyrTheme(theme.tokens),
+        theme: zephyrTheme(theme.tokens, ui: theme.ui),
         home: DesktopWindowBackdrop(
           color: Color(theme.tokens.editorSurface),
           child: const WorkspacePage(),

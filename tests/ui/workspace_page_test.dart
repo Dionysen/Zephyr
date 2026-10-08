@@ -4,6 +4,7 @@ import 'package:zephyr/domain/models/editor_preferences.dart';
 import 'package:zephyr/domain/models/purewriter_models.dart';
 import 'package:zephyr/domain/models/settings_navigation.dart';
 import 'package:zephyr/domain/models/theme_tokens.dart';
+import 'package:zephyr/domain/models/ui_preferences.dart';
 import 'package:zephyr/domain/repositories/editor_preferences_repository.dart';
 import 'package:zephyr/domain/repositories/settings_navigation_repository.dart';
 import 'package:zephyr/domain/repositories/theme_preferences_repository.dart';
@@ -199,10 +200,16 @@ class _LibraryRepository implements WritingLibraryRepository {
 
 class _ThemeRepository implements ThemePreferencesRepository {
   @override
-  Future<ThemeTokens> load() async => ThemeTokens.defaults;
+  Future<ThemeTokens> loadTokens() async => ThemeTokens.defaults;
 
   @override
-  Future<void> save(ThemeTokens tokens) async {}
+  Future<UiPreferences> loadUi() async => UiPreferences.defaults;
+
+  @override
+  Future<void> save({
+    required ThemeTokens tokens,
+    required UiPreferences ui,
+  }) async {}
 }
 
 class _PreferencesRepository implements EditorPreferencesRepository {

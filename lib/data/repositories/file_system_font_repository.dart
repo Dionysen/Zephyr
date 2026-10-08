@@ -24,12 +24,23 @@ class FileSystemFontRepository implements SystemFontRepository {
     if (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux) {
       return const [];
     }
+    // Prefer registry/catalog names over bare file stems for the same path.
+    final byPath = <String, SystemFont>{};
     final byFamily = <String, SystemFont>{};
     void add(SystemFont font) {
       if (font.family.isEmpty || font.path.isEmpty) {
         return;
       }
-      byFamily.putIfAbsent(font.family.toLowerCase(), () => font);
+      final pathKey = font.path.toLowerCase();
+      if (byPath.containsKey(pathKey)) {
+        return;
+      }
+      final familyKey = font.family.toLowerCase();
+      if (byFamily.containsKey(familyKey)) {
+        return;
+      }
+      byPath[pathKey] = font;
+      byFamily[familyKey] = font;
     }
 
     for (final font in await _catalog.listFonts()) {
@@ -38,7 +49,7 @@ class FileSystemFontRepository implements SystemFontRepository {
     for (final font in await _listDirectoryFonts()) {
       add(font);
     }
-    final fonts = byFamily.values.toList()
+    final fonts = byPath.values.toList()
       ..sort(
         (left, right) =>
             left.family.toLowerCase().compareTo(right.family.toLowerCase()),

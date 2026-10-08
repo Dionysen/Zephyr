@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/models/theme_tokens.dart';
+import '../../domain/models/ui_preferences.dart';
 import 'zephyr_controls.dart';
 
 /// Builds the writing-shell theme from user-owned semantic tokens.
-ThemeData zephyrTheme(ThemeTokens tokens) {
+ThemeData zephyrTheme(
+  ThemeTokens tokens, {
+  UiPreferences ui = UiPreferences.defaults,
+}) {
   final editor = Color(tokens.editorSurface);
   final sidebar = Color(tokens.sidebarSurface);
   final control = Color(tokens.controlSurface);
@@ -17,9 +21,12 @@ ThemeData zephyrTheme(ThemeTokens tokens) {
       : Brightness.light;
   final selected = Color.alphaBlend(accent.withValues(alpha: .20), sidebar);
   final focus = Color.alphaBlend(accent.withValues(alpha: .5), border);
+  final scale = ui.scale;
+  final fontFamily = ui.fontFamily;
 
   return ThemeData(
     useMaterial3: true,
+    fontFamily: fontFamily,
     colorScheme: ColorScheme.fromSeed(seedColor: accent, brightness: brightness)
         .copyWith(
           primary: accent,
@@ -98,24 +105,38 @@ ThemeData zephyrTheme(ThemeTokens tokens) {
     textTheme: TextTheme(
       titleLarge: TextStyle(
         color: primaryText,
-        fontSize: 20,
+        fontFamily: fontFamily,
+        fontSize: 20 * scale,
         fontWeight: FontWeight.w600,
       ),
       titleSmall: TextStyle(
         color: primaryText,
-        fontSize: 15,
+        fontFamily: fontFamily,
+        fontSize: 15 * scale,
         fontWeight: FontWeight.w600,
         height: 1.25,
       ),
-      bodyLarge: TextStyle(color: primaryText, fontSize: 16, height: 1.75),
-      bodySmall: TextStyle(color: mutedText, fontSize: 13, height: 1.3),
+      bodyLarge: TextStyle(
+        color: primaryText,
+        fontFamily: fontFamily,
+        fontSize: 16 * scale,
+        height: 1.75,
+      ),
+      bodySmall: TextStyle(
+        color: mutedText,
+        fontFamily: fontFamily,
+        fontSize: 13 * scale,
+        height: 1.3,
+      ),
       labelMedium: TextStyle(
         color: primaryText.withValues(alpha: .70),
-        fontSize: 12,
+        fontFamily: fontFamily,
+        fontSize: 12 * scale,
       ),
       labelSmall: TextStyle(
         color: mutedText.withValues(alpha: .82),
-        fontSize: 11,
+        fontFamily: fontFamily,
+        fontSize: 11 * scale,
       ),
     ),
     appBarTheme: AppBarTheme(

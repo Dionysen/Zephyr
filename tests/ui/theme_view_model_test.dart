@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/domain/models/theme_tokens.dart';
+import 'package:zephyr/domain/models/ui_preferences.dart';
 import 'package:zephyr/domain/repositories/theme_preferences_repository.dart';
 import 'package:zephyr/ui/features/settings/view_models/theme_view_model.dart';
 
@@ -29,10 +30,12 @@ void main() {
     final model = ThemeViewModel(_ThemeRepository(ThemeTokens.defaults));
 
     model.update(ThemeToken.editorSurface, 0xFF000000);
+    model.updateUiFontSize(16);
     model.restoreDefaults();
 
     expect(model.tokens.editorSurface, ThemeTokens.defaults.editorSurface);
     expect(model.tokens.accent, ThemeTokens.defaults.accent);
+    expect(model.ui.fontSize, UiPreferences.defaults.fontSize);
   });
 
   test('applying a preset replaces the complete semantic palette', () {
@@ -43,18 +46,35 @@ void main() {
     expect(model.tokens, ThemeTokens.presets[ThemePreset.purple]);
     expect(model.tokens.preset, ThemePreset.purple);
   });
+
+  test('ui font size updates independently of color tokens', () {
+    final model = ThemeViewModel(_ThemeRepository(ThemeTokens.defaults));
+
+    model.updateUiFontSize(12);
+
+    expect(model.ui.fontSize, 12);
+    expect(model.tokens, ThemeTokens.defaults);
+  });
 }
 
 class _ThemeRepository implements ThemePreferencesRepository {
-  _ThemeRepository(this.tokens);
+  _ThemeRepository(this.tokens, [this.ui = UiPreferences.defaults]);
 
   ThemeTokens tokens;
+  UiPreferences ui;
 
   @override
-  Future<ThemeTokens> load() async => tokens;
+  Future<ThemeTokens> loadTokens() async => tokens;
 
   @override
-  Future<void> save(ThemeTokens tokens) async {
+  Future<UiPreferences> loadUi() async => ui;
+
+  @override
+  Future<void> save({
+    required ThemeTokens tokens,
+    required UiPreferences ui,
+  }) async {
     this.tokens = tokens;
+    this.ui = ui;
   }
 }

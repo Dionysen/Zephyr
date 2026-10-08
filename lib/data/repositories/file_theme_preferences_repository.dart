@@ -1,4 +1,5 @@
 import '../../domain/models/theme_tokens.dart';
+import '../../domain/models/ui_preferences.dart';
 import '../../domain/repositories/theme_preferences_repository.dart';
 import '../services/theme_file_storage.dart';
 
@@ -8,7 +9,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
   final ThemeFileStorage _storage;
 
   @override
-  Future<ThemeTokens> load() async {
+  Future<ThemeTokens> loadTokens() async {
     final values = await _storage.read();
     if (values == null) return ThemeTokens.defaults;
     return ThemeTokens(
@@ -23,7 +24,21 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
   }
 
   @override
-  Future<void> save(ThemeTokens tokens) => _storage.write({
+  Future<UiPreferences> loadUi() async {
+    final values = await _storage.read();
+    if (values == null) return UiPreferences.defaults;
+    return UiPreferences(
+      fontFamily: values['uiFontFamily'] as String?,
+      fontPath: values['uiFontPath'] as String?,
+      fontSize: _double(values, 'uiFontSize', UiPreferences.defaults.fontSize),
+    );
+  }
+
+  @override
+  Future<void> save({
+    required ThemeTokens tokens,
+    required UiPreferences ui,
+  }) => _storage.write({
     'editorSurface': tokens.editorSurface,
     'sidebarSurface': tokens.sidebarSurface,
     'controlSurface': tokens.controlSurface,
@@ -31,6 +46,9 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'primaryText': tokens.primaryText,
     'mutedText': tokens.mutedText,
     'accent': tokens.accent,
+    'uiFontFamily': ui.fontFamily,
+    'uiFontPath': ui.fontPath,
+    'uiFontSize': ui.fontSize,
   });
 
   int _color(Map<String, Object?> values, String key) {
@@ -39,5 +57,12 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
       throw FormatException('Invalid $key token.');
     }
     return value;
+  }
+
+  double _double(Map<String, Object?> values, String key, double fallback) {
+    final value = values[key];
+    if (value == null) return fallback;
+    if (value is! num) throw FormatException('Invalid $key preference.');
+    return value.toDouble();
   }
 }
