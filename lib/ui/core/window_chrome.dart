@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../../domain/models/window_frame.dart';
+import '../../domain/repositories/window_frame_repository.dart';
 import 'zephyr_controls.dart';
 
 /// Isolates desktop window dragging and caption buttons from feature widgets.
@@ -142,5 +144,116 @@ class WindowCaptionButtons extends StatelessWidget {
         backgroundColor: Colors.transparent,
       ),
     );
+  }
+}
+
+/// Restores and persists desktop window size/position across launches.
+class WindowFrameTracker with WindowListener {
+  WindowFrameTracker(this._repository, {WindowFrame? initial})
+    : _normalFrame = clamp(
+        (initial ?? WindowFrame.defaults).copyWith(maximized: false),
+      );
+
+  /// Keeps the active tracker reachable for the process lifetime.
+  static WindowFrameTracker? active;
+
+  final WindowFrameRepository _repository;
+  Timer? _debounce;
+  WindowFrame _normalFrame;
+  var _closing = false;
+
+  static WindowFrame clamp(WindowFrame frame) {
+    final min = ZephyrControls.minWindowSize;
+    return frame.copyWith(
+      width: math.max(frame.width, min.width),
+      height: math.max(frame.height, min.height),
+    );
+  }
+
+  static Future<void> apply(WindowFrame frame) async {
+    final clamped = clamp(frame);
+    await windowManager.setBounds(
+      Rect.fromLTWH(
+        clamped.x ?? 0,
+        clamped.y ?? 0,
+        clamped.width,
+        clamped.height,
+      ),
+    );
+    if (clamped.maximized) {
+      await windowManager.maximize();
+    }
+  }
+
+  Future<void> start() async {
+    if (!WindowChrome.isDesktop) {
+      return;
+    }
+    active = this;
+    windowManager.addListener(this);
+    await windowManager.setPreventClose(true);
+  }
+
+  @override
+  void onWindowMoved() => _scheduleSave();
+
+  @override
+  void onWindowResized() => _scheduleSave();
+
+  @override
+  void onWindowMaximize() => _scheduleSave();
+
+  @override
+  void onWindowUnmaximize() => _scheduleSave();
+
+  @override
+  void onWindowClose() {
+    if (_closing) {
+      return;
+    }
+    _closing = true;
+    unawaited(_close());
+  }
+
+  void _scheduleSave() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 250), () {
+      unawaited(_persist());
+    });
+  }
+
+  Future<void> _close() async {
+    _debounce?.cancel();
+    await _persist();
+    try {
+      await windowManager.destroy();
+    } on Object {
+      // Native close is best-effort once the frame is persisted.
+    }
+  }
+
+  Future<void> _persist() async {
+    if (!WindowChrome.isDesktop) {
+      return;
+    }
+    try {
+      final maximized = await windowManager.isMaximized();
+      final bounds = await windowManager.getBounds();
+      if (!maximized) {
+        _normalFrame = clamp(
+          WindowFrame(
+            width: bounds.width,
+            height: bounds.height,
+            x: bounds.left,
+            y: bounds.top,
+          ),
+        );
+        await _repository.save(_normalFrame);
+        return;
+      }
+      await _repository.save(_normalFrame.copyWith(maximized: true));
+    } on Object {
+      // Geometry persistence must never block quitting.
+    }
   }
 }

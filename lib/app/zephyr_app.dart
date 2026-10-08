@@ -7,13 +7,17 @@ import '../data/repositories/file_editor_preferences_repository.dart';
 import '../data/repositories/file_settings_navigation_repository.dart';
 import '../data/repositories/file_system_font_repository.dart';
 import '../data/repositories/file_theme_preferences_repository.dart';
+import '../data/repositories/file_window_frame_repository.dart';
 import '../data/repositories/file_workspace_layout_repository.dart';
 import '../data/repositories/purewriter_writing_library_repository.dart';
 import '../data/services/editor_preferences_file_storage.dart';
 import '../data/services/purewriter_database.dart';
 import '../data/services/settings_navigation_file_storage.dart';
 import '../data/services/theme_file_storage.dart';
+import '../data/services/window_frame_file_storage.dart';
 import '../data/services/workspace_layout_file_storage.dart';
+import '../domain/models/window_frame.dart';
+import '../domain/repositories/window_frame_repository.dart';
 import '../domain/repositories/workspace_layout_repository.dart';
 import '../ui/core/window_chrome.dart';
 import '../ui/core/zephyr_controls.dart';
@@ -90,19 +94,35 @@ class ZephyrApp extends StatelessWidget {
   );
 }
 
-Future<void> initializeDesktopWindow() async {
+Future<void> initializeDesktopWindow({
+  WindowFrameRepository? frameRepository,
+}) async {
   if (!WindowChrome.isDesktop) {
     return;
   }
   await windowManager.ensureInitialized();
-  const options = WindowOptions(
-    size: Size(1280, 800),
+  final repository =
+      frameRepository ??
+      FileWindowFrameRepository(WindowFrameFileStorage());
+  var frame = WindowFrame.defaults;
+  try {
+    frame = WindowFrameTracker.clamp(await repository.load());
+  } on Object {
+    // First launch or a corrupt frame file should still open the shell.
+  }
+  final options = WindowOptions(
+    size: Size(frame.width, frame.height),
     minimumSize: ZephyrControls.minWindowSize,
-    center: true,
+    center: !frame.hasPosition,
     title: 'Zephyr',
     titleBarStyle: TitleBarStyle.hidden,
   );
   await windowManager.waitUntilReadyToShow(options, () async {
+    if (frame.hasPosition) {
+      await WindowFrameTracker.apply(frame);
+    } else if (frame.maximized) {
+      await windowManager.maximize();
+    }
     if (Platform.isWindows) {
       await windowManager.setTitleBarStyle(
         TitleBarStyle.hidden,
@@ -112,5 +132,6 @@ Future<void> initializeDesktopWindow() async {
     await windowManager.show();
     await windowManager.focus();
     await WindowChrome.syncNativeMetrics();
+    await WindowFrameTracker(repository, initial: frame).start();
   });
 }
