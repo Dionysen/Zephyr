@@ -19,6 +19,98 @@ import 'package:zephyr/ui/features/workspace/views/workspace_page.dart';
 import 'package:zephyr/ui/features/workspace/views/workspace_sidebar.dart';
 
 void main() {
+  testWidgets('volume header stays pinned only while its chapters scroll', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 450);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final library = LibraryViewModel(
+      _LibraryRepository(scrollingSections: true),
+    );
+    await tester.pumpWidget(_app(library: library));
+    await tester.pumpAndSettle();
+
+    final scroll = find.descendant(
+      of: find.byType(WorkspaceSidebar),
+      matching: find.byType(CustomScrollView),
+    );
+    final initialHeaderTop = tester.getTopLeft(find.text('Volume A')).dy;
+    final position = tester
+        .state<ScrollableState>(
+          find.descendant(of: scroll, matching: find.byType(Scrollable)),
+        )
+        .position;
+
+    position.jumpTo(220);
+    await tester.pumpAndSettle();
+    expect(find.text('Volume A').hitTestable(), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Volume A')).dy,
+      closeTo(initialHeaderTop, 3),
+    );
+
+    position.jumpTo(position.maxScrollExtent * .75);
+    await tester.pumpAndSettle();
+    expect(find.text('Volume A').hitTestable(), findsNothing);
+    expect(find.text('Volume B').hitTestable(), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Volume B')).dy,
+      closeTo(initialHeaderTop, 3),
+    );
+    await tester.tap(find.text('Volume B'));
+    await tester.pumpAndSettle();
+    expect(library.isVolumeExpanded('volume-b'), isFalse);
+  });
+
+  testWidgets(
+    'collapsing the scrolled volume keeps the next volume at its start',
+    (tester) async {
+      tester.view.physicalSize = const Size(1200, 450);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final library = LibraryViewModel(
+        _LibraryRepository(scrollingSections: true),
+      );
+      await tester.pumpWidget(_app(library: library));
+      await tester.pumpAndSettle();
+
+      final scroll = find.descendant(
+        of: find.byType(WorkspaceSidebar),
+        matching: find.byType(CustomScrollView),
+      );
+      final initialHeaderTop = tester.getTopLeft(find.text('Volume A')).dy;
+      final position = tester
+          .state<ScrollableState>(
+            find.descendant(of: scroll, matching: find.byType(Scrollable)),
+          )
+          .position;
+
+      position.jumpTo(220);
+      await tester.pumpAndSettle();
+      expect(
+        tester.getTopLeft(find.text('Volume A')).dy,
+        closeTo(initialHeaderTop, 3),
+      );
+
+      await tester.tap(find.text('Volume A'));
+      await tester.pumpAndSettle();
+      expect(library.isVolumeExpanded('volume-a'), isFalse);
+      expect(find.text('Volume A').hitTestable(), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Volume A')).dy,
+        closeTo(initialHeaderTop, 3),
+      );
+      expect(find.text('Volume B').hitTestable(), findsOneWidget);
+      expect(find.text('B chapter 0').hitTestable(), findsOneWidget);
+      expect(find.text('B chapter 10').hitTestable(), findsNothing);
+    },
+  );
+
   testWidgets('trash appears in the book picker and shows discarded chapters', (
     tester,
   ) async {
@@ -259,6 +351,10 @@ Widget _app({LibraryViewModel? library}) {
 }
 
 class _LibraryRepository implements WritingLibraryRepository {
+  _LibraryRepository({this.scrollingSections = false});
+
+  final bool scrollingSections;
+
   @override
   Future<WritingLibrary> loadLibrary() async => WritingLibrary(
     folders: const [
@@ -266,14 +362,22 @@ class _LibraryRepository implements WritingLibraryRepository {
       WritingFolder(id: 'book-b', name: 'Book B', rank: 1, tags: 'Fiction'),
       WritingFolder(id: WritingFolder.trashId, name: 'Trash', rank: 2),
     ],
-    categories: const [
-      WritingCategory(
+    categories: [
+      const WritingCategory(
         id: 'volume-a',
         folderId: 'Default',
         name: 'Volume A',
         rank: 0,
         collapsed: false,
       ),
+      if (scrollingSections)
+        const WritingCategory(
+          id: 'volume-b',
+          folderId: 'Default',
+          name: 'Volume B',
+          rank: 1,
+          collapsed: false,
+        ),
     ],
     articles: [
       ArticleSummary(
@@ -296,6 +400,30 @@ class _LibraryRepository implements WritingLibraryRepository {
         updatedAt: DateTime.utc(2026, 1, 2),
         wordCount: 17,
       ),
+      if (scrollingSections)
+        for (var index = 0; index < 14; index++)
+          ArticleSummary(
+            id: 'a-$index',
+            title: 'A chapter $index',
+            summary: 'Preview',
+            folderId: 'Default',
+            categoryId: 'volume-a',
+            createdAt: DateTime.utc(2025, 12, 19),
+            updatedAt: DateTime.utc(2026, 1, 2),
+            wordCount: 7,
+          ),
+      if (scrollingSections)
+        for (var index = 0; index < 14; index++)
+          ArticleSummary(
+            id: 'b-$index',
+            title: 'B chapter $index',
+            summary: 'Preview',
+            folderId: 'Default',
+            categoryId: 'volume-b',
+            createdAt: DateTime.utc(2025, 12, 19),
+            updatedAt: DateTime.utc(2026, 1, 2),
+            wordCount: 7,
+          ),
     ],
   );
 

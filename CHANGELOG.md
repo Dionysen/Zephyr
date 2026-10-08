@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Keep each volume header pinned while its chapters scroll, then release it at the end of that volume.
 - Use a closed-book icon for books in the dropdown.
 - Center the chapter toolbar buttons beneath the book picker with consistent spacing.
 - Show the trash in the book dropdown with a red trash icon and label, and list all trashed chapters regardless of their former volume.

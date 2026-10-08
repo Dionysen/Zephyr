@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../../../../domain/models/purewriter_models.dart';
 import '../../../core/window_chrome.dart';
@@ -12,7 +13,7 @@ import '../../editor/view_models/library_view_model.dart';
 
 enum SidebarMode { docked, drawer }
 
-class WorkspaceSidebar extends StatelessWidget {
+class WorkspaceSidebar extends StatefulWidget {
   const WorkspaceSidebar({
     super.key,
     required this.model,
@@ -25,6 +26,15 @@ class WorkspaceSidebar extends StatelessWidget {
   final SidebarMode mode;
   final Future<void> Function() openLibrary;
   final VoidCallback openSettings;
+
+  @override
+  State<WorkspaceSidebar> createState() => _WorkspaceSidebarState();
+}
+
+class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
+  final _chapterTreeKey = GlobalKey<_ChapterTreeState>();
+
+  LibraryViewModel get model => widget.model;
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
@@ -42,7 +52,7 @@ class WorkspaceSidebar extends StatelessWidget {
               children: [
                 if (WindowChrome.leadingChromeInset > 0)
                   SizedBox(width: WindowChrome.leadingChromeInset),
-                if (mode == SidebarMode.docked)
+                if (widget.mode == SidebarMode.docked)
                   IconButton(
                     onPressed: model.toggleSidebar,
                     icon: const Icon(Icons.menu_open),
@@ -59,7 +69,9 @@ class WorkspaceSidebar extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 IconButton(
-                  onPressed: model.hasVolumes ? model.toggleAllVolumes : null,
+                  onPressed: model.hasVolumes
+                      ? () => _chapterTreeKey.currentState?.toggleAllVolumes()
+                      : null,
                   icon: Icon(
                     model.areAllVolumesExpanded
                         ? Icons.unfold_less
@@ -82,12 +94,16 @@ class WorkspaceSidebar extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: _ChapterTree(model: model, library: model.library!),
+            child: _ChapterTree(
+              key: _chapterTreeKey,
+              model: model,
+              library: model.library!,
+            ),
           ),
           _LibraryDock(
             model: model,
-            openLibrary: openLibrary,
-            openSettings: openSettings,
+            openLibrary: widget.openLibrary,
+            openSettings: widget.openSettings,
           ),
         ],
       ),
@@ -505,53 +521,187 @@ class _EditBookDialogState extends State<_EditBookDialog> {
   }
 }
 
-class _ChapterTree extends StatelessWidget {
-  const _ChapterTree({required this.model, required this.library});
+class _ChapterTree extends StatefulWidget {
+  const _ChapterTree({
+    super.key,
+    required this.model,
+    required this.library,
+  });
 
   final LibraryViewModel model;
   final WritingLibrary library;
 
   @override
+  State<_ChapterTree> createState() => _ChapterTreeState();
+}
+
+class _ChapterTreeState extends State<_ChapterTree> {
+  final _scrollController = ScrollController();
+  final _volumeKeys = <String, GlobalKey>{};
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  GlobalKey _volumeKeyFor(String volumeId) =>
+      _volumeKeys.putIfAbsent(volumeId, GlobalKey.new);
+
+  RenderSliver? _volumeSliver(String volumeId) {
+    final renderObject = _volumeKeyFor(
+      volumeId,
+    ).currentContext?.findRenderObject();
+    return renderObject is RenderSliver ? renderObject : null;
+  }
+
+  /// Offset that puts the collapsing volume at the viewport top.
+  ///
+  /// Single-volume: [SliverConstraints.precedingScrollExtent].
+  /// Collapse-all: also subtract chapter bodies of fully scrolled-past volumes
+  /// above the active one (they shrink to headers).
+  double? _collapseTargetOffset({String? volumeId}) {
+    final ids = _volumeKeys.keys.toList(growable: false);
+    final String? activeId;
+    if (volumeId != null) {
+      activeId = volumeId;
+    } else {
+      String? found;
+      for (final id in ids) {
+        final sliver = _volumeSliver(id);
+        if (sliver == null) continue;
+        final painted = sliver.geometry?.paintExtent ?? 0;
+        if (sliver.constraints.scrollOffset > 0 && painted > 0) {
+          found = id;
+          break;
+        }
+      }
+      activeId = found;
+    }
+    if (activeId == null) return null;
+
+    final active = _volumeSliver(activeId);
+    if (active == null || active.constraints.scrollOffset <= 0) return null;
+
+    var target = active.constraints.precedingScrollExtent;
+    if (volumeId != null) return target;
+
+    for (final id in ids) {
+      if (id == activeId) break;
+      final sliver = _volumeSliver(id);
+      if (sliver == null) continue;
+      final painted = sliver.geometry?.paintExtent ?? 0;
+      if (painted > 0) continue;
+      final extent = sliver.geometry?.scrollExtent ?? 0;
+      final headerExtent = _headerExtentOf(sliver);
+      final body = (extent - headerExtent).clamp(0.0, extent);
+      target -= body;
+    }
+    return target;
+  }
+
+  double _headerExtentOf(RenderSliver group) {
+    if (group is! RenderSliverMainAxisGroup) return 0;
+    return group.firstChild?.geometry?.scrollExtent ?? 0;
+  }
+
+  void _jumpToAfterLayout(double target) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final max = _scrollController.position.maxScrollExtent;
+      _scrollController.jumpTo(target.clamp(0.0, max));
+    });
+  }
+
+  void _toggleVolume(String volumeId) {
+    final collapsing = widget.model.isVolumeExpanded(volumeId);
+    final target = collapsing ? _collapseTargetOffset(volumeId: volumeId) : null;
+    widget.model.toggleVolume(volumeId);
+    if (target != null) _jumpToAfterLayout(target);
+  }
+
+  void toggleAllVolumes() {
+    final collapsing = widget.model.areAllVolumesExpanded;
+    final target = collapsing ? _collapseTargetOffset() : null;
+    widget.model.toggleAllVolumes();
+    if (target != null) _jumpToAfterLayout(target);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final model = widget.model;
+    final library = widget.library;
     final bookId = model.selectedBook?.id;
     if (bookId == null) return const SizedBox();
     final chapters = library.articles
         .where((item) => item.folderId == bookId)
-        .toList();
+        .toList(growable: false);
     final isTrash = bookId == WritingFolder.trashId;
-    final entries = <Object>[];
+    final pinnedBackground = Theme.of(
+      context,
+    ).colorScheme.surfaceContainerLowest;
+    final slivers = <Widget>[
+      const SliverToBoxAdapter(child: SizedBox(height: 2)),
+    ];
     for (final volume in library.categories.where(
       (item) => !isTrash && item.folderId == bookId,
     )) {
-      entries.add(volume);
-      if (model.isVolumeExpanded(volume.id)) {
-        entries.addAll(chapters.where((item) => item.categoryId == volume.id));
-      }
+      final volumeChapters = chapters
+          .where((item) => item.categoryId == volume.id)
+          .toList(growable: false);
+      final header = _VolumeRow(
+        volume: volume,
+        model: model,
+        chapterCount: volumeChapters.length,
+        onToggle: () => _toggleVolume(volume.id),
+      );
+      slivers.add(
+        model.isVolumeExpanded(volume.id) && volumeChapters.isNotEmpty
+            ? SliverMainAxisGroup(
+                key: _volumeKeyFor(volume.id),
+                slivers: [
+                  PinnedHeaderSliver(
+                    child: ColoredBox(
+                      color: pinnedBackground,
+                      child: header,
+                    ),
+                  ),
+                  SliverList.builder(
+                    itemCount: volumeChapters.length,
+                    itemBuilder: (context, index) => _ChapterRow(
+                      chapter: volumeChapters[index],
+                      model: model,
+                    ),
+                  ),
+                ],
+              )
+            : SliverToBoxAdapter(child: header),
+      );
     }
-    final loose = chapters.where((item) => isTrash || item.categoryId == null);
+    final loose = chapters
+        .where((item) => isTrash || item.categoryId == null)
+        .toList(growable: false);
     if (loose.isNotEmpty) {
-      if (!isTrash) entries.add(_LooseChapters.label);
-      entries.addAll(loose);
+      if (!isTrash) {
+        slivers.add(
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(18, 14, 18, 4),
+              child: Text('Unfiled chapters'),
+            ),
+          ),
+        );
+      }
+      slivers.add(
+        SliverList.builder(
+          itemCount: loose.length,
+          itemBuilder: (context, index) =>
+              _ChapterRow(chapter: loose[index], model: model),
+        ),
+      );
     }
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 2, bottom: 12),
-      itemCount: entries.length,
-      itemBuilder: (context, index) => switch (entries[index]) {
-        WritingCategory volume => _VolumeRow(
-          volume: volume,
-          model: model,
-          chapterCount: chapters
-              .where((item) => item.categoryId == volume.id)
-              .length,
-        ),
-        ArticleSummary chapter => _ChapterRow(chapter: chapter, model: model),
-        _LooseChapters() => const Padding(
-          padding: EdgeInsets.fromLTRB(18, 14, 18, 4),
-          child: Text('Unfiled chapters'),
-        ),
-        _ => const SizedBox(),
-      },
-    );
+    slivers.add(const SliverToBoxAdapter(child: SizedBox(height: 12)));
+    return CustomScrollView(controller: _scrollController, slivers: slivers);
   }
 }
 
@@ -560,6 +710,7 @@ class _VolumeRow extends StatelessWidget {
     required this.volume,
     required this.model,
     required this.chapterCount,
+    required this.onToggle,
   });
 
   static const _listInset = 6.0;
@@ -568,6 +719,7 @@ class _VolumeRow extends StatelessWidget {
   final WritingCategory volume;
   final LibraryViewModel model;
   final int chapterCount;
+  final VoidCallback onToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -586,7 +738,7 @@ class _VolumeRow extends StatelessWidget {
         ),
         child: InkWell(
           borderRadius: radius,
-          onTap: () => model.toggleVolume(volume.id),
+          onTap: onToggle,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Row(
@@ -736,8 +888,6 @@ class _LibraryDock extends StatelessWidget {
     );
   }
 }
-
-enum _LooseChapters { label }
 
 class SidebarResizeHandle extends StatelessWidget {
   const SidebarResizeHandle({
