@@ -41,6 +41,7 @@ dependencies:
   uuid: ^4.6.0
   file_picker: ^13.1.0
   window_manager: ^0.5.2
+  super_editor: ^0.3.0-dev.52
 
 dev_dependencies:
   flutter_test:

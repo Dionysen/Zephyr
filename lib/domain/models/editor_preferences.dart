@@ -14,7 +14,7 @@ class EditorPreferences {
     fontPath: null,
     fontSize: 18,
     lineHeight: 1.75,
-    paragraphSpacing: 12,
+    paragraphSpacing: 0.5,
     firstLineIndent: 2,
     maxContentWidth: 760,
   );
@@ -25,7 +25,11 @@ class EditorPreferences {
   /// engine after [SystemFontRepository.loadFont] registers it.
   final String? fontPath;
   final double fontSize;
+
+  /// Line-height multiplier for wrapping lines inside a paragraph.
   final double lineHeight;
+
+  /// Gap between paragraphs as a font-size multiplier (block padding).
   final double paragraphSpacing;
   final int firstLineIndent;
   final double maxContentWidth;

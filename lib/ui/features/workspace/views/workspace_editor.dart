@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:super_editor/super_editor.dart';
 
 import '../../../../domain/use_cases/paragraph_indentation.dart';
 import '../../editor/view_models/editor_preferences_view_model.dart';
 import '../../editor/view_models/library_view_model.dart';
+import 'plain_text_document.dart';
 
 class WorkspaceEditor extends StatefulWidget {
   const WorkspaceEditor({
@@ -19,14 +21,19 @@ class WorkspaceEditor extends StatefulWidget {
 }
 
 class _WorkspaceEditorState extends State<WorkspaceEditor> {
-  final _controller = TextEditingController();
   final _scrollController = ScrollController();
+  final _focusNode = FocusNode();
+  final _editListener = _ContentEditListener();
+
+  Editor? _editor;
   String? _articleId;
   int? _indent;
+  String _lastEmitted = '';
 
   @override
   void initState() {
     super.initState();
+    _editListener.onChanged = _onDocumentEdited;
     widget.preferences.addListener(_onPreferences);
     _syncFromModel();
   }
@@ -44,51 +51,145 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   @override
   void dispose() {
     widget.preferences.removeListener(_onPreferences);
-    _controller.dispose();
+    _tearDownEditor();
     _scrollController.dispose();
+    _focusNode.dispose();
     super.dispose();
+  }
+
+  void _tearDownEditor() {
+    final editor = _editor;
+    if (editor == null) return;
+    editor.removeListener(_editListener);
+    editor.dispose();
+    _editor = null;
   }
 
   void _onPreferences() {
     final indent = widget.preferences.preferences.firstLineIndent;
     if (indent != _indent) {
       _applyIndent(indent);
+      return;
     }
     setState(() {});
   }
 
   void _syncFromModel() {
     final article = widget.model.article;
-    if (article?.id == _articleId) {
+    if (article == null) {
+      _articleId = null;
+      _tearDownEditor();
       return;
     }
-    _articleId = article?.id;
+    if (article.id == _articleId && _editor != null) return;
+
+    _articleId = article.id;
     _indent = widget.preferences.preferences.firstLineIndent;
-    _controller.text = article == null
-        ? ''
-        : applyParagraphIndentation(article.content, _indent!);
+    final content = applyParagraphIndentation(article.content, _indent!);
+    _lastEmitted = content;
+    _rebuildEditor(content);
+  }
+
+  void _rebuildEditor(String content) {
+    _tearDownEditor();
+    final document = documentFromPlainText(content);
+    final editor = createDefaultDocumentEditor(document: document);
+    editor.addListener(_editListener);
+    _editor = editor;
   }
 
   void _applyIndent(int indent) {
     _indent = indent;
-    final formatted = applyParagraphIndentation(_controller.text, indent);
-    if (formatted != _controller.text) {
-      _controller.value = TextEditingValue(
-        text: formatted,
-        selection: TextSelection.collapsed(offset: formatted.length),
-      );
+    final editor = _editor;
+    if (editor == null) return;
+    final formatted = applyParagraphIndentation(
+      plainTextFromDocument(editor.document),
+      indent,
+    );
+    if (formatted == _lastEmitted) {
+      setState(() {});
+      return;
     }
+    _lastEmitted = formatted;
+    _rebuildEditor(formatted);
+    setState(() {});
+    widget.model.updateContent(formatted);
+  }
+
+  void _onDocumentEdited(List<EditEvent> changeList) {
+    final editor = _editor;
+    if (editor == null || widget.model.isReadOnly) return;
+    if (changeList.isEmpty) return;
+
+    final plain = plainTextFromDocument(editor.document);
+    final formatted = applyParagraphIndentation(
+      plain,
+      widget.preferences.preferences.firstLineIndent,
+    );
+    if (formatted == _lastEmitted) return;
+
+    if (formatted != plain) {
+      // Indent rules changed the text; reload document while preserving caret
+      // as best-effort by rebuilding (caret reset is acceptable for indent).
+      _lastEmitted = formatted;
+      _rebuildEditor(formatted);
+      setState(() {});
+      widget.model.updateContent(formatted);
+      return;
+    }
+
+    _lastEmitted = formatted;
+    widget.model.updateContent(formatted);
+  }
+
+  Stylesheet _stylesheet(BuildContext context, double horizontalPadding) {
+    final preferences = widget.preferences.preferences;
+    final color = Theme.of(context).colorScheme.onSurface;
+    final gap = preferences.fontSize * preferences.paragraphSpacing;
+    return Stylesheet(
+      documentPadding: EdgeInsets.fromLTRB(
+        horizontalPadding,
+        28,
+        horizontalPadding,
+        48,
+      ),
+      inlineTextStyler: defaultInlineTextStyler,
+      inlineWidgetBuilders: defaultInlineWidgetBuilderChain,
+      rules: [
+        StyleRule(BlockSelector.all, (doc, node) {
+          return {
+            Styles.maxWidth: preferences.maxContentWidth,
+            Styles.textStyle: TextStyle(
+              color: color,
+              fontSize: preferences.fontSize,
+              height: preferences.lineHeight,
+              fontFamily: preferences.fontFamily,
+            ),
+          };
+        }),
+        StyleRule(const BlockSelector('paragraph'), (doc, node) {
+          final index = doc.getNodeIndexById(node.id);
+          return {
+            Styles.padding: CascadingPadding.only(top: index <= 0 ? 0 : gap),
+          };
+        }),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final article = widget.model.article;
-    if (article == null) {
+    final editor = _editor;
+    if (article == null || editor == null) {
       return const Center(
         child: Text('Choose or create a chapter to begin writing.'),
       );
     }
     final preferences = widget.preferences.preferences;
+    final selectionColor = Theme.of(
+      context,
+    ).colorScheme.primary.withValues(alpha: 0.35);
     return MouseRegion(
       cursor: SystemMouseCursors.text,
       child: Stack(
@@ -99,48 +200,29 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
                 final horizontal =
                     ((constraints.maxWidth - preferences.maxContentWidth) / 2)
                         .clamp(42.0, double.infinity);
+                final stylesheet = _stylesheet(context, horizontal);
+                final selectionStyle = SelectionStyles(
+                  selectionColor: selectionColor,
+                );
+                final child = widget.model.isReadOnly
+                    ? SuperReader(
+                        editor: editor,
+                        focusNode: _focusNode,
+                        scrollController: _scrollController,
+                        stylesheet: stylesheet,
+                        selectionStyle: selectionStyle,
+                      )
+                    : SuperEditor(
+                        editor: editor,
+                        focusNode: _focusNode,
+                        scrollController: _scrollController,
+                        stylesheet: stylesheet,
+                        selectionStyle: selectionStyle,
+                        contentTapDelegateFactories: const [],
+                      );
                 return Scrollbar(
                   controller: _scrollController,
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    primary: false,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight,
-                        minWidth: constraints.maxWidth,
-                      ),
-                      child: TextField(
-                        controller: _controller,
-                        maxLines: null,
-                        readOnly: widget.model.isReadOnly,
-                        mouseCursor: SystemMouseCursors.text,
-                        textAlignVertical: TextAlignVertical.top,
-                        keyboardType: TextInputType.multiline,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontFamily: preferences.fontFamily,
-                          fontSize: preferences.fontSize,
-                          height:
-                              preferences.lineHeight +
-                              preferences.paragraphSpacing /
-                                  preferences.fontSize,
-                        ),
-                        decoration: InputDecoration(
-                          filled: false,
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          contentPadding: EdgeInsets.fromLTRB(
-                            horizontal,
-                            28,
-                            horizontal,
-                            48,
-                          ),
-                          hintText: 'Start writing...',
-                        ),
-                        onChanged: widget.model.isReadOnly ? null : _onChanged,
-                      ),
-                    ),
-                  ),
+                  child: child,
                 );
               },
             ),
@@ -159,20 +241,11 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
       ),
     );
   }
+}
 
-  void _onChanged(String text) {
-    final indent = widget.preferences.preferences.firstLineIndent;
-    final formatted = applyParagraphIndentation(text, indent);
-    if (formatted != text) {
-      final selection = _controller.selection;
-      final offset = (selection.baseOffset + formatted.length - text.length)
-          .clamp(0, formatted.length)
-          .toInt();
-      _controller.value = TextEditingValue(
-        text: formatted,
-        selection: TextSelection.collapsed(offset: offset),
-      );
-    }
-    widget.model.updateContent(formatted);
-  }
+class _ContentEditListener implements EditListener {
+  void Function(List<EditEvent> changeList)? onChanged;
+
+  @override
+  void onEdit(List<EditEvent> changeList) => onChanged?.call(changeList);
 }

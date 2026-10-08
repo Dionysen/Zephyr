@@ -53,19 +53,21 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
             ),
             ZephyrSettingsSlider(
               label: 'Line height',
-              description: 'Vertical spacing between lines in a paragraph.',
+              description: 'Uniform line-height multiplier within a paragraph.',
               value: preferences.lineHeight,
               min: 1.2,
               max: 2.4,
+              suffix: '×',
               onChanged: viewModel.updateLineHeight,
             ),
             ZephyrSettingsSlider(
               label: 'Paragraph spacing',
-              description: 'Extra space inserted between paragraphs.',
+              description:
+                  'Gap between paragraphs, as a font-size multiplier.',
               value: preferences.paragraphSpacing,
               min: 0,
-              max: 32,
-              suffix: 'px',
+              max: 2.5,
+              suffix: '×',
               onChanged: viewModel.updateParagraphSpacing,
             ),
             ZephyrSettingsSlider(
