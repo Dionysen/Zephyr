@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../domain/models/theme_tokens.dart';
 import '../../domain/models/ui_preferences.dart';
 import 'zephyr_controls.dart';
+import 'zephyr_status_bar.dart';
 
 /// User-owned chrome corner radius exposed through [ThemeData.extensions].
 @immutable
@@ -205,6 +206,7 @@ ThemeData zephyrTheme(
       foregroundColor: primaryText,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
+      systemOverlayStyle: ZephyrStatusBar.styleFor(brightness),
     ),
     textSelectionTheme: TextSelectionThemeData(
       cursorColor: cursor,

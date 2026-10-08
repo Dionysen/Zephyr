@@ -9,6 +9,7 @@ import '../../../../data/services/folder_bookmark.dart';
 import '../../../core/breakpoints.dart';
 import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_scope.dart';
+import '../../../core/zephyr_status_bar.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../settings/views/settings_page.dart';
 import 'workspace_editor.dart';
@@ -51,12 +52,15 @@ class _WorkspacePageState extends State<WorkspacePage> {
       listenable: scope.library,
       builder: (context, _) {
         final model = scope.library;
+        final surface = Theme.of(context).colorScheme.surface;
         if (model.error != null) {
-          return _LibraryErrorPage(error: model.error!);
+          return ZephyrStatusBar(child: _LibraryErrorPage(error: model.error!));
         }
         if (model.library == null) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+          return const ZephyrStatusBar(
+            child: Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            ),
           );
         }
         return LayoutBuilder(
@@ -68,91 +72,98 @@ class _WorkspacePageState extends State<WorkspacePage> {
             final edgeDragWidth = compact
                 ? constraints.maxWidth
                 : MediaQuery.paddingOf(context).left + 56;
-            return Scaffold(
-              drawerEnableOpenDragGesture: compact,
-              drawerEdgeDragWidth: edgeDragWidth,
-              drawer: compact
-                  ? Drawer(
-                      width: model.sidebarWidth,
-                      child: SafeArea(
-                        child: WorkspaceSidebar(
+            final shell = compact
+                ? Column(
+                    children: [
+                      WorkspaceHeader(
+                        model: model,
+                        showMenuButton: true,
+                      ),
+                      Expanded(
+                        child: WorkspaceEditor(
                           model: model,
-                          mode: SidebarMode.drawer,
-                          openLibrary: _openLibrary,
-                          openSettings: _openSettings,
+                          preferences: scope.editorPreferences,
                         ),
                       ),
-                    )
-                  : null,
-              body: SafeArea(
-                top: !WindowChrome.isDesktop,
-                child: compact
-                    ? Column(
-                        children: [
-                          WorkspaceHeader(
-                            model: model,
-                            showMenuButton: true,
-                          ),
-                          Expanded(
-                            child: WorkspaceEditor(
+                    ],
+                  )
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      AnimatedContainer(
+                        duration: model.isResizingSidebar
+                            ? Duration.zero
+                            : const Duration(milliseconds: 180),
+                        curve: Curves.easeOutCubic,
+                        width: model.isSidebarExpanded
+                            ? model.sidebarWidth
+                            : 0,
+                        child: ClipRect(
+                          child: OverflowBox(
+                            alignment: Alignment.topLeft,
+                            minWidth: model.sidebarWidth,
+                            maxWidth: model.sidebarWidth,
+                            child: WorkspaceSidebar(
                               model: model,
-                              preferences: scope.editorPreferences,
+                              mode: SidebarMode.docked,
+                              openLibrary: _openLibrary,
+                              openSettings: _openSettings,
                             ),
                           ),
-                        ],
-                      )
-                    : Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          AnimatedContainer(
-                            duration: model.isResizingSidebar
-                                ? Duration.zero
-                                : const Duration(milliseconds: 180),
-                            curve: Curves.easeOutCubic,
-                            width: model.isSidebarExpanded
-                                ? model.sidebarWidth
-                                : 0,
-                            child: ClipRect(
-                              child: OverflowBox(
-                                alignment: Alignment.topLeft,
-                                minWidth: model.sidebarWidth,
-                                maxWidth: model.sidebarWidth,
-                                child: WorkspaceSidebar(
-                                  model: model,
-                                  mode: SidebarMode.docked,
-                                  openLibrary: _openLibrary,
-                                  openSettings: _openSettings,
-                                ),
-                              ),
-                            ),
-                          ),
-                          if (model.isSidebarExpanded)
-                            SidebarResizeHandle(
-                              model: model,
-                              maxWidth: _maxSidebarWidth(constraints.maxWidth),
-                            ),
-                          Expanded(
-                            child: Stack(
+                        ),
+                      ),
+                      if (model.isSidebarExpanded)
+                        SidebarResizeHandle(
+                          model: model,
+                          maxWidth: _maxSidebarWidth(constraints.maxWidth),
+                        ),
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            Column(
                               children: [
-                                Column(
-                                  children: [
-                                    WorkspaceHeader(
-                                      model: model,
-                                      showSidebarToggle:
-                                          !model.isSidebarExpanded,
-                                    ),
-                                    Expanded(
-                                      child: WorkspaceEditor(
-                                        model: model,
-                                        preferences: scope.editorPreferences,
-                                      ),
-                                    ),
-                                  ],
+                                WorkspaceHeader(
+                                  model: model,
+                                  showSidebarToggle:
+                                      !model.isSidebarExpanded,
+                                ),
+                                Expanded(
+                                  child: WorkspaceEditor(
+                                    model: model,
+                                    preferences: scope.editorPreferences,
+                                  ),
                                 ),
                               ],
                             ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+            return ZephyrStatusBar(
+              child: Scaffold(
+                backgroundColor: surface,
+                drawerEnableOpenDragGesture: compact,
+                drawerEdgeDragWidth: edgeDragWidth,
+                drawer: compact
+                    ? Drawer(
+                        width: model.sidebarWidth,
+                        child: SafeArea(
+                          child: WorkspaceSidebar(
+                            model: model,
+                            mode: SidebarMode.drawer,
+                            openLibrary: _openLibrary,
+                            openSettings: _openSettings,
                           ),
-                        ],
+                        ),
+                      )
+                    : null,
+                body: WindowChrome.isDesktop
+                    ? SafeArea(top: false, child: shell)
+                    : ColoredBox(
+                        // Transparent status bar reveals this fill on mobile.
+                        color: surface,
+                        child: SafeArea(child: shell),
                       ),
               ),
             );
