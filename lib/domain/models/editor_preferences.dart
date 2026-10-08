@@ -12,7 +12,7 @@ class EditorPreferences {
   static const defaults = EditorPreferences(
     fontFamily: null,
     fontPath: null,
-    fontSize: 18,
+    fontSize: 15,
     lineHeight: 1.75,
     paragraphSpacing: 0.5,
     firstLineIndent: 2,
