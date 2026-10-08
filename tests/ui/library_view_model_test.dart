@@ -77,6 +77,49 @@ void main() {
       expect(model.areAllVolumesExpanded, isTrue);
     },
   );
+
+  test('restores selected book, article, and volume expand state', () async {
+    final layout = FakeLayoutRepository(
+      const WorkspaceLayout(
+        sidebarWidth: 334,
+        selectedBookId: 'book-b',
+        selectedArticleId: 'article-b',
+        expandedVolumesByBook: {
+          'book-b': <String>[],
+        },
+        sidebarScrollOffsetByBook: {'book-b': 42},
+      ),
+    );
+    final model = LibraryViewModel(
+      FakeLibraryRepository(),
+      layoutRepository: layout,
+    );
+
+    await model.load();
+
+    expect(model.selectedBook?.id, 'book-b');
+    expect(model.article?.id, 'article-b');
+    expect(model.isVolumeExpanded('volume-b'), isFalse);
+    expect(model.sidebarScrollOffset, 42);
+  });
+
+  test('persists article selection and sidebar scroll offset', () async {
+    final layout = FakeLayoutRepository(WorkspaceLayout.defaults);
+    final model = LibraryViewModel(
+      FakeLibraryRepository(),
+      layoutRepository: layout,
+    );
+    await model.load();
+
+    await model.selectArticle('article-b');
+    model.updateSidebarScrollOffset(96);
+
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+
+    expect(layout.layout.selectedBookId, 'book-b');
+    expect(layout.layout.selectedArticleId, 'article-b');
+    expect(layout.layout.sidebarScrollOffsetByBook['book-b'], 96);
+  });
 }
 
 class FakeLibraryRepository implements WritingLibraryRepository {

@@ -542,11 +542,62 @@ class _ChapterTree extends StatefulWidget {
 class _ChapterTreeState extends State<_ChapterTree> {
   final _scrollController = ScrollController();
   final _volumeKeys = <String, GlobalKey>{};
+  String? _restoredBookId;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _restoreScrollIfNeeded();
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _ChapterTree oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(widget.library, oldWidget.library)) {
+      _restoredBookId = null;
+    }
+    final bookId = widget.model.selectedBook?.id;
+    if (bookId != _restoredBookId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _restoreScrollIfNeeded();
+      });
+    }
+  }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    widget.model.updateSidebarScrollOffset(_scrollController.offset);
+  }
+
+  void _restoreScrollIfNeeded() {
+    if (!mounted || !_scrollController.hasClients) return;
+    final bookId = widget.model.selectedBook?.id;
+    if (bookId == null || _restoredBookId == bookId) return;
+    final offset = widget.model.sidebarScrollOffset;
+    final max = _scrollController.position.maxScrollExtent;
+    if (offset > 0 && max == 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_scrollController.hasClients) return;
+        final bookStill = widget.model.selectedBook?.id;
+        if (bookStill != bookId) return;
+        final max2 = _scrollController.position.maxScrollExtent;
+        _scrollController.jumpTo(offset.clamp(0.0, max2));
+        _restoredBookId = bookId;
+      });
+      return;
+    }
+    _scrollController.jumpTo(offset.clamp(0.0, max));
+    _restoredBookId = bookId;
   }
 
   GlobalKey _volumeKeyFor(String volumeId) =>

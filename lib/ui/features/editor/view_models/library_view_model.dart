@@ -26,8 +26,10 @@ class LibraryViewModel extends ChangeNotifier {
   double _sidebarWidth = WorkspaceLayout.defaults.sidebarWidth;
   String? _lastLibraryRoot;
   String? _lastLibraryBookmark;
-  final Set<String> _expandedVolumeIds = <String>{};
   String? _selectedBookId;
+  String? _selectedArticleId;
+  final Map<String, Set<String>> _expandedVolumesByBook = {};
+  final Map<String, double> _sidebarScrollOffsetByBook = {};
   static const minSidebarWidth = WorkspaceLayout.minSidebarWidth;
   static const maxSidebarWidth = WorkspaceLayout.maxSidebarWidth;
   static const defaultSidebarWidth = WorkspaceLayout.defaultSidebarWidth;
@@ -43,7 +45,7 @@ class LibraryViewModel extends ChangeNotifier {
   bool get areAllVolumesExpanded =>
       hasVolumes &&
       _volumesForSelectedBook.every(
-        (volume) => _expandedVolumeIds.contains(volume.id),
+        (volume) => isVolumeExpanded(volume.id),
       );
   WritingFolder? get selectedBook =>
       _library?.folders.where((book) => book.id == _selectedBookId).firstOrNull;
@@ -52,8 +54,19 @@ class LibraryViewModel extends ChangeNotifier {
     return name.isEmpty ? 'Untitled library' : name;
   }
 
-  bool isVolumeExpanded(String volumeId) =>
-      _expandedVolumeIds.contains(volumeId);
+  double get sidebarScrollOffset {
+    final bookId = _selectedBookId;
+    if (bookId == null) return 0;
+    return _sidebarScrollOffsetByBook[bookId] ?? 0;
+  }
+
+  bool isVolumeExpanded(String volumeId) {
+    final bookId = _selectedBookId;
+    if (bookId == null) return true;
+    final set = _expandedVolumesByBook[bookId];
+    if (set == null) return true;
+    return set.contains(volumeId);
+  }
 
   void toggleSidebar() {
     _isSidebarExpanded = !_isSidebarExpanded;
@@ -61,22 +74,40 @@ class LibraryViewModel extends ChangeNotifier {
   }
 
   void toggleVolume(String volumeId) {
-    if (!_expandedVolumeIds.add(volumeId)) _expandedVolumeIds.remove(volumeId);
+    final bookId = _selectedBookId;
+    if (bookId == null) return;
+    final set = _expandedVolumesByBook.putIfAbsent(
+      bookId,
+      () => _volumesForSelectedBook.map((volume) => volume.id).toSet(),
+    );
+    if (!set.add(volumeId)) {
+      set.remove(volumeId);
+    }
+    _scheduleLayoutSave();
     notifyListeners();
   }
 
   void toggleAllVolumes() {
     if (!hasVolumes) return;
+    final bookId = _selectedBookId;
+    if (bookId == null) return;
     if (areAllVolumesExpanded) {
-      _expandedVolumeIds.removeAll(
-        _volumesForSelectedBook.map((volume) => volume.id),
-      );
+      _expandedVolumesByBook[bookId] = <String>{};
     } else {
-      _expandedVolumeIds.addAll(
-        _volumesForSelectedBook.map((volume) => volume.id),
-      );
+      _expandedVolumesByBook[bookId] =
+          _volumesForSelectedBook.map((volume) => volume.id).toSet();
     }
+    _scheduleLayoutSave();
     notifyListeners();
+  }
+
+  void updateSidebarScrollOffset(double offset) {
+    final bookId = _selectedBookId;
+    if (bookId == null) return;
+    final clamped = offset < 0 ? 0.0 : offset;
+    if ((_sidebarScrollOffsetByBook[bookId] ?? 0) == clamped) return;
+    _sidebarScrollOffsetByBook[bookId] = clamped;
+    _scheduleLayoutSave();
   }
 
   void resizeSidebar(double width) {
@@ -101,13 +132,17 @@ class LibraryViewModel extends ChangeNotifier {
   Future<void> selectBook(String bookId) async {
     if (_selectedBookId == bookId) return;
     _selectedBookId = bookId;
-    _expandedVolumeIds
-      ..clear()
-      ..addAll(_volumesForSelectedBook.map((volume) => volume.id));
-    final firstChapter = _chaptersForSelectedBook.firstOrNull;
-    _article = firstChapter == null
+    final chapters = _chaptersForSelectedBook;
+    final preferredId = _selectedArticleId;
+    final preferred = preferredId == null
         ? null
-        : await _repository.getArticle(firstChapter.id);
+        : chapters.where((chapter) => chapter.id == preferredId).firstOrNull;
+    final chapter = preferred ?? chapters.firstOrNull;
+    _selectedArticleId = chapter?.id;
+    _article = chapter == null
+        ? null
+        : await _repository.getArticle(chapter.id);
+    _scheduleLayoutSave();
     notifyListeners();
   }
 
@@ -145,8 +180,11 @@ class LibraryViewModel extends ChangeNotifier {
       if (bookmark != null) {
         _lastLibraryBookmark = bookmark;
       }
+      _expandedVolumesByBook.clear();
+      _sidebarScrollOffsetByBook.clear();
+      _selectedBookId = null;
+      _selectedArticleId = null;
       await _saveLayout();
-      _expandedVolumeIds.clear();
       await load();
     } on Object catch (error) {
       _error = error;
@@ -158,19 +196,8 @@ class LibraryViewModel extends ChangeNotifier {
     try {
       await _loadLayout();
       _library = await _repository.loadLibrary();
-      _selectedBookId ??=
-          _library!.folders
-              .where((book) => !book.isTrash)
-              .firstOrNull
-              ?.id ??
-          _library!.folders.firstOrNull?.id;
-      _expandedVolumeIds.addAll(
-        _volumesForSelectedBook.map((volume) => volume.id),
-      );
-      final firstChapter = _chaptersForSelectedBook.firstOrNull;
-      _article = firstChapter == null
-          ? null
-          : await _repository.getArticle(firstChapter.id);
+      _restoreSelection();
+      await _restoreArticle();
     } on Object catch (error) {
       _error = error;
     }
@@ -179,6 +206,11 @@ class LibraryViewModel extends ChangeNotifier {
 
   Future<void> selectArticle(String id) async {
     _article = await _repository.getArticle(id);
+    _selectedArticleId = _article?.id;
+    if (_article != null) {
+      _selectedBookId = _article!.folderId;
+    }
+    _scheduleLayoutSave();
     notifyListeners();
   }
 
@@ -187,6 +219,8 @@ class LibraryViewModel extends ChangeNotifier {
     final book = selectedBook;
     if (book == null || book.isTrash) return;
     _article = await _repository.createArticle(folderId: book.id);
+    _selectedArticleId = _article?.id;
+    _scheduleLayoutSave();
     await load();
     notifyListeners();
   }
@@ -216,6 +250,44 @@ class LibraryViewModel extends ChangeNotifier {
     if (article != null) await _repository.saveArticle(article);
   }
 
+  void _restoreSelection() {
+    final library = _library;
+    if (library == null) return;
+    final books = library.folders;
+    final bookIds = books.map((book) => book.id).toSet();
+    if (_selectedBookId == null || !bookIds.contains(_selectedBookId)) {
+      _selectedBookId =
+          books.where((book) => !book.isTrash).firstOrNull?.id ??
+          books.firstOrNull?.id;
+    }
+    // Drop expand/scroll entries for books that no longer exist.
+    _expandedVolumesByBook.removeWhere((id, _) => !bookIds.contains(id));
+    _sidebarScrollOffsetByBook.removeWhere((id, _) => !bookIds.contains(id));
+  }
+
+  Future<void> _restoreArticle() async {
+    final library = _library;
+    final bookId = _selectedBookId;
+    if (library == null || bookId == null) {
+      _article = null;
+      return;
+    }
+    final chapters = library.articles
+        .where((chapter) => chapter.folderId == bookId)
+        .toList(growable: false);
+    ArticleSummary? chosen;
+    if (_selectedArticleId != null) {
+      chosen = chapters
+          .where((chapter) => chapter.id == _selectedArticleId)
+          .firstOrNull;
+    }
+    chosen ??= chapters.firstOrNull;
+    _selectedArticleId = chosen?.id;
+    _article = chosen == null
+        ? null
+        : await _repository.getArticle(chosen.id);
+  }
+
   Future<void> _loadLayout() async {
     final layoutRepository = _layoutRepository;
     if (layoutRepository == null) {
@@ -226,6 +298,18 @@ class LibraryViewModel extends ChangeNotifier {
       _sidebarWidth = layout.sidebarWidth;
       _lastLibraryRoot = layout.lastLibraryRoot;
       _lastLibraryBookmark = layout.lastLibraryBookmark;
+      _selectedBookId = layout.selectedBookId;
+      _selectedArticleId = layout.selectedArticleId;
+      _expandedVolumesByBook
+        ..clear()
+        ..addAll(
+          layout.expandedVolumesByBook.map(
+            (key, value) => MapEntry(key, value.toSet()),
+          ),
+        );
+      _sidebarScrollOffsetByBook
+        ..clear()
+        ..addAll(layout.sidebarScrollOffsetByBook);
     } on Object {
       // Layout preferences must not block a writing session.
     }
@@ -248,6 +332,15 @@ class LibraryViewModel extends ChangeNotifier {
           sidebarWidth: _sidebarWidth,
           lastLibraryRoot: _lastLibraryRoot,
           lastLibraryBookmark: _lastLibraryBookmark,
+          selectedBookId: _selectedBookId,
+          selectedArticleId: _selectedArticleId,
+          expandedVolumesByBook: {
+            for (final entry in _expandedVolumesByBook.entries)
+              entry.key: entry.value.toList(growable: false),
+          },
+          sidebarScrollOffsetByBook: Map<String, double>.from(
+            _sidebarScrollOffsetByBook,
+          ),
         ),
       );
     } on Object {

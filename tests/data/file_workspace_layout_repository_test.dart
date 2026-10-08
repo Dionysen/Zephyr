@@ -20,6 +20,13 @@ void main() {
         sidebarWidth: 412,
         lastLibraryRoot: '/lib/a',
         lastLibraryBookmark: 'bookmark-data',
+        selectedBookId: 'book-1',
+        selectedArticleId: 'article-9',
+        expandedVolumesByBook: {
+          'book-1': ['vol-a', 'vol-b'],
+          'book-2': <String>[],
+        },
+        sidebarScrollOffsetByBook: {'book-1': 128.5, 'book-2': 0},
       ),
     );
     final actual = await repository.load();
@@ -27,6 +34,13 @@ void main() {
     expect(actual.sidebarWidth, 412);
     expect(actual.lastLibraryRoot, '/lib/a');
     expect(actual.lastLibraryBookmark, 'bookmark-data');
+    expect(actual.selectedBookId, 'book-1');
+    expect(actual.selectedArticleId, 'article-9');
+    expect(actual.expandedVolumesByBook, {
+      'book-1': ['vol-a', 'vol-b'],
+      'book-2': <String>[],
+    });
+    expect(actual.sidebarScrollOffsetByBook, {'book-1': 128.5, 'book-2': 0});
   });
 
   test('clamps an out-of-range stored width', () async {
