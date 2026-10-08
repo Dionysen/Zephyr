@@ -93,14 +93,18 @@ class ArticleSummary {
     required this.summary,
     required this.folderId,
     required this.categoryId,
+    required this.createdAt,
     required this.updatedAt,
+    required this.wordCount,
   });
   final String id;
   final String title;
   final String summary;
   final String folderId;
   final String? categoryId;
+  final DateTime createdAt;
   final DateTime updatedAt;
+  final int wordCount;
 }
 
 class WritingArticle extends ArticleSummary {
@@ -110,7 +114,9 @@ class WritingArticle extends ArticleSummary {
     required super.summary,
     required super.folderId,
     required super.categoryId,
+    required super.createdAt,
     required super.updatedAt,
+    required super.wordCount,
     required this.content,
   });
   final String content;
@@ -122,7 +128,9 @@ class WritingArticle extends ArticleSummary {
     summary: summary,
     folderId: folderId,
     categoryId: categoryId,
+    createdAt: createdAt,
     updatedAt: updatedAt,
+    wordCount: wordCount,
   );
 }
 

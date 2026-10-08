@@ -83,7 +83,9 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
       summary: row['summary'] as String? ?? '',
       folderId: row['folderId']! as String,
       categoryId: row['categoryId'] as String?,
+      createdAt: _date(row['createTime']! as int),
       updatedAt: _date(row['updateTime']! as int),
+      wordCount: row['count'] as int? ?? 0,
     );
   }
 
@@ -167,7 +169,9 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     summary: row['summary'] as String? ?? '',
     folderId: row['folderId']! as String,
     categoryId: row['categoryId'] as String?,
+    createdAt: _date(row['createTime']! as int),
     updatedAt: _date(row['updateTime']! as int),
+    wordCount: row['count'] as int? ?? 0,
   );
   DateTime _date(int milliseconds) =>
       DateTime.fromMillisecondsSinceEpoch(milliseconds);

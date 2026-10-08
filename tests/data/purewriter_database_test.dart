@@ -51,6 +51,14 @@ void main() {
     final history = await repository.listHistory(article.id);
 
     expect(reloaded.content, 'First draft.');
+    expect(reloaded.createdAt, article.createdAt);
+    expect(reloaded.wordCount, 'First draft.'.runes.length);
+    final summary = (await repository.loadLibrary()).articles.singleWhere(
+      (item) => item.id == article.id,
+    );
+    expect(summary.createdAt, article.createdAt);
+    expect(summary.updatedAt, reloaded.updatedAt);
+    expect(summary.wordCount, reloaded.wordCount);
     expect(history, hasLength(1));
     expect(history.single.content, isEmpty);
     final raw = await database.database.query(

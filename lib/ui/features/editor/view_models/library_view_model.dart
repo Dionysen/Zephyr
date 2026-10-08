@@ -201,7 +201,9 @@ class LibraryViewModel extends ChangeNotifier {
       summary: article.summary,
       folderId: article.folderId,
       categoryId: article.categoryId,
+      createdAt: article.createdAt,
       updatedAt: DateTime.now(),
+      wordCount: content.runes.where((rune) => rune != 10 && rune != 13).length,
     );
     _pendingSave?.cancel();
     _pendingSave = Timer(const Duration(milliseconds: 500), save);

@@ -14,6 +14,8 @@ void main() {
     await model.save();
     expect(model.article?.id, 'article');
     expect(repository.saved.content, 'Updated text');
+    expect(repository.saved.wordCount, 'Updated text'.runes.length);
+    expect(repository.saved.createdAt, DateTime.utc(2025));
   });
 
   test('switching books selects only that book chapter', () async {
@@ -85,7 +87,9 @@ class FakeLibraryRepository implements WritingLibraryRepository {
     summary: '',
     folderId: 'Default',
     categoryId: null,
+    createdAt: DateTime.utc(2025),
     updatedAt: DateTime.utc(2026),
+    wordCount: 0,
   );
   late final WritingArticle _secondArticle = WritingArticle(
     id: 'article-b',
@@ -94,7 +98,9 @@ class FakeLibraryRepository implements WritingLibraryRepository {
     summary: '',
     folderId: 'book-b',
     categoryId: 'volume-b',
+    createdAt: DateTime.utc(2025),
     updatedAt: DateTime.utc(2026),
+    wordCount: 0,
   );
   @override
   Future<WritingLibrary> loadLibrary() async => WritingLibrary(
@@ -125,7 +131,9 @@ class FakeLibraryRepository implements WritingLibraryRepository {
         summary: '',
         folderId: saved.folderId,
         categoryId: null,
+        createdAt: saved.createdAt,
         updatedAt: saved.updatedAt,
+        wordCount: saved.wordCount,
       ),
       ArticleSummary(
         id: _secondArticle.id,
@@ -133,7 +141,9 @@ class FakeLibraryRepository implements WritingLibraryRepository {
         summary: '',
         folderId: _secondArticle.folderId,
         categoryId: _secondArticle.categoryId,
+        createdAt: _secondArticle.createdAt,
         updatedAt: _secondArticle.updatedAt,
+        wordCount: _secondArticle.wordCount,
       ),
     ],
   );

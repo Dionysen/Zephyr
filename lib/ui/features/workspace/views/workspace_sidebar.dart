@@ -596,6 +596,7 @@ class _ChapterRow extends StatelessWidget {
 
   static const _listInset = 6.0;
   static const _lineGap = 4.0;
+  static const _previewDateGap = 2.0;
 
   final ArticleSummary chapter;
   final LibraryViewModel model;
@@ -604,10 +605,10 @@ class _ChapterRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final radius = context.zephyrBorderRadius;
-    final selected = chapter.id == model.article?.id;
-    final date = chapter.updatedAt;
-    final dateText =
-        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final activeArticle = model.article?.id == chapter.id ? model.article : null;
+    final selected = activeArticle != null;
+    final metaText =
+        '${_formatDate(chapter.createdAt)} - ${_formatDate(activeArticle?.updatedAt ?? chapter.updatedAt)} - ${activeArticle?.wordCount ?? chapter.wordCount}字';
     return Padding(
       padding: const EdgeInsets.fromLTRB(_listInset, 2, _listInset, 0),
       child: Material(
@@ -635,12 +636,15 @@ class _ChapterRow extends StatelessWidget {
                     chapter.summary.replaceAll(RegExp(r'[\r\n\u3000]'), ''),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(height: 1.4),
+                    style: theme.textTheme.labelSmall?.copyWith(height: 1.35),
                   ),
-                ],
-                const SizedBox(height: _lineGap),
+                  const SizedBox(height: _previewDateGap),
+                ] else
+                  const SizedBox(height: _lineGap),
                 Text(
-                  dateText,
+                  metaText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelSmall?.copyWith(height: 1.35),
                 ),
               ],
@@ -650,6 +654,9 @@ class _ChapterRow extends StatelessWidget {
       ),
     );
   }
+
+  String _formatDate(DateTime date) =>
+      '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 }
 
 class _LibraryDock extends StatelessWidget {

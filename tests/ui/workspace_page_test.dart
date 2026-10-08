@@ -50,7 +50,13 @@ void main() {
       final padding = tester.widget<InkWell>(chapterInkWell).child! as Padding;
       final insets = padding.padding.resolve(TextDirection.ltr);
       expect(insets.left, insets.right);
-      expect(find.text('First lineSecond lineThird line'), findsOneWidget);
+      final preview = tester.widget<Text>(
+        find.text('First lineSecond lineThird line'),
+      );
+      final metadata = tester.widget<Text>(
+        find.text('2025-12-19 - 2026-01-02 - 42字'),
+      );
+      expect(preview.style?.fontSize, metadata.style?.fontSize);
       expect(find.text('First line\n\u3000\u3000Second line\r\n\u3000\u3000Third line'), findsNothing);
     },
   );
@@ -159,7 +165,9 @@ class _LibraryRepository implements WritingLibraryRepository {
         summary: 'First line\n\u3000\u3000Second line\r\n\u3000\u3000Third line',
         folderId: 'Default',
         categoryId: 'volume-a',
-        updatedAt: DateTime.utc(2026),
+        createdAt: DateTime.utc(2025, 12, 19),
+        updatedAt: DateTime.utc(2026, 1, 2),
+        wordCount: 42,
       ),
     ],
   );
@@ -172,7 +180,9 @@ class _LibraryRepository implements WritingLibraryRepository {
     summary: '',
     folderId: 'Default',
     categoryId: 'volume-a',
-    updatedAt: DateTime.utc(2026),
+    createdAt: DateTime.utc(2025, 12, 19),
+    updatedAt: DateTime.utc(2026, 1, 2),
+    wordCount: 42,
   );
 
   @override
