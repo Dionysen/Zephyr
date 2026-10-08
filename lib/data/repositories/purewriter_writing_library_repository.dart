@@ -41,6 +41,8 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
               id: row['id']! as String,
               name: row['name']! as String,
               rank: row['rank']! as int,
+              description: row['description'] as String? ?? '',
+              tags: row['tags'] as String? ?? '',
             ),
           )
           .toList(growable: false),
@@ -251,6 +253,37 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
       rank: rank,
       collapsed: false,
     );
+  }
+
+  @override
+  Future<void> updateFolder({
+    required String folderId,
+    required String name,
+    String? description,
+    String? tags,
+  }) async {
+    _store.ensureWritable();
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final values = <String, Object?>{
+      'name': name.trim().isEmpty ? 'Untitled' : name.trim(),
+      'updateTime': now,
+    };
+    if (description != null) {
+      values['description'] = description;
+    }
+    if (tags != null) {
+      values['tags'] = tags;
+      values['tagsUpdateTime'] = now;
+    }
+    final updated = await _store.database.update(
+      'Folder',
+      values,
+      where: 'id = ? AND deleted = 0',
+      whereArgs: [folderId],
+    );
+    if (updated == 0) {
+      throw StateError('PureWriter folder not found: $folderId');
+    }
   }
 
   @override

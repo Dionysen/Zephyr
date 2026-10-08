@@ -111,6 +111,33 @@ class LibraryViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateBook({
+    required String folderId,
+    required String name,
+    String? description,
+    String? tags,
+  }) async {
+    if (isReadOnly) return;
+    await _repository.updateFolder(
+      folderId: folderId,
+      name: name,
+      description: description,
+      tags: tags,
+    );
+    await load();
+  }
+
+  ({int volumes, int chapters}) bookStats(String bookId) {
+    final library = _library;
+    if (library == null) {
+      return (volumes: 0, chapters: 0);
+    }
+    return (
+      volumes: library.categories.where((item) => item.folderId == bookId).length,
+      chapters: library.articles.where((item) => item.folderId == bookId).length,
+    );
+  }
+
   Future<void> openLibrary(String rootPath, {String? bookmark}) async {
     try {
       await _repository.openLibrary(rootPath);

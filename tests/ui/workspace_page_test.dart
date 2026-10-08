@@ -177,6 +177,14 @@ class _LibraryRepository implements WritingLibraryRepository {
   }) => throw UnimplementedError();
 
   @override
+  Future<void> updateFolder({
+    required String folderId,
+    required String name,
+    String? description,
+    String? tags,
+  }) async {}
+
+  @override
   Future<void> trashArticle(String articleId) async {}
 
   @override

@@ -14,6 +14,12 @@ abstract interface class WritingLibraryRepository {
     required String folderId,
     required String name,
   });
+  Future<void> updateFolder({
+    required String folderId,
+    required String name,
+    String? description,
+    String? tags,
+  });
   Future<void> trashArticle(String articleId);
   Future<void> restoreArticle(String articleId, {required String folderId});
   Future<List<ArticleHistory>> listHistory(String articleId);

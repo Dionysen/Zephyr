@@ -10,10 +10,27 @@ class WritingFolder {
     required this.id,
     required this.name,
     required this.rank,
+    this.description = '',
+    this.tags = '',
   });
   final String id;
   final String name;
   final int rank;
+  final String description;
+  final String tags;
+
+  WritingFolder copyWith({
+    String? name,
+    int? rank,
+    String? description,
+    String? tags,
+  }) => WritingFolder(
+    id: id,
+    name: name ?? this.name,
+    rank: rank ?? this.rank,
+    description: description ?? this.description,
+    tags: tags ?? this.tags,
+  );
 }
 
 class WritingCategory {

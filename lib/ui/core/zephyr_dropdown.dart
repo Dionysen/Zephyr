@@ -4,11 +4,38 @@ import 'package:flutter/services.dart';
 import 'zephyr_controls.dart';
 
 class ZephyrDropdownItem<T> {
-  const ZephyrDropdownItem({required this.value, required this.label});
+  const ZephyrDropdownItem({
+    required this.value,
+    required this.label,
+    this.subtitle,
+  });
 
   final T value;
   final String label;
+  final String? subtitle;
+
+  String get searchText {
+    final extra = subtitle?.trim();
+    return extra == null || extra.isEmpty ? label : '$label $extra';
+  }
 }
+
+typedef ZephyrDropdownTriggerBuilder<T> =
+    Widget Function(
+      BuildContext context, {
+      required ZephyrDropdownItem<T>? selected,
+      required bool isOpen,
+    });
+
+typedef ZephyrDropdownItemBuilder<T> =
+    Widget Function(
+      BuildContext context, {
+      required ZephyrDropdownItem<T> item,
+      required bool selected,
+      required bool highlighted,
+      required VoidCallback onSelect,
+      required VoidCallback onDismiss,
+    });
 
 /// Compact dropdown whose menu matches the closed field's width and row height.
 class ZephyrDropdown<T> extends StatefulWidget {
@@ -18,12 +45,16 @@ class ZephyrDropdown<T> extends StatefulWidget {
     required this.onChanged,
     this.value,
     this.hint = 'Select',
+    this.triggerBuilder,
+    this.itemBuilder,
   });
 
   final T? value;
   final List<ZephyrDropdownItem<T>> items;
   final ValueChanged<T> onChanged;
   final String hint;
+  final ZephyrDropdownTriggerBuilder<T>? triggerBuilder;
+  final ZephyrDropdownItemBuilder<T>? itemBuilder;
 
   @override
   State<ZephyrDropdown<T>> createState() => _ZephyrDropdownState<T>();
@@ -39,7 +70,14 @@ class _ZephyrDropdownState<T> extends State<ZephyrDropdown<T>> {
   @override
   void didUpdateWidget(covariant ZephyrDropdown<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _entry?.markNeedsBuild();
+    // Rebuild the follower after this frame so LayoutBuilder/tooltips inside
+    // the overlay are not updated while CompositedTransformFollower paints.
+    if (_entry == null) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _entry?.markNeedsBuild();
+    });
   }
 
   @override
@@ -70,6 +108,7 @@ class _ZephyrDropdownState<T> extends State<ZephyrDropdown<T>> {
         triggerHeight: height,
         items: widget.items,
         value: widget.value,
+        itemBuilder: widget.itemBuilder,
         onSelected: (item) {
           widget.onChanged(item);
           _close();
@@ -99,6 +138,19 @@ class _ZephyrDropdownState<T> extends State<ZephyrDropdown<T>> {
     final selected = widget.items
         .where((item) => item.value == widget.value)
         .firstOrNull;
+    final trigger =
+        widget.triggerBuilder?.call(
+          context,
+          selected: selected,
+          isOpen: _isOpen,
+        ) ??
+        _DropdownRow(
+          leading: Icon(
+            _isOpen ? Icons.expand_less : Icons.expand_more,
+            size: ZephyrControls.iconSize,
+          ),
+          label: selected?.label ?? widget.hint,
+        );
     return CompositedTransformTarget(
       link: _link,
       child: Material(
@@ -110,16 +162,7 @@ class _ZephyrDropdownState<T> extends State<ZephyrDropdown<T>> {
         child: InkWell(
           customBorder: ZephyrControls.labeledButtonShape,
           onTap: _toggle,
-          child: SizedBox(
-            height: ZephyrControls.fieldHeight,
-            child: _DropdownRow(
-              leading: Icon(
-                _isOpen ? Icons.expand_less : Icons.expand_more,
-                size: ZephyrControls.iconSize,
-              ),
-              label: selected?.label ?? widget.hint,
-            ),
-          ),
+          child: SizedBox(height: ZephyrControls.fieldHeight, child: trigger),
         ),
       ),
     );
@@ -135,6 +178,7 @@ class _DropdownOverlay<T> extends StatefulWidget {
     required this.value,
     required this.onSelected,
     required this.onDismiss,
+    this.itemBuilder,
   });
 
   final LayerLink link;
@@ -144,6 +188,7 @@ class _DropdownOverlay<T> extends StatefulWidget {
   final T? value;
   final ValueChanged<T> onSelected;
   final VoidCallback onDismiss;
+  final ZephyrDropdownItemBuilder<T>? itemBuilder;
 
   @override
   State<_DropdownOverlay<T>> createState() => _DropdownOverlayState<T>();
@@ -183,7 +228,7 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
       return widget.items;
     }
     return widget.items
-        .where((item) => item.label.toLowerCase().contains(query))
+        .where((item) => item.searchText.toLowerCase().contains(query))
         .toList(growable: false);
   }
 
@@ -317,21 +362,32 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
                                   final selected =
                                       item.value == widget.value &&
                                       _highlighted == null;
+                                  void onSelect() =>
+                                      widget.onSelected(item.value);
+                                  final row =
+                                      widget.itemBuilder?.call(
+                                        context,
+                                        item: item,
+                                        selected: selected,
+                                        highlighted: highlighted,
+                                        onSelect: onSelect,
+                                        onDismiss: widget.onDismiss,
+                                      ) ??
+                                      _DropdownRow(
+                                        leading: const SizedBox(
+                                          width: ZephyrControls.iconSize,
+                                        ),
+                                        label: item.label,
+                                      );
                                   return Material(
                                     color: highlighted || selected
                                         ? theme.colorScheme.secondaryContainer
                                         : Colors.transparent,
                                     child: InkWell(
-                                      onTap: () =>
-                                          widget.onSelected(item.value),
+                                      onTap: onSelect,
                                       child: SizedBox(
                                         height: ZephyrControls.fieldHeight,
-                                        child: _DropdownRow(
-                                          leading: const SizedBox(
-                                            width: ZephyrControls.iconSize,
-                                          ),
-                                          label: item.label,
-                                        ),
+                                        child: row,
                                       ),
                                     ),
                                   );

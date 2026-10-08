@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../../domain/models/purewriter_models.dart';
@@ -166,19 +168,271 @@ class _BookPicker extends StatelessWidget {
   final WritingLibrary library;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
-    child: ZephyrDropdown<String>(
-      value: model.selectedBook?.id,
-      hint: 'Select a book',
-      items: [
-        for (final book in library.folders.where(
-          (book) => book.id != 'PW_Trash',
-        ))
-          ZephyrDropdownItem(value: book.id, label: book.name),
-      ],
-      onChanged: model.selectBook,
+  Widget build(BuildContext context) {
+    final books = library.folders
+        .where((book) => book.id != 'PW_Trash')
+        .toList(growable: false);
+    final bookById = {for (final book in books) book.id: book};
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
+      child: ZephyrDropdown<String>(
+        value: model.selectedBook?.id,
+        hint: 'Select a book',
+        items: [
+          for (final book in books)
+            ZephyrDropdownItem(
+              value: book.id,
+              label: book.name,
+              subtitle: _bookSubtitle(book),
+            ),
+        ],
+        onChanged: model.selectBook,
+        triggerBuilder: (context, {required selected, required isOpen}) {
+          final book = selected == null ? null : bookById[selected.value];
+          final stats = book == null
+              ? null
+              : model.bookStats(book.id);
+          final meta = stats == null
+              ? null
+              : '${stats.volumes}卷 ${stats.chapters}章';
+          final theme = Theme.of(context);
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    selected?.label ?? 'Select a book',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                ),
+                if (meta != null) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    meta,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                const SizedBox(width: 4),
+                Icon(
+                  isOpen ? Icons.expand_less : Icons.expand_more,
+                  size: ZephyrControls.iconSize,
+                ),
+              ],
+            ),
+          );
+        },
+        itemBuilder:
+            (
+              context, {
+              required item,
+              required selected,
+              required highlighted,
+              required onSelect,
+              required onDismiss,
+            }) {
+              final book = bookById[item.value];
+              final subtitle = item.subtitle;
+              final theme = Theme.of(context);
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(8, 0, 4, 0),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.menu_book_outlined,
+                      size: ZephyrControls.iconSize,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        item.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (subtitle != null && subtitle.isNotEmpty)
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 96),
+                            child: Text(
+                              subtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.right,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        if (subtitle != null && subtitle.isNotEmpty)
+                          const SizedBox(width: 6),
+                        // Avoid IconButton tooltips here: their OverlayPortal
+                        // conflicts with CompositedTransformFollower.
+                        SizedBox(
+                          width: ZephyrControls.buttonSize,
+                          height: ZephyrControls.buttonSize,
+                          child: InkWell(
+                            customBorder: ZephyrControls.iconButtonShape,
+                            onTap: model.isReadOnly || book == null
+                                ? null
+                                : () {
+                                    onDismiss();
+                                    WidgetsBinding.instance.addPostFrameCallback(
+                                      (_) {
+                                        if (!context.mounted) return;
+                                        unawaited(
+                                          _editBook(
+                                            context,
+                                            model: model,
+                                            book: book,
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
+                            child: Icon(
+                              Icons.edit_outlined,
+                              size: ZephyrControls.iconSize,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+      ),
+    );
+  }
+
+  String? _bookSubtitle(WritingFolder book) {
+    final tags = book.tags.trim();
+    if (tags.isNotEmpty) {
+      return tags.split(RegExp(r'[,;，；]')).first.trim();
+    }
+    final description = book.description.trim();
+    if (description.isEmpty) return null;
+    return description;
+  }
+}
+
+Future<void> _editBook(
+  BuildContext context, {
+  required LibraryViewModel model,
+  required WritingFolder book,
+}) async {
+  final result = await showDialog<_BookEditResult>(
+    context: context,
+    builder: (context) => _EditBookDialog(book: book),
+  );
+  if (result == null) return;
+  await model.updateBook(
+    folderId: book.id,
+    name: result.name,
+    description: result.description,
+    tags: result.tags,
+  );
+}
+
+class _BookEditResult {
+  const _BookEditResult({
+    required this.name,
+    required this.description,
+    required this.tags,
+  });
+  final String name;
+  final String description;
+  final String tags;
+}
+
+class _EditBookDialog extends StatefulWidget {
+  const _EditBookDialog({required this.book});
+
+  final WritingFolder book;
+
+  @override
+  State<_EditBookDialog> createState() => _EditBookDialogState();
+}
+
+class _EditBookDialogState extends State<_EditBookDialog> {
+  late final TextEditingController _name;
+  late final TextEditingController _description;
+  late final TextEditingController _tags;
+
+  @override
+  void initState() {
+    super.initState();
+    _name = TextEditingController(text: widget.book.name);
+    _description = TextEditingController(text: widget.book.description);
+    _tags = TextEditingController(text: widget.book.tags);
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _description.dispose();
+    _tags.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Edit book'),
+    content: SizedBox(
+      width: 360,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _name,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Name'),
+            textInputAction: TextInputAction.next,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _tags,
+            decoration: const InputDecoration(
+              labelText: 'Tags',
+              hintText: 'e.g. 文学',
+            ),
+            textInputAction: TextInputAction.next,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _description,
+            decoration: const InputDecoration(labelText: 'Description'),
+            minLines: 2,
+            maxLines: 4,
+          ),
+        ],
+      ),
     ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: const Text('Cancel'),
+      ),
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(
+          _BookEditResult(
+            name: _name.text,
+            description: _description.text,
+            tags: _tags.text,
+          ),
+        ),
+        child: const Text('Save'),
+      ),
+    ],
   );
 }
 
