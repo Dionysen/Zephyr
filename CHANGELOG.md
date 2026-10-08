@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Center the chapter toolbar buttons beneath the book picker with consistent spacing.
 - Show the trash in the book dropdown with a red trash icon and label, and list all trashed chapters regardless of their former volume.
 - Restored full-item book selection in the dropdown, with the edit button layered above the selection area.
 - Replaced the desktop-only settings child window with a shared in-app settings route so appearance stays live against the writing workspace on every platform.

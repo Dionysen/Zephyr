@@ -56,6 +56,7 @@ class WorkspaceSidebar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 IconButton(
                   onPressed: model.hasVolumes ? model.toggleAllVolumes : null,
@@ -68,7 +69,7 @@ class WorkspaceSidebar extends StatelessWidget {
                       ? 'Collapse all'
                       : 'Expand all',
                 ),
-                const Spacer(),
+                const SizedBox(width: 4),
                 IconButton(
                   onPressed:
                       model.isReadOnly || model.selectedBook?.isTrash == true

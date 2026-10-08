@@ -16,6 +16,7 @@ import 'package:zephyr/ui/features/editor/view_models/library_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/settings_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/theme_view_model.dart';
 import 'package:zephyr/ui/features/workspace/views/workspace_page.dart';
+import 'package:zephyr/ui/features/workspace/views/workspace_sidebar.dart';
 
 void main() {
   testWidgets('trash appears in the book picker and shows discarded chapters', (
@@ -118,6 +119,25 @@ void main() {
 
     await tester.pumpWidget(_app());
     await tester.pumpAndSettle();
+
+    final sidebar = tester.getRect(find.byType(WorkspaceSidebar));
+    final expandButton = tester.getRect(
+      find.ancestor(
+        of: find.byIcon(Icons.unfold_less),
+        matching: find.byType(IconButton),
+      ),
+    );
+    final newChapterButton = tester.getRect(
+      find.ancestor(
+        of: find.byIcon(Icons.note_add_outlined),
+        matching: find.byType(IconButton),
+      ),
+    );
+    expect(newChapterButton.left - expandButton.right, 4);
+    expect(
+      (expandButton.center.dx + newChapterButton.center.dx) / 2,
+      closeTo(sidebar.center.dx, 0.01),
+    );
 
     await tester.tap(find.byTooltip('Collapse all'));
     await tester.pumpAndSettle();
