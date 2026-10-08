@@ -272,7 +272,7 @@ class _BookPicker extends StatelessWidget {
                           Icon(
                             isTrash
                                 ? Icons.delete_outline
-                                : Icons.menu_book_outlined,
+                                : Icons.book_outlined,
                             size: ZephyrControls.iconSize,
                             color: isTrash ? trashColor : null,
                           ),

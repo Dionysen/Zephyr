@@ -38,6 +38,7 @@ void main() {
     final trashContext = tester.element(find.text('Trash'));
     final trashColor = Theme.of(trashContext).colorScheme.error;
     expect(trashLabel.style?.color, trashColor);
+    expect(find.byIcon(Icons.book_outlined), findsNWidgets(2));
     expect(find.byIcon(Icons.delete_outline), findsOneWidget);
     expect(find.byIcon(Icons.edit_outlined), findsNWidgets(2));
 

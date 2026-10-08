@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Use a closed-book icon for books in the dropdown.
 - Center the chapter toolbar buttons beneath the book picker with consistent spacing.
 - Show the trash in the book dropdown with a red trash icon and label, and list all trashed chapters regardless of their former volume.
 - Restored full-item book selection in the dropdown, with the edit button layered above the selection area.
