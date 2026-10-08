@@ -33,6 +33,28 @@ void main() {
     expect(find.text('Volume A'), findsOneWidget);
   });
 
+  testWidgets(
+    'chapter content has equal insets and preview removes line breaks and indent characters',
+    (tester) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(_app());
+      await tester.pumpAndSettle();
+
+      final chapterInkWell = find
+          .ancestor(of: find.text('Chapter A'), matching: find.byType(InkWell))
+          .first;
+      final padding = tester.widget<InkWell>(chapterInkWell).child! as Padding;
+      final insets = padding.padding.resolve(TextDirection.ltr);
+      expect(insets.left, insets.right);
+      expect(find.text('First lineSecond lineThird line'), findsOneWidget);
+      expect(find.text('First line\n\u3000\u3000Second line\r\n\u3000\u3000Third line'), findsNothing);
+    },
+  );
+
   testWidgets('compact layout uses a drawer instead of a second workspace', (
     tester,
   ) async {
@@ -134,7 +156,7 @@ class _LibraryRepository implements WritingLibraryRepository {
       ArticleSummary(
         id: 'article',
         title: 'Chapter A',
-        summary: '',
+        summary: 'First line\n\u3000\u3000Second line\r\n\u3000\u3000Third line',
         folderId: 'Default',
         categoryId: 'volume-a',
         updatedAt: DateTime.utc(2026),

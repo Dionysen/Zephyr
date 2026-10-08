@@ -619,7 +619,7 @@ class _ChapterRow extends StatelessWidget {
           borderRadius: radius,
           onTap: () => model.selectArticle(chapter.id),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(28, 6, 8, 6),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 6),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -632,7 +632,7 @@ class _ChapterRow extends StatelessWidget {
                 if (chapter.summary.isNotEmpty) ...[
                   const SizedBox(height: _lineGap),
                   Text(
-                    chapter.summary,
+                    chapter.summary.replaceAll(RegExp(r'[\r\n\u3000]'), ''),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodySmall?.copyWith(height: 1.4),
