@@ -7,6 +7,7 @@ import '../../../core/breakpoints.dart';
 import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_resize_handle.dart';
 import '../../../core/zephyr_scope.dart';
+import '../../../core/zephyr_theme.dart';
 import '../../workspace/views/workspace_sidebar.dart';
 import '../models/settings_section.dart';
 import 'editor_settings_view.dart';
@@ -281,9 +282,9 @@ class _CompactSettingsNavigation extends StatelessWidget {
               color: section == selected
                   ? Theme.of(context).colorScheme.secondaryContainer
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(5),
+              borderRadius: context.zephyrBorderRadius,
               child: InkWell(
-                borderRadius: BorderRadius.circular(5),
+                borderRadius: context.zephyrBorderRadius,
                 onTap: () => onSelected(section),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -321,9 +322,9 @@ class _SettingsNavigationItem extends StatelessWidget {
       color: selected
           ? Theme.of(context).colorScheme.secondaryContainer
           : Colors.transparent,
-      borderRadius: BorderRadius.circular(5),
+      borderRadius: context.zephyrBorderRadius,
       child: InkWell(
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: context.zephyrBorderRadius,
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),

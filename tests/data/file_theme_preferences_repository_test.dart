@@ -30,6 +30,7 @@ void main() {
         fontFamily: 'Inter',
         fontPath: r'C:\Fonts\Inter.ttf',
         fontSize: 12,
+        cornerRadius: 10,
       );
 
       await repository.save(tokens: expectedTokens, ui: expectedUi);
@@ -42,6 +43,7 @@ void main() {
       expect(actualUi.fontFamily, expectedUi.fontFamily);
       expect(actualUi.fontPath, expectedUi.fontPath);
       expect(actualUi.fontSize, expectedUi.fontSize);
+      expect(actualUi.cornerRadius, expectedUi.cornerRadius);
     },
   );
 
@@ -65,6 +67,7 @@ void main() {
     final ui = await repository.loadUi();
 
     expect(ui.fontSize, UiPreferences.defaults.fontSize);
+    expect(ui.cornerRadius, UiPreferences.defaults.cornerRadius);
     expect(ui.fontFamily, isNull);
     expect(ui.fontPath, isNull);
   });

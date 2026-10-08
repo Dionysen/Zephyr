@@ -55,6 +55,15 @@ void main() {
     expect(model.ui.fontSize, 12);
     expect(model.tokens, ThemeTokens.defaults);
   });
+
+  test('corner radius updates independently of color tokens', () {
+    final model = ThemeViewModel(_ThemeRepository(ThemeTokens.defaults));
+
+    model.updateCornerRadius(12);
+
+    expect(model.ui.cornerRadius, 12);
+    expect(model.tokens, ThemeTokens.defaults);
+  });
 }
 
 class _ThemeRepository implements ThemePreferencesRepository {

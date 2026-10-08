@@ -7,6 +7,7 @@ import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_controls.dart';
 import '../../../core/zephyr_dropdown.dart';
 import '../../../core/zephyr_resize_handle.dart';
+import '../../../core/zephyr_theme.dart';
 import '../../editor/view_models/library_view_model.dart';
 
 enum SidebarMode { docked, drawer }
@@ -293,7 +294,7 @@ class _BookPicker extends StatelessWidget {
                           child: Material(
                             type: MaterialType.transparency,
                             child: InkWell(
-                              customBorder: ZephyrControls.iconButtonShape,
+                              customBorder: hostContext.zephyrShape.iconButtonShape,
                               onTap: model.isReadOnly || book == null
                                   ? null
                                   : () {
@@ -536,7 +537,6 @@ class _VolumeRow extends StatelessWidget {
     required this.chapterCount,
   });
 
-  static const _radius = 6.0;
   static const _listInset = 6.0;
   static const _volumeGap = 6.0;
 
@@ -547,19 +547,20 @@ class _VolumeRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final radius = context.zephyrBorderRadius;
     return Padding(
       padding: const EdgeInsets.fromLTRB(_listInset, _volumeGap, _listInset, 0),
       child: Material(
         color: theme.colorScheme.surfaceContainerHigh,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(_radius),
+          borderRadius: radius,
           side: BorderSide(
             color: theme.colorScheme.outline,
             width: ZephyrControls.borderWidth,
           ),
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(_radius),
+          borderRadius: radius,
           onTap: () => model.toggleVolume(volume.id),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -593,7 +594,6 @@ class _VolumeRow extends StatelessWidget {
 class _ChapterRow extends StatelessWidget {
   const _ChapterRow({required this.chapter, required this.model});
 
-  static const _radius = 6.0;
   static const _listInset = 6.0;
   static const _lineGap = 4.0;
 
@@ -603,6 +603,7 @@ class _ChapterRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final radius = context.zephyrBorderRadius;
     final selected = chapter.id == model.article?.id;
     final date = chapter.updatedAt;
     final dateText =
@@ -613,11 +614,9 @@ class _ChapterRow extends StatelessWidget {
         color: selected
             ? theme.colorScheme.secondaryContainer.withValues(alpha: .42)
             : Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(_radius),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: radius),
         child: InkWell(
-          borderRadius: BorderRadius.circular(_radius),
+          borderRadius: radius,
           onTap: () => model.selectArticle(chapter.id),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(28, 6, 8, 6),
@@ -665,41 +664,45 @@ class _LibraryDock extends StatelessWidget {
   final VoidCallback openSettings;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
-    child: Material(
-      color: Theme.of(context).colorScheme.surfaceContainerHigh,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(28),
-        side: BorderSide(color: Theme.of(context).colorScheme.outline),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(28),
-        onTap: openLibrary,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          child: Row(
-            children: [
-              const Icon(Icons.menu_book_outlined),
-              const SizedBox(width: 9),
-              Expanded(
-                child: Text(
-                  model.libraryName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final radius = context.zephyrBorderRadius;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
+      child: Material(
+        color: theme.colorScheme.surfaceContainerHigh,
+        shape: RoundedRectangleBorder(
+          borderRadius: radius,
+          side: BorderSide(color: theme.colorScheme.outline),
+        ),
+        child: InkWell(
+          borderRadius: radius,
+          onTap: openLibrary,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(
+              children: [
+                const Icon(Icons.menu_book_outlined),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    model.libraryName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-              IconButton(
-                onPressed: openSettings,
-                icon: const Icon(Icons.settings_outlined),
-                tooltip: 'Settings',
-              ),
-            ],
+                IconButton(
+                  onPressed: openSettings,
+                  icon: const Icon(Icons.settings_outlined),
+                  tooltip: 'Settings',
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 enum _LooseChapters { label }

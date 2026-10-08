@@ -2,28 +2,39 @@ import 'package:flutter/material.dart';
 
 /// Shared chrome sizes and corner radii for toolbar controls.
 ///
-/// Change [buttonRadius] to restyle every themed button. A value of
-/// [buttonSize] / 2 or greater makes square icon buttons circular.
+/// Prefer [ZephyrShapeTheme] / `context.zephyrCornerRadius` for the live
+/// user-owned radius. Helpers here build shapes for a given radius value.
 abstract final class ZephyrControls {
   static const double buttonSize = 28;
   static const double iconSize = 16;
 
-  /// Rounded-rectangle corner radius. Set to [buttonSize] / 2 for a circle.
-  static const double buttonRadius = 8;
+  /// Fallback when a [BuildContext] theme extension is unavailable.
+  static const double defaultCornerRadius = 8;
 
-  static bool get isCircular => buttonRadius >= buttonSize / 2;
+  static bool isCircularRadius(double radius) => radius >= buttonSize / 2;
 
-  static OutlinedBorder get iconButtonShape => isCircular
+  static OutlinedBorder iconButtonShapeFor(double radius) =>
+      isCircularRadius(radius)
       ? const CircleBorder()
-      : RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(buttonRadius),
-        );
+      : RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius));
 
-  static OutlinedBorder get labeledButtonShape => RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(
-      isCircular ? buttonSize / 2 : buttonRadius,
-    ),
-  );
+  static OutlinedBorder labeledButtonShapeFor(double radius) =>
+      RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(
+          isCircularRadius(radius) ? buttonSize / 2 : radius,
+        ),
+      );
+
+  static OutlinedBorder menuShapeFor(double radius) =>
+      RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius));
+
+  static OutlinedBorder get iconButtonShape =>
+      iconButtonShapeFor(defaultCornerRadius);
+
+  static OutlinedBorder get labeledButtonShape =>
+      labeledButtonShapeFor(defaultCornerRadius);
+
+  static OutlinedBorder get menuShape => menuShapeFor(defaultCornerRadius);
 
   static const double fieldHeight = 36;
   static const double menuInsets = 4;
@@ -36,7 +47,4 @@ abstract final class ZephyrControls {
   static const int settingsLabelFlex = 5;
   static const int settingsControlFlex = 3;
   static const Size minWindowSize = Size(920, 580);
-
-  static OutlinedBorder get menuShape =>
-      RoundedRectangleBorder(borderRadius: BorderRadius.circular(buttonRadius));
 }

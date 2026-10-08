@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../../domain/models/theme_tokens.dart';
+import '../../../../domain/models/ui_preferences.dart';
 import '../../../core/zephyr_dropdown.dart';
 import '../../../core/zephyr_settings.dart';
+import '../../../core/zephyr_theme.dart';
 import '../view_models/theme_view_model.dart';
 
 class ThemeCatalog extends StatelessWidget {
@@ -68,6 +70,15 @@ class ThemeCatalog extends StatelessWidget {
             max: 18,
             suffix: 'px',
             onChanged: viewModel.updateUiFontSize,
+          ),
+          ZephyrSettingsSlider(
+            label: 'Corner radius',
+            description: 'Shared roundness for buttons, menus, cards, and fields.',
+            value: viewModel.ui.cornerRadius,
+            min: UiPreferences.minCornerRadius,
+            max: UiPreferences.maxCornerRadius,
+            suffix: 'px',
+            onChanged: viewModel.updateCornerRadius,
           ),
           const SizedBox(height: 10),
           Text(
@@ -268,9 +279,9 @@ class _ModeChip extends StatelessWidget {
       color: selected
           ? Theme.of(context).colorScheme.secondaryContainer
           : Colors.transparent,
-      borderRadius: BorderRadius.circular(7),
+      borderRadius: context.zephyrBorderRadius,
       child: InkWell(
-        borderRadius: BorderRadius.circular(7),
+        borderRadius: context.zephyrBorderRadius,
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
@@ -295,10 +306,11 @@ class _ThemePresetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = ThemeTokens.presets[preset]!;
+    final radius = context.zephyrBorderRadius;
     return Material(
       color: Theme.of(context).colorScheme.surfaceContainerLow,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: radius,
         side: BorderSide(
           color: selected
               ? Color(tokens.accent)
@@ -307,7 +319,7 @@ class _ThemePresetCard extends StatelessWidget {
         ),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: radius,
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -347,7 +359,7 @@ class _ThemePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ClipRRect(
-    borderRadius: BorderRadius.circular(6),
+    borderRadius: context.zephyrBorderRadius,
     child: SizedBox(
       height: 82,
       child: Row(
@@ -426,7 +438,7 @@ class _TokenField extends StatelessWidget {
           height: 22,
           decoration: BoxDecoration(
             color: Color(value),
-            borderRadius: BorderRadius.circular(5),
+            borderRadius: context.zephyrBorderRadius,
             border: Border.all(color: Theme.of(context).colorScheme.outline),
           ),
         ),

@@ -1,8 +1,52 @@
+import 'dart:ui' show lerpDouble;
+
 import 'package:flutter/material.dart';
 
 import '../../domain/models/theme_tokens.dart';
 import '../../domain/models/ui_preferences.dart';
 import 'zephyr_controls.dart';
+
+/// User-owned chrome corner radius exposed through [ThemeData.extensions].
+@immutable
+class ZephyrShapeTheme extends ThemeExtension<ZephyrShapeTheme> {
+  const ZephyrShapeTheme({required this.cornerRadius});
+
+  final double cornerRadius;
+
+  BorderRadius get borderRadius => BorderRadius.circular(cornerRadius);
+
+  OutlinedBorder get iconButtonShape =>
+      ZephyrControls.iconButtonShapeFor(cornerRadius);
+
+  OutlinedBorder get labeledButtonShape =>
+      ZephyrControls.labeledButtonShapeFor(cornerRadius);
+
+  OutlinedBorder get menuShape => ZephyrControls.menuShapeFor(cornerRadius);
+
+  @override
+  ZephyrShapeTheme copyWith({double? cornerRadius}) =>
+      ZephyrShapeTheme(cornerRadius: cornerRadius ?? this.cornerRadius);
+
+  @override
+  ZephyrShapeTheme lerp(ThemeExtension<ZephyrShapeTheme>? other, double t) {
+    if (other is! ZephyrShapeTheme) return this;
+    return ZephyrShapeTheme(
+      cornerRadius: lerpDouble(cornerRadius, other.cornerRadius, t)!,
+    );
+  }
+}
+
+extension ZephyrThemeContext on BuildContext {
+  ZephyrShapeTheme get zephyrShape =>
+      Theme.of(this).extension<ZephyrShapeTheme>() ??
+      const ZephyrShapeTheme(
+        cornerRadius: ZephyrControls.defaultCornerRadius,
+      );
+
+  double get zephyrCornerRadius => zephyrShape.cornerRadius;
+
+  BorderRadius get zephyrBorderRadius => zephyrShape.borderRadius;
+}
 
 /// Builds the writing-shell theme from user-owned semantic tokens.
 ThemeData zephyrTheme(
@@ -23,10 +67,17 @@ ThemeData zephyrTheme(
   final focus = Color.alphaBlend(accent.withValues(alpha: .5), border);
   final scale = ui.scale;
   final fontFamily = ui.fontFamily;
+  final radius = ui.cornerRadius.clamp(
+    UiPreferences.minCornerRadius,
+    UiPreferences.maxCornerRadius,
+  );
+  final shape = ZephyrShapeTheme(cornerRadius: radius);
+  final borderRadius = shape.borderRadius;
 
   return ThemeData(
     useMaterial3: true,
     fontFamily: fontFamily,
+    extensions: [shape],
     colorScheme: ColorScheme.fromSeed(seedColor: accent, brightness: brightness)
         .copyWith(
           primary: accent,
@@ -82,7 +133,7 @@ ThemeData zephyrTheme(
         ),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         visualDensity: VisualDensity.standard,
-        shape: ZephyrControls.iconButtonShape,
+        shape: shape.iconButtonShape,
         overlayColor: accent.withValues(alpha: .12),
       ),
     ),
@@ -90,7 +141,7 @@ ThemeData zephyrTheme(
       style: OutlinedButton.styleFrom(
         foregroundColor: primaryText,
         iconSize: ZephyrControls.iconSize,
-        shape: ZephyrControls.labeledButtonShape,
+        shape: shape.labeledButtonShape,
         visualDensity: VisualDensity.compact,
       ),
     ),
@@ -98,7 +149,16 @@ ThemeData zephyrTheme(
       style: TextButton.styleFrom(
         foregroundColor: primaryText,
         iconSize: ZephyrControls.iconSize,
-        shape: ZephyrControls.labeledButtonShape,
+        shape: shape.labeledButtonShape,
+        visualDensity: VisualDensity.compact,
+      ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        foregroundColor: primaryText,
+        backgroundColor: accent.withValues(alpha: .24),
+        iconSize: ZephyrControls.iconSize,
+        shape: shape.labeledButtonShape,
         visualDensity: VisualDensity.compact,
       ),
     ),
@@ -154,26 +214,33 @@ ThemeData zephyrTheme(
           color: border,
           width: ZephyrControls.borderWidth,
         ),
-        borderRadius: const BorderRadius.all(Radius.circular(6)),
+        borderRadius: borderRadius,
       ),
       focusedBorder: OutlineInputBorder(
         borderSide: BorderSide(
           color: focus,
           width: ZephyrControls.borderWidth,
         ),
-        borderRadius: const BorderRadius.all(Radius.circular(6)),
+        borderRadius: borderRadius,
       ),
       hintStyle: TextStyle(color: mutedText.withValues(alpha: .78)),
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: control,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: borderRadius,
+        side: BorderSide(color: border, width: ZephyrControls.borderWidth),
+      ),
+    ),
+    cardTheme: CardThemeData(
+      color: control,
+      shape: RoundedRectangleBorder(
+        borderRadius: borderRadius,
         side: BorderSide(color: border, width: ZephyrControls.borderWidth),
       ),
     ),
     tooltipTheme: TooltipThemeData(
-      decoration: BoxDecoration(color: control),
+      decoration: BoxDecoration(color: control, borderRadius: borderRadius),
       textStyle: TextStyle(color: primaryText),
     ),
     menuTheme: MenuThemeData(
@@ -188,7 +255,7 @@ ThemeData zephyrTheme(
           EdgeInsets.symmetric(vertical: ZephyrControls.menuInsets),
         ),
         shape: WidgetStatePropertyAll(
-          ZephyrControls.menuShape.copyWith(
+          shape.menuShape.copyWith(
             side: BorderSide(
               color: border,
               width: ZephyrControls.borderWidth,

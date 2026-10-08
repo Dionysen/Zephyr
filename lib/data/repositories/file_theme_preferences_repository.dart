@@ -27,10 +27,18 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
   Future<UiPreferences> loadUi() async {
     final values = await _storage.read();
     if (values == null) return UiPreferences.defaults;
+    final radius = _double(
+      values,
+      'uiCornerRadius',
+      UiPreferences.defaults.cornerRadius,
+    );
     return UiPreferences(
       fontFamily: values['uiFontFamily'] as String?,
       fontPath: values['uiFontPath'] as String?,
       fontSize: _double(values, 'uiFontSize', UiPreferences.defaults.fontSize),
+      cornerRadius: radius
+          .clamp(UiPreferences.minCornerRadius, UiPreferences.maxCornerRadius)
+          .toDouble(),
     );
   }
 
@@ -49,6 +57,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'uiFontFamily': ui.fontFamily,
     'uiFontPath': ui.fontPath,
     'uiFontSize': ui.fontSize,
+    'uiCornerRadius': ui.cornerRadius,
   });
 
   int _color(Map<String, Object?> values, String key) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'zephyr_controls.dart';
+import 'zephyr_theme.dart';
 
 class ZephyrDropdownItem<T> {
   const ZephyrDropdownItem({
@@ -151,16 +152,15 @@ class _ZephyrDropdownState<T> extends State<ZephyrDropdown<T>> {
           ),
           label: selected?.label ?? widget.hint,
         );
+    final shape = context.zephyrShape.labeledButtonShape;
     return CompositedTransformTarget(
       link: _link,
       child: Material(
         key: _triggerKey,
         color: theme.colorScheme.surfaceContainerHigh,
-        shape: ZephyrControls.labeledButtonShape.copyWith(
-          side: BorderSide(color: theme.colorScheme.outline),
-        ),
+        shape: shape.copyWith(side: BorderSide(color: theme.colorScheme.outline)),
         child: InkWell(
-          customBorder: ZephyrControls.labeledButtonShape,
+          customBorder: shape,
           onTap: _toggle,
           child: SizedBox(height: ZephyrControls.fieldHeight, child: trigger),
         ),
@@ -320,7 +320,7 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
             elevation: 6,
             shadowColor: Colors.black.withValues(alpha: .32),
             surfaceTintColor: Colors.transparent,
-            shape: ZephyrControls.menuShape.copyWith(
+            shape: context.zephyrShape.menuShape.copyWith(
               side: BorderSide(color: theme.colorScheme.outline),
             ),
             clipBehavior: Clip.antiAlias,

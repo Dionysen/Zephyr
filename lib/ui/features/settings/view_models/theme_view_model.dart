@@ -94,6 +94,14 @@ class ThemeViewModel extends ChangeNotifier {
   void updateUiFontSize(double value) =>
       _updateUi(_ui.copyWith(fontSize: value));
 
+  void updateCornerRadius(double value) => _updateUi(
+    _ui.copyWith(
+      cornerRadius: value
+          .clamp(UiPreferences.minCornerRadius, UiPreferences.maxCornerRadius)
+          .toDouble(),
+    ),
+  );
+
   void _updateUi(UiPreferences value) {
     _ui = value;
     _scheduleSave();
