@@ -52,7 +52,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
         ),
       if (compact)
         ZephyrSettingsListTile(
-          title: l10n.restoreDarkModernDefaults,
+          title: l10n.restoreDefaultColors,
           showDivider: false,
           onTap: widget.viewModel.restoreDefaults,
         )
@@ -61,7 +61,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
           alignment: Alignment.centerLeft,
           child: TextButton(
             onPressed: widget.viewModel.restoreDefaults,
-            child: Text(l10n.restoreDarkModernDefaults),
+            child: Text(l10n.restoreDefaultColors),
           ),
         ),
     ];
@@ -429,19 +429,51 @@ Widget? _presetTrailing(
   return Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      if (roles.isNotEmpty)
-        Text(
-          roles.join(' · '),
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
+      for (var i = 0; i < roles.length; i++) ...[
+        if (i > 0) const SizedBox(width: 6),
+        _ThemeSlotBadge(label: roles[i]),
+      ],
       if (preset == active) ...[
         if (roles.isNotEmpty) const SizedBox(width: 8),
         Icon(Icons.check, color: theme.colorScheme.primary, size: 20),
       ],
     ],
   );
+}
+
+class _ThemeSlotBadge extends StatelessWidget {
+  const _ThemeSlotBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final style = theme.textTheme.labelSmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+      height: 1,
+    );
+    final fontSize = style?.fontSize ?? 11;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      alignment: Alignment.center,
+      decoration: ShapeDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        shape: const StadiumBorder(),
+      ),
+      child: Text(
+        label,
+        textAlign: TextAlign.center,
+        style: style,
+        strutStyle: StrutStyle(
+          fontSize: fontSize,
+          height: 1,
+          forceStrutHeight: true,
+          leading: 0,
+        ),
+      ),
+    );
+  }
 }
 
 /// Settings-row color token: same typography/spacing as other list tiles.

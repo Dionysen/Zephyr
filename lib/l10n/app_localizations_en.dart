@@ -206,7 +206,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appearanceSectionIntro =>
-      'Choose a theme, then customize its semantic tokens if needed.';
+      'Choose a color palette, then tweak semantic colors if needed. Fonts, radius, and other chrome stay separate from themes.';
 
   @override
   String get themeModeTitle => 'Theme mode';
@@ -274,7 +274,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Gap between volumes. Chapters stay flush with a 1px divider.';
 
   @override
-  String get themePresetsSectionTitle => 'Theme presets';
+  String get themePresetsSectionTitle => 'Theme color presets';
 
   @override
   String get themeCurrentCustom => 'Current: Custom';
@@ -285,23 +285,23 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get themeCurrentCustomLong => 'Current theme: Custom';
+  String get themeCurrentCustomLong => 'Current palette: Custom';
 
   @override
   String themeCurrentPresetLong(String preset) {
-    return 'Current theme: $preset';
+    return 'Current palette: $preset';
   }
 
   @override
   String get themePresetsFooter =>
-      'Theme presets apply to all writing-shell surfaces.';
+      'Color presets only change the palette. Fonts, radius, and other chrome stay separate.';
 
   @override
   String get customColorsTitle => 'Custom colors';
 
   @override
   String get customColorsSubtitle =>
-      'Adjust semantic theme colors; changes apply immediately.';
+      'Adjust semantic colors for the current mode; changes apply immediately.';
 
   @override
   String get customizeTokensButton => 'Customize tokens';
@@ -317,7 +317,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Use a six-digit hexadecimal color. Changes apply immediately.';
 
   @override
-  String get restoreDarkModernDefaults => 'Restore Dark Modern defaults';
+  String get restoreDefaultColors => 'Restore default colors';
 
   @override
   String get themePresetLight => 'Light';
@@ -620,5 +620,5 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get themePresetsSubtitle =>
-      'Tap to choose light and dark theme packs.';
+      'Tap to choose light and dark color packs.';
 }

@@ -461,7 +461,7 @@ abstract class AppLocalizations {
   /// No description provided for @appearanceSectionIntro.
   ///
   /// In en, this message translates to:
-  /// **'Choose a theme, then customize its semantic tokens if needed.'**
+  /// **'Choose a color palette, then tweak semantic colors if needed. Fonts, radius, and other chrome stay separate from themes.'**
   String get appearanceSectionIntro;
 
   /// No description provided for @themeModeTitle.
@@ -581,7 +581,7 @@ abstract class AppLocalizations {
   /// No description provided for @themePresetsSectionTitle.
   ///
   /// In en, this message translates to:
-  /// **'Theme presets'**
+  /// **'Theme color presets'**
   String get themePresetsSectionTitle;
 
   /// No description provided for @themeCurrentCustom.
@@ -599,19 +599,19 @@ abstract class AppLocalizations {
   /// No description provided for @themeCurrentCustomLong.
   ///
   /// In en, this message translates to:
-  /// **'Current theme: Custom'**
+  /// **'Current palette: Custom'**
   String get themeCurrentCustomLong;
 
   /// No description provided for @themeCurrentPresetLong.
   ///
   /// In en, this message translates to:
-  /// **'Current theme: {preset}'**
+  /// **'Current palette: {preset}'**
   String themeCurrentPresetLong(String preset);
 
   /// No description provided for @themePresetsFooter.
   ///
   /// In en, this message translates to:
-  /// **'Theme presets apply to all writing-shell surfaces.'**
+  /// **'Color presets only change the palette. Fonts, radius, and other chrome stay separate.'**
   String get themePresetsFooter;
 
   /// No description provided for @customColorsTitle.
@@ -623,7 +623,7 @@ abstract class AppLocalizations {
   /// No description provided for @customColorsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Adjust semantic theme colors; changes apply immediately.'**
+  /// **'Adjust semantic colors for the current mode; changes apply immediately.'**
   String get customColorsSubtitle;
 
   /// No description provided for @customizeTokensButton.
@@ -650,11 +650,11 @@ abstract class AppLocalizations {
   /// **'Use a six-digit hexadecimal color. Changes apply immediately.'**
   String get themeTokensIntro;
 
-  /// No description provided for @restoreDarkModernDefaults.
+  /// No description provided for @restoreDefaultColors.
   ///
   /// In en, this message translates to:
-  /// **'Restore Dark Modern defaults'**
-  String get restoreDarkModernDefaults;
+  /// **'Restore default colors'**
+  String get restoreDefaultColors;
 
   /// No description provided for @themePresetLight.
   ///
@@ -1211,7 +1211,7 @@ abstract class AppLocalizations {
   /// No description provided for @themePresetsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Tap to choose light and dark theme packs.'**
+  /// **'Tap to choose light and dark color packs.'**
   String get themePresetsSubtitle;
 }
 

@@ -111,12 +111,13 @@ class ThemeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Resets the active light/dark color pack only; UI chrome prefs are untouched.
   void restoreDefaults() {
-    _lightTokens = ThemeTokens.presets[ThemePreset.light]!;
-    _darkTokens = ThemeTokens.defaults;
-    _ui = UiPreferences.defaults.copyWith(
-      localePreference: _ui.localePreference,
-    );
+    if (_useDark) {
+      _darkTokens = ThemeTokens.defaults;
+    } else {
+      _lightTokens = ThemeTokens.presets[ThemePreset.light]!;
+    }
     _scheduleSave();
     notifyListeners();
   }

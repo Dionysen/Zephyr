@@ -191,7 +191,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get appearanceSectionTitle => '外观';
 
   @override
-  String get appearanceSectionIntro => '选择主题，需要时可自定义语义色';
+  String get appearanceSectionIntro => '选择配色，需要时可自定义语义色；字体、圆角等单独设置，不随主题切换';
 
   @override
   String get themeModeTitle => '主题模式';
@@ -251,7 +251,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sidebarVolumeGapDescription => '卷与卷之间的间距，章节之间无间距，仅 1px 分隔线';
 
   @override
-  String get themePresetsSectionTitle => '主题预设';
+  String get themePresetsSectionTitle => '主题颜色预设';
 
   @override
   String get themeCurrentCustom => '当前：自定义';
@@ -262,21 +262,21 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get themeCurrentCustomLong => '当前主题：自定义';
+  String get themeCurrentCustomLong => '当前配色：自定义';
 
   @override
   String themeCurrentPresetLong(String preset) {
-    return '当前主题：$preset';
+    return '当前配色：$preset';
   }
 
   @override
-  String get themePresetsFooter => '主题预设会应用到写作界面各处';
+  String get themePresetsFooter => '颜色预设只影响界面配色，字体、圆角等单独设置';
 
   @override
   String get customColorsTitle => '自定义颜色';
 
   @override
-  String get customColorsSubtitle => '调整主题语义色，修改后立即生效';
+  String get customColorsSubtitle => '调整当前模式的语义色，修改后立即生效';
 
   @override
   String get customizeTokensButton => '自定义颜色';
@@ -291,7 +291,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get themeTokensIntro => '使用六位十六进制颜色，修改后立即生效';
 
   @override
-  String get restoreDarkModernDefaults => '恢复 Dark Modern 默认值';
+  String get restoreDefaultColors => '恢复默认颜色';
 
   @override
   String get themePresetLight => '浅色';
@@ -585,5 +585,5 @@ class AppLocalizationsZh extends AppLocalizations {
   String get themeSlotDark => '暗色';
 
   @override
-  String get themePresetsSubtitle => '点按展开，分别为亮色与暗色模式指定主题';
+  String get themePresetsSubtitle => '点按展开，分别为亮色与暗色模式指定配色';
 }

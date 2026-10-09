@@ -35,20 +35,27 @@ void main() {
     expect(model.lightTokens.accent, 0xFFCC8844);
   });
 
-  test('restoring defaults replaces every user token', () {
+  test('restoring defaults resets active colors only', () {
     final model = ThemeViewModel(_ThemeRepository());
 
     model.update(ThemeToken.editorSurface, 0xFF000000);
     model.updateUiFontSize(16);
+    model.applyPreset(ThemePreset.ocean);
     model.restoreDefaults();
 
     expect(
       model.lightTokens.editorSurface,
       ThemeTokens.presets[ThemePreset.light]!.editorSurface,
     );
+    expect(model.darkTokens, ThemeTokens.presets[ThemePreset.ocean]);
+    expect(model.ui.fontSize, 16);
+
+    model.setThemeMode(AppThemeMode.dark);
+    model.update(ThemeToken.accent, 0xFF112233);
+    model.restoreDefaults();
     expect(model.darkTokens, ThemeTokens.defaults);
-    expect(model.tokens.accent, ThemeTokens.presets[ThemePreset.light]!.accent);
-    expect(model.ui.fontSize, UiPreferences.defaults.fontSize);
+    expect(model.lightTokens, ThemeTokens.presets[ThemePreset.light]);
+    expect(model.ui.fontSize, 16);
   });
 
   test('applying a light preset updates the light slot only', () {

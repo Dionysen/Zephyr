@@ -60,7 +60,7 @@
   "editorMarginRightTitle": "Right margin",
   "editorMarginRightDescription": "Right inset of the reading column. Equal values stay strictly symmetric.",
   "appearanceSectionTitle": "Appearance",
-  "appearanceSectionIntro": "Choose a theme, then customize its semantic tokens if needed.",
+  "appearanceSectionIntro": "Choose a color palette, then tweak semantic colors if needed. Fonts, radius, and other chrome stay separate from themes.",
   "themeModeTitle": "Theme mode",
   "themeModeSubtitle": "Choose light, dark, or follow the system appearance.",
   "themeModeSystem": "System",
@@ -80,7 +80,7 @@
   "sidebarItemInsetDescription": "Equal left/right padding for volumes and chapters.",
   "sidebarVolumeGapTitle": "Sidebar volume spacing",
   "sidebarVolumeGapDescription": "Gap between volumes. Chapters stay flush with a 1px divider.",
-  "themePresetsSectionTitle": "Theme presets",
+  "themePresetsSectionTitle": "Theme color presets",
   "themeCurrentCustom": "Current: Custom",
   "themeCurrentPreset": "Current: {preset}",
   "@themeCurrentPreset": {
@@ -90,8 +90,8 @@
       }
     }
   },
-  "themeCurrentCustomLong": "Current theme: Custom",
-  "themeCurrentPresetLong": "Current theme: {preset}",
+  "themeCurrentCustomLong": "Current palette: Custom",
+  "themeCurrentPresetLong": "Current palette: {preset}",
   "@themeCurrentPresetLong": {
     "placeholders": {
       "preset": {
@@ -99,14 +99,14 @@
       }
     }
   },
-  "themePresetsFooter": "Theme presets apply to all writing-shell surfaces.",
+  "themePresetsFooter": "Color presets only change the palette. Fonts, radius, and other chrome stay separate.",
   "customColorsTitle": "Custom colors",
-  "customColorsSubtitle": "Adjust semantic theme colors; changes apply immediately.",
+  "customColorsSubtitle": "Adjust semantic colors for the current mode; changes apply immediately.",
   "customizeTokensButton": "Customize tokens",
   "backToThemesButton": "Back to themes",
   "themeTokensTitle": "Theme tokens",
   "themeTokensIntro": "Use a six-digit hexadecimal color. Changes apply immediately.",
-  "restoreDarkModernDefaults": "Restore Dark Modern defaults",
+  "restoreDefaultColors": "Restore default colors",
   "themePresetLight": "Light",
   "themePresetGrey": "Grey",
   "themePresetSlate": "Slate",
@@ -257,5 +257,5 @@
   },
   "themeSlotLight": "Light",
   "themeSlotDark": "Dark",
-  "themePresetsSubtitle": "Tap to choose light and dark theme packs."
+  "themePresetsSubtitle": "Tap to choose light and dark color packs."
 }
