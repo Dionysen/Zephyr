@@ -11,6 +11,7 @@ class ZephyrSettingsListTile extends StatelessWidget {
     this.subtitle,
     this.trailing,
     this.onTap,
+    this.onLongPress,
     this.showDivider = true,
     this.enabled = true,
   });
@@ -19,6 +20,7 @@ class ZephyrSettingsListTile extends StatelessWidget {
   final String? subtitle;
   final Widget? trailing;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final bool showDivider;
   final bool enabled;
 
@@ -40,6 +42,7 @@ class ZephyrSettingsListTile extends StatelessWidget {
       children: [
         InkWell(
           onTap: enabled ? onTap : null,
+          onLongPress: enabled ? onLongPress : null,
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: 52),
             child: Padding(

@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../../../../domain/models/app_theme_mode.dart';
 import '../../../../domain/models/editor_preferences.dart';
+import '../../../../domain/models/theme_color_pack.dart';
 import '../../../../domain/models/theme_tokens.dart';
 import '../../../../domain/models/ui_preferences.dart';
 import '../../../../domain/repositories/theme_preferences_repository.dart';
@@ -25,6 +27,10 @@ class ThemeViewModel extends ChangeNotifier {
   final Future<void> Function()? _onPersisted;
   ThemeTokens _lightTokens = ThemeTokens.presets[ThemePreset.light]!;
   ThemeTokens _darkTokens = ThemeTokens.defaults;
+  String _lightPackId = ThemeColorPack.builtInId(ThemePreset.light);
+  String _darkPackId = ThemeColorPack.builtInId(ThemePreset.darkModern);
+  List<ThemeColorPack> _customPacks = const [];
+  var _nextCustomSeq = 1;
   AppThemeMode _mode = AppThemeMode.system;
   Brightness _platformBrightness = Brightness.light;
   UiPreferences _ui = UiPreferences.defaults;
@@ -32,10 +38,29 @@ class ThemeViewModel extends ChangeNotifier {
 
   ThemeTokens get lightTokens => _lightTokens;
   ThemeTokens get darkTokens => _darkTokens;
+  String get lightPackId => _lightPackId;
+  String get darkPackId => _darkPackId;
   AppThemeMode get themeMode => _mode;
+  List<ThemeColorPack> get customPacks => List.unmodifiable(_customPacks);
+
+  /// Built-in presets followed by user-saved color packs.
+  List<ThemeColorPack> get colorPacks => [
+    ...ThemeColorPack.builtIns,
+    ..._customPacks,
+  ];
 
   /// Tokens for the currently effective brightness (mode + platform).
   ThemeTokens get tokens => _useDark ? _darkTokens : _lightTokens;
+
+  String get activePackId => _useDark ? _darkPackId : _lightPackId;
+
+  ThemeColorPack? get activePack => packById(activePackId);
+
+  /// True when live tokens differ from the selected pack's stored colors.
+  bool get isActivePackCustomized {
+    final pack = activePack;
+    return pack == null || pack.tokens != tokens;
+  }
 
   UiPreferences get ui => _ui;
   List<SystemFont> get systemFonts => _fonts?.fonts ?? const [];
@@ -49,12 +74,39 @@ class ThemeViewModel extends ChangeNotifier {
 
   bool get isEffectivelyDark => _useDark;
 
+  ThemeColorPack? packById(String id) {
+    for (final pack in ThemeColorPack.builtIns) {
+      if (pack.id == id) return pack;
+    }
+    for (final pack in _customPacks) {
+      if (pack.id == id) return pack;
+    }
+    return null;
+  }
+
+  /// Suggested name for the next saved theme (`主题1` / `Theme 1` via l10n).
+  int nextDefaultThemeNumber() {
+    final pattern = RegExp(r'^(?:主题|Theme)\s*(\d+)$', caseSensitive: false);
+    var max = 0;
+    for (final pack in _customPacks) {
+      final match = pattern.firstMatch(pack.name.trim());
+      if (match != null) {
+        max = math.max(max, int.parse(match.group(1)!));
+      }
+    }
+    return max + 1;
+  }
+
   Future<void> load({bool loadSavedFont = true}) async {
     try {
       final appearance = await _repository.load();
       _mode = appearance.mode;
       _lightTokens = appearance.lightTokens;
       _darkTokens = appearance.darkTokens;
+      _lightPackId = appearance.lightPackId;
+      _darkPackId = appearance.darkPackId;
+      _customPacks = List.of(appearance.customPacks);
+      _nextCustomSeq = _deriveNextCustomSeq(_customPacks);
       _ui = appearance.ui;
       if (loadSavedFont) await _loadSavedFont();
       notifyListeners();
@@ -92,16 +144,87 @@ class ThemeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Applies [preset] to the color pack for the currently effective mode.
-  void applyPreset(ThemePreset preset) {
-    final pack = ThemeTokens.presets[preset]!;
+  /// Applies a built-in or custom pack to the currently effective mode.
+  void applyPack(String packId) {
+    final pack = packById(packId);
+    if (pack == null) return;
     if (_useDark) {
-      _darkTokens = pack;
+      _darkTokens = pack.tokens;
+      _darkPackId = pack.id;
     } else {
-      _lightTokens = pack;
+      _lightTokens = pack.tokens;
+      _lightPackId = pack.id;
     }
     _scheduleSave();
     notifyListeners();
+  }
+
+  void applyPreset(ThemePreset preset) =>
+      applyPack(ThemeColorPack.builtInId(preset));
+
+  /// Saves the current mode's colors as a new named theme and selects it.
+  void saveCurrentAsTheme(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
+    final pack = _createCustomPack(name: trimmed, tokens: tokens);
+    _customPacks = [..._customPacks, pack];
+    if (_useDark) {
+      _darkPackId = pack.id;
+    } else {
+      _lightPackId = pack.id;
+    }
+    _scheduleSave();
+    notifyListeners();
+  }
+
+  void renameCustomPack(String id, String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
+    final index = _customPacks.indexWhere((pack) => pack.id == id);
+    if (index < 0) return;
+    final packs = List<ThemeColorPack>.of(_customPacks);
+    packs[index] = packs[index].copyWith(name: trimmed);
+    _customPacks = packs;
+    _scheduleSave();
+    notifyListeners();
+  }
+
+  /// Duplicates a custom pack under [name] without changing the active selection.
+  void copyCustomPack(String id, String name) {
+    final source = _customPacks.where((pack) => pack.id == id).firstOrNull;
+    final trimmed = name.trim();
+    if (source == null || trimmed.isEmpty) return;
+    final pack = _createCustomPack(name: trimmed, tokens: source.tokens);
+    _customPacks = [..._customPacks, pack];
+    _scheduleSave();
+    notifyListeners();
+  }
+
+  void deleteCustomPack(String id) {
+    if (!_customPacks.any((pack) => pack.id == id)) return;
+    _customPacks = [
+      for (final pack in _customPacks)
+        if (pack.id != id) pack,
+    ];
+    if (_lightPackId == id) {
+      _lightPackId = ThemeColorPack.builtInId(ThemePreset.light);
+      _lightTokens = ThemeTokens.presets[ThemePreset.light]!;
+    }
+    if (_darkPackId == id) {
+      _darkPackId = ThemeColorPack.builtInId(ThemePreset.darkModern);
+      _darkTokens = ThemeTokens.defaults;
+    }
+    _scheduleSave();
+    notifyListeners();
+  }
+
+  ThemeColorPack _createCustomPack({
+    required String name,
+    required ThemeTokens tokens,
+  }) {
+    final id = 'custom_$_nextCustomSeq';
+    _nextCustomSeq += 1;
+    return ThemeColorPack(id: id, name: name, tokens: tokens);
   }
 
   void setThemeMode(AppThemeMode mode) {
@@ -111,12 +234,14 @@ class ThemeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Resets the active light/dark color pack only; UI chrome prefs are untouched.
+  /// Restores the active mode to its currently selected theme colors.
   void restoreDefaults() {
+    final pack = activePack;
+    if (pack == null) return;
     if (_useDark) {
-      _darkTokens = ThemeTokens.defaults;
+      _darkTokens = pack.tokens;
     } else {
-      _lightTokens = ThemeTokens.presets[ThemePreset.light]!;
+      _lightTokens = pack.tokens;
     }
     _scheduleSave();
     notifyListeners();
@@ -235,6 +360,9 @@ class ThemeViewModel extends ChangeNotifier {
           mode: _mode,
           lightTokens: _lightTokens,
           darkTokens: _darkTokens,
+          lightPackId: _lightPackId,
+          darkPackId: _darkPackId,
+          customPacks: _customPacks,
           ui: _ui,
         ),
       );
@@ -274,6 +402,18 @@ class ThemeViewModel extends ChangeNotifier {
     if (await fonts.fontFileMissing(path)) {
       await selectUiFont(null);
     }
+  }
+
+  int _deriveNextCustomSeq(List<ThemeColorPack> packs) {
+    var max = 0;
+    final pattern = RegExp(r'^custom_(\d+)$');
+    for (final pack in packs) {
+      final match = pattern.firstMatch(pack.id);
+      if (match != null) {
+        max = math.max(max, int.parse(match.group(1)!));
+      }
+    }
+    return max + 1;
   }
 
   @override

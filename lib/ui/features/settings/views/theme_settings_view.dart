@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../domain/models/app_theme_mode.dart';
+import '../../../../domain/models/theme_color_pack.dart';
 import '../../../../domain/models/theme_tokens.dart';
 import '../../../../domain/models/ui_preferences.dart';
 import '../../../core/zephyr_l10n.dart';
@@ -38,6 +39,143 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
     widget.viewModel.update(token, next.toARGB32());
   }
 
+  Future<void> _saveAsThemeColor() async {
+    final viewModel = widget.viewModel;
+    final l10n = context.l10n;
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => _ThemeNameDialog(
+        title: l10n.saveThemeColorTitle,
+        initialName: l10n.themePackNameDefault(viewModel.nextDefaultThemeNumber()),
+      ),
+    );
+    if (name == null || !mounted) return;
+    viewModel.saveCurrentAsTheme(name);
+  }
+
+  Future<void> _showCustomPackMenu(
+    BuildContext tileContext,
+    ThemeColorPack pack,
+  ) async {
+    if (pack.isBuiltIn) return;
+    final l10n = context.l10n;
+    final box = tileContext.findRenderObject() as RenderBox?;
+    final overlay =
+        Overlay.of(tileContext).context.findRenderObject()! as RenderBox;
+    final origin = box?.localToGlobal(Offset.zero, ancestor: overlay) ?? Offset.zero;
+    final size = box?.size ?? Size.zero;
+    final action = await showMenu<_PackMenuAction>(
+      context: context,
+      position: RelativeRect.fromRect(
+        origin & size,
+        Offset.zero & overlay.size,
+      ),
+      items: [
+        PopupMenuItem(
+          value: _PackMenuAction.rename,
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            leading: const Icon(Icons.drive_file_rename_outline),
+            title: Text(l10n.actionRename),
+          ),
+        ),
+        PopupMenuItem(
+          value: _PackMenuAction.copy,
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            leading: const Icon(Icons.copy_outlined),
+            title: Text(l10n.actionCopy),
+          ),
+        ),
+        PopupMenuItem(
+          value: _PackMenuAction.delete,
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            leading: Icon(
+              Icons.delete_outline,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            title: Text(
+              l10n.actionDelete,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        ),
+      ],
+    );
+    if (action == null || !mounted) return;
+    final viewModel = widget.viewModel;
+    switch (action) {
+      case _PackMenuAction.rename:
+        final name = await showDialog<String>(
+          context: context,
+          builder: (context) => _ThemeNameDialog(
+            title: l10n.themePackRenameTitle,
+            initialName: pack.name,
+          ),
+        );
+        if (name == null || !mounted) return;
+        viewModel.renameCustomPack(pack.id, name);
+      case _PackMenuAction.copy:
+        viewModel.copyCustomPack(pack.id, l10n.themePackCopyName(pack.name));
+      case _PackMenuAction.delete:
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(l10n.themePackDeleteTitle),
+            content: Text(l10n.themePackDeleteBody(pack.name)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(l10n.actionCancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(l10n.actionDelete),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true || !mounted) return;
+        viewModel.deleteCustomPack(pack.id);
+    }
+  }
+
+  List<Widget> _packTiles({
+    required AppLocalizations l10n,
+    required List<ThemeColorPack> packs,
+    required String lightPackId,
+    required String darkPackId,
+    required String activePackId,
+    required bool activeMatches,
+  }) {
+    final viewModel = widget.viewModel;
+    return [
+      for (var i = 0; i < packs.length; i++)
+        Builder(
+          builder: (tileContext) => ZephyrSettingsListTile(
+            title: _packTitle(l10n, packs[i]),
+            showDivider: i != packs.length - 1,
+            trailing: _packTrailing(
+              context,
+              l10n,
+              packId: packs[i].id,
+              lightPackId: lightPackId,
+              darkPackId: darkPackId,
+              isActive: activeMatches && packs[i].id == activePackId,
+            ),
+            onTap: () => viewModel.applyPack(packs[i].id),
+            onLongPress: packs[i].isBuiltIn
+                ? null
+                : () => _showCustomPackMenu(tileContext, packs[i]),
+          ),
+        ),
+    ];
+  }
+
   List<Widget> _customColorItems(AppLocalizations l10n, {required bool compact}) {
     final tokens = ThemeToken.values;
     return [
@@ -50,20 +188,11 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
           showDivider: true,
           onPick: () => _pickTokenColor(tokens[i]),
         ),
-      if (compact)
-        ZephyrSettingsListTile(
-          title: l10n.restoreDefaultColors,
-          showDivider: false,
-          onTap: widget.viewModel.restoreDefaults,
-        )
-      else
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton(
-            onPressed: widget.viewModel.restoreDefaults,
-            child: Text(l10n.restoreDefaultColors),
-          ),
-        ),
+      _CustomColorActions(
+        compact: compact,
+        onSave: _saveAsThemeColor,
+        onRestore: widget.viewModel.restoreDefaults,
+      ),
     ];
   }
 
@@ -73,14 +202,18 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
     builder: (context, _) {
       final l10n = context.l10n;
       final viewModel = widget.viewModel;
-      final active = viewModel.tokens.preset;
+      final packs = viewModel.colorPacks;
+      final activePack = viewModel.activePack;
+      final activeMatches =
+          activePack != null && activePack.tokens == viewModel.tokens;
       final defaults = UiPreferences.defaults;
       final compact = widget.compact;
-      final currentThemeLabel = active == null
-          ? l10n.themeCurrentCustom
-          : l10n.themeCurrentPreset(_presetTitle(l10n, active));
-      final lightPreset = viewModel.lightTokens.preset;
-      final darkPreset = viewModel.darkTokens.preset;
+      final currentThemeLabel = activeMatches
+          ? l10n.themeCurrentPreset(_packTitle(l10n, activePack))
+          : l10n.themeCurrentCustom;
+      final lightPackId = viewModel.lightPackId;
+      final darkPackId = viewModel.darkPackId;
+      final activePackId = viewModel.activePackId;
 
       if (compact) {
         return Column(
@@ -109,6 +242,33 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
                   valueLabel: _themeModeLabel(l10n, viewModel.themeMode),
                   onSelected: viewModel.setThemeMode,
                 ),
+                ZephyrSettingsListTile(
+                  title: l10n.themePresetsSectionTitle,
+                  subtitle: currentThemeLabel,
+                  showDivider: _presetsExpanded,
+                  trailing: Icon(
+                    _presetsExpanded
+                        ? Icons.expand_less
+                        : Icons.expand_more,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  onTap: () => setState(
+                    () => _presetsExpanded = !_presetsExpanded,
+                  ),
+                ),
+                if (_presetsExpanded)
+                  ..._packTiles(
+                    l10n: l10n,
+                    packs: packs,
+                    lightPackId: lightPackId,
+                    darkPackId: darkPackId,
+                    activePackId: activePackId,
+                    activeMatches: activeMatches,
+                  ),
+              ],
+            ),
+            ZephyrSettingsSection(
+              children: [
                 FontFilePickerRow(
                   label: l10n.uiFontLabel,
                   description: l10n.uiFontDescription,
@@ -192,40 +352,6 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
             ZephyrSettingsSection(
               children: [
                 ZephyrSettingsListTile(
-                  title: l10n.themePresetsSectionTitle,
-                  subtitle: currentThemeLabel,
-                  showDivider: _presetsExpanded,
-                  trailing: Icon(
-                    _presetsExpanded
-                        ? Icons.expand_less
-                        : Icons.expand_more,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  onTap: () => setState(
-                    () => _presetsExpanded = !_presetsExpanded,
-                  ),
-                ),
-                if (_presetsExpanded)
-                  for (var i = 0; i < ThemePreset.values.length; i++)
-                    ZephyrSettingsListTile(
-                      title: _presetTitle(l10n, ThemePreset.values[i]),
-                      showDivider: i != ThemePreset.values.length - 1,
-                      trailing: _presetTrailing(
-                        context,
-                        l10n,
-                        preset: ThemePreset.values[i],
-                        lightPreset: lightPreset,
-                        darkPreset: darkPreset,
-                        active: active,
-                      ),
-                      onTap: () =>
-                          viewModel.applyPreset(ThemePreset.values[i]),
-                    ),
-              ],
-            ),
-            ZephyrSettingsSection(
-              children: [
-                ZephyrSettingsListTile(
                   title: l10n.customColorsTitle,
                   subtitle: l10n.customColorsSubtitle,
                   showDivider: _customColorsExpanded,
@@ -280,6 +406,28 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
             ],
           ),
           const SizedBox(height: 8),
+          ZephyrSettingsListTile(
+            title: l10n.themePresetsSectionTitle,
+            subtitle: activeMatches
+                ? l10n.themeCurrentPresetLong(_packTitle(l10n, activePack))
+                : l10n.themeCurrentCustomLong,
+            showDivider: _presetsExpanded,
+            trailing: Icon(
+              _presetsExpanded ? Icons.expand_less : Icons.expand_more,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            onTap: () => setState(() => _presetsExpanded = !_presetsExpanded),
+          ),
+          if (_presetsExpanded)
+            ..._packTiles(
+              l10n: l10n,
+              packs: packs,
+              lightPackId: lightPackId,
+              darkPackId: darkPackId,
+              activePackId: activePackId,
+              activeMatches: activeMatches,
+            ),
+          const SizedBox(height: 16),
           FontFilePickerRow(
             label: l10n.uiFontLabel,
             description: l10n.uiFontDescription,
@@ -356,34 +504,6 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
             divisions: 9,
             onChanged: viewModel.updateSidebarVolumeGap,
           ),
-          const SizedBox(height: 10),
-          ZephyrSettingsListTile(
-            title: l10n.themePresetsSectionTitle,
-            subtitle: active == null
-                ? l10n.themeCurrentCustomLong
-                : l10n.themeCurrentPresetLong(_presetTitle(l10n, active)),
-            showDivider: _presetsExpanded,
-            trailing: Icon(
-              _presetsExpanded ? Icons.expand_less : Icons.expand_more,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            onTap: () => setState(() => _presetsExpanded = !_presetsExpanded),
-          ),
-          if (_presetsExpanded)
-            for (var i = 0; i < ThemePreset.values.length; i++)
-              ZephyrSettingsListTile(
-                title: _presetTitle(l10n, ThemePreset.values[i]),
-                showDivider: i != ThemePreset.values.length - 1,
-                trailing: _presetTrailing(
-                  context,
-                  l10n,
-                  preset: ThemePreset.values[i],
-                  lightPreset: lightPreset,
-                  darkPreset: darkPreset,
-                  active: active,
-                ),
-                onTap: () => viewModel.applyPreset(ThemePreset.values[i]),
-              ),
           const SizedBox(height: 8),
           ZephyrSettingsListTile(
             title: l10n.customColorsTitle,
@@ -412,20 +532,20 @@ String _themeModeLabel(AppLocalizations l10n, AppThemeMode mode) =>
       AppThemeMode.dark => l10n.themeModeDark,
     };
 
-Widget? _presetTrailing(
+Widget? _packTrailing(
   BuildContext context,
   AppLocalizations l10n, {
-  required ThemePreset preset,
-  required ThemePreset? lightPreset,
-  required ThemePreset? darkPreset,
-  required ThemePreset? active,
+  required String packId,
+  required String lightPackId,
+  required String darkPackId,
+  required bool isActive,
 }) {
   final theme = Theme.of(context);
   final roles = <String>[
-    if (preset == lightPreset) l10n.themeSlotLight,
-    if (preset == darkPreset) l10n.themeSlotDark,
+    if (packId == lightPackId) l10n.themeSlotLight,
+    if (packId == darkPackId) l10n.themeSlotDark,
   ];
-  if (roles.isEmpty && preset != active) return null;
+  if (roles.isEmpty && !isActive) return null;
   return Row(
     mainAxisSize: MainAxisSize.min,
     children: [
@@ -433,12 +553,155 @@ Widget? _presetTrailing(
         if (i > 0) const SizedBox(width: 6),
         _ThemeSlotBadge(label: roles[i]),
       ],
-      if (preset == active) ...[
+      if (isActive) ...[
         if (roles.isNotEmpty) const SizedBox(width: 8),
         Icon(Icons.check, color: theme.colorScheme.primary, size: 20),
       ],
     ],
   );
+}
+
+enum _PackMenuAction { rename, copy, delete }
+
+class _CustomColorActions extends StatelessWidget {
+  const _CustomColorActions({
+    required this.compact,
+    required this.onSave,
+    required this.onRestore,
+  });
+
+  final bool compact;
+  final VoidCallback onSave;
+  final VoidCallback onRestore;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final shape = RoundedRectangleBorder(
+      borderRadius: context.zephyrBorderRadius,
+    );
+    ButtonStyle styleFor(Color background) => ButtonStyle(
+      shape: WidgetStatePropertyAll(shape),
+      minimumSize: const WidgetStatePropertyAll(Size(0, 44)),
+      padding: const WidgetStatePropertyAll(
+        EdgeInsets.symmetric(horizontal: 10),
+      ),
+      backgroundColor: WidgetStatePropertyAll(background),
+      foregroundColor: WidgetStatePropertyAll(
+        Theme.of(context).colorScheme.onSurface,
+      ),
+      visualDensity: VisualDensity.standard,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    );
+    final scheme = Theme.of(context).colorScheme;
+    final row = Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: FilledButton.tonalIcon(
+            onPressed: onSave,
+            style: styleFor(scheme.secondaryContainer),
+            icon: const Icon(Icons.bookmark_add_outlined, size: 18),
+            label: Text(l10n.saveAsThemeColor),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: FilledButton.tonalIcon(
+            onPressed: onRestore,
+            style: styleFor(scheme.surfaceContainerHighest),
+            icon: const Icon(Icons.restart_alt, size: 18),
+            label: Text(l10n.restoreDefaultColors),
+          ),
+        ),
+      ],
+    );
+    if (compact) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+        child: SizedBox(height: 44, child: row),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 8),
+      child: SizedBox(height: 44, child: row),
+    );
+  }
+}
+
+class _ThemeNameDialog extends StatefulWidget {
+  const _ThemeNameDialog({
+    required this.title,
+    required this.initialName,
+  });
+
+  final String title;
+  final String initialName;
+
+  @override
+  State<_ThemeNameDialog> createState() => _ThemeNameDialogState();
+}
+
+class _ThemeNameDialogState extends State<_ThemeNameDialog> {
+  late final TextEditingController _controller;
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialName);
+    _controller.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: _controller.text.length,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    Navigator.of(context).pop(_controller.text.trim());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return AlertDialog(
+      title: Text(widget.title),
+      content: SizedBox(
+        width: 360,
+        child: Form(
+          key: _formKey,
+          child: TextFormField(
+            controller: _controller,
+            autofocus: true,
+            decoration: InputDecoration(labelText: l10n.saveThemeColorNameLabel),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return l10n.validationNameRequired;
+              }
+              return null;
+            },
+            onFieldSubmitted: (_) => _submit(),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.actionCancel),
+        ),
+        FilledButton(
+          onPressed: _submit,
+          child: Text(l10n.actionSave),
+        ),
+      ],
+    );
+  }
 }
 
 class _ThemeSlotBadge extends StatelessWidget {
@@ -592,18 +855,21 @@ class _ModeChip extends StatelessWidget {
   );
 }
 
-String _presetTitle(AppLocalizations l10n, ThemePreset preset) =>
-    switch (preset) {
-      ThemePreset.light => l10n.themePresetLight,
-      ThemePreset.grey => l10n.themePresetGrey,
-      ThemePreset.slate => l10n.themePresetSlate,
-      ThemePreset.claude => l10n.themePresetClaude,
-      ThemePreset.mint => l10n.themePresetMint,
-      ThemePreset.purple => l10n.themePresetPurple,
-      ThemePreset.hermes => l10n.themePresetHermes,
-      ThemePreset.ocean => l10n.themePresetOcean,
-      ThemePreset.darkModern => l10n.themePresetDarkModern,
-    };
+String _packTitle(AppLocalizations l10n, ThemeColorPack pack) {
+  final preset = pack.builtInPreset;
+  if (preset == null) return pack.name;
+  return switch (preset) {
+    ThemePreset.light => l10n.themePresetLight,
+    ThemePreset.grey => l10n.themePresetGrey,
+    ThemePreset.slate => l10n.themePresetSlate,
+    ThemePreset.claude => l10n.themePresetClaude,
+    ThemePreset.mint => l10n.themePresetMint,
+    ThemePreset.purple => l10n.themePresetPurple,
+    ThemePreset.hermes => l10n.themePresetHermes,
+    ThemePreset.ocean => l10n.themePresetOcean,
+    ThemePreset.darkModern => l10n.themePresetDarkModern,
+  };
+}
 
 String _tokenLabel(AppLocalizations l10n, ThemeToken token) => switch (token) {
   ThemeToken.editorSurface => l10n.tokenEditorSurface,

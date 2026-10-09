@@ -251,7 +251,26 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sidebarVolumeGapDescription => '卷与卷之间的间距，章节之间无间距，仅 1px 分隔线';
 
   @override
-  String get themePresetsSectionTitle => '主题颜色预设';
+  String get themePresetsSectionTitle => '主题颜色';
+
+  @override
+  String get actionCopy => '复制';
+
+  @override
+  String get themePackRenameTitle => '重命名主题';
+
+  @override
+  String themePackCopyName(String name) {
+    return '$name 副本';
+  }
+
+  @override
+  String get themePackDeleteTitle => '删除主题？';
+
+  @override
+  String themePackDeleteBody(String name) {
+    return '删除「$name」后无法恢复';
+  }
 
   @override
   String get themeCurrentCustom => '当前：自定义';
@@ -291,7 +310,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get themeTokensIntro => '使用六位十六进制颜色，修改后立即生效';
 
   @override
-  String get restoreDefaultColors => '恢复默认颜色';
+  String get restoreDefaultColors => '恢复默认';
+
+  @override
+  String get saveAsThemeColor => '保存为主题';
+
+  @override
+  String get saveThemeColorTitle => '保存为主题颜色';
+
+  @override
+  String get saveThemeColorNameLabel => '主题名称';
+
+  @override
+  String themePackNameDefault(int n) {
+    return '主题$n';
+  }
 
   @override
   String get themePresetLight => '浅色';

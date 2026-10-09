@@ -80,7 +80,26 @@
   "sidebarItemInsetDescription": "卷与章节左右边距（相等）",
   "sidebarVolumeGapTitle": "侧边栏内容上下间距",
   "sidebarVolumeGapDescription": "卷与卷之间的间距，章节之间无间距，仅 1px 分隔线",
-  "themePresetsSectionTitle": "主题颜色预设",
+  "themePresetsSectionTitle": "主题颜色",
+  "actionCopy": "复制",
+  "themePackRenameTitle": "重命名主题",
+  "themePackCopyName": "{name} 副本",
+  "@themePackCopyName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themePackDeleteTitle": "删除主题？",
+  "themePackDeleteBody": "删除「{name}」后无法恢复",
+  "@themePackDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "themeCurrentCustom": "当前：自定义",
   "themeCurrentPreset": "当前：{preset}",
   "themeCurrentCustomLong": "当前配色：自定义",
@@ -92,7 +111,18 @@
   "backToThemesButton": "返回主题",
   "themeTokensTitle": "主题色",
   "themeTokensIntro": "使用六位十六进制颜色，修改后立即生效",
-  "restoreDefaultColors": "恢复默认颜色",
+  "restoreDefaultColors": "恢复默认",
+  "saveAsThemeColor": "保存为主题",
+  "saveThemeColorTitle": "保存为主题颜色",
+  "saveThemeColorNameLabel": "主题名称",
+  "themePackNameDefault": "主题{n}",
+  "@themePackNameDefault": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "themePresetLight": "浅色",
   "themePresetGrey": "灰色",
   "themePresetSlate": "石板",

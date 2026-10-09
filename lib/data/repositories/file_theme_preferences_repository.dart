@@ -1,4 +1,5 @@
 import '../../domain/models/app_theme_mode.dart';
+import '../../domain/models/theme_color_pack.dart';
 import '../../domain/models/theme_tokens.dart';
 import '../../domain/models/ui_preferences.dart';
 import '../../domain/repositories/theme_preferences_repository.dart';
@@ -17,22 +18,41 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
         mode: AppThemeMode.system,
         lightTokens: ThemeTokens.presets[ThemePreset.light]!,
         darkTokens: ThemeTokens.defaults,
+        lightPackId: ThemeColorPack.builtInId(ThemePreset.light),
+        darkPackId: ThemeColorPack.builtInId(ThemePreset.darkModern),
+        customPacks: const [],
         ui: UiPreferences.defaults,
       );
     }
 
+    final customPacks = _readCustomPacks(values);
     final legacy = _readTokens(values, prefix: '');
-    final light = _readTokens(values, prefix: 'light') ??
+    final light =
+        _readTokens(values, prefix: 'light') ??
         (legacy != null && legacy.isLight
             ? legacy
             : ThemeTokens.presets[ThemePreset.light]!);
-    final dark = _readTokens(values, prefix: 'dark') ??
+    final dark =
+        _readTokens(values, prefix: 'dark') ??
         (legacy != null && !legacy.isLight ? legacy : ThemeTokens.defaults);
 
     return ThemeAppearance(
       mode: AppThemeMode.fromStorage(values['themeMode'] as String?),
       lightTokens: light,
       darkTokens: dark,
+      lightPackId: _readPackId(
+        values['lightPackId'] as String?,
+        tokens: light,
+        customPacks: customPacks,
+        fallback: ThemeColorPack.builtInId(ThemePreset.light),
+      ),
+      darkPackId: _readPackId(
+        values['darkPackId'] as String?,
+        tokens: dark,
+        customPacks: customPacks,
+        fallback: ThemeColorPack.builtInId(ThemePreset.darkModern),
+      ),
+      customPacks: customPacks,
       ui: _readUi(values),
     );
   }
@@ -40,6 +60,16 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
   @override
   Future<void> save(ThemeAppearance appearance) => _storage.write({
     'themeMode': appearance.mode.storageValue,
+    'lightPackId': appearance.lightPackId,
+    'darkPackId': appearance.darkPackId,
+    'customPacks': [
+      for (final pack in appearance.customPacks)
+        {
+          'id': pack.id,
+          'name': pack.name,
+          ..._writeTokens(pack.tokens, prefix: ''),
+        },
+    ],
     ..._writeTokens(appearance.lightTokens, prefix: 'light'),
     ..._writeTokens(appearance.darkTokens, prefix: 'dark'),
     // Keep a resolved snapshot for older readers / debugging.
@@ -52,7 +82,53 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     ..._writeUi(appearance.ui),
   });
 
-  ThemeTokens? _readTokens(Map<String, Object?> values, {required String prefix}) {
+  List<ThemeColorPack> _readCustomPacks(Map<String, Object?> values) {
+    final raw = values['customPacks'];
+    if (raw is! List) return const [];
+    final packs = <ThemeColorPack>[];
+    for (final entry in raw) {
+      if (entry is! Map) continue;
+      final map = entry.map((key, value) => MapEntry(key.toString(), value));
+      final id = map['id'];
+      final name = map['name'];
+      if (id is! String || id.isEmpty || name is! String || name.isEmpty) {
+        continue;
+      }
+      final tokens = _readTokens(map, prefix: '');
+      if (tokens == null) continue;
+      packs.add(ThemeColorPack(id: id, name: name, tokens: tokens));
+    }
+    return packs;
+  }
+
+  String _readPackId(
+    String? stored, {
+    required ThemeTokens tokens,
+    required List<ThemeColorPack> customPacks,
+    required String fallback,
+  }) {
+    if (stored != null && stored.isNotEmpty) {
+      if (_knownPackId(stored, customPacks)) return stored;
+    }
+    final preset = tokens.preset;
+    if (preset != null) return ThemeColorPack.builtInId(preset);
+    for (final pack in customPacks) {
+      if (pack.tokens == tokens) return pack.id;
+    }
+    return fallback;
+  }
+
+  bool _knownPackId(String id, List<ThemeColorPack> customPacks) {
+    for (final preset in ThemePreset.values) {
+      if (ThemeColorPack.builtInId(preset) == id) return true;
+    }
+    return customPacks.any((pack) => pack.id == id);
+  }
+
+  ThemeTokens? _readTokens(
+    Map<String, Object?> values, {
+    required String prefix,
+  }) {
     String key(String name) => prefix.isEmpty ? name : '$prefix${_cap(name)}';
     if (values[key('editorSurface')] == null) return null;
     try {
@@ -80,7 +156,10 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     }
   }
 
-  Map<String, Object?> _writeTokens(ThemeTokens tokens, {required String prefix}) {
+  Map<String, Object?> _writeTokens(
+    ThemeTokens tokens, {
+    required String prefix,
+  }) {
     String key(String name) => prefix.isEmpty ? name : '$prefix${_cap(name)}';
     return {
       key('editorSurface'): tokens.editorSurface,

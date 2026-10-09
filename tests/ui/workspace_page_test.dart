@@ -4,6 +4,7 @@ import 'package:zephyr/domain/models/app_theme_mode.dart';
 import 'package:zephyr/domain/models/editor_preferences.dart';
 import 'package:zephyr/domain/models/purewriter_models.dart';
 import 'package:zephyr/domain/models/settings_navigation.dart';
+import 'package:zephyr/domain/models/theme_color_pack.dart';
 import 'package:zephyr/domain/models/theme_tokens.dart';
 import 'package:zephyr/domain/models/ui_preferences.dart';
 import 'package:zephyr/domain/repositories/editor_preferences_repository.dart';
@@ -749,6 +750,9 @@ class _ThemeRepository implements ThemePreferencesRepository {
     mode: AppThemeMode.system,
     lightTokens: ThemeTokens.presets[ThemePreset.light]!,
     darkTokens: ThemeTokens.defaults,
+    lightPackId: ThemeColorPack.builtInId(ThemePreset.light),
+    darkPackId: ThemeColorPack.builtInId(ThemePreset.darkModern),
+    customPacks: const [],
     ui: UiPreferences.defaults,
   );
 

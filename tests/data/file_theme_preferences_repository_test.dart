@@ -4,13 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/data/repositories/file_theme_preferences_repository.dart';
 import 'package:zephyr/data/services/theme_file_storage.dart';
 import 'package:zephyr/domain/models/app_theme_mode.dart';
+import 'package:zephyr/domain/models/theme_color_pack.dart';
 import 'package:zephyr/domain/models/theme_tokens.dart';
 import 'package:zephyr/domain/models/ui_preferences.dart';
 import 'package:zephyr/domain/repositories/theme_preferences_repository.dart';
 
 void main() {
   test(
-    'round-trips light/dark packs, mode, and ui preferences',
+    'round-trips light/dark packs, custom themes, mode, and ui preferences',
     () async {
       final directory = await Directory.systemTemp.createTemp(
         'zephyr-theme-test-',
@@ -18,6 +19,21 @@ void main() {
       addTearDown(() => directory.delete(recursive: true));
       final repository = FileThemePreferencesRepository(
         ThemeFileStorage(directoryProvider: () async => directory),
+      );
+      final custom = ThemeColorPack(
+        id: 'custom_1',
+        name: '主题1',
+        tokens: const ThemeTokens(
+          editorSurface: 0xFF112233,
+          sidebarSurface: 0xFF223344,
+          controlSurface: 0xFF334455,
+          border: 0xFF445566,
+          divider: 0xFF556677,
+          primaryText: 0xFFEEF0F2,
+          mutedText: 0xFF818283,
+          accent: 0xFFAABBCC,
+          cursor: 0xFFFFFFFF,
+        ),
       );
       final expected = ThemeAppearance(
         mode: AppThemeMode.dark,
@@ -32,7 +48,10 @@ void main() {
           accent: 0xFFAABBCC,
           cursor: 0xFFFFFFFF,
         ),
-        darkTokens: ThemeTokens.presets[ThemePreset.ocean]!,
+        darkTokens: custom.tokens,
+        lightPackId: ThemeColorPack.builtInId(ThemePreset.grey),
+        darkPackId: custom.id,
+        customPacks: [custom],
         ui: const UiPreferences(
           fontFamily: 'Inter',
           fontPath: r'C:\Fonts\Inter.ttf',
@@ -52,6 +71,9 @@ void main() {
       final actual = await repository.load();
 
       expect(actual.mode, expected.mode);
+      expect(actual.lightPackId, expected.lightPackId);
+      expect(actual.darkPackId, expected.darkPackId);
+      expect(actual.customPacks, expected.customPacks);
       for (final token in ThemeToken.values) {
         expect(
           actual.lightTokens.valueOf(token),
@@ -121,6 +143,7 @@ void main() {
     expect(appearance.darkTokens.cursor, ThemeTokens.defaults.cursor);
     expect(appearance.darkTokens.divider, ThemeTokens.defaults.divider);
     expect(appearance.mode, AppThemeMode.system);
+    expect(appearance.customPacks, isEmpty);
   });
 
   test('legacy uiStatusBarMode immersive migrates to immersiveStatusBar', () async {

@@ -581,8 +581,38 @@ abstract class AppLocalizations {
   /// No description provided for @themePresetsSectionTitle.
   ///
   /// In en, this message translates to:
-  /// **'Theme color presets'**
+  /// **'Theme colors'**
   String get themePresetsSectionTitle;
+
+  /// No description provided for @actionCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get actionCopy;
+
+  /// No description provided for @themePackRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename theme'**
+  String get themePackRenameTitle;
+
+  /// No description provided for @themePackCopyName.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} copy'**
+  String themePackCopyName(String name);
+
+  /// No description provided for @themePackDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete theme?'**
+  String get themePackDeleteTitle;
+
+  /// No description provided for @themePackDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” will be removed permanently.'**
+  String themePackDeleteBody(String name);
 
   /// No description provided for @themeCurrentCustom.
   ///
@@ -653,8 +683,32 @@ abstract class AppLocalizations {
   /// No description provided for @restoreDefaultColors.
   ///
   /// In en, this message translates to:
-  /// **'Restore default colors'**
+  /// **'Restore defaults'**
   String get restoreDefaultColors;
+
+  /// No description provided for @saveAsThemeColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as theme'**
+  String get saveAsThemeColor;
+
+  /// No description provided for @saveThemeColorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as theme color'**
+  String get saveThemeColorTitle;
+
+  /// No description provided for @saveThemeColorNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme name'**
+  String get saveThemeColorNameLabel;
+
+  /// No description provided for @themePackNameDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme {n}'**
+  String themePackNameDefault(int n);
 
   /// No description provided for @themePresetLight.
   ///

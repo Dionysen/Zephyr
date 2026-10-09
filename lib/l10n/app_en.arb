@@ -80,7 +80,26 @@
   "sidebarItemInsetDescription": "Equal left/right padding for volumes and chapters.",
   "sidebarVolumeGapTitle": "Sidebar volume spacing",
   "sidebarVolumeGapDescription": "Gap between volumes. Chapters stay flush with a 1px divider.",
-  "themePresetsSectionTitle": "Theme color presets",
+  "themePresetsSectionTitle": "Theme colors",
+  "actionCopy": "Copy",
+  "themePackRenameTitle": "Rename theme",
+  "themePackCopyName": "{name} copy",
+  "@themePackCopyName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themePackDeleteTitle": "Delete theme?",
+  "themePackDeleteBody": "“{name}” will be removed permanently.",
+  "@themePackDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "themeCurrentCustom": "Current: Custom",
   "themeCurrentPreset": "Current: {preset}",
   "@themeCurrentPreset": {
@@ -106,7 +125,18 @@
   "backToThemesButton": "Back to themes",
   "themeTokensTitle": "Theme tokens",
   "themeTokensIntro": "Use a six-digit hexadecimal color. Changes apply immediately.",
-  "restoreDefaultColors": "Restore default colors",
+  "restoreDefaultColors": "Restore defaults",
+  "saveAsThemeColor": "Save as theme",
+  "saveThemeColorTitle": "Save as theme color",
+  "saveThemeColorNameLabel": "Theme name",
+  "themePackNameDefault": "Theme {n}",
+  "@themePackNameDefault": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "themePresetLight": "Light",
   "themePresetGrey": "Grey",
   "themePresetSlate": "Slate",

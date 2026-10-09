@@ -274,7 +274,26 @@ class AppLocalizationsEn extends AppLocalizations {
       'Gap between volumes. Chapters stay flush with a 1px divider.';
 
   @override
-  String get themePresetsSectionTitle => 'Theme color presets';
+  String get themePresetsSectionTitle => 'Theme colors';
+
+  @override
+  String get actionCopy => 'Copy';
+
+  @override
+  String get themePackRenameTitle => 'Rename theme';
+
+  @override
+  String themePackCopyName(String name) {
+    return '$name copy';
+  }
+
+  @override
+  String get themePackDeleteTitle => 'Delete theme?';
+
+  @override
+  String themePackDeleteBody(String name) {
+    return '“$name” will be removed permanently.';
+  }
 
   @override
   String get themeCurrentCustom => 'Current: Custom';
@@ -317,7 +336,21 @@ class AppLocalizationsEn extends AppLocalizations {
       'Use a six-digit hexadecimal color. Changes apply immediately.';
 
   @override
-  String get restoreDefaultColors => 'Restore default colors';
+  String get restoreDefaultColors => 'Restore defaults';
+
+  @override
+  String get saveAsThemeColor => 'Save as theme';
+
+  @override
+  String get saveThemeColorTitle => 'Save as theme color';
+
+  @override
+  String get saveThemeColorNameLabel => 'Theme name';
+
+  @override
+  String themePackNameDefault(int n) {
+    return 'Theme $n';
+  }
 
   @override
   String get themePresetLight => 'Light';

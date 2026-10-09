@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/domain/models/app_theme_mode.dart';
+import 'package:zephyr/domain/models/theme_color_pack.dart';
 import 'package:zephyr/domain/models/theme_tokens.dart';
 import 'package:zephyr/domain/models/ui_preferences.dart';
 import 'package:zephyr/domain/repositories/theme_preferences_repository.dart';
@@ -22,6 +23,9 @@ void main() {
           cursor: 0xFFFFFFFF,
         ),
         darkTokens: ThemeTokens.defaults,
+        lightPackId: ThemeColorPack.builtInId(ThemePreset.light),
+        darkPackId: ThemeColorPack.builtInId(ThemePreset.darkModern),
+        customPacks: const [],
         ui: UiPreferences.defaults,
       ),
     );
@@ -35,29 +39,60 @@ void main() {
     expect(model.lightTokens.accent, 0xFFCC8844);
   });
 
-  test('restoring defaults resets active colors only', () {
+  test('restoring defaults restores the selected theme colors', () {
     final model = ThemeViewModel(_ThemeRepository());
 
-    model.update(ThemeToken.editorSurface, 0xFF000000);
-    model.updateUiFontSize(16);
-    model.setThemeMode(AppThemeMode.dark);
-    model.applyPreset(ThemePreset.ocean);
     model.setThemeMode(AppThemeMode.light);
-    model.restoreDefaults();
-
-    expect(
-      model.lightTokens.editorSurface,
-      ThemeTokens.presets[ThemePreset.light]!.editorSurface,
-    );
-    expect(model.darkTokens, ThemeTokens.presets[ThemePreset.ocean]);
-    expect(model.ui.fontSize, 16);
-
-    model.setThemeMode(AppThemeMode.dark);
+    model.applyPreset(ThemePreset.mint);
     model.update(ThemeToken.accent, 0xFF112233);
+    model.updateUiFontSize(16);
+    expect(model.tokens.accent, 0xFF112233);
+
     model.restoreDefaults();
-    expect(model.darkTokens, ThemeTokens.defaults);
-    expect(model.lightTokens, ThemeTokens.presets[ThemePreset.light]);
+    expect(model.tokens, ThemeTokens.presets[ThemePreset.mint]);
     expect(model.ui.fontSize, 16);
+  });
+
+  test('saving current colors creates a selectable custom pack', () {
+    final model = ThemeViewModel(_ThemeRepository());
+
+    model.setThemeMode(AppThemeMode.light);
+    model.applyPreset(ThemePreset.purple);
+    model.update(ThemeToken.accent, 0xFFAABBCC);
+    model.saveCurrentAsTheme('主题1');
+
+    expect(model.customPacks, hasLength(1));
+    expect(model.customPacks.single.name, '主题1');
+    expect(model.lightPackId, model.customPacks.single.id);
+    expect(model.tokens.accent, 0xFFAABBCC);
+
+    model.update(ThemeToken.accent, 0xFF000001);
+    model.restoreDefaults();
+    expect(model.tokens.accent, 0xFFAABBCC);
+    expect(model.nextDefaultThemeNumber(), 2);
+  });
+
+  test('custom packs can be renamed, copied, and deleted', () {
+    final model = ThemeViewModel(_ThemeRepository());
+    model.setThemeMode(AppThemeMode.light);
+    model.applyPreset(ThemePreset.mint);
+    model.saveCurrentAsTheme('主题1');
+    final id = model.customPacks.single.id;
+
+    model.renameCustomPack(id, '晨雾');
+    expect(model.customPacks.single.name, '晨雾');
+
+    model.copyCustomPack(id, '晨雾 副本');
+    expect(model.customPacks, hasLength(2));
+    expect(model.customPacks.last.name, '晨雾 副本');
+    expect(model.customPacks.last.tokens, model.customPacks.first.tokens);
+    expect(model.lightPackId, id);
+
+    model.deleteCustomPack(id);
+    expect(model.customPacks, hasLength(1));
+    expect(model.customPacks.single.name, '晨雾 副本');
+    expect(model.lightPackId, ThemeColorPack.builtInId(ThemePreset.light));
+    expect(model.lightTokens, ThemeTokens.presets[ThemePreset.light]);
   });
 
   test('applying a preset updates the active mode slot only', () {
@@ -69,6 +104,7 @@ void main() {
     expect(model.lightTokens, ThemeTokens.presets[ThemePreset.ocean]);
     expect(model.darkTokens, ThemeTokens.defaults);
     expect(model.tokens, ThemeTokens.presets[ThemePreset.ocean]);
+    expect(model.lightPackId, ThemeColorPack.builtInId(ThemePreset.ocean));
   });
 
   test('light and dark modes can share the same preset', () {
@@ -81,11 +117,7 @@ void main() {
 
     expect(model.lightTokens, ThemeTokens.presets[ThemePreset.mint]);
     expect(model.darkTokens, ThemeTokens.presets[ThemePreset.mint]);
-
-    model.setThemeMode(AppThemeMode.light);
-    expect(model.tokens, ThemeTokens.presets[ThemePreset.mint]);
-    model.setThemeMode(AppThemeMode.dark);
-    expect(model.tokens, ThemeTokens.presets[ThemePreset.mint]);
+    expect(model.lightPackId, model.darkPackId);
   });
 
   test('theme mode switches between independently assigned packs', () {
@@ -190,6 +222,9 @@ class _ThemeRepository implements ThemePreferencesRepository {
             mode: AppThemeMode.system,
             lightTokens: ThemeTokens.presets[ThemePreset.light]!,
             darkTokens: ThemeTokens.defaults,
+            lightPackId: ThemeColorPack.builtInId(ThemePreset.light),
+            darkPackId: ThemeColorPack.builtInId(ThemePreset.darkModern),
+            customPacks: const [],
             ui: UiPreferences.defaults,
           );
 
