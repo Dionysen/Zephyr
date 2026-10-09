@@ -3,8 +3,10 @@ package com.zephyr.zephyr
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
+import androidx.core.view.WindowCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -16,6 +18,12 @@ import java.io.FileOutputStream
 class MainActivity : FlutterActivity() {
     private val storageChannel = "zephyr/android_storage"
     private val backupChannel = "zephyr/purewriter_backup"
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        // Let Flutter draw under status + gesture nav bars (true edge-to-edge).
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        super.onCreate(savedInstanceState)
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

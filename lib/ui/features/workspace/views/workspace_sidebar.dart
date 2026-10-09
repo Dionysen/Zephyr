@@ -238,7 +238,7 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                       key: _chapterTreeKey,
                       model: model,
                       library: model.library!,
-                      bottomInset: _LibraryDock.overlayExtent,
+                      bottomInset: _LibraryDock.overlayExtentFor(context),
                     ),
                   ),
                   Positioned(
@@ -1928,6 +1928,10 @@ class _LibraryDock extends StatelessWidget {
   static const _padBottom = 12.0;
   static const overlayExtent = _padTop + dockHeight + _padBottom;
 
+  /// Dock height plus optional system gesture / home-indicator inset.
+  static double overlayExtentFor(BuildContext context) =>
+      overlayExtent + MediaQuery.viewPaddingOf(context).bottom;
+
   final LibraryViewModel model;
   final Future<void> Function() openLibrary;
   final VoidCallback openSettings;
@@ -1936,8 +1940,9 @@ class _LibraryDock extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final radius = context.zephyrBarBorderRadius;
+    final bottomSafe = MediaQuery.viewPaddingOf(context).bottom;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
+      padding: EdgeInsets.fromLTRB(10, 10, 10, 12 + bottomSafe),
       child: _FloatingChrome(
         borderRadius: radius,
         child: SizedBox(

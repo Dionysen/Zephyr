@@ -108,6 +108,8 @@ class _WorkspacePageState extends State<WorkspacePage> {
                       color: surface,
                       child: ZephyrTopSafeArea(
                         top: !immersive,
+                        // Content paints under the transparent gesture bar.
+                        bottom: false,
                         child: Column(
                           children: [
                             if (model.needsLibrarySetup)
@@ -213,7 +215,10 @@ class _WorkspacePageState extends State<WorkspacePage> {
                     ? SafeArea(top: false, child: shell)
                     : ColoredBox(
                         color: surface,
-                        child: ZephyrTopSafeArea(child: shell),
+                        child: ZephyrTopSafeArea(
+                          bottom: false,
+                          child: shell,
+                        ),
                       ),
               ),
             );

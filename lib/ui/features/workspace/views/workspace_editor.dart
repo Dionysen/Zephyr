@@ -407,7 +407,8 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     final cursorColor =
         theme.textSelectionTheme.cursorColor ?? theme.colorScheme.onSurface;
     final typography = _typography(context, preferences);
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    // viewPadding keeps the gesture-bar height after edge-to-edge removePadding.
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
 
     return Stack(
       children: [

@@ -47,11 +47,17 @@ class ZephyrStatusBar extends StatefulWidget {
     Color? statusBarColor,
   }) {
     final isDark = brightness == Brightness.dark;
+    final iconBrightness = isDark ? Brightness.light : Brightness.dark;
     return SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      statusBarIconBrightness: iconBrightness,
       statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
       systemStatusBarContrastEnforced: false,
+      // Draw under the gesture / 3-button nav bar (true edge-to-edge).
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarDividerColor: Colors.transparent,
+      systemNavigationBarIconBrightness: iconBrightness,
+      systemNavigationBarContrastEnforced: false,
     );
   }
 

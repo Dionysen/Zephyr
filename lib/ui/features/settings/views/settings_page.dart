@@ -120,6 +120,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                       )
                     : ZephyrTopSafeArea(
+                        bottom: false,
                         child: _desktopSettingsRow(
                           scope: scope,
                           section: section,
