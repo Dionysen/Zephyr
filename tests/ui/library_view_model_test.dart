@@ -118,6 +118,22 @@ void main() {
     expect(model.sidebarScrollOffset, 42);
   });
 
+  test('createVolume adds a volume to the selected book', () async {
+    final repository = FakeLibraryRepository();
+    final model = LibraryViewModel(repository);
+    await model.load();
+
+    await model.createVolume(name: 'Volume C');
+
+    expect(
+      model.library?.categories.any(
+        (volume) => volume.folderId == 'Default' && volume.name == 'Volume C',
+      ),
+      isTrue,
+    );
+    expect(model.isVolumeExpanded(repository.createdVolume!.id), isTrue);
+  });
+
   test('persists article selection and sidebar scroll offset', () async {
     final layout = FakeLayoutRepository(WorkspaceLayout.defaults);
     final model = LibraryViewModel(
@@ -149,6 +165,23 @@ class FakeLibraryRepository implements WritingLibraryRepository {
     updatedAt: DateTime.utc(2026),
     wordCount: 0,
   );
+  WritingCategory? createdVolume;
+  late final List<WritingCategory> categories = [
+    const WritingCategory(
+      id: 'volume-a',
+      folderId: 'Default',
+      name: 'Volume A',
+      rank: 0,
+      collapsed: false,
+    ),
+    const WritingCategory(
+      id: 'volume-b',
+      folderId: 'book-b',
+      name: 'Volume B',
+      rank: 0,
+      collapsed: false,
+    ),
+  ];
   late final WritingArticle _secondArticle = WritingArticle(
     id: 'article-b',
     title: 'Chapter B',
@@ -166,22 +199,7 @@ class FakeLibraryRepository implements WritingLibraryRepository {
       WritingFolder(id: 'Default', name: 'Book A', rank: 0),
       WritingFolder(id: 'book-b', name: 'Book B', rank: 1),
     ],
-    categories: const [
-      WritingCategory(
-        id: 'volume-a',
-        folderId: 'Default',
-        name: 'Volume A',
-        rank: 0,
-        collapsed: false,
-      ),
-      WritingCategory(
-        id: 'volume-b',
-        folderId: 'book-b',
-        name: 'Volume B',
-        rank: 0,
-        collapsed: false,
-      ),
-    ],
+    categories: List<WritingCategory>.unmodifiable(categories),
     articles: [
       ArticleSummary(
         id: saved.id,
@@ -245,7 +263,17 @@ class FakeLibraryRepository implements WritingLibraryRepository {
   Future<WritingCategory> createCategory({
     required String folderId,
     required String name,
-  }) => throw UnimplementedError();
+  }) async {
+    createdVolume = WritingCategory(
+      id: 'volume-${categories.length}',
+      folderId: folderId,
+      name: name,
+      rank: categories.length,
+      collapsed: false,
+    );
+    categories.add(createdVolume!);
+    return createdVolume!;
+  }
   @override
   Future<void> updateFolder({
     required String folderId,

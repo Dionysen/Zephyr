@@ -244,6 +244,23 @@ class LibraryViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> createVolume({String name = 'Untitled'}) async {
+    if (isReadOnly) return;
+    final book = selectedBook;
+    if (book == null || book.isTrash) return;
+    final volume = await _repository.createCategory(
+      folderId: book.id,
+      name: name.trim().isEmpty ? 'Untitled' : name.trim(),
+    );
+    final expanded = _expandedVolumesByBook[book.id];
+    if (expanded != null) {
+      expanded.add(volume.id);
+    }
+    _scheduleLayoutSave();
+    await load();
+    notifyListeners();
+  }
+
   void updateContent(String content) {
     final article = _article;
     if (article == null) return;

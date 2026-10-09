@@ -36,6 +36,8 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
   final _chapterTreeKey = GlobalKey<_ChapterTreeState>();
 
   LibraryViewModel get model => widget.model;
+  bool get _canCreateVolume =>
+      !model.isReadOnly && model.selectedBook?.isTrash != true;
 
   @override
   Widget build(BuildContext context) {
@@ -70,6 +72,11 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                     ),
                     const Expanded(
                       child: WindowDragArea(child: SizedBox.expand()),
+                    ),
+                    IconButton(
+                      onPressed: _canCreateVolume ? model.createVolume : null,
+                      icon: const Icon(Icons.create_new_folder_outlined),
+                      tooltip: 'New volume',
                     ),
                   ],
                 ),
@@ -198,6 +205,11 @@ class _DrawerSidebarHeader extends StatelessWidget {
             tooltip: model.areAllVolumesExpanded
                 ? 'Collapse all'
                 : 'Expand all',
+          ),
+          IconButton(
+            onPressed: model.isReadOnly || isTrash ? null : model.createVolume,
+            icon: const Icon(Icons.create_new_folder_outlined),
+            tooltip: 'New volume',
           ),
           IconButton(
             onPressed: model.isReadOnly || isTrash ? null : model.createArticle,

@@ -160,6 +160,19 @@ void main() {
           .onPressed,
       isNull,
     );
+    expect(
+      tester
+          .widget<IconButton>(
+            find
+                .ancestor(
+                  of: find.byIcon(Icons.create_new_folder_outlined),
+                  matching: find.byType(IconButton),
+                )
+                .first,
+          )
+          .onPressed,
+      isNull,
+    );
   });
 
   testWidgets(
@@ -231,6 +244,8 @@ void main() {
       (expandButton.center.dx + newChapterButton.center.dx) / 2,
       closeTo(sidebar.center.dx, 0.01),
     );
+    final newVolumeButton = tester.getRect(find.byTooltip('New volume'));
+    expect(newVolumeButton.right, closeTo(sidebar.right, 8));
 
     await tester.tap(find.byTooltip('Collapse all'));
     await tester.pumpAndSettle();
@@ -256,10 +271,10 @@ void main() {
       final insets = padding.padding.resolve(TextDirection.ltr);
       expect(insets.left, insets.right);
       final preview = tester.widget<Text>(
-        find.text('First lineSecond lineThird line'),
+        find.text('First line Second line Third line'),
       );
       final metadata = tester.widget<Text>(
-        find.text('2025-12-19 - 2026-01-02 - 42字'),
+        find.text('创建于2025-12-19 - 修改于2026-01-02 - 42字'),
       );
       expect(preview.style?.fontSize, metadata.style?.fontSize);
       expect(find.text('First line\n\u3000\u3000Second line\r\n\u3000\u3000Third line'), findsNothing);
@@ -279,12 +294,42 @@ void main() {
 
     expect(find.byTooltip('Open library'), findsOneWidget);
     expect(find.byTooltip('Hide sidebar'), findsNothing);
-    expect(find.byTooltip('Collapse all'), findsNothing);
+    expect(find.byTooltip('Collapse all').hitTestable(), findsNothing);
 
     await tester.tap(find.byTooltip('Open library'));
     await tester.pumpAndSettle();
-    expect(find.text('Book A'), findsOneWidget);
+    expect(find.text('Book A'), findsWidgets);
     expect(find.byTooltip('Collapse all'), findsOneWidget);
+    expect(find.byTooltip('New volume'), findsOneWidget);
+  });
+
+  testWidgets('sidebar new-volume button creates a volume in the book', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final library = LibraryViewModel(_LibraryRepository());
+    await tester.pumpWidget(_app(library: library));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('New volume'));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byType(WorkspaceSidebar),
+        matching: find.text('Untitled'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      library.library?.categories.any(
+        (volume) => volume.folderId == 'Default' && volume.name == 'Untitled',
+      ),
+      isTrue,
+    );
   });
 
   testWidgets('settings open as an in-app route on every layout', (
@@ -409,6 +454,7 @@ class _LibraryRepository implements WritingLibraryRepository {
   _LibraryRepository({this.scrollingSections = false});
 
   final bool scrollingSections;
+  final extraCategories = <WritingCategory>[];
 
   @override
   Future<WritingLibrary> loadLibrary() async => WritingLibrary(
@@ -433,6 +479,7 @@ class _LibraryRepository implements WritingLibraryRepository {
           rank: 1,
           collapsed: false,
         ),
+      ...extraCategories,
     ],
     articles: [
       ArticleSummary(
@@ -543,7 +590,17 @@ class _LibraryRepository implements WritingLibraryRepository {
   Future<WritingCategory> createCategory({
     required String folderId,
     required String name,
-  }) => throw UnimplementedError();
+  }) async {
+    final volume = WritingCategory(
+      id: 'volume-new-${extraCategories.length}',
+      folderId: folderId,
+      name: name,
+      rank: extraCategories.length,
+      collapsed: false,
+    );
+    extraCategories.add(volume);
+    return volume;
+  }
 
   @override
   Future<void> updateFolder({
