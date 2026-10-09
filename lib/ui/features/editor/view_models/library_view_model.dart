@@ -13,12 +13,15 @@ class LibraryViewModel extends ChangeNotifier {
     this._repository, {
     Object? initialError,
     this._layoutRepository,
-  }) : _error = initialError;
+    bool needsLibrarySetup = true,
+  }) : _error = initialError,
+       _needsLibrarySetup = needsLibrarySetup;
   final WritingLibraryRepository _repository;
   final WorkspaceLayoutRepository? _layoutRepository;
   WritingLibrary? _library;
   WritingArticle? _article;
   Object? _error;
+  bool _needsLibrarySetup;
   Timer? _pendingSave;
   Timer? _pendingLayoutSave;
   bool _isSidebarExpanded = true;
@@ -38,6 +41,8 @@ class LibraryViewModel extends ChangeNotifier {
   Object? get error => _error;
   bool get isLibraryInUse => _error is LibraryInUseException;
   bool get isReadOnly => _repository.location?.schema.writesAllowed == false;
+  /// True until the user has chosen a PureWriter library folder.
+  bool get needsLibrarySetup => _needsLibrarySetup;
   bool get isSidebarExpanded => _isSidebarExpanded;
   bool get isResizingSidebar => _isResizingSidebar;
   double get sidebarWidth => _sidebarWidth;
@@ -50,6 +55,9 @@ class LibraryViewModel extends ChangeNotifier {
   WritingFolder? get selectedBook =>
       _library?.folders.where((book) => book.id == _selectedBookId).firstOrNull;
   String get libraryName {
+    if (needsLibrarySetup) {
+      return '临时书库';
+    }
     final name = path.basename(_repository.location?.rootPath ?? '');
     return name.isEmpty ? 'Untitled library' : name;
   }
@@ -177,6 +185,7 @@ class LibraryViewModel extends ChangeNotifier {
     try {
       await _repository.openLibrary(rootPath);
       _lastLibraryRoot = _repository.location?.rootPath ?? rootPath;
+      _needsLibrarySetup = false;
       if (bookmark != null) {
         _lastLibraryBookmark = bookmark;
       }
@@ -195,9 +204,19 @@ class LibraryViewModel extends ChangeNotifier {
   Future<void> load() async {
     try {
       await _loadLayout();
+      if (_lastLibraryRoot != null) {
+        _needsLibrarySetup = false;
+      } else if (_layoutRepository != null) {
+        // A persisted layout with no chosen folder means temporary-library mode.
+        _needsLibrarySetup = true;
+      }
+      if (_repository.location == null) {
+        await _repository.openDefaultLibrary();
+      }
       _library = await _repository.loadLibrary();
       _restoreSelection();
       await _restoreArticle();
+      _error = null;
     } on Object catch (error) {
       _error = error;
     }

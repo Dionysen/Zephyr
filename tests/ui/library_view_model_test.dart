@@ -43,11 +43,26 @@ void main() {
     final layout = FakeLayoutRepository(WorkspaceLayout.defaults);
     final model = LibraryViewModel(library, layoutRepository: layout);
 
+    expect(model.needsLibrarySetup, isTrue);
     await model.openLibrary('/writing/book', bookmark: 'bookmark-data');
 
     expect(library.openedRoot, '/writing/book');
     expect(layout.layout.lastLibraryRoot, '/writing/book');
     expect(layout.layout.lastLibraryBookmark, 'bookmark-data');
+    expect(model.needsLibrarySetup, isFalse);
+    expect(model.libraryName, 'book');
+  });
+
+  test('opens a temporary library when none is open yet', () async {
+    final library = FakeLibraryRepository();
+    final model = LibraryViewModel(library);
+
+    await model.load();
+
+    expect(library.openedRoot, '/tmp/zephyr-temporary-library');
+    expect(model.needsLibrarySetup, isTrue);
+    expect(model.libraryName, '临时书库');
+    expect(model.error, isNull);
   });
 
   test('loads a previously saved sidebar width', () async {
@@ -219,6 +234,10 @@ class FakeLibraryRepository implements WritingLibraryRepository {
     );
     return _location!;
   }
+
+  @override
+  Future<LibraryLocation> openDefaultLibrary() =>
+      openLibrary('/tmp/zephyr-temporary-library');
 
   @override
   Future<void> closeLibrary() async {}

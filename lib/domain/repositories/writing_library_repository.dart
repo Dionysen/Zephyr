@@ -4,6 +4,9 @@ import '../models/purewriter_models.dart';
 /// source of truth; UI never talks to SQLite directly.
 abstract interface class WritingLibraryRepository {
   Future<LibraryLocation> openLibrary(String rootPath);
+
+  /// Opens the app-support temporary library, creating it when missing.
+  Future<LibraryLocation> openDefaultLibrary();
   Future<void> closeLibrary();
   LibraryLocation? get location;
   Future<WritingLibrary> loadLibrary();

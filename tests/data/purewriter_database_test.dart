@@ -187,6 +187,40 @@ void main() {
     );
   });
 
+  test('repairs a Zephyr library that only received a partial schema', () async {
+    final root = await Directory.systemTemp.createTemp('zephyr-partial-schema-');
+    addTearDown(() => root.delete(recursive: true));
+    final libraryRoot = await Directory(path.join(root.path, 'Lib')).create();
+    final app = await Directory(path.join(libraryRoot.path, 'App')).create();
+    final room = File(path.join(app.path, 'Room.db'));
+
+    // Simulate Android sqflite running only the first CREATE from a multi-
+    // statement script, then still writing the Room identity fingerprint.
+    final seed = PureWriterDatabase(supportDirectory: () async => root);
+    addTearDown(seed.close);
+    await seed.openLibrary(libraryRoot.path, createIfMissing: true);
+    await seed.database.execute('DROP TABLE IF EXISTS Article');
+    await seed.database.execute('DROP TABLE IF EXISTS Category');
+    await seed.database.execute('DROP TABLE IF EXISTS History');
+    await seed.close();
+
+    expect(room.existsSync(), isTrue);
+
+    final store = PureWriterDatabase(supportDirectory: () async => root);
+    addTearDown(store.close);
+    final location = await store.openLibrary(libraryRoot.path);
+    expect(location.schema.writesAllowed, isTrue);
+    final tables = await store.database.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type = 'table'",
+    );
+    expect(tables.map((row) => row['name']), contains('Article'));
+    final library = await PureWriterWritingLibraryRepository(store).loadLibrary();
+    expect(
+      library.folders.any((item) => item.id == PureWriterDatabase.defaultFolderId),
+      isTrue,
+    );
+  });
+
   test('saves content without overwriting unrelated article fields and records history', () async {
     final repository = PureWriterWritingLibraryRepository(database);
     final article = await repository.createArticle(

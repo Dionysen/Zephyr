@@ -18,16 +18,26 @@ Future<void> main(List<String> arguments) async {
   final database = PureWriterDatabase();
   final layout = FileWorkspaceLayoutRepository(WorkspaceLayoutFileStorage());
   final bookmarks = FolderBookmarkAccess();
+  Object? startupError;
   try {
     await openStartupLibrary(
       database: database,
       layout: layout,
       bookmarks: bookmarks,
     );
-    runZephyr(database, layoutRepository: layout);
   } on Object catch (error) {
-    runZephyr(database, startupError: error, layoutRepository: layout);
+    // Last-resort temp library so the UI can guide the user to pick a folder.
+    try {
+      await database.openDefaultLibrary();
+    } on Object {
+      startupError = error;
+    }
   }
+  runZephyr(
+    database,
+    startupError: startupError,
+    layoutRepository: layout,
+  );
 }
 
 /// Prefer the display's highest refresh rate (90/120Hz when available).

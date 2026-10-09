@@ -71,4 +71,25 @@ void main() {
       expect((await layout.load()).lastLibraryRoot, isNull);
     },
   );
+
+  test('startup opens the temporary library when no path is saved', () async {
+    final support = await Directory.systemTemp.createTemp(
+      'zephyr-startup-temp-',
+    );
+    addTearDown(() => support.delete(recursive: true));
+
+    final layout = FileWorkspaceLayoutRepository(
+      WorkspaceLayoutFileStorage(directoryProvider: () async => support),
+    );
+    final database = PureWriterDatabase(supportDirectory: () async => support);
+    addTearDown(database.close);
+
+    final location = await openStartupLibrary(
+      database: database,
+      layout: layout,
+    );
+
+    expect(location.rootPath, support.path);
+    expect(location.schema.writesAllowed, isTrue);
+  });
 }

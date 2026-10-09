@@ -5,7 +5,10 @@ import 'folder_bookmark.dart';
 import 'purewriter_database.dart';
 
 /// Opens the last writing folder when it is still a valid library, otherwise
-/// the application-support default library.
+/// the application-support temporary library so the app can always boot.
+///
+/// [LibraryInUseException] is rethrown only when both the last folder and the
+/// temporary fallback cannot be opened.
 Future<LibraryLocation> openStartupLibrary({
   required PureWriterDatabase database,
   required WorkspaceLayoutRepository layout,
@@ -13,16 +16,25 @@ Future<LibraryLocation> openStartupLibrary({
 }) async {
   final saved = await layout.load();
   final lastRoot = await _restoreLastRoot(saved, bookmarks);
+  Object? lastError;
   if (lastRoot != null) {
     try {
       return await database.openLibrary(lastRoot);
-    } on LibraryInUseException {
-      rethrow;
+    } on LibraryInUseException catch (error) {
+      lastError = error;
+      await layout.save(saved.copyWith(clearLastLibraryRoot: true));
     } on Object {
       await layout.save(saved.copyWith(clearLastLibraryRoot: true));
     }
   }
-  return database.openDefaultLibrary();
+  try {
+    return await database.openDefaultLibrary();
+  } on Object {
+    if (lastError is LibraryInUseException) {
+      throw lastError;
+    }
+    rethrow;
+  }
 }
 
 Future<String?> _restoreLastRoot(

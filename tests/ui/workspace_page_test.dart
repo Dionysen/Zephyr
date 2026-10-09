@@ -328,10 +328,29 @@ void main() {
     expect(find.text('Font size'), findsOneWidget);
     expect(find.text('Appearance'), findsNothing);
   });
+
+  testWidgets('guides the user to choose a PureWriter library folder', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_app(needsLibrarySetup: true));
+    await tester.pumpAndSettle();
+
+    expect(find.text('当前使用临时书库'), findsOneWidget);
+    expect(find.text('选择书库'), findsOneWidget);
+    expect(find.text('临时书库'), findsWidgets);
+  });
 }
 
-Widget _app({LibraryViewModel? library}) {
-  library ??= LibraryViewModel(_LibraryRepository());
+Widget _app({LibraryViewModel? library, bool needsLibrarySetup = false}) {
+  library ??= LibraryViewModel(
+    _LibraryRepository(),
+    needsLibrarySetup: needsLibrarySetup,
+  );
   final theme = ThemeViewModel(_ThemeRepository());
   final editorPreferences = EditorPreferencesViewModel(
     _PreferencesRepository(),
@@ -452,12 +471,34 @@ class _LibraryRepository implements WritingLibraryRepository {
   @override
   Future<void> saveArticle(WritingArticle article) async {}
 
-  @override
-  LibraryLocation? get location => null;
+  LibraryLocation? _location = const LibraryLocation(
+    rootPath: '/writing/book',
+    schema: SchemaStatus(
+      userVersion: 27,
+      identityHash: 'test',
+      writesAllowed: true,
+    ),
+  );
 
   @override
-  Future<LibraryLocation> openLibrary(String rootPath) =>
-      throw UnimplementedError();
+  LibraryLocation? get location => _location;
+
+  @override
+  Future<LibraryLocation> openLibrary(String rootPath) async {
+    _location = LibraryLocation(
+      rootPath: rootPath,
+      schema: const SchemaStatus(
+        userVersion: 27,
+        identityHash: 'test',
+        writesAllowed: true,
+      ),
+    );
+    return _location!;
+  }
+
+  @override
+  Future<LibraryLocation> openDefaultLibrary() =>
+      openLibrary('/tmp/zephyr-temporary-library');
 
   @override
   Future<void> closeLibrary() async {}
