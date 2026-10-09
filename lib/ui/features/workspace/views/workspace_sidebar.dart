@@ -92,7 +92,7 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
               ),
               WorkspaceBookPicker(model: model, library: model.library!),
               Padding(
-                padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -197,7 +197,7 @@ class _DrawerSidebarHeader extends StatelessWidget {
         : theme.colorScheme.onSurfaceVariant;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 10, 6, 6),
+      padding: const EdgeInsets.fromLTRB(14, 10, 6, 0),
       child: Row(
         children: [
           if (isTrash) ...[
@@ -1207,9 +1207,7 @@ class _ChapterTreeState extends State<_ChapterTree> {
         .where((item) => !isTrash && item.folderId == bookId)
         .toList(growable: false);
     final volumeIds = volumes.map((item) => item.id).toList(growable: false);
-    final slivers = <Widget>[
-      const SliverToBoxAdapter(child: SizedBox(height: 2)),
-    ];
+    final slivers = <Widget>[];
     for (var volumeIndex = 0; volumeIndex < volumes.length; volumeIndex++) {
       final volume = volumes[volumeIndex];
       final volumeChapters = chapters
@@ -1224,6 +1222,7 @@ class _ChapterTreeState extends State<_ChapterTree> {
         siblingIds: volumeIds,
         canManage: canManage,
         showDragHandle: showDragHandles,
+        isFirst: volumeIndex == 0,
         onToggle: () => _toggleVolume(volume.id),
       );
       // Keep a stable SliverMainAxisGroup so collapsing during a volume drag
@@ -1409,6 +1408,7 @@ class _VolumeRow extends StatelessWidget {
     required this.siblingIds,
     required this.canManage,
     required this.showDragHandle,
+    required this.isFirst,
     required this.onToggle,
   });
 
@@ -1418,6 +1418,7 @@ class _VolumeRow extends StatelessWidget {
   final List<String> siblingIds;
   final bool canManage;
   final bool showDragHandle;
+  final bool isFirst;
   final VoidCallback onToggle;
 
   Future<void> _openMenu(
@@ -1520,7 +1521,7 @@ class _VolumeRow extends StatelessWidget {
 
     return _ReorderTarget<_VolumeDragData>(
       enabled: showDragHandle,
-      gap: volumeGap,
+      gap: isFirst ? 0 : volumeGap,
       horizontalInset: listInset,
       canAccept: (data) => data.volumeId != volume.id,
       onAcceptBefore: (data) => _acceptVolumeDrop(data, insertAfter: false),
