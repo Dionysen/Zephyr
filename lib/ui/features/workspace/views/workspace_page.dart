@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../../data/services/android_storage_access.dart';
 import '../../../../data/services/folder_bookmark.dart';
@@ -17,6 +18,7 @@ import '../../editor/view_models/editor_preferences_view_model.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../settings/views/settings_page.dart';
 import 'workspace_editor.dart';
+import 'workspace_settings_panel.dart';
 import 'workspace_sidebar.dart';
 
 /// Adaptive writing workspace. Compact and expanded layouts share the same
@@ -31,6 +33,8 @@ class WorkspacePage extends StatefulWidget {
 class _WorkspacePageState extends State<WorkspacePage> {
   LibraryViewModel? _library;
   var _started = false;
+  var _settingsOpen = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -157,7 +161,11 @@ class _WorkspacePageState extends State<WorkspacePage> {
               );
             }
 
-            final shell = Row(
+            final panelWidth = WorkspaceSettingsPanel.preferredWidth.clamp(
+              280.0,
+              constraints.maxWidth * 0.4,
+            );
+            final workspace = Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 AnimatedContainer(
@@ -205,6 +213,37 @@ class _WorkspacePageState extends State<WorkspacePage> {
                 ),
               ],
             );
+            final shell = _settingsOpen
+                ? CallbackShortcuts(
+                    bindings: {
+                      const SingleActivator(LogicalKeyboardKey.escape):
+                          _closeSettings,
+                    },
+                    child: Focus(
+                      autofocus: true,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          workspace,
+                          GestureDetector(
+                            onTap: _closeSettings,
+                            behavior: HitTestBehavior.opaque,
+                            child: const ColoredBox(color: Colors.transparent),
+                          ),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: _WorkspaceSettingsSlideIn(
+                              child: WorkspaceSettingsPanel(
+                                width: panelWidth,
+                                onClose: _closeSettings,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : workspace;
             return ZephyrStatusBar(
               immersive: immersiveStatusBar,
               hideIcons: hideStatusBarIcons,
@@ -261,8 +300,25 @@ class _WorkspacePageState extends State<WorkspacePage> {
   }
 
   void _openSettings() {
-    Navigator.of(context)
-        .push(MaterialPageRoute<void>(builder: (_) => const SettingsPage()));
+    final compact = ZephyrBreakpoints.isCompact(
+      MediaQuery.sizeOf(context).width,
+    );
+    if (compact) {
+      Navigator.of(context)
+          .push(MaterialPageRoute<void>(builder: (_) => const SettingsPage()));
+      return;
+    }
+    setState(() => _settingsOpen = !_settingsOpen);
+    if (_settingsOpen) {
+      prefetchWorkspaceSettingsFonts(context);
+    }
+  }
+
+  void _closeSettings() {
+    if (!_settingsOpen) {
+      return;
+    }
+    setState(() => _settingsOpen = false);
   }
 
   double _maxSidebarWidth(double workspaceWidth) {
@@ -628,4 +684,40 @@ class _LibrarySetupPage extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Slides [child] in from the right once when mounted.
+class _WorkspaceSettingsSlideIn extends StatefulWidget {
+  const _WorkspaceSettingsSlideIn({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_WorkspaceSettingsSlideIn> createState() =>
+      _WorkspaceSettingsSlideInState();
+}
+
+class _WorkspaceSettingsSlideInState extends State<_WorkspaceSettingsSlideIn>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: WorkspaceSettingsPanel.animationDuration,
+  )..forward();
+
+  late final Animation<Offset> _offset = Tween<Offset>(
+    begin: const Offset(1, 0),
+    end: Offset.zero,
+  ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => SlideTransition(
+    position: _offset,
+    child: widget.child,
+  );
 }

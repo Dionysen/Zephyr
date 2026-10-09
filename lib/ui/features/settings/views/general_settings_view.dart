@@ -10,10 +10,14 @@ class GeneralSettingsView extends StatelessWidget {
     super.key,
     required this.viewModel,
     this.compact = false,
+    this.showStatusBarSettings = true,
   });
 
   final ThemeViewModel viewModel;
   final bool compact;
+
+  /// Immersive / hide-icons toggles only apply on mobile shells.
+  final bool showStatusBarSettings;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -22,7 +26,7 @@ class GeneralSettingsView extends StatelessWidget {
       final l10n = context.l10n;
       final immersive = viewModel.ui.immersiveStatusBar;
       final locale = viewModel.ui.localePreference;
-      final children = [
+      final children = <Widget>[
         ZephyrSettingsChoiceTile<AppLocalePreference>(
           title: l10n.languageTitle,
           subtitle: l10n.languageSubtitle,
@@ -43,20 +47,23 @@ class GeneralSettingsView extends StatelessWidget {
             ),
           ],
           onSelected: viewModel.updateLocalePreference,
+          showDivider: showStatusBarSettings,
         ),
-        ZephyrSettingsSwitchTile(
-          title: l10n.immersiveStatusBarTitle,
-          subtitle: l10n.immersiveStatusBarSubtitle,
-          value: immersive,
-          onChanged: viewModel.updateImmersiveStatusBar,
-        ),
-        ZephyrSettingsSwitchTile(
-          title: l10n.hideStatusBarIconsTitle,
-          subtitle: l10n.hideStatusBarIconsSubtitle,
-          value: viewModel.ui.hideStatusBarIcons,
-          showDivider: false,
-          onChanged: immersive ? viewModel.updateHideStatusBarIcons : null,
-        ),
+        if (showStatusBarSettings) ...[
+          ZephyrSettingsSwitchTile(
+            title: l10n.immersiveStatusBarTitle,
+            subtitle: l10n.immersiveStatusBarSubtitle,
+            value: immersive,
+            onChanged: viewModel.updateImmersiveStatusBar,
+          ),
+          ZephyrSettingsSwitchTile(
+            title: l10n.hideStatusBarIconsTitle,
+            subtitle: l10n.hideStatusBarIconsSubtitle,
+            value: viewModel.ui.hideStatusBarIcons,
+            showDivider: false,
+            onChanged: immersive ? viewModel.updateHideStatusBarIcons : null,
+          ),
+        ],
       ];
 
       if (compact) {

@@ -19,7 +19,9 @@ import 'package:zephyr/ui/features/settings/view_models/font_library.dart';
 import 'package:zephyr/ui/features/settings/view_models/settings_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/theme_view_model.dart';
 import 'package:zephyr/l10n/app_localizations.dart';
+import 'package:zephyr/ui/features/settings/views/settings_page.dart';
 import 'package:zephyr/ui/features/workspace/views/workspace_page.dart';
+import 'package:zephyr/ui/features/workspace/views/workspace_settings_panel.dart';
 import 'package:zephyr/ui/features/workspace/views/workspace_sidebar.dart';
 
 void main() {
@@ -393,7 +395,7 @@ void main() {
     );
   });
 
-  testWidgets('settings open as an in-app route on every layout', (
+  testWidgets('expanded settings open as a right overlay panel', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(1200, 800);
@@ -403,15 +405,25 @@ void main() {
 
     await tester.pumpWidget(_app());
     await tester.pumpAndSettle();
+    final l10n = _l10n(tester);
 
-    await tester.tap(find.byTooltip('Settings'));
+    await tester.tap(find.byTooltip(l10n.tooltipSettings));
     await tester.pumpAndSettle();
 
-    expect(find.text('Appearance'), findsOneWidget);
-    expect(find.text('Theme'), findsWidgets);
+    expect(find.byType(WorkspaceSettingsPanel).hitTestable(), findsOneWidget);
+    expect(find.text(l10n.settingsTitle), findsWidgets);
+    expect(find.text(l10n.settingsSectionGeneral), findsOneWidget);
+    expect(find.text(l10n.languageTitle), findsOneWidget);
+    expect(find.text(l10n.settingsSectionEditor), findsOneWidget);
+    expect(find.text(l10n.immersiveStatusBarTitle), findsNothing);
+    expect(find.text(l10n.hideStatusBarIconsTitle), findsNothing);
+    // Workspace chrome stays under the overlay.
+    expect(find.byTooltip(l10n.tooltipSettings), findsOneWidget);
   });
 
-  testWidgets('settings restore the last opened group', (tester) async {
+  testWidgets('expanded settings panel closes and reopens in place', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1200, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -419,20 +431,50 @@ void main() {
 
     await tester.pumpWidget(_app());
     await tester.pumpAndSettle();
+    final l10n = _l10n(tester);
+    final closeTooltip =
+        MaterialLocalizations.of(tester.element(find.byType(WorkspacePage)))
+            .closeButtonTooltip;
 
-    await tester.tap(find.byTooltip('Settings'));
+    await tester.tap(find.byTooltip(l10n.tooltipSettings));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Editor').first);
-    await tester.pumpAndSettle();
-    expect(find.text('Font size'), findsOneWidget);
+    expect(find.byType(WorkspaceSettingsPanel).hitTestable(), findsOneWidget);
+    expect(find.text(l10n.languageTitle).hitTestable(), findsOneWidget);
 
-    await tester.tap(find.text('Back'));
+    await tester.tap(find.byTooltip(closeTooltip));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Settings'));
+    expect(find.byType(WorkspaceSettingsPanel).hitTestable(), findsNothing);
+    expect(find.text(l10n.languageTitle).hitTestable(), findsNothing);
+
+    await tester.tap(find.byTooltip(l10n.tooltipSettings));
+    await tester.pumpAndSettle();
+    expect(find.byType(WorkspaceSettingsPanel).hitTestable(), findsOneWidget);
+    expect(find.text(l10n.languageTitle).hitTestable(), findsOneWidget);
+    expect(find.text(l10n.settingsSectionEditor), findsWidgets);
+  });
+
+  testWidgets('compact settings still open as a full-page route', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+    final l10n = _l10n(tester);
+
+    await tester.tap(find.byTooltip(l10n.tooltipOpenLibrary));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip(l10n.tooltipSettings));
     await tester.pumpAndSettle();
 
-    expect(find.text('Font size'), findsOneWidget);
-    expect(find.text('Appearance'), findsNothing);
+    expect(find.byType(SettingsPage), findsOneWidget);
+    expect(find.byType(WorkspaceSettingsPanel), findsNothing);
+    expect(find.text(l10n.languageTitle), findsOneWidget);
+    expect(find.text(l10n.immersiveStatusBarTitle), findsOneWidget);
+    expect(find.text(l10n.hideStatusBarIconsTitle), findsOneWidget);
   });
 
   testWidgets('guides the user to choose a PureWriter library folder', (
@@ -487,6 +529,9 @@ void main() {
     expect(find.text('No tools available'), findsOneWidget);
   });
 }
+
+AppLocalizations _l10n(WidgetTester tester) =>
+    AppLocalizations.of(tester.element(find.byType(WorkspacePage)))!;
 
 Widget _app({LibraryViewModel? library, bool needsLibrarySetup = false}) {
   library ??= LibraryViewModel(
