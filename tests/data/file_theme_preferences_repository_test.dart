@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/data/repositories/file_theme_preferences_repository.dart';
 import 'package:zephyr/data/services/theme_file_storage.dart';
-import 'package:zephyr/domain/models/status_bar_mode.dart';
 import 'package:zephyr/domain/models/theme_tokens.dart';
 import 'package:zephyr/domain/models/ui_preferences.dart';
 
@@ -37,7 +36,7 @@ void main() {
         showBorders: false,
         sidebarItemInset: 12,
         sidebarVolumeGap: 4,
-        statusBarMode: StatusBarMode.immersive,
+        immersiveStatusBar: true,
       );
 
       await repository.save(tokens: expectedTokens, ui: expectedUi);
@@ -54,7 +53,7 @@ void main() {
       expect(actualUi.showBorders, expectedUi.showBorders);
       expect(actualUi.sidebarItemInset, expectedUi.sidebarItemInset);
       expect(actualUi.sidebarVolumeGap, expectedUi.sidebarVolumeGap);
-      expect(actualUi.statusBarMode, expectedUi.statusBarMode);
+      expect(actualUi.immersiveStatusBar, expectedUi.immersiveStatusBar);
     },
   );
 
@@ -83,10 +82,30 @@ void main() {
     expect(ui.showBorders, UiPreferences.defaults.showBorders);
     expect(ui.sidebarItemInset, UiPreferences.defaults.sidebarItemInset);
     expect(ui.sidebarVolumeGap, UiPreferences.defaults.sidebarVolumeGap);
-    expect(ui.statusBarMode, UiPreferences.defaults.statusBarMode);
+    expect(ui.immersiveStatusBar, UiPreferences.defaults.immersiveStatusBar);
     expect(ui.fontFamily, isNull);
     expect(ui.fontPath, isNull);
     expect(tokens.cursor, ThemeTokens.defaults.cursor);
     expect(tokens.divider, ThemeTokens.defaults.divider);
+  });
+
+  test('legacy uiStatusBarMode immersive migrates to immersiveStatusBar', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'zephyr-theme-status-legacy-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final storage = ThemeFileStorage(directoryProvider: () async => directory);
+    await storage.write({
+      'editorSurface': ThemeTokens.defaults.editorSurface,
+      'sidebarSurface': ThemeTokens.defaults.sidebarSurface,
+      'controlSurface': ThemeTokens.defaults.controlSurface,
+      'border': ThemeTokens.defaults.border,
+      'primaryText': ThemeTokens.defaults.primaryText,
+      'mutedText': ThemeTokens.defaults.mutedText,
+      'accent': ThemeTokens.defaults.accent,
+      'uiStatusBarMode': 'immersive',
+    });
+    final ui = await FileThemePreferencesRepository(storage).loadUi();
+    expect(ui.immersiveStatusBar, isTrue);
   });
 }

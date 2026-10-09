@@ -2,26 +2,34 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../domain/models/status_bar_mode.dart';
-
 /// Top inset that stays reserved even when immersive mode zeroed [padding].
 double zephyrTopInset(BuildContext context) =>
     MediaQuery.viewPaddingOf(context).top;
 
-/// Applies [StatusBarMode] and wraps [child] with the matching overlay style.
+bool get _isMobileShell {
+  if (kIsWeb) return false;
+  return switch (defaultTargetPlatform) {
+    TargetPlatform.android || TargetPlatform.iOS => true,
+    _ => false,
+  };
+}
+
+/// Transparent system status bar; optional immersive (auto-hide) mode.
 class ZephyrStatusBar extends StatefulWidget {
   const ZephyrStatusBar({
     super.key,
     required this.child,
-    this.mode = StatusBarMode.transparent,
+    this.immersive = false,
     this.statusBarColor,
     this.brightness,
   });
 
   final Widget child;
-  final StatusBarMode mode;
 
-  /// Used when [mode] is [StatusBarMode.normal]; falls back to theme surface.
+  /// When true, uses immersive sticky; otherwise edge-to-edge with icons.
+  final bool immersive;
+
+  /// Surface color behind the status band (for themed shells).
   final Color? statusBarColor;
 
   /// When null, uses [ThemeData.brightness] from context.
@@ -29,36 +37,24 @@ class ZephyrStatusBar extends StatefulWidget {
 
   static SystemUiOverlayStyle styleFor(
     Brightness brightness, {
-    StatusBarMode mode = StatusBarMode.transparent,
+    bool immersive = false,
     Color? statusBarColor,
   }) {
     final isDark = brightness == Brightness.dark;
-    final color = mode == StatusBarMode.normal
-        ? (statusBarColor ?? Colors.black)
-        : Colors.transparent;
     return SystemUiOverlayStyle(
-      statusBarColor: color,
+      statusBarColor: Colors.transparent,
       statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
       statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
       systemStatusBarContrastEnforced: false,
     );
   }
 
-  static Future<void> applySystemUiMode(StatusBarMode mode) async {
-    if (kIsWeb) return;
-    switch (defaultTargetPlatform) {
-      case TargetPlatform.android:
-      case TargetPlatform.iOS:
-        break;
-      case _:
-        return;
-    }
-    switch (mode) {
-      case StatusBarMode.immersive:
-        await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-      case StatusBarMode.normal:
-      case StatusBarMode.transparent:
-        await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  static Future<void> applySystemUiMode({required bool immersive}) async {
+    if (!_isMobileShell) return;
+    if (immersive) {
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    } else {
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     }
   }
 
@@ -67,7 +63,7 @@ class ZephyrStatusBar extends StatefulWidget {
 }
 
 class _ZephyrStatusBarState extends State<ZephyrStatusBar> {
-  StatusBarMode? _appliedMode;
+  bool? _appliedImmersive;
 
   @override
   void didChangeDependencies() {
@@ -78,16 +74,16 @@ class _ZephyrStatusBarState extends State<ZephyrStatusBar> {
   @override
   void didUpdateWidget(covariant ZephyrStatusBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.mode != widget.mode) {
+    if (oldWidget.immersive != widget.immersive) {
       _syncSystemUi();
     }
   }
 
   void _syncSystemUi() {
-    if (_appliedMode == widget.mode) return;
-    _appliedMode = widget.mode;
+    if (_appliedImmersive == widget.immersive) return;
+    _appliedImmersive = widget.immersive;
     // ignore: discarded_futures
-    ZephyrStatusBar.applySystemUiMode(widget.mode);
+    ZephyrStatusBar.applySystemUiMode(immersive: widget.immersive);
   }
 
   @override
@@ -98,7 +94,7 @@ class _ZephyrStatusBarState extends State<ZephyrStatusBar> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: ZephyrStatusBar.styleFor(
         resolved,
-        mode: widget.mode,
+        immersive: widget.immersive,
         statusBarColor: surface,
       ),
       child: widget.child,

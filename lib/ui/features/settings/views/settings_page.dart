@@ -48,7 +48,7 @@ class _SettingsPageState extends State<SettingsPage> {
       listenable: Listenable.merge([scope.settings, scope.theme]),
       builder: (context, _) {
         final section = scope.settings.section;
-        final statusBarMode = scope.theme.ui.statusBarMode;
+        final immersiveStatusBar = scope.theme.ui.immersiveStatusBar;
         return LayoutBuilder(
           builder: (context, constraints) {
             final compact = ZephyrBreakpoints.isCompact(
@@ -62,7 +62,7 @@ class _SettingsPageState extends State<SettingsPage> {
             if (compact) {
               final barColor = ZephyrSettingsAppBar.backgroundColor(context);
               return ZephyrStatusBar(
-                mode: statusBarMode,
+                immersive: immersiveStatusBar,
                 statusBarColor: barColor,
                 child: Scaffold(
                   backgroundColor: Theme.of(context).colorScheme.surface,
@@ -118,7 +118,7 @@ class _SettingsPageState extends State<SettingsPage> {
             );
             final desktopSurface = Theme.of(context).colorScheme.surface;
             return ZephyrStatusBar(
-              mode: statusBarMode,
+              immersive: immersiveStatusBar,
               statusBarColor: desktopSurface,
               child: Scaffold(
                 backgroundColor: desktopSurface,

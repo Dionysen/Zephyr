@@ -264,7 +264,7 @@ ThemeData zephyrTheme(
       surfaceTintColor: Colors.transparent,
       systemOverlayStyle: ZephyrStatusBar.styleFor(
         brightness,
-        mode: ui.statusBarMode,
+        immersive: ui.immersiveStatusBar,
         statusBarColor: editor,
       ),
     ),

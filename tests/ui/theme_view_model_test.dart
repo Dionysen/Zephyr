@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zephyr/domain/models/status_bar_mode.dart';
 import 'package:zephyr/domain/models/theme_tokens.dart';
 import 'package:zephyr/domain/models/ui_preferences.dart';
 import 'package:zephyr/domain/repositories/theme_preferences_repository.dart';
@@ -100,14 +99,14 @@ void main() {
     expect(model.ui.sidebarVolumeGap, 1);
   });
 
-  test('status bar mode updates independently of color tokens', () {
+  test('immersive status bar updates independently of color tokens', () {
     final model = ThemeViewModel(_ThemeRepository(ThemeTokens.defaults));
 
-    expect(model.ui.statusBarMode, StatusBarMode.transparent);
-    model.updateStatusBarMode(StatusBarMode.normal);
-    expect(model.ui.statusBarMode, StatusBarMode.normal);
-    model.updateStatusBarMode(StatusBarMode.immersive);
-    expect(model.ui.statusBarMode, StatusBarMode.immersive);
+    expect(model.ui.immersiveStatusBar, isFalse);
+    model.updateImmersiveStatusBar(true);
+    expect(model.ui.immersiveStatusBar, isTrue);
+    model.updateImmersiveStatusBar(false);
+    expect(model.ui.immersiveStatusBar, isFalse);
     expect(model.tokens, ThemeTokens.defaults);
   });
 }

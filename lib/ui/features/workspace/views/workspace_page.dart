@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import '../../../../data/services/android_storage_access.dart';
 import '../../../../data/services/folder_bookmark.dart';
 
-import '../../../../domain/models/status_bar_mode.dart';
 import '../../../core/breakpoints.dart';
 import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_scope.dart';
@@ -54,11 +53,11 @@ class _WorkspacePageState extends State<WorkspacePage> {
       listenable: Listenable.merge([scope.library, scope.theme]),
       builder: (context, _) {
         final model = scope.library;
-        final statusBarMode = scope.theme.ui.statusBarMode;
+        final immersiveStatusBar = scope.theme.ui.immersiveStatusBar;
         final surface = Theme.of(context).colorScheme.surface;
         if (model.error != null && model.library == null) {
           return ZephyrStatusBar(
-            mode: statusBarMode,
+            immersive: immersiveStatusBar,
             statusBarColor: surface,
             child: _LibrarySetupPage(
               error: model.error,
@@ -68,7 +67,7 @@ class _WorkspacePageState extends State<WorkspacePage> {
         }
         if (model.library == null) {
           return ZephyrStatusBar(
-            mode: statusBarMode,
+            immersive: immersiveStatusBar,
             statusBarColor: surface,
             child: const Scaffold(
               body: Center(child: CircularProgressIndicator()),
@@ -83,10 +82,9 @@ class _WorkspacePageState extends State<WorkspacePage> {
                 260.0,
                 constraints.maxWidth * 0.88,
               );
-              final immersive =
-                  statusBarMode == StatusBarMode.immersive;
+              final immersive = immersiveStatusBar;
               return ZephyrStatusBar(
-                mode: statusBarMode,
+                immersive: immersive,
                 statusBarColor: surface,
                 child: Scaffold(
                   backgroundColor: surface,
@@ -197,7 +195,7 @@ class _WorkspacePageState extends State<WorkspacePage> {
               ],
             );
             return ZephyrStatusBar(
-              mode: statusBarMode,
+              immersive: immersiveStatusBar,
               statusBarColor: surface,
               child: Scaffold(
                 backgroundColor: surface,

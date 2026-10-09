@@ -1,4 +1,3 @@
-import '../../domain/models/status_bar_mode.dart';
 import '../../domain/models/theme_tokens.dart';
 import '../../domain/models/ui_preferences.dart';
 import '../../domain/repositories/theme_preferences_repository.dart';
@@ -77,11 +76,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
             UiPreferences.maxSidebarVolumeGap,
           )
           .toDouble(),
-      statusBarMode: _statusBarMode(
-        values,
-        'uiStatusBarMode',
-        UiPreferences.defaults.statusBarMode,
-      ),
+      immersiveStatusBar: _immersiveStatusBar(values),
     );
   }
 
@@ -106,7 +101,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'uiShowBorders': ui.showBorders,
     'uiSidebarItemInset': ui.sidebarItemInset,
     'uiSidebarVolumeGap': ui.sidebarVolumeGap,
-    'uiStatusBarMode': ui.statusBarMode.name,
+    'uiImmersiveStatusBar': ui.immersiveStatusBar,
   });
 
   int _color(Map<String, Object?> values, String key, {int? fallback}) {
@@ -132,17 +127,12 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     return value;
   }
 
-  StatusBarMode _statusBarMode(
-    Map<String, Object?> values,
-    String key,
-    StatusBarMode fallback,
-  ) {
-    final value = values[key];
-    if (value == null) return fallback;
-    if (value is! String) throw FormatException('Invalid $key preference.');
-    for (final mode in StatusBarMode.values) {
-      if (mode.name == value) return mode;
-    }
-    return fallback;
+  /// Prefers [uiImmersiveStatusBar]; migrates legacy [uiStatusBarMode] strings.
+  bool _immersiveStatusBar(Map<String, Object?> values) {
+    final modern = values['uiImmersiveStatusBar'];
+    if (modern is bool) return modern;
+    final legacy = values['uiStatusBarMode'];
+    if (legacy is String) return legacy == 'immersive';
+    return UiPreferences.defaults.immersiveStatusBar;
   }
 }
