@@ -10,6 +10,7 @@ class FileEditorPreferencesRepository implements EditorPreferencesRepository {
   Future<EditorPreferences> load() async {
     final values = await _storage.read();
     if (values == null) return EditorPreferences.defaults;
+    final defaults = EditorPreferences.defaults;
     final fontSize = _double(values, 'fontSize');
     return EditorPreferences(
       fontFamily: values['fontFamily'] as String?,
@@ -22,6 +23,10 @@ class FileEditorPreferencesRepository implements EditorPreferencesRepository {
       ),
       firstLineIndent: _int(values, 'firstLineIndent'),
       maxContentWidth: _double(values, 'maxContentWidth'),
+      titleFontSize: _optionalDouble(values, 'titleFontSize') ??
+          defaults.titleFontSize,
+      titleCentered:
+          _optionalBool(values, 'titleCentered') ?? defaults.titleCentered,
     );
   }
 
@@ -42,12 +47,26 @@ class FileEditorPreferencesRepository implements EditorPreferencesRepository {
     'paragraphSpacing': value.paragraphSpacing,
     'firstLineIndent': value.firstLineIndent,
     'maxContentWidth': value.maxContentWidth,
+    'titleFontSize': value.titleFontSize,
+    'titleCentered': value.titleCentered,
   });
 
   double _double(Map<String, Object?> values, String key) {
     final value = values[key];
     if (value is! num) throw FormatException('Invalid $key preference.');
     return value.toDouble();
+  }
+
+  double? _optionalDouble(Map<String, Object?> values, String key) {
+    final value = values[key];
+    if (value is! num) return null;
+    return value.toDouble();
+  }
+
+  bool? _optionalBool(Map<String, Object?> values, String key) {
+    final value = values[key];
+    if (value is! bool) return null;
+    return value;
   }
 
   int _int(Map<String, Object?> values, String key) {

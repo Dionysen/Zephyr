@@ -84,6 +84,10 @@ class _WorkspacePageState extends State<WorkspacePage> {
                 constraints.maxWidth * 0.88,
               );
               final immersive = immersiveStatusBar;
+              final sidebarColor =
+                  Theme.of(context).colorScheme.surfaceContainerLowest;
+              // Immersive: full-bleed under a transparent status bar; pad chrome
+              // only. Off: keep the same edge-to-edge surface, but pad the shell.
               return Theme(
                 data: withMobileRoundControls(Theme.of(context)),
                 child: ZephyrStatusBar(
@@ -94,8 +98,6 @@ class _WorkspacePageState extends State<WorkspacePage> {
                     body: ColoredBox(
                       color: surface,
                       child: ZephyrTopSafeArea(
-                        // Immersive: editor may draw under the status band;
-                        // chrome (banner / drawer / initial top bar) still pads.
                         top: !immersive,
                         child: Column(
                           children: [
@@ -112,27 +114,21 @@ class _WorkspacePageState extends State<WorkspacePage> {
                               child: ZephyrSwipeDrawer(
                                 drawerWidth: drawerWidth,
                                 drawer: Material(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .surfaceContainerLowest,
-                                  child: immersive
-                                      ? ZephyrTopSafeArea(
-                                          bottom: false,
-                                          left: false,
-                                          right: false,
-                                          child: WorkspaceSidebar(
-                                            model: model,
-                                            mode: SidebarMode.drawer,
-                                            openLibrary: _openLibrary,
-                                            openSettings: _openSettings,
-                                          ),
-                                        )
-                                      : WorkspaceSidebar(
-                                          model: model,
-                                          mode: SidebarMode.drawer,
-                                          openLibrary: _openLibrary,
-                                          openSettings: _openSettings,
-                                        ),
+                                  color: sidebarColor,
+                                  child: ZephyrTopSafeArea(
+                                    // Always paint sidebar under the status band
+                                    // when immersive; reserve space for controls.
+                                    top: immersive,
+                                    bottom: false,
+                                    left: false,
+                                    right: false,
+                                    child: WorkspaceSidebar(
+                                      model: model,
+                                      mode: SidebarMode.drawer,
+                                      openLibrary: _openLibrary,
+                                      openSettings: _openSettings,
+                                    ),
+                                  ),
                                 ),
                                 body: _MobileEditorChrome(
                                   model: model,

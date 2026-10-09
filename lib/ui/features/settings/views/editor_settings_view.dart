@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../domain/models/editor_preferences.dart';
+import '../../../core/zephyr_controls.dart';
 import '../../../core/zephyr_settings.dart';
 import '../../editor/view_models/editor_preferences_view_model.dart';
 import 'font_file_picker.dart';
@@ -66,6 +67,45 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
           divisions: 20,
           onChanged: viewModel.updateFontSize,
         ),
+        ZephyrSettingsAdaptiveNumber(
+          compact: compact,
+          title: compact ? '标题字号' : 'Title size',
+          description: compact
+              ? '文章标题块字号。'
+              : 'Font size of the chapter title above the body.',
+          value: preferences.titleFontSize,
+          min: EditorPreferences.minTitleFontSize,
+          max: EditorPreferences.maxTitleFontSize,
+          defaultValue: defaults.titleFontSize,
+          suffix: 'px',
+          divisions: (EditorPreferences.maxTitleFontSize -
+                  EditorPreferences.minTitleFontSize)
+              .round(),
+          onChanged: viewModel.updateTitleFontSize,
+        ),
+        if (compact)
+          ZephyrSettingsSwitchTile(
+            title: '标题居中',
+            subtitle: '开则居中；关则与正文左边界对齐。',
+            value: preferences.titleCentered,
+            onChanged: viewModel.updateTitleCentered,
+          )
+        else
+          ZephyrSettingsDesktopRow(
+            label: 'Center title',
+            description:
+                'When on, center the title in the reading column; when off, '
+                'align it to the body left edge.',
+            child: Transform.scale(
+              scale: ZephyrControls.settingsSwitchScale,
+              alignment: Alignment.centerLeft,
+              child: Switch(
+                value: preferences.titleCentered,
+                onChanged: viewModel.updateTitleCentered,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ),
         ZephyrSettingsAdaptiveNumber(
           compact: compact,
           title: compact ? '行高' : 'Line height',

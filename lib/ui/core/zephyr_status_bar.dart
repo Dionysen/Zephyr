@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Top inset that stays reserved even when immersive mode zeroed [padding].
+/// Top inset that stays reserved for chrome even when the app draws edge-to-edge.
 double zephyrTopInset(BuildContext context) =>
     MediaQuery.viewPaddingOf(context).top;
 
@@ -14,7 +14,8 @@ bool get _isMobileShell {
   };
 }
 
-/// Transparent system status bar; optional immersive (auto-hide) mode.
+/// Transparent system status bar. The app always draws edge-to-edge on mobile;
+/// [immersive] only changes whether chrome/content may use the status band.
 class ZephyrStatusBar extends StatefulWidget {
   const ZephyrStatusBar({
     super.key,
@@ -26,7 +27,8 @@ class ZephyrStatusBar extends StatefulWidget {
 
   final Widget child;
 
-  /// When true, uses immersive sticky; otherwise edge-to-edge with icons.
+  /// Layout hint for shells (extend under the status band). System UI stays
+  /// edge-to-edge + transparent either way so the app shows through the bar.
   final bool immersive;
 
   /// Surface color behind the status band (for themed shells).
@@ -51,11 +53,9 @@ class ZephyrStatusBar extends StatefulWidget {
 
   static Future<void> applySystemUiMode({required bool immersive}) async {
     if (!_isMobileShell) return;
-    if (immersive) {
-      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    } else {
-      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    }
+    // Always edge-to-edge so a transparent status bar reveals the app surface.
+    // Immersive is a layout concern (draw under / scroll under), not sticky hide.
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   }
 
   @override
@@ -63,7 +63,7 @@ class ZephyrStatusBar extends StatefulWidget {
 }
 
 class _ZephyrStatusBarState extends State<ZephyrStatusBar> {
-  bool? _appliedImmersive;
+  var _appliedEdgeToEdge = false;
 
   @override
   void didChangeDependencies() {
@@ -75,13 +75,13 @@ class _ZephyrStatusBarState extends State<ZephyrStatusBar> {
   void didUpdateWidget(covariant ZephyrStatusBar oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.immersive != widget.immersive) {
-      _syncSystemUi();
+      _syncSystemUi(force: true);
     }
   }
 
-  void _syncSystemUi() {
-    if (_appliedImmersive == widget.immersive) return;
-    _appliedImmersive = widget.immersive;
+  void _syncSystemUi({bool force = false}) {
+    if (_appliedEdgeToEdge && !force) return;
+    _appliedEdgeToEdge = true;
     // ignore: discarded_futures
     ZephyrStatusBar.applySystemUiMode(immersive: widget.immersive);
   }
@@ -102,8 +102,8 @@ class _ZephyrStatusBarState extends State<ZephyrStatusBar> {
   }
 }
 
-/// Pads [child] using view/padding insets. Top uses [zephyrTopInset] so the
-/// reserved band survives immersive mode when [top] is true.
+/// Pads [child] using view/padding insets. Prefer wrapping *inside* a painted
+/// surface so the parent color still fills the status-bar band.
 class ZephyrTopSafeArea extends StatelessWidget {
   const ZephyrTopSafeArea({
     super.key,

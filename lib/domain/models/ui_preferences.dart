@@ -51,9 +51,9 @@ class UiPreferences {
   /// Vertical gap between volume groups in the sidebar.
   final double sidebarVolumeGap;
 
-  /// When true, auto-hide the system status bar (immersive sticky) and let
-  /// reading content scroll under the status band. When false, keep a
-  /// transparent status bar with system icons visible.
+  /// When true, the shell draws edge-to-edge under a transparent status bar
+  /// (chrome still reserved) and reading content may scroll into that band.
+  /// When false, chrome stays below the status insets as usual.
   final bool immersiveStatusBar;
 
   double get scale => fontSize / referenceFontSize;

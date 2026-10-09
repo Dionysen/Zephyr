@@ -61,55 +61,60 @@ class _SettingsPageState extends State<SettingsPage> {
             );
             if (compact) {
               final barColor = ZephyrSettingsAppBar.backgroundColor(context);
+              final surface = Theme.of(context).colorScheme.surface;
               return Theme(
                 data: withMobileRoundControls(Theme.of(context)),
                 child: ZephyrStatusBar(
                   immersive: immersiveStatusBar,
-                  statusBarColor: barColor,
+                  statusBarColor: immersiveStatusBar ? surface : barColor,
                   child: Scaffold(
-                    backgroundColor: Theme.of(context).colorScheme.surface,
-                    body: Column(
-                      children: [
-                        ColoredBox(
-                          // Status bar region shows settings chrome color.
-                          color: barColor,
-                          child: ZephyrTopSafeArea(
-                            bottom: false,
-                            child: ZephyrSettingsAppBar(
-                              title: _editingTokens ? '自定义颜色' : '设置',
-                              onBack: () {
-                                if (_editingTokens) {
-                                  setState(() => _editingTokens = false);
-                                  return;
-                                }
-                                Navigator.of(context).maybePop();
-                              },
+                    backgroundColor: surface,
+                    body: ColoredBox(
+                      color: surface,
+                      child: Column(
+                        children: [
+                          ColoredBox(
+                            // Status bar band shows app-bar chrome color.
+                            color: barColor,
+                            child: ZephyrTopSafeArea(
+                              bottom: false,
+                              child: ZephyrSettingsAppBar(
+                                title: _editingTokens ? '自定义颜色' : '设置',
+                                onBack: () {
+                                  if (_editingTokens) {
+                                    setState(() => _editingTokens = false);
+                                    return;
+                                  }
+                                  Navigator.of(context).maybePop();
+                                },
+                              ),
                             ),
                           ),
-                        ),
-                        Expanded(
-                          child: _editingTokens
-                              ? Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    16,
-                                    12,
-                                    16,
-                                    24,
+                          Expanded(
+                            child: _editingTokens
+                                ? Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      16,
+                                      12,
+                                      16,
+                                      24,
+                                    ),
+                                    child: ThemeTokenEditor(
+                                      viewModel: scope.theme,
+                                      showBackButton: false,
+                                      onBack: () => setState(
+                                        () => _editingTokens = false,
+                                      ),
+                                    ),
+                                  )
+                                : _CompactSettingsList(
+                                    scope: scope,
+                                    onCustomizeTheme: () =>
+                                        setState(() => _editingTokens = true),
                                   ),
-                                  child: ThemeTokenEditor(
-                                    viewModel: scope.theme,
-                                    showBackButton: false,
-                                    onBack: () =>
-                                        setState(() => _editingTokens = false),
-                                  ),
-                                )
-                              : _CompactSettingsList(
-                                  scope: scope,
-                                  onCustomizeTheme: () =>
-                                      setState(() => _editingTokens = true),
-                                ),
-                        ),
-                      ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

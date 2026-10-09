@@ -23,6 +23,7 @@ class LibraryViewModel extends ChangeNotifier {
   Object? _error;
   bool _needsLibrarySetup;
   Timer? _pendingSave;
+  Timer? _pendingTitleSave;
   Timer? _pendingLayoutSave;
   bool _isSidebarExpanded = true;
   bool _isReorderMode = false;
@@ -494,6 +495,62 @@ class LibraryViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Updates the open chapter title locally and persists via [renameArticle].
+  ///
+  /// [saveArticle] only writes content, so title changes cannot share that path.
+  void updateTitle(String title) {
+    if (isReadOnly) return;
+    final article = _article;
+    if (article == null) return;
+    _article = WritingArticle(
+      id: article.id,
+      title: title,
+      content: article.content,
+      summary: article.summary,
+      folderId: article.folderId,
+      categoryId: article.categoryId,
+      createdAt: article.createdAt,
+      updatedAt: DateTime.now(),
+      wordCount: article.wordCount,
+    );
+    final library = _library;
+    if (library != null) {
+      _library = WritingLibrary(
+        folders: library.folders,
+        categories: library.categories,
+        articles: [
+          for (final chapter in library.articles)
+            if (chapter.id == article.id)
+              ArticleSummary(
+                id: chapter.id,
+                title: title,
+                summary: chapter.summary,
+                folderId: chapter.folderId,
+                categoryId: chapter.categoryId,
+                createdAt: chapter.createdAt,
+                updatedAt: DateTime.now(),
+                wordCount: chapter.wordCount,
+              )
+            else
+              chapter,
+        ],
+      );
+    }
+    _pendingTitleSave?.cancel();
+    _pendingTitleSave = Timer(const Duration(milliseconds: 400), () {
+      unawaited(_persistTitle(article.id, title));
+    });
+    notifyListeners();
+  }
+
+  Future<void> _persistTitle(String articleId, String title) async {
+    try {
+      await _repository.renameArticle(articleId: articleId, title: title);
+    } on Object {
+      // Keep the in-memory title; the next edit retries persistence.
+    }
+  }
+
   Future<void> save() async {
     _pendingSave?.cancel();
     final article = _article;
@@ -601,6 +658,15 @@ class LibraryViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _pendingSave?.cancel();
+    if (_pendingTitleSave?.isActive == true) {
+      _pendingTitleSave?.cancel();
+      final article = _article;
+      if (article != null) {
+        unawaited(_persistTitle(article.id, article.title));
+      }
+    } else {
+      _pendingTitleSave?.cancel();
+    }
     _pendingLayoutSave?.cancel();
     super.dispose();
   }

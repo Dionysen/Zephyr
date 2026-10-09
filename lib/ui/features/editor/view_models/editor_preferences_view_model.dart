@@ -89,6 +89,16 @@ class EditorPreferencesViewModel extends ChangeNotifier {
       _update(_preferences.copyWith(firstLineIndent: value));
   void updateMaxContentWidth(double value) =>
       _update(_preferences.copyWith(maxContentWidth: value));
+  void updateTitleFontSize(double value) => _update(
+    _preferences.copyWith(
+      titleFontSize: value.clamp(
+        EditorPreferences.minTitleFontSize,
+        EditorPreferences.maxTitleFontSize,
+      ),
+    ),
+  );
+  void updateTitleCentered(bool value) =>
+      _update(_preferences.copyWith(titleCentered: value));
 
   void _update(EditorPreferences value) {
     _preferences = value;

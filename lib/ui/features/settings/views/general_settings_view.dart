@@ -20,9 +20,9 @@ class GeneralSettingsView extends StatelessWidget {
       final tile = ZephyrSettingsSwitchTile(
         title: compact ? '沉浸式通知栏' : 'Immersive status bar',
         subtitle: compact
-            ? '开启后自动隐藏系统状态栏；正文上滑可进入通知栏区域。关闭则为透明状态栏并显示系统图标。'
-            : 'On: auto-hide the system status bar; text may scroll under '
-                  'it. Off: transparent status bar with system icons.',
+            ? '开启后应用延伸到透明通知栏下（控件仍留白），正文可上滑进入该区域。'
+            : 'On: draw under a transparent status bar (chrome stays padded); '
+                  'text may scroll into that band.',
         value: viewModel.ui.immersiveStatusBar,
         showDivider: false,
         onChanged: viewModel.updateImmersiveStatusBar,

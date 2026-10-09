@@ -30,18 +30,23 @@ class WorkspaceEditor extends StatefulWidget {
 class _WorkspaceEditorState extends State<WorkspaceEditor> {
   final _scrollController = ScrollController();
   final _focusNode = FocusNode();
+  final _titleFocusNode = FocusNode();
   final _controller = PlainTextEditingController();
+  final _titleController = TextEditingController();
 
   String? _articleId;
   int? _indent;
   String _lastEmitted = '';
   var _suppressControllerNotify = false;
+  var _suppressTitleNotify = false;
 
   @override
   void initState() {
     super.initState();
     widget.preferences.addListener(_onPreferences);
     _controller.addListener(_onControllerChanged);
+    _titleController.addListener(_onTitleChanged);
+    _titleFocusNode.addListener(_onTitleFocusChanged);
     _syncFromModel();
   }
 
@@ -59,9 +64,13 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   void dispose() {
     widget.preferences.removeListener(_onPreferences);
     _controller.removeListener(_onControllerChanged);
+    _titleController.removeListener(_onTitleChanged);
+    _titleFocusNode.removeListener(_onTitleFocusChanged);
     _controller.dispose();
+    _titleController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
+    _titleFocusNode.dispose();
     super.dispose();
   }
 
@@ -82,8 +91,22 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
       _controller.setText('');
       _suppressControllerNotify = false;
       _lastEmitted = '';
+      _suppressTitleNotify = true;
+      _titleController.text = '';
+      _suppressTitleNotify = false;
       return;
     }
+
+    if (!_titleFocusNode.hasFocus &&
+        (article.id != _articleId || _titleController.text != article.title)) {
+      _suppressTitleNotify = true;
+      _titleController.value = TextEditingValue(
+        text: article.title,
+        selection: TextSelection.collapsed(offset: article.title.length),
+      );
+      _suppressTitleNotify = false;
+    }
+
     _indent = widget.preferences.preferences.firstLineIndent;
     final content = applyParagraphIndentation(article.content, _indent!);
     // Ignore model echoes of our own edits.
@@ -131,20 +154,55 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     widget.model.updateContent(plain);
   }
 
+  void _onTitleChanged() {
+    if (_suppressTitleNotify || widget.model.isReadOnly) return;
+    final article = widget.model.article;
+    if (article == null) return;
+    if (_titleController.text == article.title) return;
+    widget.model.updateTitle(_titleController.text);
+  }
+
+  void _onTitleFocusChanged() {
+    if (_titleFocusNode.hasFocus) {
+      // Ensure the body editor releases primary focus / IME.
+      if (_focusNode.hasFocus) {
+        _focusNode.unfocus();
+      }
+      return;
+    }
+    if (widget.model.isReadOnly) return;
+    final trimmed = _titleController.text.trim();
+    final next = trimmed.isEmpty ? 'Untitled' : trimmed;
+    if (_titleController.text != next) {
+      _suppressTitleNotify = true;
+      _titleController.value = TextEditingValue(
+        text: next,
+        selection: TextSelection.collapsed(offset: next.length),
+      );
+      _suppressTitleNotify = false;
+    }
+    final article = widget.model.article;
+    if (article != null && article.title != next) {
+      widget.model.updateTitle(next);
+    }
+  }
+
   /// Compact layouts keep a 12px floor so “editor width” can widen to the
   /// screen edge; desktop keeps the wider reading gutter.
   static const _compactHorizontalPadding = 12.0;
   static const _expandedHorizontalPadding = 42.0;
 
-  EditorTypography _typography(BuildContext context, EditorPreferences prefs) {
-    final color = Theme.of(context).colorScheme.onSurface;
-    final top = 28 + widget.contentTopInset;
+  double _horizontalPadding(BuildContext context) {
     final compact = ZephyrBreakpoints.isCompact(
       MediaQuery.sizeOf(context).width,
     );
-    final horizontal = compact
-        ? _compactHorizontalPadding
-        : _expandedHorizontalPadding;
+    return compact ? _compactHorizontalPadding : _expandedHorizontalPadding;
+  }
+
+  EditorTypography _typography(BuildContext context, EditorPreferences prefs) {
+    final color = Theme.of(context).colorScheme.onSurface;
+    final horizontal = _horizontalPadding(context);
+    // Title block owns the top inset; body only needs a short gap below it.
     return EditorTypography(
       color: color,
       fontSize: prefs.fontSize,
@@ -153,7 +211,75 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
       paragraphSpacing: prefs.paragraphSpacing,
       maxContentWidth: prefs.maxContentWidth,
       firstLineIndent: prefs.firstLineIndent,
-      documentPadding: EdgeInsets.fromLTRB(horizontal, top, horizontal, 48),
+      documentPadding: EdgeInsets.fromLTRB(horizontal, 12, horizontal, 48),
+    );
+  }
+
+  Widget _titleHeader(BuildContext context, EditorPreferences prefs) {
+    final theme = Theme.of(context);
+    final horizontal = _horizontalPadding(context);
+    final outline = theme.colorScheme.outlineVariant;
+    final top = 20 + widget.contentTopInset;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(horizontal, top, horizontal, 0),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: prefs.maxContentWidth),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: _titleController,
+                focusNode: _titleFocusNode,
+                readOnly: widget.model.isReadOnly,
+                maxLines: null,
+                textAlign: prefs.titleCentered
+                    ? TextAlign.center
+                    : TextAlign.start,
+                textInputAction: TextInputAction.done,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontSize: prefs.titleFontSize,
+                  fontFamily: prefs.fontFamily,
+                  fontWeight: FontWeight.w600,
+                  height: 1.3,
+                  color: theme.colorScheme.onSurface,
+                ),
+                cursorColor:
+                    theme.textSelectionTheme.cursorColor ??
+                    theme.colorScheme.onSurface,
+                decoration: InputDecoration(
+                  isDense: true,
+                  filled: false,
+                  hintText: 'Untitled',
+                  hintStyle: theme.textTheme.titleLarge?.copyWith(
+                    fontSize: prefs.titleFontSize,
+                    fontFamily: prefs.fontFamily,
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                    color: theme.colorScheme.onSurfaceVariant.withValues(
+                      alpha: 0.45,
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                ),
+                onSubmitted: (_) => _focusNode.requestFocus(),
+              ),
+              const SizedBox(height: 10),
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: outline.withValues(alpha: 0.65),
+              ),
+              const SizedBox(height: 4),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -185,6 +311,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
               readOnly: widget.model.isReadOnly,
               cursorColor: cursorColor,
               selectionColor: selectionColor,
+              header: _titleHeader(context, preferences),
               onTextChanged: (_) {},
               onSelectionChanged: (_) {},
             ),

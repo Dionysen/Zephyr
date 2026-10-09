@@ -7,6 +7,8 @@ class EditorPreferences {
     required this.paragraphSpacing,
     required this.firstLineIndent,
     required this.maxContentWidth,
+    required this.titleFontSize,
+    required this.titleCentered,
   });
 
   static const defaults = EditorPreferences(
@@ -17,7 +19,12 @@ class EditorPreferences {
     paragraphSpacing: 0.5,
     firstLineIndent: 2,
     maxContentWidth: 760,
+    titleFontSize: 25,
+    titleCentered: true,
   );
+
+  static const minTitleFontSize = 14.0;
+  static const maxTitleFontSize = 48.0;
 
   final String? fontFamily;
 
@@ -34,6 +41,13 @@ class EditorPreferences {
   final int firstLineIndent;
   final double maxContentWidth;
 
+  /// Chapter title block above the writing column.
+  final double titleFontSize;
+
+  /// When true, title text is centered in the reading column; otherwise
+  /// left-aligned to the same edge as the body.
+  final bool titleCentered;
+
   EditorPreferences copyWith({
     String? fontFamily,
     String? fontPath,
@@ -43,6 +57,8 @@ class EditorPreferences {
     double? paragraphSpacing,
     int? firstLineIndent,
     double? maxContentWidth,
+    double? titleFontSize,
+    bool? titleCentered,
   }) => EditorPreferences(
     fontFamily: clearFontFamily ? null : fontFamily ?? this.fontFamily,
     fontPath: clearFontFamily ? null : fontPath ?? this.fontPath,
@@ -51,6 +67,8 @@ class EditorPreferences {
     paragraphSpacing: paragraphSpacing ?? this.paragraphSpacing,
     firstLineIndent: firstLineIndent ?? this.firstLineIndent,
     maxContentWidth: maxContentWidth ?? this.maxContentWidth,
+    titleFontSize: titleFontSize ?? this.titleFontSize,
+    titleCentered: titleCentered ?? this.titleCentered,
   );
 }
 
