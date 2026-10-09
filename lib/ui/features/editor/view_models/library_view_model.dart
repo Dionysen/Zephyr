@@ -25,6 +25,7 @@ class LibraryViewModel extends ChangeNotifier {
   Timer? _pendingSave;
   Timer? _pendingLayoutSave;
   bool _isSidebarExpanded = true;
+  bool _isReorderMode = false;
   bool _isResizingSidebar = false;
   double _sidebarWidth = WorkspaceLayout.defaults.sidebarWidth;
   String? _lastLibraryRoot;
@@ -33,6 +34,8 @@ class LibraryViewModel extends ChangeNotifier {
   String? _selectedArticleId;
   final Map<String, Set<String>> _expandedVolumesByBook = {};
   final Map<String, double> _sidebarScrollOffsetByBook = {};
+  /// Snapshot of expanded volume ids while a volume drag temporarily collapses all.
+  Set<String>? _volumeExpandSnapshotDuringDrag;
   static const minSidebarWidth = WorkspaceLayout.minSidebarWidth;
   static const maxSidebarWidth = WorkspaceLayout.maxSidebarWidth;
   static const defaultSidebarWidth = WorkspaceLayout.defaultSidebarWidth;
@@ -44,6 +47,8 @@ class LibraryViewModel extends ChangeNotifier {
   /// True until the user has chosen a PureWriter library folder.
   bool get needsLibrarySetup => _needsLibrarySetup;
   bool get isSidebarExpanded => _isSidebarExpanded;
+  /// When true, sidebar rows show immediate-drag handles for reordering.
+  bool get isReorderMode => _isReorderMode;
   bool get isResizingSidebar => _isResizingSidebar;
   double get sidebarWidth => _sidebarWidth;
   bool get hasVolumes => _volumesForSelectedBook.isNotEmpty;
@@ -78,6 +83,57 @@ class LibraryViewModel extends ChangeNotifier {
 
   void toggleSidebar() {
     _isSidebarExpanded = !_isSidebarExpanded;
+    notifyListeners();
+  }
+
+  void toggleReorderMode() {
+    if (isReadOnly || selectedBook?.isTrash == true) {
+      if (!_isReorderMode) return;
+      endVolumeReorderDrag();
+      _isReorderMode = false;
+      notifyListeners();
+      return;
+    }
+    if (_isReorderMode) {
+      endVolumeReorderDrag();
+    }
+    _isReorderMode = !_isReorderMode;
+    notifyListeners();
+  }
+
+  void setReorderMode(bool value) {
+    final next = value && !isReadOnly && selectedBook?.isTrash != true;
+    if (_isReorderMode == next) return;
+    if (!next) {
+      endVolumeReorderDrag();
+    }
+    _isReorderMode = next;
+    notifyListeners();
+  }
+
+  /// Collapse every volume for the duration of a volume-row drag.
+  ///
+  /// Does not persist layout; [endVolumeReorderDrag] restores the prior set.
+  void beginVolumeReorderDrag() {
+    final bookId = _selectedBookId;
+    if (bookId == null || !hasVolumes) return;
+    if (_volumeExpandSnapshotDuringDrag != null) return;
+    final current = _expandedVolumesByBook[bookId];
+    _volumeExpandSnapshotDuringDrag = current == null
+        ? _volumesForSelectedBook.map((volume) => volume.id).toSet()
+        : Set<String>.from(current);
+    _expandedVolumesByBook[bookId] = <String>{};
+    notifyListeners();
+  }
+
+  void endVolumeReorderDrag() {
+    final snapshot = _volumeExpandSnapshotDuringDrag;
+    if (snapshot == null) return;
+    _volumeExpandSnapshotDuringDrag = null;
+    final bookId = _selectedBookId;
+    if (bookId != null) {
+      _expandedVolumesByBook[bookId] = snapshot;
+    }
     notifyListeners();
   }
 
@@ -139,6 +195,9 @@ class LibraryViewModel extends ChangeNotifier {
 
   Future<void> selectBook(String bookId) async {
     if (_selectedBookId == bookId) return;
+    if (bookId == WritingFolder.trashId) {
+      _isReorderMode = false;
+    }
     _selectedBookId = bookId;
     final chapters = _chaptersForSelectedBook;
     final preferredId = _selectedArticleId;
@@ -257,6 +316,161 @@ class LibraryViewModel extends ChangeNotifier {
       expanded.add(volume.id);
     }
     _scheduleLayoutSave();
+    await load();
+    notifyListeners();
+  }
+
+  Future<void> insertVolumeBelow(String afterVolumeId) async {
+    if (isReadOnly) return;
+    final book = selectedBook;
+    if (book == null || book.isTrash) return;
+    final volume = await _repository.createCategory(
+      folderId: book.id,
+      name: 'Untitled',
+      afterCategoryId: afterVolumeId,
+    );
+    final expanded = _expandedVolumesByBook[book.id];
+    if (expanded != null) {
+      expanded.add(volume.id);
+    }
+    _scheduleLayoutSave();
+    await load();
+    notifyListeners();
+  }
+
+  Future<void> insertChapterBelow(String afterArticleId) async {
+    if (isReadOnly) return;
+    final book = selectedBook;
+    if (book == null || book.isTrash) return;
+    final after = _library?.articles
+        .where((chapter) => chapter.id == afterArticleId)
+        .firstOrNull;
+    if (after == null || after.folderId != book.id) return;
+    _article = await _repository.createArticle(
+      folderId: book.id,
+      categoryId: after.categoryId,
+      afterArticleId: afterArticleId,
+    );
+    _selectedArticleId = _article?.id;
+    _scheduleLayoutSave();
+    await load();
+    notifyListeners();
+  }
+
+  Future<void> renameVolume({
+    required String volumeId,
+    required String name,
+  }) async {
+    if (isReadOnly) return;
+    await _repository.renameCategory(categoryId: volumeId, name: name);
+    await load();
+    notifyListeners();
+  }
+
+  Future<void> renameChapter({
+    required String articleId,
+    required String title,
+  }) async {
+    if (isReadOnly) return;
+    await _repository.renameArticle(articleId: articleId, title: title);
+    if (_article?.id == articleId) {
+      _article = await _repository.getArticle(articleId);
+    }
+    await load();
+    notifyListeners();
+  }
+
+  Future<void> deleteVolume({
+    required String volumeId,
+    required bool deleteArticles,
+  }) async {
+    if (isReadOnly) return;
+    final book = selectedBook;
+    if (book == null || book.isTrash) return;
+    final removedIds = _library?.articles
+            .where((chapter) => chapter.categoryId == volumeId)
+            .map((chapter) => chapter.id)
+            .toSet() ??
+        const <String>{};
+    await _repository.deleteCategory(
+      categoryId: volumeId,
+      deleteArticles: deleteArticles,
+    );
+    _expandedVolumesByBook[book.id]?.remove(volumeId);
+    if (deleteArticles &&
+        _selectedArticleId != null &&
+        removedIds.contains(_selectedArticleId)) {
+      _selectedArticleId = null;
+      _article = null;
+    }
+    _scheduleLayoutSave();
+    await load();
+    notifyListeners();
+  }
+
+  Future<void> deleteChapter(String articleId) async {
+    if (isReadOnly) return;
+    final book = selectedBook;
+    if (book == null || book.isTrash) return;
+    await _repository.trashArticle(articleId);
+    if (_selectedArticleId == articleId) {
+      _selectedArticleId = null;
+      _article = null;
+    }
+    _scheduleLayoutSave();
+    await load();
+    notifyListeners();
+  }
+
+  Future<void> moveChapterToVolume({
+    required String articleId,
+    String? volumeId,
+  }) async {
+    if (isReadOnly) return;
+    final book = selectedBook;
+    if (book == null || book.isTrash) return;
+    await _repository.moveArticleToCategory(
+      articleId: articleId,
+      categoryId: volumeId,
+    );
+    if (volumeId != null) {
+      final expanded = _expandedVolumesByBook[book.id];
+      if (expanded != null) {
+        expanded.add(volumeId);
+      }
+    }
+    if (_article?.id == articleId) {
+      _article = await _repository.getArticle(articleId);
+    }
+    _scheduleLayoutSave();
+    await load();
+    notifyListeners();
+  }
+
+  Future<void> reorderVolumes(List<String> orderedIds) async {
+    if (isReadOnly) return;
+    final book = selectedBook;
+    if (book == null || book.isTrash) return;
+    await _repository.reorderCategories(
+      folderId: book.id,
+      orderedIds: orderedIds,
+    );
+    await load();
+    notifyListeners();
+  }
+
+  Future<void> reorderChapters({
+    String? volumeId,
+    required List<String> orderedIds,
+  }) async {
+    if (isReadOnly) return;
+    final book = selectedBook;
+    if (book == null || book.isTrash) return;
+    await _repository.reorderArticles(
+      folderId: book.id,
+      categoryId: volumeId,
+      orderedIds: orderedIds,
+    );
     await load();
     notifyListeners();
   }

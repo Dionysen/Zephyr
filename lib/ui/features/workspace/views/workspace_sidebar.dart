@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 import '../../../../domain/models/purewriter_models.dart';
+import '../../../core/breakpoints.dart';
 import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_controls.dart';
 import '../../../core/zephyr_dropdown.dart';
@@ -11,6 +12,7 @@ import '../../../core/zephyr_resize_handle.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
 import '../../../core/zephyr_theme.dart';
 import '../../editor/view_models/library_view_model.dart';
+import 'workspace_sidebar_library_actions.dart';
 
 enum SidebarMode { docked, drawer }
 
@@ -38,6 +40,7 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
   LibraryViewModel get model => widget.model;
   bool get _canCreateVolume =>
       !model.isReadOnly && model.selectedBook?.isTrash != true;
+  bool get _canReorder => _canCreateVolume;
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +59,7 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                 onToggleAllVolumes: model.hasVolumes
                     ? () => _chapterTreeKey.currentState?.toggleAllVolumes()
                     : null,
+                canReorder: _canReorder,
               )
             else ...[
               SizedBox(
@@ -77,6 +81,11 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                       onPressed: _canCreateVolume ? model.createVolume : null,
                       icon: const Icon(Icons.create_new_folder_outlined),
                       tooltip: 'New volume',
+                    ),
+                    _ReorderModeButton(
+                      enabled: _canReorder,
+                      active: model.isReorderMode,
+                      onPressed: model.toggleReorderMode,
                     ),
                   ],
                 ),
@@ -135,14 +144,43 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
 }
 
 /// Mobile drawer header: book name + chapter count on the left, tools on the right.
+class _ReorderModeButton extends StatelessWidget {
+  const _ReorderModeButton({
+    required this.enabled,
+    required this.active,
+    required this.onPressed,
+  });
+
+  final bool enabled;
+  final bool active;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return IconButton(
+      onPressed: enabled ? onPressed : null,
+      isSelected: active,
+      icon: const Icon(Icons.swap_vert),
+      selectedIcon: Icon(
+        Icons.swap_vert,
+        color: theme.colorScheme.primary,
+      ),
+      tooltip: active ? 'Done reordering' : 'Reorder',
+    );
+  }
+}
+
 class _DrawerSidebarHeader extends StatelessWidget {
   const _DrawerSidebarHeader({
     required this.model,
     required this.onToggleAllVolumes,
+    required this.canReorder,
   });
 
   final LibraryViewModel model;
   final VoidCallback? onToggleAllVolumes;
+  final bool canReorder;
 
   @override
   Widget build(BuildContext context) {
@@ -215,6 +253,11 @@ class _DrawerSidebarHeader extends StatelessWidget {
             onPressed: model.isReadOnly || isTrash ? null : model.createArticle,
             icon: const Icon(Icons.note_add_outlined),
             tooltip: 'New chapter',
+          ),
+          _ReorderModeButton(
+            enabled: canReorder,
+            active: model.isReorderMode,
+            onPressed: model.toggleReorderMode,
           ),
         ],
       ),
@@ -1155,45 +1198,61 @@ class _ChapterTreeState extends State<_ChapterTree> {
         .where((item) => item.folderId == bookId)
         .toList(growable: false);
     final isTrash = bookId == WritingFolder.trashId;
+    final canManage = !model.isReadOnly && !isTrash;
+    final showDragHandles = canManage && model.isReorderMode;
     final pinnedBackground = Theme.of(
       context,
     ).colorScheme.surfaceContainerLowest;
+    final volumes = library.categories
+        .where((item) => !isTrash && item.folderId == bookId)
+        .toList(growable: false);
+    final volumeIds = volumes.map((item) => item.id).toList(growable: false);
     final slivers = <Widget>[
       const SliverToBoxAdapter(child: SizedBox(height: 2)),
     ];
-    for (final volume in library.categories.where(
-      (item) => !isTrash && item.folderId == bookId,
-    )) {
+    for (var volumeIndex = 0; volumeIndex < volumes.length; volumeIndex++) {
+      final volume = volumes[volumeIndex];
       final volumeChapters = chapters
           .where((item) => item.categoryId == volume.id)
           .toList(growable: false);
+      final chapterIds =
+          volumeChapters.map((item) => item.id).toList(growable: false);
       final header = _VolumeRow(
         volume: volume,
         model: model,
         chapterCount: volumeChapters.length,
+        siblingIds: volumeIds,
+        canManage: canManage,
+        showDragHandle: showDragHandles,
+        isLast: volumeIndex == volumes.length - 1,
         onToggle: () => _toggleVolume(volume.id),
       );
+      // Keep a stable SliverMainAxisGroup so collapsing during a volume drag
+      // does not dispose the active Draggable.
       slivers.add(
-        model.isVolumeExpanded(volume.id) && volumeChapters.isNotEmpty
-            ? SliverMainAxisGroup(
-                key: _volumeKeyFor(volume.id),
-                slivers: [
-                  PinnedHeaderSliver(
-                    child: ColoredBox(
-                      color: pinnedBackground,
-                      child: header,
-                    ),
-                  ),
-                  SliverList.builder(
-                    itemCount: volumeChapters.length,
-                    itemBuilder: (context, index) => _ChapterRow(
-                      chapter: volumeChapters[index],
-                      model: model,
-                    ),
-                  ),
-                ],
-              )
-            : SliverToBoxAdapter(child: header),
+        SliverMainAxisGroup(
+          key: _volumeKeyFor(volume.id),
+          slivers: [
+            PinnedHeaderSliver(
+              child: ColoredBox(
+                color: pinnedBackground,
+                child: header,
+              ),
+            ),
+            if (model.isVolumeExpanded(volume.id) && volumeChapters.isNotEmpty)
+              SliverList.builder(
+                itemCount: volumeChapters.length,
+                itemBuilder: (context, index) => _ChapterRow(
+                  chapter: volumeChapters[index],
+                  model: model,
+                  siblingIds: chapterIds,
+                  canManage: canManage,
+                  showDragHandle: showDragHandles,
+                  isLast: index == volumeChapters.length - 1,
+                ),
+              ),
+          ],
+        ),
       );
     }
     final loose = chapters
@@ -1210,11 +1269,18 @@ class _ChapterTreeState extends State<_ChapterTree> {
           ),
         );
       }
+      final looseIds = loose.map((item) => item.id).toList(growable: false);
       slivers.add(
         SliverList.builder(
           itemCount: loose.length,
-          itemBuilder: (context, index) =>
-              _ChapterRow(chapter: loose[index], model: model),
+          itemBuilder: (context, index) => _ChapterRow(
+            chapter: loose[index],
+            model: model,
+            siblingIds: looseIds,
+            canManage: canManage,
+            showDragHandle: showDragHandles,
+            isLast: index == loose.length - 1,
+          ),
         ),
       );
     }
@@ -1223,28 +1289,205 @@ class _ChapterTreeState extends State<_ChapterTree> {
   }
 }
 
+class _VolumeDragData {
+  const _VolumeDragData(this.volumeId);
+  final String volumeId;
+}
+
+class _ChapterDragData {
+  const _ChapterDragData({required this.articleId, required this.categoryId});
+  final String articleId;
+  final String? categoryId;
+}
+
+/// Moves [draggedId] before/after [targetId] within a sibling id list.
+List<String>? _reorderSiblingIds({
+  required List<String> siblingIds,
+  required String draggedId,
+  required String targetId,
+  required bool insertAfter,
+}) {
+  if (draggedId == targetId) return null;
+  final ids = List<String>.from(siblingIds);
+  final from = ids.indexOf(draggedId);
+  var to = ids.indexOf(targetId);
+  if (from < 0 || to < 0) return null;
+  final item = ids.removeAt(from);
+  if (from < to) to -= 1;
+  if (insertAfter) to += 1;
+  ids.insert(to.clamp(0, ids.length), item);
+  return ids;
+}
+
+/// Gap above a row: one drop slot with the preview line centered in the margin.
+class _ReorderBeforeSlot<T extends Object> extends StatelessWidget {
+  const _ReorderBeforeSlot({
+    required this.enabled,
+    required this.gap,
+    required this.horizontalInset,
+    required this.canAccept,
+    required this.onAccept,
+    required this.child,
+  });
+
+  final bool enabled;
+  final double gap;
+  final double horizontalInset;
+  final bool Function(T data) canAccept;
+  final void Function(T data) onAccept;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!enabled) {
+      return Padding(
+        padding: EdgeInsets.only(top: gap),
+        child: child,
+      );
+    }
+    final theme = Theme.of(context);
+    return DragTarget<T>(
+      onWillAcceptWithDetails: (details) => canAccept(details.data),
+      onAcceptWithDetails: (details) => onAccept(details.data),
+      builder: (context, candidate, _) {
+        final highlight = candidate.isNotEmpty;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: gap,
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalInset),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 80),
+                    height: 2,
+                    color: highlight
+                        ? theme.colorScheme.primary
+                        : Colors.transparent,
+                  ),
+                ),
+              ),
+            ),
+            child,
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Trailing gap under the last row for "insert after last".
+class _ReorderAfterGap<T extends Object> extends StatelessWidget {
+  const _ReorderAfterGap({
+    required this.enabled,
+    required this.gap,
+    required this.horizontalInset,
+    required this.canAccept,
+    required this.onAccept,
+  });
+
+  final bool enabled;
+  final double gap;
+  final double horizontalInset;
+  final bool Function(T data) canAccept;
+  final void Function(T data) onAccept;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!enabled) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return DragTarget<T>(
+      onWillAcceptWithDetails: (details) => canAccept(details.data),
+      onAcceptWithDetails: (details) => onAccept(details.data),
+      builder: (context, candidate, _) {
+        final highlight = candidate.isNotEmpty;
+        return SizedBox(
+          height: gap,
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalInset),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 80),
+                height: 2,
+                color: highlight
+                    ? theme.colorScheme.primary
+                    : Colors.transparent,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _VolumeRow extends StatelessWidget {
   const _VolumeRow({
     required this.volume,
     required this.model,
     required this.chapterCount,
+    required this.siblingIds,
+    required this.canManage,
+    required this.showDragHandle,
+    required this.isLast,
     required this.onToggle,
   });
 
   static const _listInset = 6.0;
-  static const _volumeGap = 6.0;
+  static const _volumeGap = 8.0;
 
   final WritingCategory volume;
   final LibraryViewModel model;
   final int chapterCount;
+  final List<String> siblingIds;
+  final bool canManage;
+  final bool showDragHandle;
+  final bool isLast;
   final VoidCallback onToggle;
+
+  Future<void> _openMenu(
+    BuildContext context, {
+    RelativeRect? position,
+  }) async {
+    if (!canManage) return;
+    final actionId = await showSidebarLibraryMenu(
+      context,
+      actions: volumeMenuActions,
+      position: position,
+    );
+    if (actionId == null || !context.mounted) return;
+    await handleVolumeMenuAction(
+      context,
+      model: model,
+      volume: volume,
+      actionId: actionId,
+    );
+  }
+
+  Future<void> _acceptVolumeDrop(
+    _VolumeDragData data, {
+    required bool insertAfter,
+  }) async {
+    if (!showDragHandle) return;
+    final ids = _reorderSiblingIds(
+      siblingIds: siblingIds,
+      draggedId: data.volumeId,
+      targetId: volume.id,
+      insertAfter: insertAfter,
+    );
+    if (ids == null) return;
+    await model.reorderVolumes(ids);
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final radius = context.zephyrBorderRadius;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(_listInset, _volumeGap, _listInset, 0),
+    final compact = ZephyrBreakpoints.isCompact(MediaQuery.sizeOf(context).width);
+    final body = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: _listInset),
       child: Material(
         color: theme.colorScheme.surfaceContainerHigh,
         shape: RoundedRectangleBorder(
@@ -1257,9 +1500,19 @@ class _VolumeRow extends StatelessWidget {
         child: InkWell(
           borderRadius: radius,
           onTap: onToggle,
+          onLongPress: compact && !showDragHandle
+              ? () => _openMenu(context)
+              : null,
+          onSecondaryTapDown: !compact
+              ? (details) => _openMenu(
+                    context,
+                    position: secondaryMenuPosition(context, details),
+                  )
+              : null,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Icon(
                   model.isVolumeExpanded(volume.id)
@@ -1277,30 +1530,112 @@ class _VolumeRow extends StatelessWidget {
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
+                if (showDragHandle) ...[
+                  const SizedBox(width: 4),
+                  _SidebarDragHandle<_VolumeDragData>(
+                    data: _VolumeDragData(volume.id),
+                    feedbackLabel: volume.name,
+                    onDragStarted: model.beginVolumeReorderDrag,
+                    onDragEnded: model.endVolumeReorderDrag,
+                  ),
+                ],
               ],
             ),
           ),
         ),
       ),
     );
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _ReorderBeforeSlot<_VolumeDragData>(
+          enabled: showDragHandle,
+          gap: showDragHandle ? _volumeGap : 6,
+          horizontalInset: _listInset,
+          canAccept: (data) => data.volumeId != volume.id,
+          onAccept: (data) => _acceptVolumeDrop(data, insertAfter: false),
+          child: body,
+        ),
+        _ReorderAfterGap<_VolumeDragData>(
+          enabled: showDragHandle && isLast,
+          gap: _volumeGap,
+          horizontalInset: _listInset,
+          canAccept: (data) => data.volumeId != volume.id,
+          onAccept: (data) => _acceptVolumeDrop(data, insertAfter: true),
+        ),
+      ],
+    );
   }
 }
 
 class _ChapterRow extends StatelessWidget {
-  const _ChapterRow({required this.chapter, required this.model});
+  const _ChapterRow({
+    required this.chapter,
+    required this.model,
+    required this.siblingIds,
+    required this.canManage,
+    required this.showDragHandle,
+    required this.isLast,
+  });
 
   static const _listInset = 6.0;
+  static const _chapterGap = 8.0;
+  static const _chapterGapIdle = 2.0;
   static const _lineGap = 2.0;
   static const _previewDateGap = 4.0;
   static const _textHeight = 1.15;
 
   final ArticleSummary chapter;
   final LibraryViewModel model;
+  final List<String> siblingIds;
+  final bool canManage;
+  final bool showDragHandle;
+  final bool isLast;
+
+  Future<void> _openMenu(
+    BuildContext context, {
+    RelativeRect? position,
+  }) async {
+    if (!canManage) return;
+    final actionId = await showSidebarLibraryMenu(
+      context,
+      actions: chapterMenuActions,
+      position: position,
+    );
+    if (actionId == null || !context.mounted) return;
+    await handleChapterMenuAction(
+      context,
+      model: model,
+      chapter: chapter,
+      actionId: actionId,
+    );
+  }
+
+  Future<void> _acceptChapterDrop(
+    _ChapterDragData data, {
+    required bool insertAfter,
+  }) async {
+    if (!showDragHandle || data.categoryId != chapter.categoryId) return;
+    final ids = _reorderSiblingIds(
+      siblingIds: siblingIds,
+      draggedId: data.articleId,
+      targetId: chapter.id,
+      insertAfter: insertAfter,
+    );
+    if (ids == null) return;
+    await model.reorderChapters(
+      volumeId: chapter.categoryId,
+      orderedIds: ids,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final radius = context.zephyrBorderRadius;
+    final compact = ZephyrBreakpoints.isCompact(MediaQuery.sizeOf(context).width);
     final activeArticle = model.article?.id == chapter.id ? model.article : null;
     final selected = activeArticle != null;
     final metaText =
@@ -1309,8 +1644,9 @@ class _ChapterRow extends StatelessWidget {
         .replaceAll(RegExp(r'[\r\n]+'), ' ')
         .replaceAll('\u3000', '')
         .trim();
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(_listInset, 2, _listInset, 0),
+    final title = chapter.title.isEmpty ? 'Untitled' : chapter.title;
+    final body = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: _listInset),
       child: Material(
         color: selected
             ? theme.colorScheme.secondaryContainer.withValues(alpha: .42)
@@ -1330,50 +1666,159 @@ class _ChapterRow extends StatelessWidget {
               scaffold.closeDrawer();
             }
           },
+          onLongPress: compact && !showDragHandle
+              ? () => _openMenu(context)
+              : null,
+          onSecondaryTapDown: !compact
+              ? (details) => _openMenu(
+                    context,
+                    position: secondaryMenuPosition(context, details),
+                  )
+              : null,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  chapter.title.isEmpty ? 'Untitled' : chapter.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    height: _textHeight,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          height: _textHeight,
+                        ),
+                      ),
+                      if (preview.isNotEmpty) ...[
+                        const SizedBox(height: _lineGap),
+                        Text(
+                          preview,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            height: _textHeight,
+                          ),
+                        ),
+                        const SizedBox(height: _previewDateGap),
+                      ] else
+                        const SizedBox(height: _lineGap),
+                      Text(
+                        metaText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          height: _textHeight,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                if (preview.isNotEmpty) ...[
-                  const SizedBox(height: _lineGap),
-                  Text(
-                    preview,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      height: _textHeight,
+                if (showDragHandle)
+                  _SidebarDragHandle<_ChapterDragData>(
+                    data: _ChapterDragData(
+                      articleId: chapter.id,
+                      categoryId: chapter.categoryId,
                     ),
+                    feedbackLabel: title,
                   ),
-                  const SizedBox(height: _previewDateGap),
-                ] else
-                  const SizedBox(height: _lineGap),
-                Text(
-                  metaText,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    height: _textHeight,
-                  ),
-                ),
               ],
             ),
           ),
         ),
       ),
     );
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _ReorderBeforeSlot<_ChapterDragData>(
+          enabled: showDragHandle,
+          gap: showDragHandle ? _chapterGap : _chapterGapIdle,
+          horizontalInset: _listInset,
+          canAccept: (data) =>
+              data.articleId != chapter.id &&
+              data.categoryId == chapter.categoryId,
+          onAccept: (data) => _acceptChapterDrop(data, insertAfter: false),
+          child: body,
+        ),
+        _ReorderAfterGap<_ChapterDragData>(
+          enabled: showDragHandle && isLast,
+          gap: _chapterGap,
+          horizontalInset: _listInset,
+          canAccept: (data) =>
+              data.articleId != chapter.id &&
+              data.categoryId == chapter.categoryId,
+          onAccept: (data) => _acceptChapterDrop(data, insertAfter: true),
+        ),
+      ],
+    );
   }
 
   String _formatDate(DateTime date) =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+}
+
+class _SidebarDragHandle<T extends Object> extends StatelessWidget {
+  const _SidebarDragHandle({
+    required this.data,
+    required this.feedbackLabel,
+    this.onDragStarted,
+    this.onDragEnded,
+  });
+
+  static const double _iconSize = 22;
+  static const double _hitSize = 36;
+
+  final T data;
+  final String feedbackLabel;
+  final VoidCallback? onDragStarted;
+  final VoidCallback? onDragEnded;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final handle = SizedBox(
+      width: _hitSize,
+      height: _hitSize,
+      child: Icon(
+        Icons.drag_handle,
+        size: _iconSize,
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    );
+    return Draggable<T>(
+      data: data,
+      dragAnchorStrategy: pointerDragAnchorStrategy,
+      onDragStarted: onDragStarted,
+      onDragEnd: onDragEnded == null ? null : (_) => onDragEnded!(),
+      feedback: Material(
+        elevation: 4,
+        borderRadius: context.zephyrBorderRadius,
+        color: theme.colorScheme.surfaceContainerHigh,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Text(
+            feedbackLabel,
+            style: theme.textTheme.labelLarge,
+          ),
+        ),
+      ),
+      childWhenDragging: SizedBox(
+        width: _hitSize,
+        height: _hitSize,
+        child: Icon(
+          Icons.drag_handle,
+          size: _iconSize,
+          color: theme.colorScheme.outline,
+        ),
+      ),
+      child: handle,
+    );
+  }
 }
 
 class _LibraryDock extends StatelessWidget {

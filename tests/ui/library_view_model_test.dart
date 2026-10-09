@@ -38,6 +38,39 @@ void main() {
     expect(model.isSidebarExpanded, isTrue);
   });
 
+  test('reorder mode toggles and clears in trash', () async {
+    final model = LibraryViewModel(FakeLibraryRepository());
+    await model.load();
+
+    expect(model.isReorderMode, isFalse);
+    model.toggleReorderMode();
+    expect(model.isReorderMode, isTrue);
+    model.toggleReorderMode();
+    expect(model.isReorderMode, isFalse);
+
+    model.toggleReorderMode();
+    await model.selectBook(WritingFolder.trashId);
+    expect(model.isReorderMode, isFalse);
+  });
+
+  test('volume drag collapses all volumes then restores expand state', () async {
+    final model = LibraryViewModel(FakeLibraryRepository());
+    await model.load();
+
+    expect(model.isVolumeExpanded('volume-a'), isTrue);
+    model.beginVolumeReorderDrag();
+    expect(model.isVolumeExpanded('volume-a'), isFalse);
+    model.endVolumeReorderDrag();
+    expect(model.isVolumeExpanded('volume-a'), isTrue);
+
+    model.toggleVolume('volume-a');
+    expect(model.isVolumeExpanded('volume-a'), isFalse);
+    model.beginVolumeReorderDrag();
+    expect(model.isVolumeExpanded('volume-a'), isFalse);
+    model.endVolumeReorderDrag();
+    expect(model.isVolumeExpanded('volume-a'), isFalse);
+  });
+
   test('remembers the last opened library folder', () async {
     final library = FakeLibraryRepository();
     final layout = FakeLayoutRepository(WorkspaceLayout.defaults);
@@ -134,6 +167,92 @@ void main() {
     expect(model.isVolumeExpanded(repository.createdVolume!.id), isTrue);
   });
 
+  test('insertVolumeBelow places a volume after the target', () async {
+    final repository = FakeLibraryRepository();
+    final model = LibraryViewModel(repository);
+    await model.load();
+
+    await model.insertVolumeBelow('volume-a');
+
+    final ids = model.library!.categories
+        .where((volume) => volume.folderId == 'Default')
+        .map((volume) => volume.id)
+        .toList();
+    expect(ids.indexOf('volume-a') + 1, ids.indexOf(repository.createdVolume!.id));
+  });
+
+  test('deleteVolume can unfile or trash chapters', () async {
+    final repository = FakeLibraryRepository();
+    repository.saved = WritingArticle(
+      id: 'article',
+      title: 'Article',
+      content: '',
+      summary: '',
+      folderId: 'Default',
+      categoryId: 'volume-a',
+      createdAt: DateTime.utc(2025),
+      updatedAt: DateTime.utc(2026),
+      wordCount: 0,
+    );
+    final model = LibraryViewModel(repository);
+    await model.load();
+
+    await model.deleteVolume(volumeId: 'volume-a', deleteArticles: false);
+    expect(
+      model.library?.categories.any((volume) => volume.id == 'volume-a'),
+      isFalse,
+    );
+    expect(repository.saved.categoryId, isNull);
+
+    repository.categories.insert(
+      0,
+      const WritingCategory(
+        id: 'volume-a',
+        folderId: 'Default',
+        name: 'Volume A',
+        rank: 0,
+        collapsed: false,
+      ),
+    );
+    repository.saved = WritingArticle(
+      id: 'article',
+      title: 'Article',
+      content: '',
+      summary: '',
+      folderId: 'Default',
+      categoryId: 'volume-a',
+      createdAt: DateTime.utc(2025),
+      updatedAt: DateTime.utc(2026),
+      wordCount: 0,
+    );
+    await model.load();
+    await model.deleteVolume(volumeId: 'volume-a', deleteArticles: true);
+    expect(repository.trashedArticleIds, contains('article'));
+  });
+
+  test('rename and move chapter update library state', () async {
+    final repository = FakeLibraryRepository();
+    repository.saved = WritingArticle(
+      id: 'article',
+      title: 'Article',
+      content: '',
+      summary: '',
+      folderId: 'Default',
+      categoryId: 'volume-a',
+      createdAt: DateTime.utc(2025),
+      updatedAt: DateTime.utc(2026),
+      wordCount: 0,
+    );
+    final model = LibraryViewModel(repository);
+    await model.load();
+
+    await model.renameChapter(articleId: 'article', title: 'Renamed');
+    expect(repository.saved.title, 'Renamed');
+
+    await model.moveChapterToVolume(articleId: 'article', volumeId: null);
+    expect(repository.saved.categoryId, isNull);
+  });
+
   test('persists article selection and sidebar scroll offset', () async {
     final layout = FakeLayoutRepository(WorkspaceLayout.defaults);
     final model = LibraryViewModel(
@@ -166,6 +285,7 @@ class FakeLibraryRepository implements WritingLibraryRepository {
     wordCount: 0,
   );
   WritingCategory? createdVolume;
+  final trashedArticleIds = <String>[];
   late final List<WritingCategory> categories = [
     const WritingCategory(
       id: 'volume-a',
@@ -199,14 +319,14 @@ class FakeLibraryRepository implements WritingLibraryRepository {
       WritingFolder(id: 'Default', name: 'Book A', rank: 0),
       WritingFolder(id: 'book-b', name: 'Book B', rank: 1),
     ],
-    categories: List<WritingCategory>.unmodifiable(categories),
+    categories: List<WritingCategory>.from(categories),
     articles: [
       ArticleSummary(
         id: saved.id,
         title: saved.title,
         summary: '',
         folderId: saved.folderId,
-        categoryId: null,
+        categoryId: saved.categoryId,
         createdAt: saved.createdAt,
         updatedAt: saved.updatedAt,
         wordCount: saved.wordCount,
@@ -227,11 +347,35 @@ class FakeLibraryRepository implements WritingLibraryRepository {
   Future<WritingArticle> getArticle(String id) async =>
       id == saved.id ? saved : _secondArticle;
   @override
-  Future<WritingArticle> createArticle({required String folderId}) async =>
+  Future<WritingArticle> createArticle({
+    required String folderId,
+    String? categoryId,
+    String? afterArticleId,
+  }) async =>
       saved;
   @override
   Future<void> saveArticle(WritingArticle article) async {
     saved = article;
+  }
+
+  @override
+  Future<void> renameArticle({
+    required String articleId,
+    required String title,
+  }) async {
+    if (saved.id == articleId) {
+      saved = WritingArticle(
+        id: saved.id,
+        title: title,
+        content: saved.content,
+        summary: saved.summary,
+        folderId: saved.folderId,
+        categoryId: saved.categoryId,
+        createdAt: saved.createdAt,
+        updatedAt: saved.updatedAt,
+        wordCount: saved.wordCount,
+      );
+    }
   }
 
   String? openedRoot;
@@ -263,6 +407,7 @@ class FakeLibraryRepository implements WritingLibraryRepository {
   Future<WritingCategory> createCategory({
     required String folderId,
     required String name,
+    String? afterCategoryId,
   }) async {
     createdVolume = WritingCategory(
       id: 'volume-${categories.length}',
@@ -271,9 +416,100 @@ class FakeLibraryRepository implements WritingLibraryRepository {
       rank: categories.length,
       collapsed: false,
     );
-    categories.add(createdVolume!);
+    if (afterCategoryId == null) {
+      categories.add(createdVolume!);
+    } else {
+      final index = categories.indexWhere((item) => item.id == afterCategoryId);
+      categories.insert(index + 1, createdVolume!);
+    }
     return createdVolume!;
   }
+
+  @override
+  Future<void> renameCategory({
+    required String categoryId,
+    required String name,
+  }) async {
+    final index = categories.indexWhere((item) => item.id == categoryId);
+    if (index < 0) return;
+    final old = categories[index];
+    categories[index] = WritingCategory(
+      id: old.id,
+      folderId: old.folderId,
+      name: name,
+      rank: old.rank,
+      collapsed: old.collapsed,
+    );
+  }
+
+  @override
+  Future<void> deleteCategory({
+    required String categoryId,
+    required bool deleteArticles,
+  }) async {
+    categories.removeWhere((item) => item.id == categoryId);
+    if (saved.categoryId == categoryId) {
+      if (deleteArticles) {
+        trashedArticleIds.add(saved.id);
+      } else {
+        saved = WritingArticle(
+          id: saved.id,
+          title: saved.title,
+          content: saved.content,
+          summary: saved.summary,
+          folderId: saved.folderId,
+          categoryId: null,
+          createdAt: saved.createdAt,
+          updatedAt: saved.updatedAt,
+          wordCount: saved.wordCount,
+        );
+      }
+    }
+  }
+
+  @override
+  Future<void> moveArticleToCategory({
+    required String articleId,
+    String? categoryId,
+  }) async {
+    if (saved.id != articleId) return;
+    saved = WritingArticle(
+      id: saved.id,
+      title: saved.title,
+      content: saved.content,
+      summary: saved.summary,
+      folderId: saved.folderId,
+      categoryId: categoryId,
+      createdAt: saved.createdAt,
+      updatedAt: saved.updatedAt,
+      wordCount: saved.wordCount,
+    );
+  }
+
+  @override
+  Future<void> reorderCategories({
+    required String folderId,
+    required List<String> orderedIds,
+  }) async {
+    final byId = {for (final item in categories) item.id: item};
+    final reordered = [
+      for (final id in orderedIds)
+        if (byId[id] != null) byId[id]!,
+    ];
+    final others = categories.where((item) => !orderedIds.contains(item.id));
+    categories
+      ..clear()
+      ..addAll(reordered)
+      ..addAll(others);
+  }
+
+  @override
+  Future<void> reorderArticles({
+    required String folderId,
+    String? categoryId,
+    required List<String> orderedIds,
+  }) async {}
+
   @override
   Future<void> updateFolder({
     required String folderId,
@@ -282,7 +518,9 @@ class FakeLibraryRepository implements WritingLibraryRepository {
     String? tags,
   }) async {}
   @override
-  Future<void> trashArticle(String articleId) async {}
+  Future<void> trashArticle(String articleId) async {
+    trashedArticleIds.add(articleId);
+  }
   @override
   Future<void> restoreArticle(
     String articleId, {

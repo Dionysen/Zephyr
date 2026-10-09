@@ -244,8 +244,14 @@ void main() {
       (expandButton.center.dx + newChapterButton.center.dx) / 2,
       closeTo(sidebar.center.dx, 0.01),
     );
-    final newVolumeButton = tester.getRect(find.byTooltip('New volume'));
-    expect(newVolumeButton.right, closeTo(sidebar.right, 8));
+    final reorderButton = tester.getRect(find.byTooltip('Reorder'));
+    expect(reorderButton.right, closeTo(sidebar.right, 8));
+    expect(find.byIcon(Icons.drag_handle), findsNothing);
+
+    await tester.tap(find.byTooltip('Reorder'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Done reordering'), findsOneWidget);
+    expect(find.byIcon(Icons.drag_handle), findsWidgets);
 
     await tester.tap(find.byTooltip('Collapse all'));
     await tester.pumpAndSettle();
@@ -301,6 +307,57 @@ void main() {
     expect(find.text('Book A'), findsWidgets);
     expect(find.byTooltip('Collapse all'), findsOneWidget);
     expect(find.byTooltip('New volume'), findsOneWidget);
+  });
+
+  testWidgets('volume context menu opens delete dialog with two choices', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Volume A'), buttons: 2);
+    await tester.pumpAndSettle();
+    expect(find.text('下方插入卷'), findsOneWidget);
+    expect(find.byIcon(Icons.delete_outline), findsWidgets);
+
+    await tester.tap(find.text('删除'));
+    await tester.pumpAndSettle();
+    expect(find.text('删除卷'), findsOneWidget);
+    expect(find.text('仅删除卷'), findsOneWidget);
+    expect(find.text('删除卷及章节'), findsOneWidget);
+  });
+
+  testWidgets('chapter context menu confirms trash before deleting', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(WorkspaceSidebar),
+        matching: find.text('Chapter A'),
+      ),
+      buttons: 2,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('下方插入章节'), findsOneWidget);
+    expect(find.text('移动到卷'), findsOneWidget);
+
+    await tester.tap(find.text('删除').last);
+    await tester.pumpAndSettle();
+    expect(find.text('删除章节'), findsOneWidget);
+    expect(find.textContaining('移入回收站'), findsOneWidget);
   });
 
   testWidgets('sidebar new-volume button creates a volume in the book', (
@@ -548,11 +605,54 @@ class _LibraryRepository implements WritingLibraryRepository {
   }
 
   @override
-  Future<WritingArticle> createArticle({required String folderId}) async =>
+  Future<WritingArticle> createArticle({
+    required String folderId,
+    String? categoryId,
+    String? afterArticleId,
+  }) async =>
       getArticle('article');
 
   @override
   Future<void> saveArticle(WritingArticle article) async {}
+
+  @override
+  Future<void> renameArticle({
+    required String articleId,
+    required String title,
+  }) async {}
+
+  @override
+  Future<void> renameCategory({
+    required String categoryId,
+    required String name,
+  }) async {}
+
+  @override
+  Future<void> deleteCategory({
+    required String categoryId,
+    required bool deleteArticles,
+  }) async {
+    extraCategories.removeWhere((item) => item.id == categoryId);
+  }
+
+  @override
+  Future<void> moveArticleToCategory({
+    required String articleId,
+    String? categoryId,
+  }) async {}
+
+  @override
+  Future<void> reorderCategories({
+    required String folderId,
+    required List<String> orderedIds,
+  }) async {}
+
+  @override
+  Future<void> reorderArticles({
+    required String folderId,
+    String? categoryId,
+    required List<String> orderedIds,
+  }) async {}
 
   LibraryLocation? _location = const LibraryLocation(
     rootPath: '/writing/book',
@@ -590,6 +690,7 @@ class _LibraryRepository implements WritingLibraryRepository {
   Future<WritingCategory> createCategory({
     required String folderId,
     required String name,
+    String? afterCategoryId,
   }) async {
     final volume = WritingCategory(
       id: 'volume-new-${extraCategories.length}',
@@ -598,7 +699,11 @@ class _LibraryRepository implements WritingLibraryRepository {
       rank: extraCategories.length,
       collapsed: false,
     );
-    extraCategories.add(volume);
+    if (afterCategoryId == null) {
+      extraCategories.add(volume);
+    } else {
+      extraCategories.insert(0, volume);
+    }
     return volume;
   }
 

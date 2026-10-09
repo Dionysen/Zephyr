@@ -252,6 +252,73 @@ void main() {
     );
   });
 
+  test('inserts, renames, moves, reorders, and deletes volumes/chapters', () async {
+    final repository = PureWriterWritingLibraryRepository(database);
+    final first = await repository.createCategory(
+      folderId: PureWriterDatabase.defaultFolderId,
+      name: 'Volume 1',
+    );
+    final second = await repository.createCategory(
+      folderId: PureWriterDatabase.defaultFolderId,
+      name: 'Volume 2',
+      afterCategoryId: first.id,
+    );
+    final chapter = await repository.createArticle(
+      folderId: PureWriterDatabase.defaultFolderId,
+      categoryId: first.id,
+    );
+    final below = await repository.createArticle(
+      folderId: PureWriterDatabase.defaultFolderId,
+      categoryId: first.id,
+      afterArticleId: chapter.id,
+    );
+
+    await repository.renameCategory(categoryId: first.id, name: 'Renamed volume');
+    await repository.renameArticle(articleId: chapter.id, title: 'Renamed chapter');
+    await repository.moveArticleToCategory(
+      articleId: below.id,
+      categoryId: second.id,
+    );
+    await repository.reorderCategories(
+      folderId: PureWriterDatabase.defaultFolderId,
+      orderedIds: [second.id, first.id],
+    );
+
+    var library = await repository.loadLibrary();
+    expect(
+      library.categories.map((item) => item.id).toList(),
+      [second.id, first.id],
+    );
+    expect(
+      library.categories.singleWhere((item) => item.id == first.id).name,
+      'Renamed volume',
+    );
+    expect(
+      (await repository.getArticle(chapter.id)).title,
+      'Renamed chapter',
+    );
+    expect(
+      library.articles.singleWhere((item) => item.id == below.id).categoryId,
+      second.id,
+    );
+
+    await repository.deleteCategory(categoryId: first.id, deleteArticles: false);
+    library = await repository.loadLibrary();
+    expect(library.categories.any((item) => item.id == first.id), isFalse);
+    expect(
+      library.articles.singleWhere((item) => item.id == chapter.id).categoryId,
+      isNull,
+    );
+
+    await repository.deleteCategory(categoryId: second.id, deleteArticles: true);
+    library = await repository.loadLibrary();
+    expect(library.categories.any((item) => item.id == second.id), isFalse);
+    expect(
+      library.articles.singleWhere((item) => item.id == below.id).folderId,
+      PureWriterDatabase.trashFolderId,
+    );
+  });
+
   test('saves content without overwriting unrelated article fields and records history', () async {
     final repository = PureWriterWritingLibraryRepository(database);
     final article = await repository.createArticle(
