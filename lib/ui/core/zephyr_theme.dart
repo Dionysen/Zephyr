@@ -316,7 +316,8 @@ ThemeData zephyrTheme(
         visualDensity: VisualDensity.compact,
       ),
     ),
-    splashFactory: NoSplash.splashFactory,
+    splashFactory: InkRipple.splashFactory,
+    splashColor: accent.withValues(alpha: .14),
     highlightColor: accent.withValues(alpha: .08),
   );
 }
