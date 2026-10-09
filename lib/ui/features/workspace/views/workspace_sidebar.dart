@@ -1435,7 +1435,6 @@ class _VolumeRow extends StatelessWidget {
     required this.onToggle,
   });
 
-  static const _listInset = 6.0;
   static const _volumeGap = 8.0;
 
   final WritingCategory volume;
@@ -1485,17 +1484,15 @@ class _VolumeRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final radius = context.zephyrBorderRadius;
+    final listInset = context.zephyrSidebarItemInset;
     final compact = ZephyrBreakpoints.isCompact(MediaQuery.sizeOf(context).width);
     final body = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: _listInset),
+      padding: EdgeInsets.symmetric(horizontal: listInset),
       child: Material(
         color: theme.colorScheme.surfaceContainerHigh,
         shape: RoundedRectangleBorder(
           borderRadius: radius,
-          side: BorderSide(
-            color: theme.colorScheme.outline,
-            width: ZephyrControls.borderWidth,
-          ),
+          side: context.zephyrOutlineSide(),
         ),
         child: InkWell(
           borderRadius: radius,
@@ -1553,7 +1550,7 @@ class _VolumeRow extends StatelessWidget {
         _ReorderBeforeSlot<_VolumeDragData>(
           enabled: showDragHandle,
           gap: showDragHandle ? _volumeGap : 6,
-          horizontalInset: _listInset,
+          horizontalInset: listInset,
           canAccept: (data) => data.volumeId != volume.id,
           onAccept: (data) => _acceptVolumeDrop(data, insertAfter: false),
           child: body,
@@ -1561,7 +1558,7 @@ class _VolumeRow extends StatelessWidget {
         _ReorderAfterGap<_VolumeDragData>(
           enabled: showDragHandle && isLast,
           gap: _volumeGap,
-          horizontalInset: _listInset,
+          horizontalInset: listInset,
           canAccept: (data) => data.volumeId != volume.id,
           onAccept: (data) => _acceptVolumeDrop(data, insertAfter: true),
         ),
@@ -1580,7 +1577,6 @@ class _ChapterRow extends StatelessWidget {
     required this.isLast,
   });
 
-  static const _listInset = 6.0;
   static const _chapterGap = 8.0;
   static const _chapterGapIdle = 2.0;
   static const _lineGap = 2.0;
@@ -1645,8 +1641,9 @@ class _ChapterRow extends StatelessWidget {
         .replaceAll('\u3000', '')
         .trim();
     final title = chapter.title.isEmpty ? 'Untitled' : chapter.title;
+    final listInset = context.zephyrSidebarItemInset;
     final body = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: _listInset),
+      padding: EdgeInsets.symmetric(horizontal: listInset),
       child: Material(
         color: selected
             ? theme.colorScheme.secondaryContainer.withValues(alpha: .42)
@@ -1738,7 +1735,7 @@ class _ChapterRow extends StatelessWidget {
         _ReorderBeforeSlot<_ChapterDragData>(
           enabled: showDragHandle,
           gap: showDragHandle ? _chapterGap : _chapterGapIdle,
-          horizontalInset: _listInset,
+          horizontalInset: listInset,
           canAccept: (data) =>
               data.articleId != chapter.id &&
               data.categoryId == chapter.categoryId,
@@ -1748,7 +1745,7 @@ class _ChapterRow extends StatelessWidget {
         _ReorderAfterGap<_ChapterDragData>(
           enabled: showDragHandle && isLast,
           gap: _chapterGap,
-          horizontalInset: _listInset,
+          horizontalInset: listInset,
           canAccept: (data) =>
               data.articleId != chapter.id &&
               data.categoryId == chapter.categoryId,
@@ -1842,7 +1839,7 @@ class _LibraryDock extends StatelessWidget {
         color: theme.colorScheme.surfaceContainerHigh,
         shape: RoundedRectangleBorder(
           borderRadius: radius,
-          side: BorderSide(color: theme.colorScheme.outline),
+          side: context.zephyrOutlineSide(),
         ),
         child: InkWell(
           borderRadius: radius,

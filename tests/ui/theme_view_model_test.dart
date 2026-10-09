@@ -65,6 +65,27 @@ void main() {
     expect(model.ui.cornerRadius, 12);
     expect(model.tokens, ThemeTokens.defaults);
   });
+
+  test('show borders updates independently of color tokens', () {
+    final model = ThemeViewModel(_ThemeRepository(ThemeTokens.defaults));
+
+    expect(model.ui.showBorders, isTrue);
+    model.updateShowBorders(false);
+
+    expect(model.ui.showBorders, isFalse);
+    expect(model.tokens, ThemeTokens.defaults);
+  });
+
+  test('sidebar item inset clamps to 0-24', () {
+    final model = ThemeViewModel(_ThemeRepository(ThemeTokens.defaults));
+
+    model.updateSidebarItemInset(12);
+    expect(model.ui.sidebarItemInset, 12);
+    model.updateSidebarItemInset(40);
+    expect(model.ui.sidebarItemInset, 24);
+    model.updateSidebarItemInset(-2);
+    expect(model.ui.sidebarItemInset, 0);
+  });
 }
 
 class _ThemeRepository implements ThemePreferencesRepository {

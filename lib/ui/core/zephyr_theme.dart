@@ -7,12 +7,18 @@ import '../../domain/models/ui_preferences.dart';
 import 'zephyr_controls.dart';
 import 'zephyr_status_bar.dart';
 
-/// User-owned chrome corner radius exposed through [ThemeData.extensions].
+/// User-owned chrome shape prefs exposed through [ThemeData.extensions].
 @immutable
 class ZephyrShapeTheme extends ThemeExtension<ZephyrShapeTheme> {
-  const ZephyrShapeTheme({required this.cornerRadius});
+  const ZephyrShapeTheme({
+    required this.cornerRadius,
+    this.showBorders = true,
+    this.sidebarItemInset = 0,
+  });
 
   final double cornerRadius;
+  final bool showBorders;
+  final double sidebarItemInset;
 
   BorderRadius get borderRadius => BorderRadius.circular(cornerRadius);
 
@@ -24,15 +30,32 @@ class ZephyrShapeTheme extends ThemeExtension<ZephyrShapeTheme> {
 
   OutlinedBorder get menuShape => ZephyrControls.menuShapeFor(cornerRadius);
 
+  BorderSide outlineSide(Color color) => showBorders
+      ? BorderSide(color: color, width: ZephyrControls.borderWidth)
+      : BorderSide.none;
+
   @override
-  ZephyrShapeTheme copyWith({double? cornerRadius}) =>
-      ZephyrShapeTheme(cornerRadius: cornerRadius ?? this.cornerRadius);
+  ZephyrShapeTheme copyWith({
+    double? cornerRadius,
+    bool? showBorders,
+    double? sidebarItemInset,
+  }) => ZephyrShapeTheme(
+    cornerRadius: cornerRadius ?? this.cornerRadius,
+    showBorders: showBorders ?? this.showBorders,
+    sidebarItemInset: sidebarItemInset ?? this.sidebarItemInset,
+  );
 
   @override
   ZephyrShapeTheme lerp(ThemeExtension<ZephyrShapeTheme>? other, double t) {
     if (other is! ZephyrShapeTheme) return this;
     return ZephyrShapeTheme(
       cornerRadius: lerpDouble(cornerRadius, other.cornerRadius, t)!,
+      showBorders: t < 0.5 ? showBorders : other.showBorders,
+      sidebarItemInset: lerpDouble(
+        sidebarItemInset,
+        other.sidebarItemInset,
+        t,
+      )!,
     );
   }
 }
@@ -47,6 +70,14 @@ extension ZephyrThemeContext on BuildContext {
   double get zephyrCornerRadius => zephyrShape.cornerRadius;
 
   BorderRadius get zephyrBorderRadius => zephyrShape.borderRadius;
+
+  bool get zephyrShowBorders => zephyrShape.showBorders;
+
+  double get zephyrSidebarItemInset => zephyrShape.sidebarItemInset;
+
+  BorderSide zephyrOutlineSide([Color? color]) => zephyrShape.outlineSide(
+    color ?? Theme.of(this).colorScheme.outline,
+  );
 }
 
 /// Builds the writing-shell theme from user-owned semantic tokens.
@@ -73,8 +104,18 @@ ThemeData zephyrTheme(
     UiPreferences.minCornerRadius,
     UiPreferences.maxCornerRadius,
   );
-  final shape = ZephyrShapeTheme(cornerRadius: radius);
+  final itemInset = ui.sidebarItemInset.clamp(
+    UiPreferences.minSidebarItemInset,
+    UiPreferences.maxSidebarItemInset,
+  );
+  final shape = ZephyrShapeTheme(
+    cornerRadius: radius,
+    showBorders: ui.showBorders,
+    sidebarItemInset: itemInset,
+  );
   final borderRadius = shape.borderRadius;
+  final hairline = shape.outlineSide(border);
+  final focusHairline = shape.outlineSide(focus);
 
   return ThemeData(
     useMaterial3: true,
@@ -143,7 +184,8 @@ ThemeData zephyrTheme(
       style: OutlinedButton.styleFrom(
         foregroundColor: primaryText,
         iconSize: ZephyrControls.iconSize,
-        shape: shape.labeledButtonShape,
+        shape: shape.labeledButtonShape.copyWith(side: hairline),
+        side: hairline,
         visualDensity: VisualDensity.compact,
       ),
     ),
@@ -218,17 +260,11 @@ ThemeData zephyrTheme(
       fillColor: control,
       isDense: true,
       enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(
-          color: border,
-          width: ZephyrControls.borderWidth,
-        ),
+        borderSide: hairline,
         borderRadius: borderRadius,
       ),
       focusedBorder: OutlineInputBorder(
-        borderSide: BorderSide(
-          color: focus,
-          width: ZephyrControls.borderWidth,
-        ),
+        borderSide: focusHairline,
         borderRadius: borderRadius,
       ),
       hintStyle: TextStyle(color: mutedText.withValues(alpha: .78)),
@@ -237,14 +273,14 @@ ThemeData zephyrTheme(
       backgroundColor: control,
       shape: RoundedRectangleBorder(
         borderRadius: borderRadius,
-        side: BorderSide(color: border, width: ZephyrControls.borderWidth),
+        side: hairline,
       ),
     ),
     cardTheme: CardThemeData(
       color: control,
       shape: RoundedRectangleBorder(
         borderRadius: borderRadius,
-        side: BorderSide(color: border, width: ZephyrControls.borderWidth),
+        side: hairline,
       ),
     ),
     tooltipTheme: TooltipThemeData(
@@ -262,14 +298,7 @@ ThemeData zephyrTheme(
         padding: const WidgetStatePropertyAll(
           EdgeInsets.symmetric(vertical: ZephyrControls.menuInsets),
         ),
-        shape: WidgetStatePropertyAll(
-          shape.menuShape.copyWith(
-            side: BorderSide(
-              color: border,
-              width: ZephyrControls.borderWidth,
-            ),
-          ),
-        ),
+        shape: WidgetStatePropertyAll(shape.menuShape.copyWith(side: hairline)),
         visualDensity: VisualDensity.compact,
       ),
     ),

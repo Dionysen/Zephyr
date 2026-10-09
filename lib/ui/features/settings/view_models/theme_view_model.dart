@@ -120,6 +120,20 @@ class ThemeViewModel extends ChangeNotifier {
     ),
   );
 
+  void updateShowBorders(bool value) =>
+      _updateUi(_ui.copyWith(showBorders: value));
+
+  void updateSidebarItemInset(double value) => _updateUi(
+    _ui.copyWith(
+      sidebarItemInset: value
+          .clamp(
+            UiPreferences.minSidebarItemInset,
+            UiPreferences.maxSidebarItemInset,
+          )
+          .toDouble(),
+    ),
+  );
+
   void _updateUi(UiPreferences value) {
     _ui = value;
     _scheduleSave();

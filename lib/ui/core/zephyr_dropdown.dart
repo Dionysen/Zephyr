@@ -158,7 +158,7 @@ class _ZephyrDropdownState<T> extends State<ZephyrDropdown<T>> {
       child: Material(
         key: _triggerKey,
         color: theme.colorScheme.surfaceContainerHigh,
-        shape: shape.copyWith(side: BorderSide(color: theme.colorScheme.outline)),
+        shape: shape.copyWith(side: context.zephyrOutlineSide()),
         child: InkWell(
           customBorder: shape,
           onTap: _toggle,
@@ -321,7 +321,7 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
             shadowColor: Colors.black.withValues(alpha: .32),
             surfaceTintColor: Colors.transparent,
             shape: context.zephyrShape.menuShape.copyWith(
-              side: BorderSide(color: theme.colorScheme.outline),
+              side: context.zephyrOutlineSide(),
             ),
             clipBehavior: Clip.antiAlias,
             child: SizedBox(

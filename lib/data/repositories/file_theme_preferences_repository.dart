@@ -37,12 +37,28 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
       'uiCornerRadius',
       UiPreferences.defaults.cornerRadius,
     );
+    final itemInset = _double(
+      values,
+      'uiSidebarItemInset',
+      UiPreferences.defaults.sidebarItemInset,
+    );
     return UiPreferences(
       fontFamily: values['uiFontFamily'] as String?,
       fontPath: values['uiFontPath'] as String?,
       fontSize: _double(values, 'uiFontSize', UiPreferences.defaults.fontSize),
       cornerRadius: radius
           .clamp(UiPreferences.minCornerRadius, UiPreferences.maxCornerRadius)
+          .toDouble(),
+      showBorders: _bool(
+        values,
+        'uiShowBorders',
+        UiPreferences.defaults.showBorders,
+      ),
+      sidebarItemInset: itemInset
+          .clamp(
+            UiPreferences.minSidebarItemInset,
+            UiPreferences.maxSidebarItemInset,
+          )
           .toDouble(),
     );
   }
@@ -64,6 +80,8 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'uiFontPath': ui.fontPath,
     'uiFontSize': ui.fontSize,
     'uiCornerRadius': ui.cornerRadius,
+    'uiShowBorders': ui.showBorders,
+    'uiSidebarItemInset': ui.sidebarItemInset,
   });
 
   int _color(Map<String, Object?> values, String key, {int? fallback}) {
@@ -80,5 +98,12 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     if (value == null) return fallback;
     if (value is! num) throw FormatException('Invalid $key preference.');
     return value.toDouble();
+  }
+
+  bool _bool(Map<String, Object?> values, String key, bool fallback) {
+    final value = values[key];
+    if (value == null) return fallback;
+    if (value is! bool) throw FormatException('Invalid $key preference.');
+    return value;
   }
 }

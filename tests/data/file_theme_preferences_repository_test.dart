@@ -32,6 +32,8 @@ void main() {
         fontPath: r'C:\Fonts\Inter.ttf',
         fontSize: 12,
         cornerRadius: 10,
+        showBorders: false,
+        sidebarItemInset: 12,
       );
 
       await repository.save(tokens: expectedTokens, ui: expectedUi);
@@ -45,6 +47,8 @@ void main() {
       expect(actualUi.fontPath, expectedUi.fontPath);
       expect(actualUi.fontSize, expectedUi.fontSize);
       expect(actualUi.cornerRadius, expectedUi.cornerRadius);
+      expect(actualUi.showBorders, expectedUi.showBorders);
+      expect(actualUi.sidebarItemInset, expectedUi.sidebarItemInset);
     },
   );
 
@@ -70,6 +74,8 @@ void main() {
 
     expect(ui.fontSize, UiPreferences.defaults.fontSize);
     expect(ui.cornerRadius, UiPreferences.defaults.cornerRadius);
+    expect(ui.showBorders, UiPreferences.defaults.showBorders);
+    expect(ui.sidebarItemInset, UiPreferences.defaults.sidebarItemInset);
     expect(ui.fontFamily, isNull);
     expect(ui.fontPath, isNull);
     expect(tokens.cursor, ThemeTokens.defaults.cursor);
