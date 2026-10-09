@@ -39,6 +39,9 @@ class ThemeTokens {
     required this.cursor,
   });
 
+  /// Shared accent for every preset — soft, lighter “premium” blue.
+  static const lightAccent = 0xFF6B9BE8;
+
   static const defaults = ThemeTokens(
     editorSurface: 0xFF1E1E1E,
     sidebarSurface: 0xFF171717,
@@ -47,7 +50,7 @@ class ThemeTokens {
     divider: 0xFF222222,
     primaryText: 0xFFE8E8E8,
     mutedText: 0xFF858585,
-    accent: 0xFF9ACBA7,
+    accent: lightAccent,
     cursor: 0xFFFFFFFF,
   );
 
@@ -60,7 +63,7 @@ class ThemeTokens {
       divider: 0xFFE4E6EA,
       primaryText: 0xFF25272A,
       mutedText: 0xFF70757D,
-      accent: 0xFF2563EB,
+      accent: lightAccent,
       cursor: 0xFF25272A,
     ),
     ThemePreset.grey: ThemeTokens(
@@ -71,7 +74,7 @@ class ThemeTokens {
       divider: 0xFFE0E4EA,
       primaryText: 0xFF293241,
       mutedText: 0xFF718096,
-      accent: 0xFF475569,
+      accent: lightAccent,
       cursor: 0xFF293241,
     ),
     ThemePreset.slate: ThemeTokens(
@@ -82,7 +85,7 @@ class ThemeTokens {
       divider: 0xFFE8E8E8,
       primaryText: 0xFF34343A,
       mutedText: 0xFF777780,
-      accent: 0xFF4B5563,
+      accent: lightAccent,
       cursor: 0xFF34343A,
     ),
     ThemePreset.claude: ThemeTokens(
@@ -93,7 +96,7 @@ class ThemeTokens {
       divider: 0xFFEBE4D9,
       primaryText: 0xFF39312B,
       mutedText: 0xFF82756A,
-      accent: 0xFFB85C16,
+      accent: lightAccent,
       cursor: 0xFF39312B,
     ),
     ThemePreset.mint: ThemeTokens(
@@ -104,7 +107,7 @@ class ThemeTokens {
       divider: 0xFFDCE8E2,
       primaryText: 0xFF253A32,
       mutedText: 0xFF6A8277,
-      accent: 0xFF2FA36F,
+      accent: lightAccent,
       cursor: 0xFF253A32,
     ),
     ThemePreset.purple: ThemeTokens(
@@ -115,7 +118,7 @@ class ThemeTokens {
       divider: 0xFFE8DFF2,
       primaryText: 0xFF382D4A,
       mutedText: 0xFF7E708F,
-      accent: 0xFF7C3AED,
+      accent: lightAccent,
       cursor: 0xFF382D4A,
     ),
     ThemePreset.hermes: ThemeTokens(
@@ -126,7 +129,7 @@ class ThemeTokens {
       divider: 0xFFE2E3F5,
       primaryText: 0xFF252D50,
       mutedText: 0xFF70769A,
-      accent: 0xFF1D4ED8,
+      accent: lightAccent,
       cursor: 0xFF252D50,
     ),
     ThemePreset.ocean: ThemeTokens(
@@ -137,7 +140,7 @@ class ThemeTokens {
       divider: 0xFF1C2230,
       primaryText: 0xFFE4E8F0,
       mutedText: 0xFF8B95A7,
-      accent: 0xFF73A5FF,
+      accent: lightAccent,
       cursor: 0xFFFFFFFF,
     ),
     ThemePreset.darkModern: defaults,

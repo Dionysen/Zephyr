@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 
+/// Dispatched by descendants (e.g. text selection handles) so the drawer does
+/// not claim the same pointer's horizontal drag.
+class ZephyrDrawerDragBlockNotification extends Notification {
+  ZephyrDrawerDragBlockNotification({required this.blocked});
+  final bool blocked;
+}
+
 /// Full-screen, finger-following start drawer with a low open/close threshold.
 ///
 /// Open: right-swipe on [body] (same as before).
@@ -74,6 +81,8 @@ class _ZephyrSwipeDrawerState extends State<ZephyrSwipeDrawer>
   late final AnimationController _progress;
   late final ZephyrSwipeDrawerController _controller;
   double _dragStartProgress = 0;
+  bool _dragBlocked = false;
+  bool _ignoreActiveDrag = false;
 
   bool get _isOpen => _progress.value >= 1.0 - 0.001;
   bool get _isVisible => _progress.value > 0;
@@ -128,6 +137,11 @@ class _ZephyrSwipeDrawerState extends State<ZephyrSwipeDrawer>
   }
 
   void _onDragStart(DragStartDetails details) {
+    if (_dragBlocked) {
+      _ignoreActiveDrag = true;
+      return;
+    }
+    _ignoreActiveDrag = false;
     _progress.stop();
     _dragStartProgress = _progress.value;
     // Hide the IME as soon as the user starts pulling the drawer open.
@@ -137,6 +151,7 @@ class _ZephyrSwipeDrawerState extends State<ZephyrSwipeDrawer>
   }
 
   void _onDragUpdate(DragUpdateDetails details) {
+    if (_ignoreActiveDrag || _dragBlocked) return;
     final delta = details.primaryDelta ?? 0;
     if (delta == 0) return;
     final next = (_progress.value + delta / widget.drawerWidth).clamp(0.0, 1.0);
@@ -144,6 +159,15 @@ class _ZephyrSwipeDrawerState extends State<ZephyrSwipeDrawer>
   }
 
   void _onDragEnd(DragEndDetails details) {
+    if (_ignoreActiveDrag || _dragBlocked) {
+      _ignoreActiveDrag = false;
+      // Undo any accidental reveal from the same pointer.
+      if (!_isOpen && _progress.value > 0) {
+        close();
+      }
+      return;
+    }
+
     final velocity = details.primaryVelocity ?? 0;
     final value = _progress.value;
     final threshold = widget.openFraction;
@@ -183,6 +207,15 @@ class _ZephyrSwipeDrawerState extends State<ZephyrSwipeDrawer>
     }
   }
 
+  void _onDragCancel() {
+    if (_ignoreActiveDrag || _dragBlocked) {
+      _ignoreActiveDrag = false;
+      if (!_isOpen && _progress.value > 0) {
+        close();
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final width = widget.drawerWidth;
@@ -191,12 +224,22 @@ class _ZephyrSwipeDrawerState extends State<ZephyrSwipeDrawer>
 
     // Open gesture stays on the body only — a permanent full-screen overlay
     // above the editor made short open swipes unreliable.
-    final body = GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onHorizontalDragStart: widget.enabled ? _onDragStart : null,
-      onHorizontalDragUpdate: widget.enabled ? _onDragUpdate : null,
-      onHorizontalDragEnd: widget.enabled ? _onDragEnd : null,
-      child: widget.body,
+    final body = NotificationListener<ZephyrDrawerDragBlockNotification>(
+      onNotification: (notification) {
+        _dragBlocked = notification.blocked;
+        if (!notification.blocked) {
+          _ignoreActiveDrag = false;
+        }
+        return true;
+      },
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onHorizontalDragStart: widget.enabled ? _onDragStart : null,
+        onHorizontalDragUpdate: widget.enabled ? _onDragUpdate : null,
+        onHorizontalDragEnd: widget.enabled ? _onDragEnd : null,
+        onHorizontalDragCancel: widget.enabled ? _onDragCancel : null,
+        child: widget.body,
+      ),
     );
 
     return _ZephyrSwipeDrawerScope(
@@ -217,6 +260,7 @@ class _ZephyrSwipeDrawerState extends State<ZephyrSwipeDrawer>
                   onHorizontalDragStart: _onDragStart,
                   onHorizontalDragUpdate: _onDragUpdate,
                   onHorizontalDragEnd: _onDragEnd,
+                  onHorizontalDragCancel: _onDragCancel,
                   child: ColoredBox(
                     color: Colors.black.withValues(alpha: scrimOpacity),
                   ),
@@ -241,6 +285,7 @@ class _ZephyrSwipeDrawerState extends State<ZephyrSwipeDrawer>
                   onHorizontalDragStart: _onDragStart,
                   onHorizontalDragUpdate: _onDragUpdate,
                   onHorizontalDragEnd: _onDragEnd,
+                  onHorizontalDragCancel: _onDragCancel,
                   child: const SizedBox.expand(),
                 ),
               ),

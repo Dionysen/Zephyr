@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../core/zephyr_swipe_drawer.dart';
 import 'decoration/text_decoration_model.dart';
 import 'gestures/plain_text_gesture_handler.dart';
 import 'input/plain_text_editing_controller.dart';
@@ -134,6 +135,9 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
 
   @override
   void dispose() {
+    if (_draggingHandle && context.mounted) {
+      ZephyrDrawerDragBlockNotification(blocked: false).dispatch(context);
+    }
     WidgetsBinding.instance.removeObserver(this);
     _inputClient?.detach();
     widget.controller.removeListener(_onControllerTick);
@@ -590,10 +594,8 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                             top: baseCaret.bottom,
                             left: baseCaret.left,
                             isBase: true,
-                            onDragStart: () =>
-                                setState(() => _draggingHandle = true),
-                            onDragEnd: () =>
-                                setState(() => _draggingHandle = false),
+                            onDragStart: () => _setDraggingHandle(true),
+                            onDragEnd: () => _setDraggingHandle(false),
                             onDragGlobal: (global) =>
                                 _moveSelectionHandle(global, isBase: true),
                           ),
@@ -603,10 +605,8 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                             top: extentCaret.bottom,
                             left: extentCaret.left,
                             isBase: false,
-                            onDragStart: () =>
-                                setState(() => _draggingHandle = true),
-                            onDragEnd: () =>
-                                setState(() => _draggingHandle = false),
+                            onDragStart: () => _setDraggingHandle(true),
+                            onDragEnd: () => _setDraggingHandle(false),
                             onDragGlobal: (global) =>
                                 _moveSelectionHandle(global, isBase: false),
                           ),
@@ -620,6 +620,14 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
         );
       },
     );
+  }
+
+  void _setDraggingHandle(bool dragging) {
+    if (_draggingHandle == dragging) return;
+    setState(() => _draggingHandle = dragging);
+    // Block the compact swipe-drawer open gesture for this pointer. Dispatched
+    // on pointer down (before drag slop) so the drawer can ignore the claim.
+    ZephyrDrawerDragBlockNotification(blocked: dragging).dispatch(context);
   }
 
   void _moveSelectionHandle(Offset globalPosition, {required bool isBase}) {

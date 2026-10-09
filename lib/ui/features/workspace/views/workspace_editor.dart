@@ -341,7 +341,6 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   Widget _titleHeader(BuildContext context, EditorPreferences prefs) {
     final theme = Theme.of(context);
     final horizontal = _horizontalPadding(context);
-    final outline = theme.colorScheme.outlineVariant;
     final top = 20 + widget.contentTopInset;
 
     return Padding(
@@ -385,18 +384,12 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
                       alpha: 0.45,
                     ),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  contentPadding: const EdgeInsets.fromLTRB(0, 8, 0, 4),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
                 ),
                 onSubmitted: (_) => _focusNode.requestFocus(),
-              ),
-              const SizedBox(height: 10),
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: outline.withValues(alpha: 0.65),
               ),
               const SizedBox(height: 4),
             ],
