@@ -134,6 +134,17 @@ class ThemeViewModel extends ChangeNotifier {
     ),
   );
 
+  void updateSidebarVolumeGap(double value) => _updateUi(
+    _ui.copyWith(
+      sidebarVolumeGap: value
+          .clamp(
+            UiPreferences.minSidebarVolumeGap,
+            UiPreferences.maxSidebarVolumeGap,
+          )
+          .toDouble(),
+    ),
+  );
+
   void _updateUi(UiPreferences value) {
     _ui = value;
     _scheduleSave();

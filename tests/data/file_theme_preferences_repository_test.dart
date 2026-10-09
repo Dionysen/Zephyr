@@ -22,6 +22,7 @@ void main() {
         sidebarSurface: 0xFF040506,
         controlSurface: 0xFF070809,
         border: 0xFF101112,
+        divider: 0xFF0A0B0C,
         primaryText: 0xFFEEF0F2,
         mutedText: 0xFF818283,
         accent: 0xFFAABBCC,
@@ -34,6 +35,7 @@ void main() {
         cornerRadius: 10,
         showBorders: false,
         sidebarItemInset: 12,
+        sidebarVolumeGap: 4,
       );
 
       await repository.save(tokens: expectedTokens, ui: expectedUi);
@@ -49,6 +51,7 @@ void main() {
       expect(actualUi.cornerRadius, expectedUi.cornerRadius);
       expect(actualUi.showBorders, expectedUi.showBorders);
       expect(actualUi.sidebarItemInset, expectedUi.sidebarItemInset);
+      expect(actualUi.sidebarVolumeGap, expectedUi.sidebarVolumeGap);
     },
   );
 
@@ -76,8 +79,10 @@ void main() {
     expect(ui.cornerRadius, UiPreferences.defaults.cornerRadius);
     expect(ui.showBorders, UiPreferences.defaults.showBorders);
     expect(ui.sidebarItemInset, UiPreferences.defaults.sidebarItemInset);
+    expect(ui.sidebarVolumeGap, UiPreferences.defaults.sidebarVolumeGap);
     expect(ui.fontFamily, isNull);
     expect(ui.fontPath, isNull);
     expect(tokens.cursor, ThemeTokens.defaults.cursor);
+    expect(tokens.divider, ThemeTokens.defaults.divider);
   });
 }

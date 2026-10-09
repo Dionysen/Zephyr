@@ -14,11 +14,13 @@ class ZephyrShapeTheme extends ThemeExtension<ZephyrShapeTheme> {
     required this.cornerRadius,
     this.showBorders = true,
     this.sidebarItemInset = 0,
+    this.sidebarVolumeGap = 6,
   });
 
   final double cornerRadius;
   final bool showBorders;
   final double sidebarItemInset;
+  final double sidebarVolumeGap;
 
   BorderRadius get borderRadius => BorderRadius.circular(cornerRadius);
 
@@ -39,10 +41,12 @@ class ZephyrShapeTheme extends ThemeExtension<ZephyrShapeTheme> {
     double? cornerRadius,
     bool? showBorders,
     double? sidebarItemInset,
+    double? sidebarVolumeGap,
   }) => ZephyrShapeTheme(
     cornerRadius: cornerRadius ?? this.cornerRadius,
     showBorders: showBorders ?? this.showBorders,
     sidebarItemInset: sidebarItemInset ?? this.sidebarItemInset,
+    sidebarVolumeGap: sidebarVolumeGap ?? this.sidebarVolumeGap,
   );
 
   @override
@@ -54,6 +58,11 @@ class ZephyrShapeTheme extends ThemeExtension<ZephyrShapeTheme> {
       sidebarItemInset: lerpDouble(
         sidebarItemInset,
         other.sidebarItemInset,
+        t,
+      )!,
+      sidebarVolumeGap: lerpDouble(
+        sidebarVolumeGap,
+        other.sidebarVolumeGap,
         t,
       )!,
     );
@@ -75,6 +84,8 @@ extension ZephyrThemeContext on BuildContext {
 
   double get zephyrSidebarItemInset => zephyrShape.sidebarItemInset;
 
+  double get zephyrSidebarVolumeGap => zephyrShape.sidebarVolumeGap;
+
   BorderSide zephyrOutlineSide([Color? color]) => zephyrShape.outlineSide(
     color ?? Theme.of(this).colorScheme.outline,
   );
@@ -89,6 +100,7 @@ ThemeData zephyrTheme(
   final sidebar = Color(tokens.sidebarSurface);
   final control = Color(tokens.controlSurface);
   final border = Color(tokens.border);
+  final divider = Color(tokens.divider);
   final primaryText = Color(tokens.primaryText);
   final mutedText = Color(tokens.mutedText);
   final accent = Color(tokens.accent);
@@ -108,10 +120,15 @@ ThemeData zephyrTheme(
     UiPreferences.minSidebarItemInset,
     UiPreferences.maxSidebarItemInset,
   );
+  final volumeGap = ui.sidebarVolumeGap.clamp(
+    UiPreferences.minSidebarVolumeGap,
+    UiPreferences.maxSidebarVolumeGap,
+  );
   final shape = ZephyrShapeTheme(
     cornerRadius: radius,
     showBorders: ui.showBorders,
     sidebarItemInset: itemInset,
+    sidebarVolumeGap: volumeGap,
   );
   final borderRadius = shape.borderRadius;
   final hairline = shape.outlineSide(border);
@@ -145,15 +162,12 @@ ThemeData zephyrTheme(
           ),
           onSurfaceVariant: mutedText,
           outline: border,
-          outlineVariant: Color.alphaBlend(
-            Colors.black.withValues(alpha: .18),
-            border,
-          ),
+          outlineVariant: divider,
           error: const Color(0xFFFFB4AB),
         ),
     scaffoldBackgroundColor: editor,
     dividerTheme: DividerThemeData(
-      color: border,
+      color: divider,
       thickness: ZephyrControls.borderWidth,
       space: 1,
     ),

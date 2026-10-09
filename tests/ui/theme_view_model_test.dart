@@ -12,6 +12,7 @@ void main() {
         sidebarSurface: 0xFF111111,
         controlSurface: 0xFF121212,
         border: 0xFF131313,
+        divider: 0xFF101010,
         primaryText: 0xFFEEEEEE,
         mutedText: 0xFF888888,
         accent: 0xFF00AA00,
@@ -85,6 +86,17 @@ void main() {
     expect(model.ui.sidebarItemInset, 24);
     model.updateSidebarItemInset(-2);
     expect(model.ui.sidebarItemInset, 0);
+  });
+
+  test('sidebar volume gap clamps to 1-10', () {
+    final model = ThemeViewModel(_ThemeRepository(ThemeTokens.defaults));
+
+    model.updateSidebarVolumeGap(8);
+    expect(model.ui.sidebarVolumeGap, 8);
+    model.updateSidebarVolumeGap(40);
+    expect(model.ui.sidebarVolumeGap, 10);
+    model.updateSidebarVolumeGap(0);
+    expect(model.ui.sidebarVolumeGap, 1);
   });
 }
 

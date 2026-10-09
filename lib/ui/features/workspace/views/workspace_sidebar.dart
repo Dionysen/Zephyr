@@ -1224,7 +1224,6 @@ class _ChapterTreeState extends State<_ChapterTree> {
         siblingIds: volumeIds,
         canManage: canManage,
         showDragHandle: showDragHandles,
-        isLast: volumeIndex == volumes.length - 1,
         onToggle: () => _toggleVolume(volume.id),
       );
       // Keep a stable SliverMainAxisGroup so collapsing during a volume drag
@@ -1248,7 +1247,7 @@ class _ChapterTreeState extends State<_ChapterTree> {
                   siblingIds: chapterIds,
                   canManage: canManage,
                   showDragHandle: showDragHandles,
-                  isLast: index == volumeChapters.length - 1,
+                  isFirst: index == 0,
                 ),
               ),
           ],
@@ -1279,7 +1278,7 @@ class _ChapterTreeState extends State<_ChapterTree> {
             siblingIds: looseIds,
             canManage: canManage,
             showDragHandle: showDragHandles,
-            isLast: index == loose.length - 1,
+            isFirst: index == 0,
           ),
         ),
       );
@@ -1319,14 +1318,15 @@ List<String>? _reorderSiblingIds({
   return ids;
 }
 
-/// Gap above a row: one drop slot with the preview line centered in the margin.
-class _ReorderBeforeSlot<T extends Object> extends StatelessWidget {
-  const _ReorderBeforeSlot({
+/// Drop overlay that keeps idle spacing; insert before/after from pointer Y.
+class _ReorderTarget<T extends Object> extends StatefulWidget {
+  const _ReorderTarget({
     required this.enabled,
     required this.gap,
     required this.horizontalInset,
     required this.canAccept,
-    required this.onAccept,
+    required this.onAcceptBefore,
+    required this.onAcceptAfter,
     required this.child,
   });
 
@@ -1334,89 +1334,67 @@ class _ReorderBeforeSlot<T extends Object> extends StatelessWidget {
   final double gap;
   final double horizontalInset;
   final bool Function(T data) canAccept;
-  final void Function(T data) onAccept;
+  final void Function(T data) onAcceptBefore;
+  final void Function(T data) onAcceptAfter;
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
-    if (!enabled) {
-      return Padding(
-        padding: EdgeInsets.only(top: gap),
-        child: child,
-      );
-    }
-    final theme = Theme.of(context);
-    return DragTarget<T>(
-      onWillAcceptWithDetails: (details) => canAccept(details.data),
-      onAcceptWithDetails: (details) => onAccept(details.data),
-      builder: (context, candidate, _) {
-        final highlight = candidate.isNotEmpty;
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(
-              height: gap,
-              child: Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: horizontalInset),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 80),
-                    height: 2,
-                    color: highlight
-                        ? theme.colorScheme.primary
-                        : Colors.transparent,
-                  ),
-                ),
-              ),
-            ),
-            child,
-          ],
-        );
-      },
-    );
-  }
+  State<_ReorderTarget<T>> createState() => _ReorderTargetState<T>();
 }
 
-/// Trailing gap under the last row for "insert after last".
-class _ReorderAfterGap<T extends Object> extends StatelessWidget {
-  const _ReorderAfterGap({
-    required this.enabled,
-    required this.gap,
-    required this.horizontalInset,
-    required this.canAccept,
-    required this.onAccept,
-  });
+class _ReorderTargetState<T extends Object> extends State<_ReorderTarget<T>> {
+  bool _insertAfter = false;
 
-  final bool enabled;
-  final double gap;
-  final double horizontalInset;
-  final bool Function(T data) canAccept;
-  final void Function(T data) onAccept;
+  bool _isAfter(Offset global) {
+    final box = context.findRenderObject();
+    if (box is! RenderBox || !box.hasSize) return _insertAfter;
+    return box.globalToLocal(global).dy > box.size.height / 2;
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (!enabled) return const SizedBox.shrink();
-    final theme = Theme.of(context);
+    final content = widget.gap <= 0
+        ? widget.child
+        : Padding(
+            padding: EdgeInsets.only(top: widget.gap),
+            child: widget.child,
+          );
+    if (!widget.enabled) return content;
     return DragTarget<T>(
-      onWillAcceptWithDetails: (details) => canAccept(details.data),
-      onAcceptWithDetails: (details) => onAccept(details.data),
+      onWillAcceptWithDetails: (details) => widget.canAccept(details.data),
+      onMove: (details) {
+        final after = _isAfter(details.offset);
+        if (after != _insertAfter) setState(() => _insertAfter = after);
+      },
+      onLeave: (_) {
+        if (_insertAfter) setState(() => _insertAfter = false);
+      },
+      onAcceptWithDetails: (details) {
+        final after = _isAfter(details.offset);
+        setState(() => _insertAfter = false);
+        if (after) {
+          widget.onAcceptAfter(details.data);
+        } else {
+          widget.onAcceptBefore(details.data);
+        }
+      },
       builder: (context, candidate, _) {
         final highlight = candidate.isNotEmpty;
-        return SizedBox(
-          height: gap,
-          child: Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalInset),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 80),
-                height: 2,
-                color: highlight
-                    ? theme.colorScheme.primary
-                    : Colors.transparent,
+        return Stack(
+          children: [
+            content,
+            if (highlight)
+              Positioned(
+                top: _insertAfter ? null : 0,
+                bottom: _insertAfter ? 0 : null,
+                left: widget.horizontalInset,
+                right: widget.horizontalInset,
+                child: ColoredBox(
+                  color: Theme.of(context).colorScheme.primary,
+                  child: const SizedBox(height: 2),
+                ),
               ),
-            ),
-          ),
+          ],
         );
       },
     );
@@ -1431,11 +1409,8 @@ class _VolumeRow extends StatelessWidget {
     required this.siblingIds,
     required this.canManage,
     required this.showDragHandle,
-    required this.isLast,
     required this.onToggle,
   });
-
-  static const _volumeGap = 8.0;
 
   final WritingCategory volume;
   final LibraryViewModel model;
@@ -1443,7 +1418,6 @@ class _VolumeRow extends StatelessWidget {
   final List<String> siblingIds;
   final bool canManage;
   final bool showDragHandle;
-  final bool isLast;
   final VoidCallback onToggle;
 
   Future<void> _openMenu(
@@ -1485,6 +1459,7 @@ class _VolumeRow extends StatelessWidget {
     final theme = Theme.of(context);
     final radius = context.zephyrBorderRadius;
     final listInset = context.zephyrSidebarItemInset;
+    final volumeGap = context.zephyrSidebarVolumeGap;
     final compact = ZephyrBreakpoints.isCompact(MediaQuery.sizeOf(context).width);
     final body = Padding(
       padding: EdgeInsets.symmetric(horizontal: listInset),
@@ -1543,26 +1518,14 @@ class _VolumeRow extends StatelessWidget {
       ),
     );
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _ReorderBeforeSlot<_VolumeDragData>(
-          enabled: showDragHandle,
-          gap: showDragHandle ? _volumeGap : 6,
-          horizontalInset: listInset,
-          canAccept: (data) => data.volumeId != volume.id,
-          onAccept: (data) => _acceptVolumeDrop(data, insertAfter: false),
-          child: body,
-        ),
-        _ReorderAfterGap<_VolumeDragData>(
-          enabled: showDragHandle && isLast,
-          gap: _volumeGap,
-          horizontalInset: listInset,
-          canAccept: (data) => data.volumeId != volume.id,
-          onAccept: (data) => _acceptVolumeDrop(data, insertAfter: true),
-        ),
-      ],
+    return _ReorderTarget<_VolumeDragData>(
+      enabled: showDragHandle,
+      gap: volumeGap,
+      horizontalInset: listInset,
+      canAccept: (data) => data.volumeId != volume.id,
+      onAcceptBefore: (data) => _acceptVolumeDrop(data, insertAfter: false),
+      onAcceptAfter: (data) => _acceptVolumeDrop(data, insertAfter: true),
+      child: body,
     );
   }
 }
@@ -1574,11 +1537,9 @@ class _ChapterRow extends StatelessWidget {
     required this.siblingIds,
     required this.canManage,
     required this.showDragHandle,
-    required this.isLast,
+    required this.isFirst,
   });
 
-  static const _chapterGap = 8.0;
-  static const _chapterGapIdle = 2.0;
   static const _lineGap = 2.0;
   static const _previewDateGap = 4.0;
   static const _textHeight = 1.15;
@@ -1588,7 +1549,7 @@ class _ChapterRow extends StatelessWidget {
   final List<String> siblingIds;
   final bool canManage;
   final bool showDragHandle;
-  final bool isLast;
+  final bool isFirst;
 
   Future<void> _openMenu(
     BuildContext context, {
@@ -1642,6 +1603,15 @@ class _ChapterRow extends StatelessWidget {
         .trim();
     final title = chapter.title.isEmpty ? 'Untitled' : chapter.title;
     final listInset = context.zephyrSidebarItemInset;
+    final divider = isFirst
+        ? null
+        : Padding(
+            padding: EdgeInsets.symmetric(horizontal: listInset),
+            child: ColoredBox(
+              color: theme.colorScheme.outlineVariant,
+              child: const SizedBox(height: 1, width: double.infinity),
+            ),
+          );
     final body = Padding(
       padding: EdgeInsets.symmetric(horizontal: listInset),
       child: Material(
@@ -1728,30 +1698,23 @@ class _ChapterRow extends StatelessWidget {
       ),
     );
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _ReorderBeforeSlot<_ChapterDragData>(
-          enabled: showDragHandle,
-          gap: showDragHandle ? _chapterGap : _chapterGapIdle,
-          horizontalInset: listInset,
-          canAccept: (data) =>
-              data.articleId != chapter.id &&
-              data.categoryId == chapter.categoryId,
-          onAccept: (data) => _acceptChapterDrop(data, insertAfter: false),
-          child: body,
-        ),
-        _ReorderAfterGap<_ChapterDragData>(
-          enabled: showDragHandle && isLast,
-          gap: _chapterGap,
-          horizontalInset: listInset,
-          canAccept: (data) =>
-              data.articleId != chapter.id &&
-              data.categoryId == chapter.categoryId,
-          onAccept: (data) => _acceptChapterDrop(data, insertAfter: true),
-        ),
-      ],
+    return _ReorderTarget<_ChapterDragData>(
+      enabled: showDragHandle,
+      gap: 0,
+      horizontalInset: listInset,
+      canAccept: (data) =>
+          data.articleId != chapter.id &&
+          data.categoryId == chapter.categoryId,
+      onAcceptBefore: (data) => _acceptChapterDrop(data, insertAfter: false),
+      onAcceptAfter: (data) => _acceptChapterDrop(data, insertAfter: true),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (divider != null) divider,
+          body,
+        ],
+      ),
     );
   }
 
@@ -1767,8 +1730,7 @@ class _SidebarDragHandle<T extends Object> extends StatelessWidget {
     this.onDragEnded,
   });
 
-  static const double _iconSize = 22;
-  static const double _hitSize = 36;
+  static const double _iconSize = 18;
 
   final T data;
   final String feedbackLabel;
@@ -1778,14 +1740,10 @@ class _SidebarDragHandle<T extends Object> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final handle = SizedBox(
-      width: _hitSize,
-      height: _hitSize,
-      child: Icon(
-        Icons.drag_handle,
-        size: _iconSize,
-        color: theme.colorScheme.onSurfaceVariant,
-      ),
+    final handle = Icon(
+      Icons.drag_indicator,
+      size: _iconSize,
+      color: theme.colorScheme.onSurfaceVariant,
     );
     return Draggable<T>(
       data: data,
@@ -1804,14 +1762,10 @@ class _SidebarDragHandle<T extends Object> extends StatelessWidget {
           ),
         ),
       ),
-      childWhenDragging: SizedBox(
-        width: _hitSize,
-        height: _hitSize,
-        child: Icon(
-          Icons.drag_handle,
-          size: _iconSize,
-          color: theme.colorScheme.outline,
-        ),
+      childWhenDragging: Icon(
+        Icons.drag_indicator,
+        size: _iconSize,
+        color: theme.colorScheme.outline,
       ),
       child: handle,
     );

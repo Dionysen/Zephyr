@@ -7,6 +7,7 @@ class UiPreferences {
     required this.cornerRadius,
     required this.showBorders,
     required this.sidebarItemInset,
+    required this.sidebarVolumeGap,
   });
 
   /// [fontSize] maps to [TextTheme.titleSmall]; other styles scale from
@@ -18,6 +19,7 @@ class UiPreferences {
     cornerRadius: 8,
     showBorders: true,
     sidebarItemInset: 6,
+    sidebarVolumeGap: 6,
   );
 
   static const referenceFontSize = 15.0;
@@ -25,6 +27,8 @@ class UiPreferences {
   static const maxCornerRadius = 20.0;
   static const minSidebarItemInset = 0.0;
   static const maxSidebarItemInset = 24.0;
+  static const minSidebarVolumeGap = 1.0;
+  static const maxSidebarVolumeGap = 10.0;
 
   final String? fontFamily;
 
@@ -42,6 +46,9 @@ class UiPreferences {
   /// Equal left/right inset for sidebar volume and chapter rows.
   final double sidebarItemInset;
 
+  /// Vertical gap between volume groups in the sidebar.
+  final double sidebarVolumeGap;
+
   double get scale => fontSize / referenceFontSize;
 
   UiPreferences copyWith({
@@ -52,6 +59,7 @@ class UiPreferences {
     double? cornerRadius,
     bool? showBorders,
     double? sidebarItemInset,
+    double? sidebarVolumeGap,
   }) => UiPreferences(
     fontFamily: clearFontFamily ? null : fontFamily ?? this.fontFamily,
     fontPath: clearFontFamily ? null : fontPath ?? this.fontPath,
@@ -59,5 +67,6 @@ class UiPreferences {
     cornerRadius: cornerRadius ?? this.cornerRadius,
     showBorders: showBorders ?? this.showBorders,
     sidebarItemInset: sidebarItemInset ?? this.sidebarItemInset,
+    sidebarVolumeGap: sidebarVolumeGap ?? this.sidebarVolumeGap,
   );
 }

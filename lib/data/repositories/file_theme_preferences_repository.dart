@@ -17,6 +17,11 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
       sidebarSurface: _color(values, 'sidebarSurface'),
       controlSurface: _color(values, 'controlSurface'),
       border: _color(values, 'border'),
+      divider: _color(
+        values,
+        'divider',
+        fallback: ThemeTokens.defaults.divider,
+      ),
       primaryText: _color(values, 'primaryText'),
       mutedText: _color(values, 'mutedText'),
       accent: _color(values, 'accent'),
@@ -42,6 +47,11 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
       'uiSidebarItemInset',
       UiPreferences.defaults.sidebarItemInset,
     );
+    final volumeGap = _double(
+      values,
+      'uiSidebarVolumeGap',
+      UiPreferences.defaults.sidebarVolumeGap,
+    );
     return UiPreferences(
       fontFamily: values['uiFontFamily'] as String?,
       fontPath: values['uiFontPath'] as String?,
@@ -60,6 +70,12 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
             UiPreferences.maxSidebarItemInset,
           )
           .toDouble(),
+      sidebarVolumeGap: volumeGap
+          .clamp(
+            UiPreferences.minSidebarVolumeGap,
+            UiPreferences.maxSidebarVolumeGap,
+          )
+          .toDouble(),
     );
   }
 
@@ -72,6 +88,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'sidebarSurface': tokens.sidebarSurface,
     'controlSurface': tokens.controlSurface,
     'border': tokens.border,
+    'divider': tokens.divider,
     'primaryText': tokens.primaryText,
     'mutedText': tokens.mutedText,
     'accent': tokens.accent,
@@ -82,6 +99,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'uiCornerRadius': ui.cornerRadius,
     'uiShowBorders': ui.showBorders,
     'uiSidebarItemInset': ui.sidebarItemInset,
+    'uiSidebarVolumeGap': ui.sidebarVolumeGap,
   });
 
   int _color(Map<String, Object?> values, String key, {int? fallback}) {

@@ -7,6 +7,7 @@ enum ThemeToken {
   sidebarSurface,
   controlSurface,
   border,
+  divider,
   primaryText,
   mutedText,
   accent,
@@ -31,6 +32,7 @@ class ThemeTokens {
     required this.sidebarSurface,
     required this.controlSurface,
     required this.border,
+    required this.divider,
     required this.primaryText,
     required this.mutedText,
     required this.accent,
@@ -42,6 +44,7 @@ class ThemeTokens {
     sidebarSurface: 0xFF171717,
     controlSurface: 0xFF242424,
     border: 0xFF343434,
+    divider: 0xFF222222,
     primaryText: 0xFFE8E8E8,
     mutedText: 0xFF858585,
     accent: 0xFF9ACBA7,
@@ -54,6 +57,7 @@ class ThemeTokens {
       sidebarSurface: 0xFFF1F3F6,
       controlSurface: 0xFFFFFFFF,
       border: 0xFFE1E4E8,
+      divider: 0xFFE4E6EA,
       primaryText: 0xFF25272A,
       mutedText: 0xFF70757D,
       accent: 0xFF2563EB,
@@ -64,6 +68,7 @@ class ThemeTokens {
       sidebarSurface: 0xFFF0F3F7,
       controlSurface: 0xFFFFFFFF,
       border: 0xFFDDE3EA,
+      divider: 0xFFE0E4EA,
       primaryText: 0xFF293241,
       mutedText: 0xFF718096,
       accent: 0xFF475569,
@@ -74,6 +79,7 @@ class ThemeTokens {
       sidebarSurface: 0xFFF3F4F6,
       controlSurface: 0xFFFFFFFF,
       border: 0xFFE5E5E5,
+      divider: 0xFFE8E8E8,
       primaryText: 0xFF34343A,
       mutedText: 0xFF777780,
       accent: 0xFF4B5563,
@@ -84,6 +90,7 @@ class ThemeTokens {
       sidebarSurface: 0xFFF4F0E9,
       controlSurface: 0xFFFFFFFF,
       border: 0xFFE7E0D5,
+      divider: 0xFFEBE4D9,
       primaryText: 0xFF39312B,
       mutedText: 0xFF82756A,
       accent: 0xFFB85C16,
@@ -94,6 +101,7 @@ class ThemeTokens {
       sidebarSurface: 0xFFE5F2EC,
       controlSurface: 0xFFFFFFFF,
       border: 0xFFD2E5DC,
+      divider: 0xFFDCE8E2,
       primaryText: 0xFF253A32,
       mutedText: 0xFF6A8277,
       accent: 0xFF2FA36F,
@@ -104,6 +112,7 @@ class ThemeTokens {
       sidebarSurface: 0xFFF0E6FB,
       controlSurface: 0xFFFFFFFF,
       border: 0xFFE5D9F2,
+      divider: 0xFFE8DFF2,
       primaryText: 0xFF382D4A,
       mutedText: 0xFF7E708F,
       accent: 0xFF7C3AED,
@@ -114,6 +123,7 @@ class ThemeTokens {
       sidebarSurface: 0xFFE9EAFA,
       controlSurface: 0xFFFFFFFF,
       border: 0xFFDCDDFA,
+      divider: 0xFFE2E3F5,
       primaryText: 0xFF252D50,
       mutedText: 0xFF70769A,
       accent: 0xFF1D4ED8,
@@ -124,6 +134,7 @@ class ThemeTokens {
       sidebarSurface: 0xFF10131B,
       controlSurface: 0xFF202531,
       border: 0xFF303847,
+      divider: 0xFF1C2230,
       primaryText: 0xFFE4E8F0,
       mutedText: 0xFF8B95A7,
       accent: 0xFF73A5FF,
@@ -136,6 +147,7 @@ class ThemeTokens {
   final int sidebarSurface;
   final int controlSurface;
   final int border;
+  final int divider;
   final int primaryText;
   final int mutedText;
   final int accent;
@@ -150,6 +162,7 @@ class ThemeTokens {
     ThemeToken.sidebarSurface => sidebarSurface,
     ThemeToken.controlSurface => controlSurface,
     ThemeToken.border => border,
+    ThemeToken.divider => divider,
     ThemeToken.primaryText => primaryText,
     ThemeToken.mutedText => mutedText,
     ThemeToken.accent => accent,
@@ -161,6 +174,7 @@ class ThemeTokens {
     ThemeToken.sidebarSurface => copyWith(sidebarSurface: value),
     ThemeToken.controlSurface => copyWith(controlSurface: value),
     ThemeToken.border => copyWith(border: value),
+    ThemeToken.divider => copyWith(divider: value),
     ThemeToken.primaryText => copyWith(primaryText: value),
     ThemeToken.mutedText => copyWith(mutedText: value),
     ThemeToken.accent => copyWith(accent: value),
@@ -172,6 +186,7 @@ class ThemeTokens {
     int? sidebarSurface,
     int? controlSurface,
     int? border,
+    int? divider,
     int? primaryText,
     int? mutedText,
     int? accent,
@@ -181,6 +196,7 @@ class ThemeTokens {
     sidebarSurface: sidebarSurface ?? this.sidebarSurface,
     controlSurface: controlSurface ?? this.controlSurface,
     border: border ?? this.border,
+    divider: divider ?? this.divider,
     primaryText: primaryText ?? this.primaryText,
     mutedText: mutedText ?? this.mutedText,
     accent: accent ?? this.accent,
@@ -194,6 +210,7 @@ class ThemeTokens {
       sidebarSurface == other.sidebarSurface &&
       controlSurface == other.controlSurface &&
       border == other.border &&
+      divider == other.divider &&
       primaryText == other.primaryText &&
       mutedText == other.mutedText &&
       accent == other.accent &&
@@ -205,6 +222,7 @@ class ThemeTokens {
     sidebarSurface,
     controlSurface,
     border,
+    divider,
     primaryText,
     mutedText,
     accent,
