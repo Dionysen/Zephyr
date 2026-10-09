@@ -77,6 +77,11 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
           )
           .toDouble(),
       immersiveStatusBar: _immersiveStatusBar(values),
+      hideStatusBarIcons: _bool(
+        values,
+        'uiHideStatusBarIcons',
+        UiPreferences.defaults.hideStatusBarIcons,
+      ),
     );
   }
 
@@ -102,6 +107,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'uiSidebarItemInset': ui.sidebarItemInset,
     'uiSidebarVolumeGap': ui.sidebarVolumeGap,
     'uiImmersiveStatusBar': ui.immersiveStatusBar,
+    'uiHideStatusBarIcons': ui.hideStatusBarIcons,
   });
 
   int _color(Map<String, Object?> values, String key, {int? fallback}) {

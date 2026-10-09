@@ -49,6 +49,7 @@ class _SettingsPageState extends State<SettingsPage> {
       builder: (context, _) {
         final section = scope.settings.section;
         final immersiveStatusBar = scope.theme.ui.immersiveStatusBar;
+        final hideStatusBarIcons = scope.theme.ui.hideStatusBarIcons;
         return LayoutBuilder(
           builder: (context, constraints) {
             final compact = ZephyrBreakpoints.isCompact(
@@ -66,6 +67,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 data: withMobileRoundControls(Theme.of(context)),
                 child: ZephyrStatusBar(
                   immersive: immersiveStatusBar,
+                  hideIcons: hideStatusBarIcons,
                   statusBarColor: immersiveStatusBar ? surface : barColor,
                   child: Scaffold(
                     backgroundColor: surface,
@@ -127,6 +129,7 @@ class _SettingsPageState extends State<SettingsPage> {
             final desktopSurface = Theme.of(context).colorScheme.surface;
             return ZephyrStatusBar(
               immersive: immersiveStatusBar,
+              hideIcons: hideStatusBarIcons,
               statusBarColor: desktopSurface,
               child: Scaffold(
                 backgroundColor: desktopSurface,

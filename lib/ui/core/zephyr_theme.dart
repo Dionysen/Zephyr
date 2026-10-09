@@ -265,6 +265,7 @@ ThemeData zephyrTheme(
       systemOverlayStyle: ZephyrStatusBar.styleFor(
         brightness,
         immersive: ui.immersiveStatusBar,
+        hideIcons: ui.hideStatusBarIcons,
         statusBarColor: editor,
       ),
     ),

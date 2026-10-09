@@ -21,15 +21,18 @@ class ZephyrStatusBar extends StatefulWidget {
     super.key,
     required this.child,
     this.immersive = false,
+    this.hideIcons = true,
     this.statusBarColor,
     this.brightness,
   });
 
   final Widget child;
 
-  /// Layout hint for shells (extend under the status band). System UI stays
-  /// edge-to-edge + transparent either way so the app shows through the bar.
+  /// When true, the shell may draw under the transparent status band.
   final bool immersive;
+
+  /// When [immersive] is true and this is true, status icons auto-hide.
+  final bool hideIcons;
 
   /// Surface color behind the status band (for themed shells).
   final Color? statusBarColor;
@@ -40,6 +43,7 @@ class ZephyrStatusBar extends StatefulWidget {
   static SystemUiOverlayStyle styleFor(
     Brightness brightness, {
     bool immersive = false,
+    bool hideIcons = true,
     Color? statusBarColor,
   }) {
     final isDark = brightness == Brightness.dark;
@@ -51,11 +55,17 @@ class ZephyrStatusBar extends StatefulWidget {
     );
   }
 
-  static Future<void> applySystemUiMode({required bool immersive}) async {
+  static Future<void> applySystemUiMode({
+    required bool immersive,
+    required bool hideIcons,
+  }) async {
     if (!_isMobileShell) return;
-    // Always edge-to-edge so a transparent status bar reveals the app surface.
-    // Immersive is a layout concern (draw under / scroll under), not sticky hide.
-    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    if (immersive && hideIcons) {
+      // Auto-hide icons; swipe edge to peek. App still paints under the band.
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    } else {
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
   }
 
   @override
@@ -63,7 +73,8 @@ class ZephyrStatusBar extends StatefulWidget {
 }
 
 class _ZephyrStatusBarState extends State<ZephyrStatusBar> {
-  var _appliedEdgeToEdge = false;
+  bool? _appliedImmersive;
+  bool? _appliedHideIcons;
 
   @override
   void didChangeDependencies() {
@@ -74,16 +85,24 @@ class _ZephyrStatusBarState extends State<ZephyrStatusBar> {
   @override
   void didUpdateWidget(covariant ZephyrStatusBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.immersive != widget.immersive) {
-      _syncSystemUi(force: true);
+    if (oldWidget.immersive != widget.immersive ||
+        oldWidget.hideIcons != widget.hideIcons) {
+      _syncSystemUi();
     }
   }
 
-  void _syncSystemUi({bool force = false}) {
-    if (_appliedEdgeToEdge && !force) return;
-    _appliedEdgeToEdge = true;
+  void _syncSystemUi() {
+    if (_appliedImmersive == widget.immersive &&
+        _appliedHideIcons == widget.hideIcons) {
+      return;
+    }
+    _appliedImmersive = widget.immersive;
+    _appliedHideIcons = widget.hideIcons;
     // ignore: discarded_futures
-    ZephyrStatusBar.applySystemUiMode(immersive: widget.immersive);
+    ZephyrStatusBar.applySystemUiMode(
+      immersive: widget.immersive,
+      hideIcons: widget.hideIcons,
+    );
   }
 
   @override
@@ -95,6 +114,7 @@ class _ZephyrStatusBarState extends State<ZephyrStatusBar> {
       value: ZephyrStatusBar.styleFor(
         resolved,
         immersive: widget.immersive,
+        hideIcons: widget.hideIcons,
         statusBarColor: surface,
       ),
       child: widget.child,

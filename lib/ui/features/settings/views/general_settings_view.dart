@@ -17,19 +17,31 @@ class GeneralSettingsView extends StatelessWidget {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: viewModel,
     builder: (context, _) {
-      final tile = ZephyrSettingsSwitchTile(
-        title: compact ? '沉浸式通知栏' : 'Immersive status bar',
-        subtitle: compact
-            ? '开启后应用延伸到透明通知栏下（控件仍留白），正文可上滑进入该区域。'
-            : 'On: draw under a transparent status bar (chrome stays padded); '
-                  'text may scroll into that band.',
-        value: viewModel.ui.immersiveStatusBar,
-        showDivider: false,
-        onChanged: viewModel.updateImmersiveStatusBar,
-      );
+      final immersive = viewModel.ui.immersiveStatusBar;
+      final children = [
+        ZephyrSettingsSwitchTile(
+          title: compact ? '沉浸式通知栏' : 'Immersive status bar',
+          subtitle: compact
+              ? '开启后应用延伸到透明通知栏下（控件仍留白），正文可上滑进入该区域。'
+              : 'Draw under a transparent status bar (chrome stays padded); '
+                    'text may scroll into that band.',
+          value: immersive,
+          onChanged: viewModel.updateImmersiveStatusBar,
+        ),
+        ZephyrSettingsSwitchTile(
+          title: compact ? '隐藏通知栏图标' : 'Hide status bar icons',
+          subtitle: compact
+              ? '仅在沉浸式通知栏开启时生效；图标自动隐藏，边缘滑动可临时显示。'
+              : 'Only when immersive is on. Icons auto-hide; swipe from the '
+                    'edge to peek.',
+          value: viewModel.ui.hideStatusBarIcons,
+          showDivider: false,
+          onChanged: immersive ? viewModel.updateHideStatusBarIcons : null,
+        ),
+      ];
 
       if (compact) {
-        return ZephyrSettingsSection(children: [tile]);
+        return ZephyrSettingsSection(children: children);
       }
 
       return ListView(
@@ -40,7 +52,7 @@ class GeneralSettingsView extends StatelessWidget {
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 16),
-          ZephyrSettingsSection(children: [tile]),
+          ZephyrSettingsSection(children: children),
         ],
       );
     },

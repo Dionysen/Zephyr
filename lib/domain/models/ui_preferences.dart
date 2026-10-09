@@ -9,6 +9,7 @@ class UiPreferences {
     required this.sidebarItemInset,
     required this.sidebarVolumeGap,
     required this.immersiveStatusBar,
+    required this.hideStatusBarIcons,
   });
 
   /// [fontSize] maps to [TextTheme.titleSmall]; other styles scale from
@@ -22,6 +23,7 @@ class UiPreferences {
     sidebarItemInset: 6,
     sidebarVolumeGap: 6,
     immersiveStatusBar: false,
+    hideStatusBarIcons: true,
   );
 
   static const referenceFontSize = 15.0;
@@ -51,10 +53,13 @@ class UiPreferences {
   /// Vertical gap between volume groups in the sidebar.
   final double sidebarVolumeGap;
 
-  /// When true, the shell draws edge-to-edge under a transparent status bar
-  /// (chrome still reserved) and reading content may scroll into that band.
-  /// When false, chrome stays below the status insets as usual.
+  /// When true, the shell draws under a transparent status band (chrome
+  /// reserved) and reading content may scroll into that band.
   final bool immersiveStatusBar;
+
+  /// When [immersiveStatusBar] is true, hides system status icons
+  /// (immersive sticky). Ignored while immersive is off.
+  final bool hideStatusBarIcons;
 
   double get scale => fontSize / referenceFontSize;
 
@@ -68,6 +73,7 @@ class UiPreferences {
     double? sidebarItemInset,
     double? sidebarVolumeGap,
     bool? immersiveStatusBar,
+    bool? hideStatusBarIcons,
   }) => UiPreferences(
     fontFamily: clearFontFamily ? null : fontFamily ?? this.fontFamily,
     fontPath: clearFontFamily ? null : fontPath ?? this.fontPath,
@@ -77,5 +83,6 @@ class UiPreferences {
     sidebarItemInset: sidebarItemInset ?? this.sidebarItemInset,
     sidebarVolumeGap: sidebarVolumeGap ?? this.sidebarVolumeGap,
     immersiveStatusBar: immersiveStatusBar ?? this.immersiveStatusBar,
+    hideStatusBarIcons: hideStatusBarIcons ?? this.hideStatusBarIcons,
   );
 }

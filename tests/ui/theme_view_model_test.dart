@@ -109,6 +109,15 @@ void main() {
     expect(model.ui.immersiveStatusBar, isFalse);
     expect(model.tokens, ThemeTokens.defaults);
   });
+
+  test('hide status bar icons updates independently of color tokens', () {
+    final model = ThemeViewModel(_ThemeRepository(ThemeTokens.defaults));
+
+    expect(model.ui.hideStatusBarIcons, isTrue);
+    model.updateHideStatusBarIcons(false);
+    expect(model.ui.hideStatusBarIcons, isFalse);
+    expect(model.tokens, ThemeTokens.defaults);
+  });
 }
 
 class _ThemeRepository implements ThemePreferencesRepository {

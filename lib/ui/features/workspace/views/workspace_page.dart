@@ -55,10 +55,12 @@ class _WorkspacePageState extends State<WorkspacePage> {
       builder: (context, _) {
         final model = scope.library;
         final immersiveStatusBar = scope.theme.ui.immersiveStatusBar;
+        final hideStatusBarIcons = scope.theme.ui.hideStatusBarIcons;
         final surface = Theme.of(context).colorScheme.surface;
         if (model.error != null && model.library == null) {
           return ZephyrStatusBar(
             immersive: immersiveStatusBar,
+            hideIcons: hideStatusBarIcons,
             statusBarColor: surface,
             child: _LibrarySetupPage(
               error: model.error,
@@ -69,6 +71,7 @@ class _WorkspacePageState extends State<WorkspacePage> {
         if (model.library == null) {
           return ZephyrStatusBar(
             immersive: immersiveStatusBar,
+            hideIcons: hideStatusBarIcons,
             statusBarColor: surface,
             child: const Scaffold(
               body: Center(child: CircularProgressIndicator()),
@@ -92,6 +95,7 @@ class _WorkspacePageState extends State<WorkspacePage> {
                 data: withMobileRoundControls(Theme.of(context)),
                 child: ZephyrStatusBar(
                   immersive: immersive,
+                  hideIcons: hideStatusBarIcons,
                   statusBarColor: surface,
                   child: Scaffold(
                     backgroundColor: surface,
@@ -196,6 +200,7 @@ class _WorkspacePageState extends State<WorkspacePage> {
             );
             return ZephyrStatusBar(
               immersive: immersiveStatusBar,
+              hideIcons: hideStatusBarIcons,
               statusBarColor: surface,
               child: Scaffold(
                 backgroundColor: surface,

@@ -37,6 +37,7 @@ void main() {
         sidebarItemInset: 12,
         sidebarVolumeGap: 4,
         immersiveStatusBar: true,
+        hideStatusBarIcons: false,
       );
 
       await repository.save(tokens: expectedTokens, ui: expectedUi);
@@ -54,6 +55,7 @@ void main() {
       expect(actualUi.sidebarItemInset, expectedUi.sidebarItemInset);
       expect(actualUi.sidebarVolumeGap, expectedUi.sidebarVolumeGap);
       expect(actualUi.immersiveStatusBar, expectedUi.immersiveStatusBar);
+      expect(actualUi.hideStatusBarIcons, expectedUi.hideStatusBarIcons);
     },
   );
 
@@ -83,6 +85,7 @@ void main() {
     expect(ui.sidebarItemInset, UiPreferences.defaults.sidebarItemInset);
     expect(ui.sidebarVolumeGap, UiPreferences.defaults.sidebarVolumeGap);
     expect(ui.immersiveStatusBar, UiPreferences.defaults.immersiveStatusBar);
+    expect(ui.hideStatusBarIcons, UiPreferences.defaults.hideStatusBarIcons);
     expect(ui.fontFamily, isNull);
     expect(ui.fontPath, isNull);
     expect(tokens.cursor, ThemeTokens.defaults.cursor);

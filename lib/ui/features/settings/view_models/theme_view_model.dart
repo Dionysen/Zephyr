@@ -148,6 +148,9 @@ class ThemeViewModel extends ChangeNotifier {
   void updateImmersiveStatusBar(bool value) =>
       _updateUi(_ui.copyWith(immersiveStatusBar: value));
 
+  void updateHideStatusBarIcons(bool value) =>
+      _updateUi(_ui.copyWith(hideStatusBarIcons: value));
+
   void _updateUi(UiPreferences value) {
     _ui = value;
     _scheduleSave();
