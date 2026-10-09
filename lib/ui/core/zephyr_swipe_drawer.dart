@@ -101,6 +101,7 @@ class _ZephyrSwipeDrawerState extends State<ZephyrSwipeDrawer>
   }
 
   void open() {
+    _dismissKeyboard();
     _progress.fling(
       velocity: 2,
       springDescription: SpringDescription.withDampingRatio(
@@ -122,9 +123,17 @@ class _ZephyrSwipeDrawerState extends State<ZephyrSwipeDrawer>
     );
   }
 
+  void _dismissKeyboard() {
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
   void _onDragStart(DragStartDetails details) {
     _progress.stop();
     _dragStartProgress = _progress.value;
+    // Hide the IME as soon as the user starts pulling the drawer open.
+    if (_dragStartProgress < 0.05) {
+      _dismissKeyboard();
+    }
   }
 
   void _onDragUpdate(DragUpdateDetails details) {

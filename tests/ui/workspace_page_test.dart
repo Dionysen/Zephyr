@@ -344,6 +344,42 @@ void main() {
     expect(find.text('选择书库'), findsOneWidget);
     expect(find.text('临时书库'), findsWidgets);
   });
+
+  testWidgets('compact top bar opens book and tools sheets', (tester) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+
+    final bookBar = find.byType(WorkspaceMobileBookBar);
+    expect(find.byTooltip('More'), findsOneWidget);
+    expect(
+      find.descendant(of: bookBar, matching: find.text('Book A')),
+      findsOneWidget,
+    );
+
+    await tester.tap(
+      find.descendant(of: bookBar, matching: find.text('Book A')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('选择书籍'), findsOneWidget);
+
+    await tester.tap(find.text('Book B').last);
+    await tester.pumpAndSettle();
+    expect(find.text('选择书籍'), findsNothing);
+    expect(
+      find.descendant(of: bookBar, matching: find.text('Book B')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byTooltip('More'));
+    await tester.pumpAndSettle();
+    expect(find.text('更多'), findsOneWidget);
+    expect(find.text('暂无可用工具'), findsOneWidget);
+  });
 }
 
 Widget _app({LibraryViewModel? library, bool needsLibrarySetup = false}) {

@@ -210,18 +210,47 @@ class _DrawerSidebarHeader extends StatelessWidget {
   }
 }
 
-/// Floating book picker for the compact editor surface.
+/// One overflow action for the mobile editor “more” sheet.
+///
+/// Pass tools via [WorkspaceMobileBookBar.tools] (or [toolsBuilder]) so future
+/// settings/actions can plug in without changing the bar layout.
+class WorkspaceMobileTool {
+  const WorkspaceMobileTool({
+    required this.label,
+    required this.onTap,
+    this.icon,
+    this.enabled = true,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final IconData? icon;
+  final bool enabled;
+}
+
+/// Floating chrome for the compact editor surface.
 class WorkspaceMobileBookBar extends StatelessWidget {
   const WorkspaceMobileBookBar({
     super.key,
     required this.model,
     required this.onOpenMenu,
+    this.tools = const [],
+    this.toolsBuilder,
   });
 
-  static const height = 52.0;
+  /// Bar height sized for Material icon buttons (48) plus light vertical pad.
+  static const height = 56.0;
+  static const _iconButtonSize = 48.0;
+  static const _iconSize = 24.0;
 
   final LibraryViewModel model;
   final VoidCallback onOpenMenu;
+
+  /// Static tools shown in the overflow sheet.
+  final List<WorkspaceMobileTool> tools;
+
+  /// Optional builder merged after [tools] when the sheet opens.
+  final List<WorkspaceMobileTool> Function(BuildContext context)? toolsBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -229,6 +258,9 @@ class WorkspaceMobileBookBar extends StatelessWidget {
     final library = model.library;
     if (library == null) return const SizedBox.shrink();
     final radius = context.zephyrBorderRadius;
+    final book = model.selectedBook;
+    final isTrash = book?.isTrash == true;
+    final bookName = book?.name ?? '选择书籍';
 
     return Material(
       elevation: 2,
@@ -241,22 +273,263 @@ class WorkspaceMobileBookBar extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: SizedBox(
         height: height,
-        child: Row(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            children: [
+              IconButton(
+                style: _mobileBarIconStyle(context),
+                onPressed: onOpenMenu,
+                icon: const Icon(Icons.menu, size: _iconSize),
+                tooltip: 'Open library',
+              ),
+              Expanded(
+                child: TextButton(
+                  onPressed: () => _showBookSheet(context, library: library),
+                  style: TextButton.styleFrom(
+                    foregroundColor: isTrash
+                        ? theme.colorScheme.error
+                        : theme.colorScheme.onSurface,
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    minimumSize: const Size(0, _iconButtonSize),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    alignment: Alignment.centerLeft,
+                  ),
+                  child: Row(
+                    children: [
+                      if (isTrash) ...[
+                        Icon(
+                          Icons.delete_outline,
+                          size: _iconSize,
+                          color: theme.colorScheme.error,
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Flexible(
+                        child: Text(
+                          bookName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.left,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: isTrash ? theme.colorScheme.error : null,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              IconButton(
+                style: _mobileBarIconStyle(context),
+                onPressed: () => _showToolsSheet(context),
+                icon: const Icon(Icons.more_vert, size: _iconSize),
+                tooltip: 'More',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  ButtonStyle _mobileBarIconStyle(BuildContext context) {
+    final theme = Theme.of(context);
+    return IconButton.styleFrom(
+      foregroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.76),
+      iconSize: _iconSize,
+      padding: const EdgeInsets.all(12),
+      minimumSize: const Size(_iconButtonSize, _iconButtonSize),
+      fixedSize: const Size(_iconButtonSize, _iconButtonSize),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.standard,
+      shape: context.zephyrShape.iconButtonShape,
+    );
+  }
+
+  Future<void> _showBookSheet(
+    BuildContext context, {
+    required WritingLibrary library,
+  }) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => _MobileBookSheet(
+        hostContext: context,
+        model: model,
+        library: library,
+      ),
+    );
+  }
+
+  Future<void> _showToolsSheet(BuildContext context) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    final built = toolsBuilder?.call(context) ?? const <WorkspaceMobileTool>[];
+    await showWorkspaceMobileToolsSheet(
+      context,
+      tools: [...tools, ...built],
+    );
+  }
+}
+
+/// Opens the reserved mobile overflow sheet (tools / settings).
+Future<void> showWorkspaceMobileToolsSheet(
+  BuildContext context, {
+  List<WorkspaceMobileTool> tools = const [],
+}) {
+  return showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (sheetContext) => _MobileToolsSheet(tools: tools),
+  );
+}
+
+class _MobileBookSheet extends StatelessWidget {
+  const _MobileBookSheet({
+    required this.hostContext,
+    required this.model,
+    required this.library,
+  });
+
+  final BuildContext hostContext;
+  final LibraryViewModel model;
+  final WritingLibrary library;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final books = library.folders;
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.7;
+
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            IconButton(
-              onPressed: onOpenMenu,
-              icon: const Icon(Icons.menu),
-              tooltip: 'Open library',
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+              child: Text('选择书籍', style: theme.textTheme.titleMedium),
             ),
-            Expanded(
-              child: WorkspaceBookPicker(
-                model: model,
-                library: library,
-                dense: true,
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: books.length,
+                itemBuilder: (context, index) {
+                  final book = books[index];
+                  final selected = book.id == model.selectedBook?.id;
+                  final isTrash = book.isTrash;
+                  final stats = model.bookStats(book.id);
+                  final subtitle = _mobileBookSubtitle(book) ??
+                      '${stats.volumes}卷 ${stats.chapters}章';
+                  final accent = isTrash ? theme.colorScheme.error : null;
+
+                  return ListTile(
+                    selected: selected,
+                    leading: Icon(
+                      isTrash ? Icons.delete_outline : Icons.book_outlined,
+                      color: accent,
+                    ),
+                    title: Text(
+                      book.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: accent),
+                    ),
+                    subtitle: Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: accent == null
+                          ? null
+                          : TextStyle(color: accent.withValues(alpha: 0.8)),
+                    ),
+                    trailing: isTrash
+                        ? null
+                        : IconButton(
+                            tooltip: '编辑书籍',
+                            onPressed: model.isReadOnly
+                                ? null
+                                : () async {
+                                    Navigator.of(context).pop();
+                                    if (!hostContext.mounted) return;
+                                    await _editBook(
+                                      hostContext,
+                                      model: model,
+                                      book: book,
+                                    );
+                                  },
+                            icon: const Icon(Icons.edit_outlined),
+                          ),
+                    onTap: () async {
+                      Navigator.of(context).pop();
+                      await model.selectBook(book.id);
+                    },
+                  );
+                },
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  String? _mobileBookSubtitle(WritingFolder book) {
+    final tags = book.tags.trim();
+    if (tags.isNotEmpty) {
+      return tags.split(RegExp(r'[,;，；]')).first.trim();
+    }
+    final description = book.description.trim();
+    if (description.isEmpty) return null;
+    return description;
+  }
+}
+
+class _MobileToolsSheet extends StatelessWidget {
+  const _MobileToolsSheet({required this.tools});
+
+  final List<WorkspaceMobileTool> tools;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+            child: Text('更多', style: theme.textTheme.titleMedium),
+          ),
+          if (tools.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+              child: Text(
+                '暂无可用工具',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            )
+          else
+            for (final tool in tools)
+              ListTile(
+                enabled: tool.enabled,
+                leading: tool.icon == null ? null : Icon(tool.icon),
+                title: Text(tool.label),
+                onTap: !tool.enabled
+                    ? null
+                    : () {
+                        Navigator.of(context).pop();
+                        tool.onTap();
+                      },
+              ),
+        ],
       ),
     );
   }
