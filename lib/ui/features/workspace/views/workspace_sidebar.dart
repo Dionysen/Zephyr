@@ -238,10 +238,10 @@ class WorkspaceMobileBookBar extends StatelessWidget {
     this.toolsBuilder,
   });
 
-  /// Bar height sized for Material icon buttons (48) plus light vertical pad.
-  static const height = 56.0;
-  static const _iconButtonSize = 48.0;
-  static const _iconSize = 24.0;
+  /// Compact floating bar; icon buttons sit at 40 inside a 48-tall shell.
+  static const height = 48.0;
+  static const _iconButtonSize = 40.0;
+  static const _iconSize = 22.0;
 
   final LibraryViewModel model;
   final VoidCallback onOpenMenu;
@@ -261,72 +261,94 @@ class WorkspaceMobileBookBar extends StatelessWidget {
     final book = model.selectedBook;
     final isTrash = book?.isTrash == true;
     final bookName = book?.name ?? '选择书籍';
+    final surface = theme.colorScheme.surface;
+    final shadow = theme.colorScheme.shadow;
 
-    return Material(
-      elevation: 2,
-      shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.28),
-      color: theme.colorScheme.surface.withValues(alpha: 0.94),
-      shape: RoundedRectangleBorder(
+    return DecoratedBox(
+      decoration: BoxDecoration(
         borderRadius: radius,
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
+        boxShadow: [
+          BoxShadow(
+            color: shadow.withValues(alpha: 0.14),
+            blurRadius: 18,
+            spreadRadius: 0,
+            offset: const Offset(0, 6),
+          ),
+          BoxShadow(
+            color: shadow.withValues(alpha: 0.08),
+            blurRadius: 6,
+            spreadRadius: 0,
+            offset: const Offset(0, 1),
+          ),
+          BoxShadow(
+            color: shadow.withValues(alpha: 0.05),
+            blurRadius: 2,
+            spreadRadius: 0,
+          ),
+        ],
       ),
-      clipBehavior: Clip.antiAlias,
-      child: SizedBox(
-        height: height,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Row(
-            children: [
-              IconButton(
-                style: _mobileBarIconStyle(context),
-                onPressed: onOpenMenu,
-                icon: const Icon(Icons.menu, size: _iconSize),
-                tooltip: 'Open library',
-              ),
-              Expanded(
-                child: TextButton(
-                  onPressed: () => _showBookSheet(context, library: library),
-                  style: TextButton.styleFrom(
-                    foregroundColor: isTrash
-                        ? theme.colorScheme.error
-                        : theme.colorScheme.onSurface,
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    minimumSize: const Size(0, _iconButtonSize),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    alignment: Alignment.centerLeft,
-                  ),
-                  child: Row(
-                    children: [
-                      if (isTrash) ...[
-                        Icon(
-                          Icons.delete_outline,
-                          size: _iconSize,
-                          color: theme.colorScheme.error,
-                        ),
-                        const SizedBox(width: 6),
-                      ],
-                      Flexible(
-                        child: Text(
-                          bookName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.left,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: isTrash ? theme.colorScheme.error : null,
+      child: Material(
+        elevation: 0,
+        color: surface,
+        shape: RoundedRectangleBorder(borderRadius: radius),
+        clipBehavior: Clip.antiAlias,
+        child: SizedBox(
+          height: height,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Row(
+              children: [
+                IconButton(
+                  style: _mobileBarIconStyle(context),
+                  onPressed: onOpenMenu,
+                  icon: const Icon(Icons.menu, size: _iconSize),
+                  tooltip: 'Open library',
+                ),
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => _showBookSheet(context, library: library),
+                    style: TextButton.styleFrom(
+                      foregroundColor: isTrash
+                          ? theme.colorScheme.error
+                          : theme.colorScheme.onSurface,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      minimumSize: const Size(0, _iconButtonSize),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      alignment: Alignment.centerLeft,
+                    ),
+                    child: Row(
+                      children: [
+                        if (isTrash) ...[
+                          Icon(
+                            Icons.delete_outline,
+                            size: _iconSize,
+                            color: theme.colorScheme.error,
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                        Flexible(
+                          child: Text(
+                            bookName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.left,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: isTrash ? theme.colorScheme.error : null,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              IconButton(
-                style: _mobileBarIconStyle(context),
-                onPressed: () => _showToolsSheet(context),
-                icon: const Icon(Icons.more_vert, size: _iconSize),
-                tooltip: 'More',
-              ),
-            ],
+                IconButton(
+                  style: _mobileBarIconStyle(context),
+                  onPressed: () => _showToolsSheet(context),
+                  icon: const Icon(Icons.more_vert, size: _iconSize),
+                  tooltip: 'More',
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -338,7 +360,7 @@ class WorkspaceMobileBookBar extends StatelessWidget {
     return IconButton.styleFrom(
       foregroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.76),
       iconSize: _iconSize,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(9),
       minimumSize: const Size(_iconButtonSize, _iconButtonSize),
       fixedSize: const Size(_iconButtonSize, _iconButtonSize),
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,

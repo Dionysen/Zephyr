@@ -11,6 +11,7 @@ import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_status_bar.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
+import '../../editor/view_models/editor_preferences_view_model.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../settings/views/settings_page.dart';
 import 'workspace_editor.dart';
@@ -100,36 +101,9 @@ class _WorkspacePageState extends State<WorkspacePage> {
                                   openSettings: _openSettings,
                                 ),
                               ),
-                              body: Builder(
-                                builder: (context) {
-                                  const barInset = 8.0;
-                                  const topOverlay =
-                                      barInset +
-                                      WorkspaceMobileBookBar.height +
-                                      6;
-                                  return Stack(
-                                    children: [
-                                      Positioned.fill(
-                                        child: WorkspaceEditor(
-                                          model: model,
-                                          preferences: scope.editorPreferences,
-                                          contentTopInset: topOverlay,
-                                        ),
-                                      ),
-                                      Positioned(
-                                        top: barInset,
-                                        left: 12,
-                                        right: 12,
-                                        child: WorkspaceMobileBookBar(
-                                          model: model,
-                                          onOpenMenu: () => ZephyrSwipeDrawer
-                                              .of(context)
-                                              .open(),
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
+                              body: _MobileEditorChrome(
+                                model: model,
+                                preferences: scope.editorPreferences,
                               ),
                             ),
                           ),
@@ -248,6 +222,177 @@ class _WorkspacePageState extends State<WorkspacePage> {
     return available.clamp(
       LibraryViewModel.minSidebarWidth,
       LibraryViewModel.maxSidebarWidth,
+    );
+  }
+}
+
+/// Compact editor + floating book bar that slides away while reading down
+/// and returns when scrolling back up.
+class _MobileEditorChrome extends StatefulWidget {
+  const _MobileEditorChrome({
+    required this.model,
+    required this.preferences,
+  });
+
+  final LibraryViewModel model;
+  final EditorPreferencesViewModel preferences;
+
+  @override
+  State<_MobileEditorChrome> createState() => _MobileEditorChromeState();
+}
+
+class _MobileEditorChromeState extends State<_MobileEditorChrome>
+    with SingleTickerProviderStateMixin {
+  static const _barInset = 8.0;
+  static const _barSideInset = 12.0;
+  static const _barGapBelow = 6.0;
+
+  /// Ignore small scrolls until this much movement accumulates in one direction.
+  static const _engageSlop = 36.0;
+
+  /// Snappy ease that settles on the target without overshoot.
+  static const _motion = Cubic(0.2, 0.0, 0.0, 1.0);
+
+  late final AnimationController _hide;
+
+  /// Accumulated delta before triggering a show/hide jump.
+  var _slop = 0.0;
+  String? _articleId;
+
+  double get _barTravel =>
+      _barInset + WorkspaceMobileBookBar.height + _barGapBelow;
+
+  double get _topOverlay => _barTravel;
+
+  bool get _isHidden => _hide.value >= 0.999;
+  bool get _isVisible => _hide.value <= 0.001;
+
+  @override
+  void initState() {
+    super.initState();
+    _hide = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 280),
+      value: 0,
+    );
+  }
+
+  @override
+  void dispose() {
+    _hide.dispose();
+    super.dispose();
+  }
+
+  void _resetGate() {
+    _slop = 0;
+  }
+
+  void _showBar({bool immediate = false}) {
+    _resetGate();
+    if (immediate) {
+      _hide.value = 0;
+      return;
+    }
+    if (_isVisible && !_hide.isAnimating) {
+      return;
+    }
+    _hide.animateTo(0, curve: _motion);
+  }
+
+  void _hideBar() {
+    _resetGate();
+    if (_isHidden && !_hide.isAnimating) {
+      return;
+    }
+    _hide.animateTo(1, curve: _motion);
+  }
+
+  bool _onScroll(ScrollNotification notification) {
+    if (notification.metrics.axis != Axis.vertical) {
+      return false;
+    }
+    if (notification is ScrollUpdateNotification) {
+      final delta = notification.scrollDelta;
+      if (delta == null || delta == 0) {
+        return false;
+      }
+      // At the top of the document, always pin the bar visible.
+      if (notification.metrics.pixels <= 0) {
+        if (!_isVisible || _slop != 0) {
+          _showBar();
+        }
+        return false;
+      }
+
+      final dir = delta > 0 ? 1 : -1;
+      // Restart slop when the finger reverses before the threshold.
+      if (_slop != 0 && _slop.sign != dir) {
+        _slop = 0;
+      }
+      _slop += delta;
+      if (_slop.abs() < _engageSlop) {
+        return false;
+      }
+
+      if (dir > 0) {
+        _hideBar();
+      } else {
+        _showBar();
+      }
+    } else if (notification is ScrollEndNotification) {
+      _resetGate();
+      if (notification.metrics.pixels <= 0) {
+        _showBar();
+      }
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final articleId = widget.model.article?.id;
+    if (articleId != _articleId) {
+      _articleId = articleId;
+      _showBar(immediate: true);
+    }
+    return NotificationListener<ScrollNotification>(
+      onNotification: _onScroll,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: WorkspaceEditor(
+              model: widget.model,
+              preferences: widget.preferences,
+              contentTopInset: _topOverlay,
+            ),
+          ),
+          Positioned(
+            top: _barInset,
+            left: _barSideInset,
+            right: _barSideInset,
+            child: AnimatedBuilder(
+              animation: _hide,
+              builder: (context, child) {
+                final t = _hide.value;
+                return IgnorePointer(
+                  ignoring: t > 0.85,
+                  child: Opacity(
+                    opacity: (1.0 - t).clamp(0.0, 1.0),
+                    child: Transform.translate(
+                      offset: Offset(0, -_barTravel * t),
+                      child: child,
+                    ),
+                  ),
+                );
+              },
+              child: WorkspaceMobileBookBar(
+                model: widget.model,
+                onOpenMenu: () => ZephyrSwipeDrawer.of(context).open(),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
