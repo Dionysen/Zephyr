@@ -50,6 +50,8 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   var _suppressControllerNotify = false;
   var _suppressTitleNotify = false;
   var _showJumpToEnd = false;
+  var _ignoreScrollForJump = false;
+  var _lastJumpScroll = 0.0;
 
   @override
   void initState() {
@@ -58,6 +60,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     _controller.addListener(_onControllerChanged);
     _titleController.addListener(_onTitleChanged);
     _titleFocusNode.addListener(_onTitleFocusChanged);
+    _scrollController.addListener(_onScrollForJumpChip);
     _syncFromModel();
   }
 
@@ -78,6 +81,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     _controller.removeListener(_onControllerChanged);
     _titleController.removeListener(_onTitleChanged);
     _titleFocusNode.removeListener(_onTitleFocusChanged);
+    _scrollController.removeListener(_onScrollForJumpChip);
     _controller.dispose();
     _titleController.dispose();
     _scrollController.dispose();
@@ -106,10 +110,40 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
 
   void _restoreScroll(String articleId) {
     if (!_scrollController.hasClients) return;
-    final saved = _scrolls[articleId];
-    if (saved == null) return;
+    final saved = _scrolls[articleId] ?? 0.0;
     final max = _scrollController.position.maxScrollExtent;
+    _ignoreScrollForJump = true;
     _scrollController.jumpTo(saved.clamp(0.0, max));
+    _ignoreScrollForJump = false;
+    _lastJumpScroll = _scrollController.offset;
+  }
+
+  bool _isScrollAtEnd() {
+    if (!_scrollController.hasClients) return true;
+    final max = _scrollController.position.maxScrollExtent;
+    return max <= 8 || _scrollController.offset >= max - 32;
+  }
+
+  void _dismissJumpToEnd() {
+    if (!_showJumpToEnd) return;
+    setState(() => _showJumpToEnd = false);
+  }
+
+  /// Keep the chip while scrolling down; dismiss on scroll-up or reaching end.
+  void _onScrollForJumpChip() {
+    if (_ignoreScrollForJump || !_showJumpToEnd) return;
+    if (!_scrollController.hasClients) return;
+    final offset = _scrollController.offset;
+    if (_isScrollAtEnd()) {
+      _lastJumpScroll = offset;
+      _dismissJumpToEnd();
+      return;
+    }
+    final delta = offset - _lastJumpScroll;
+    _lastJumpScroll = offset;
+    if (delta < -1.5) {
+      _dismissJumpToEnd();
+    }
   }
 
   void _jumpToEnd() {
@@ -119,14 +153,32 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     _suppressControllerNotify = false;
     if (_scrollController.hasClients) {
       final max = _scrollController.position.maxScrollExtent;
-      _scrollController.animateTo(
-        max,
-        duration: const Duration(milliseconds: 280),
-        curve: const Cubic(0.2, 0.0, 0.0, 1.0),
-      );
+      _ignoreScrollForJump = true;
+      _scrollController
+          .animateTo(
+            max,
+            duration: const Duration(milliseconds: 280),
+            curve: const Cubic(0.2, 0.0, 0.0, 1.0),
+          )
+          .whenComplete(() {
+            if (!mounted) return;
+            _ignoreScrollForJump = false;
+            _lastJumpScroll = _scrollController.hasClients
+                ? _scrollController.offset
+                : max;
+          });
     }
     _focusNode.requestFocus();
-    setState(() => _showJumpToEnd = false);
+    _dismissJumpToEnd();
+  }
+
+  void _onSelectionChanged(TextSelection selection) {
+    if (!_showJumpToEnd) return;
+    // Manual focus at document end dismisses the chip.
+    if (selection.extentOffset >= _controller.text.length &&
+        _isScrollAtEnd()) {
+      _dismissJumpToEnd();
+    }
   }
 
   void _syncFromModel() {
@@ -186,21 +238,14 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     _suppressControllerNotify = false;
 
     if (switching) {
-      final caretAtEnd =
-          _controller.selection.extentOffset >= content.length;
-      final hadScroll = _scrolls.containsKey(article.id);
-      // Show only when the restored caret/scroll is not already at the end.
-      _showJumpToEnd = !caretAtEnd;
+      // Decide after layout: show when the chapter opens away from the end.
+      _showJumpToEnd = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || _articleId != article.id) return;
         _restoreScroll(article.id);
-        var show = !caretAtEnd;
-        if (!show && hadScroll && _scrollController.hasClients) {
-          final max = _scrollController.position.maxScrollExtent;
-          final atEnd =
-              max <= 8 || _scrollController.offset >= max - 32;
-          show = !atEnd;
-        }
+        if (!_scrollController.hasClients) return;
+        _lastJumpScroll = _scrollController.offset;
+        final show = !_isScrollAtEnd();
         if (show != _showJumpToEnd) {
           setState(() => _showJumpToEnd = show);
         }
@@ -392,7 +437,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
               selectionColor: selectionColor,
               header: _titleHeader(context, preferences),
               onTextChanged: (_) {},
-              onSelectionChanged: (_) {},
+              onSelectionChanged: _onSelectionChanged,
             ),
           ),
         ),
@@ -418,7 +463,9 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 18 + bottomInset,
+            bottom: 24 +
+                bottomInset +
+                MediaQuery.viewInsetsOf(context).bottom,
             child: Center(
               child: EditorOverlayCapsule(
                 onTap: _jumpToEnd,
