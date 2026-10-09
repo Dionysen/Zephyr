@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -16,6 +17,59 @@ import '../../editor/view_models/library_view_model.dart';
 import 'workspace_sidebar_library_actions.dart';
 
 enum SidebarMode { docked, drawer }
+
+/// Book button clip: left/right ends are arcs of a true circle whose radius is
+/// [radiusFactor] × half the button height (default 3×).
+class _BookButtonBorder extends ShapeBorder {
+  const _BookButtonBorder({this.radiusFactor = 3});
+
+  final double radiusFactor;
+
+  Path _path(Rect rect) {
+    final halfH = rect.height / 2;
+    if (halfH <= 0 || rect.width <= 0) return Path()..addRect(rect);
+    final r = math.max(halfH * radiusFactor, halfH);
+    final d = math.sqrt(r * r - halfH * halfH);
+    var end = r - d;
+    if (end * 2 > rect.width) end = rect.width / 2;
+    final alpha = math.asin((halfH / r).clamp(0.0, 1.0));
+    final midY = rect.center.dy;
+    final leftCenter = Offset(rect.left + r, midY);
+    final rightCenter = Offset(rect.right - r, midY);
+    return Path()
+      ..moveTo(rect.left + end, rect.top)
+      ..lineTo(rect.right - end, rect.top)
+      ..arcTo(
+        Rect.fromCircle(center: rightCenter, radius: r),
+        -alpha,
+        2 * alpha,
+        false,
+      )
+      ..lineTo(rect.left + end, rect.bottom)
+      ..arcTo(
+        Rect.fromCircle(center: leftCenter, radius: r),
+        math.pi - alpha,
+        2 * alpha,
+        false,
+      )
+      ..close();
+  }
+
+  @override
+  EdgeInsetsGeometry get dimensions => EdgeInsets.zero;
+
+  @override
+  Path getInnerPath(Rect rect, {TextDirection? textDirection}) => _path(rect);
+
+  @override
+  Path getOuterPath(Rect rect, {TextDirection? textDirection}) => _path(rect);
+
+  @override
+  void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {}
+
+  @override
+  ShapeBorder scale(double t) => _BookButtonBorder(radiusFactor: radiusFactor);
+}
 
 /// Shared shell for the editor top bar and sidebar library dock.
 class _FloatingChrome extends StatelessWidget {
@@ -415,55 +469,62 @@ class WorkspaceMobileBookBar extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              IconButton(
-                style: _mobileBarIconStyle(context),
-                onPressed: onOpenMenu,
-                icon: const Icon(Icons.menu, size: _iconSize),
-                tooltip: l10n.tooltipOpenLibrary,
+              Center(
+                child: IconButton(
+                  style: _mobileBarIconStyle(context),
+                  onPressed: onOpenMenu,
+                  icon: const Icon(Icons.menu, size: _iconSize),
+                  tooltip: l10n.tooltipOpenLibrary,
+                ),
               ),
               Expanded(
-                child: TextButton(
-                  onPressed: () => _showBookSheet(context, library: library),
-                  style: TextButton.styleFrom(
-                    foregroundColor: isTrash
-                        ? theme.colorScheme.error
-                        : theme.colorScheme.onSurface,
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    minimumSize: const Size(0, _iconButtonSize),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    alignment: Alignment.centerLeft,
-                  ),
-                  child: Row(
-                    children: [
-                      if (isTrash) ...[
-                        Icon(
-                          Icons.delete_outline,
-                          size: _iconSize,
-                          color: theme.colorScheme.error,
-                        ),
-                        const SizedBox(width: 6),
-                      ],
-                      Flexible(
-                        child: Text(
-                          bookName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.left,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: isTrash ? theme.colorScheme.error : null,
+                child: Material(
+                  type: MaterialType.transparency,
+                  shape: const _BookButtonBorder(),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    customBorder: const _BookButtonBorder(),
+                    onTap: () => _showBookSheet(context, library: library),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          if (isTrash) ...[
+                            Icon(
+                              Icons.delete_outline,
+                              size: _iconSize,
+                              color: theme.colorScheme.error,
+                            ),
+                            const SizedBox(width: 6),
+                          ],
+                          Expanded(
+                            child: Text(
+                              bookName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.left,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                color: isTrash
+                                    ? theme.colorScheme.error
+                                    : theme.colorScheme.onSurface,
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
-              IconButton(
-                style: _mobileBarIconStyle(context),
-                onPressed: () => _showToolsSheet(context),
-                icon: const Icon(Icons.more_vert, size: _iconSize),
-                tooltip: l10n.tooltipMore,
+              Center(
+                child: IconButton(
+                  style: _mobileBarIconStyle(context),
+                  onPressed: () => _showToolsSheet(context),
+                  icon: const Icon(Icons.more_vert, size: _iconSize),
+                  tooltip: l10n.tooltipMore,
+                ),
               ),
             ],
           ),
