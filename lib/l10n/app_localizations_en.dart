@@ -620,5 +620,5 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get themePresetsSubtitle =>
-      'Tap to choose light and dark color packs.';
+      'Tap to apply a palette to the current light or dark mode.';
 }

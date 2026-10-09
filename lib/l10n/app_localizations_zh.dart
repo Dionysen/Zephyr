@@ -585,5 +585,5 @@ class AppLocalizationsZh extends AppLocalizations {
   String get themeSlotDark => '暗色';
 
   @override
-  String get themePresetsSubtitle => '点按展开，分别为亮色与暗色模式指定配色';
+  String get themePresetsSubtitle => '点按展开选择配色，会应用到当前亮色或暗色模式';
 }

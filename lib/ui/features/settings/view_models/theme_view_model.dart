@@ -92,13 +92,13 @@ class ThemeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Applies [preset] to the light or dark slot based on the preset family.
+  /// Applies [preset] to the color pack for the currently effective mode.
   void applyPreset(ThemePreset preset) {
     final pack = ThemeTokens.presets[preset]!;
-    if (preset.isLightFamily) {
-      _lightTokens = pack;
-    } else {
+    if (_useDark) {
       _darkTokens = pack;
+    } else {
+      _lightTokens = pack;
     }
     _scheduleSave();
     notifyListeners();

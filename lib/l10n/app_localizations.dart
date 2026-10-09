@@ -1211,7 +1211,7 @@ abstract class AppLocalizations {
   /// No description provided for @themePresetsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Tap to choose light and dark color packs.'**
+  /// **'Tap to apply a palette to the current light or dark mode.'**
   String get themePresetsSubtitle;
 }
 

@@ -40,7 +40,9 @@ void main() {
 
     model.update(ThemeToken.editorSurface, 0xFF000000);
     model.updateUiFontSize(16);
+    model.setThemeMode(AppThemeMode.dark);
     model.applyPreset(ThemePreset.ocean);
+    model.setThemeMode(AppThemeMode.light);
     model.restoreDefaults();
 
     expect(
@@ -58,30 +60,39 @@ void main() {
     expect(model.ui.fontSize, 16);
   });
 
-  test('applying a light preset updates the light slot only', () {
+  test('applying a preset updates the active mode slot only', () {
     final model = ThemeViewModel(_ThemeRepository());
 
-    model.applyPreset(ThemePreset.purple);
-
-    expect(model.lightTokens, ThemeTokens.presets[ThemePreset.purple]);
-    expect(model.darkTokens, ThemeTokens.defaults);
-    expect(model.tokens, ThemeTokens.presets[ThemePreset.purple]);
-    expect(model.tokens.preset, ThemePreset.purple);
-  });
-
-  test('applying a dark preset updates the dark slot only', () {
-    final model = ThemeViewModel(_ThemeRepository());
-
+    model.setThemeMode(AppThemeMode.light);
     model.applyPreset(ThemePreset.ocean);
 
-    expect(model.lightTokens, ThemeTokens.presets[ThemePreset.light]);
-    expect(model.darkTokens, ThemeTokens.presets[ThemePreset.ocean]);
-    expect(model.tokens, ThemeTokens.presets[ThemePreset.light]);
+    expect(model.lightTokens, ThemeTokens.presets[ThemePreset.ocean]);
+    expect(model.darkTokens, ThemeTokens.defaults);
+    expect(model.tokens, ThemeTokens.presets[ThemePreset.ocean]);
   });
 
-  test('theme mode switches between light and dark packs', () {
+  test('light and dark modes can share the same preset', () {
     final model = ThemeViewModel(_ThemeRepository());
+
+    model.setThemeMode(AppThemeMode.light);
     model.applyPreset(ThemePreset.mint);
+    model.setThemeMode(AppThemeMode.dark);
+    model.applyPreset(ThemePreset.mint);
+
+    expect(model.lightTokens, ThemeTokens.presets[ThemePreset.mint]);
+    expect(model.darkTokens, ThemeTokens.presets[ThemePreset.mint]);
+
+    model.setThemeMode(AppThemeMode.light);
+    expect(model.tokens, ThemeTokens.presets[ThemePreset.mint]);
+    model.setThemeMode(AppThemeMode.dark);
+    expect(model.tokens, ThemeTokens.presets[ThemePreset.mint]);
+  });
+
+  test('theme mode switches between independently assigned packs', () {
+    final model = ThemeViewModel(_ThemeRepository());
+    model.setThemeMode(AppThemeMode.light);
+    model.applyPreset(ThemePreset.mint);
+    model.setThemeMode(AppThemeMode.dark);
     model.applyPreset(ThemePreset.darkModern);
 
     model.setThemeMode(AppThemeMode.light);

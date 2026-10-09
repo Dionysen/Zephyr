@@ -257,5 +257,5 @@
   },
   "themeSlotLight": "Light",
   "themeSlotDark": "Dark",
-  "themePresetsSubtitle": "Tap to choose light and dark color packs."
+  "themePresetsSubtitle": "Tap to apply a palette to the current light or dark mode."
 }

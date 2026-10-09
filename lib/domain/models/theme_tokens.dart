@@ -26,12 +26,6 @@ enum ThemePreset {
   hermes,
   ocean,
   darkModern;
-
-  /// Whether this preset belongs in the light or dark theme slot.
-  bool get isLightFamily => switch (this) {
-    ThemePreset.ocean || ThemePreset.darkModern => false,
-    _ => true,
-  };
 }
 
 class ThemeTokens {
