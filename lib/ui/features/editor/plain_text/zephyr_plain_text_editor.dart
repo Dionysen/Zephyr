@@ -162,17 +162,28 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   @override
   void didChangeMetrics() {
     super.didChangeMetrics();
-    if (!mounted || !_focusNode.hasPrimaryFocus) return;
-    final view = View.maybeOf(context);
-    if (view == null) return;
-    final keyboard = view.viewInsets.bottom / view.devicePixelRatio;
+    if (!mounted) return;
+    final keyboard = _keyboardBottomInset(context);
     if ((keyboard - _lastKeyboardInset).abs() < 0.5) return;
     _lastKeyboardInset = keyboard;
+    // Rebuild so the end-of-document IME spacer matches the keyboard.
+    setState(() {});
+    if (!_focusNode.hasPrimaryFocus) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _focusNode.hasPrimaryFocus) {
         _ensureCaretVisible();
       }
     });
+  }
+
+  /// Soft-keyboard overlap in logical pixels (scaffold does not resize).
+  double _keyboardBottomInset(BuildContext context) {
+    // Prefer MediaQuery so this State rebuilds when insets change.
+    final media = MediaQuery.viewInsetsOf(context).bottom;
+    if (media > 0.5) return media;
+    final view = View.maybeOf(context);
+    if (view == null) return 0;
+    return view.viewInsets.bottom / view.devicePixelRatio;
   }
 
   void _onScroll() {
@@ -232,6 +243,16 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     _gestures.handleTapDown(details, details.localPosition);
   }
 
+  /// Tap in the trailing blank below the document: caret at end + IME.
+  void _onEndPaddingTap() {
+    if (widget.readOnly) return;
+    _suppressImeAttach = false;
+    final end = widget.controller.text.length;
+    widget.controller.setSelection(TextSelection.collapsed(offset: end));
+    _focusNode.requestFocus();
+    _attachIme();
+  }
+
   void _onControllerTick() {
     final text = widget.controller.text;
     final selection = widget.controller.selection;
@@ -276,10 +297,7 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     final bottom = caret.bottom + _headerExtent;
     final viewTop = _scrollController.offset;
     final viewport = _scrollController.position.viewportDimension;
-    // When the scaffold does not shrink for the IME, viewInsets still covers
-    // the caret; when it does resize, insets are usually 0 and viewport is
-    // already shorter — subtracting both never double-counts.
-    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    final keyboard = _keyboardBottomInset(context);
     final viewBottom = viewTop + viewport - keyboard;
     final line =
         widget.typography.fontSize * widget.typography.lineHeight;
@@ -494,10 +512,18 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
         final extentCaret = showHandles
             ? _engine.caretRectForOffset(selection.extentOffset)
             : null;
-        final minBodyHeight = constraints.maxHeight.isFinite
-            ? (constraints.maxHeight - _headerExtent)
-                .clamp(0.0, double.infinity)
-            : 0.0;
+        final viewportH = constraints.maxHeight.isFinite
+            ? constraints.maxHeight
+            : MediaQuery.sizeOf(context).height;
+        // Keep the body at least one full viewport tall so short chapters
+        // still fill the screen; end padding below provides scroll room.
+        final minBodyHeight =
+            (viewportH - _headerExtent).clamp(0.0, double.infinity);
+        // Always leave ~half a screen after the last line so it can be
+        // scrolled to sit above a typical soft keyboard. This must not
+        // depend on viewInsets — those are unreliable here and previously
+        // left maxScrollExtent at 0.
+        final endScrollRoom = viewportH * 0.45;
 
         return ZephyrEditorScrollbar(
           controller: _scrollController,
@@ -650,6 +676,15 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                           ),
                       ],
                     ),
+                  ),
+                ),
+                SizedBox(
+                  height: endScrollRoom,
+                  width: double.infinity,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    // onTap (not onTapDown): scroll drags must not open the IME.
+                    onTap: widget.readOnly ? null : _onEndPaddingTap,
                   ),
                 ),
               ],

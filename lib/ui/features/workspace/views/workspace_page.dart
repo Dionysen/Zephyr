@@ -99,6 +99,10 @@ class _WorkspacePageState extends State<WorkspacePage> {
                   statusBarColor: surface,
                   child: Scaffold(
                     backgroundColor: surface,
+                    // Keep the editor viewport stable; the plain-text editor
+                    // pads its scroll extent by the IME inset so the last line
+                    // can sit above the keyboard without a layout resize jump.
+                    resizeToAvoidBottomInset: false,
                     body: ColoredBox(
                       color: surface,
                       child: ZephyrTopSafeArea(
