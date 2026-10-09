@@ -325,3 +325,62 @@ ThemeData zephyrTheme(
     highlightColor: accent.withValues(alpha: .08),
   );
 }
+
+/// Forces circular icon buttons and stadium (pill) labeled buttons on mobile.
+ThemeData withMobileRoundControls(ThemeData theme) {
+  const circle = CircleBorder();
+  const stadium = StadiumBorder();
+  final onSurface = theme.colorScheme.onSurface;
+  final accent = theme.colorScheme.primary;
+  final outline = theme.colorScheme.outline;
+  final hairline = theme.extension<ZephyrShapeTheme>()?.outlineSide(outline) ??
+      BorderSide(color: outline, width: ZephyrControls.borderWidth);
+
+  return theme.copyWith(
+    iconButtonTheme: IconButtonThemeData(
+      style: IconButton.styleFrom(
+        foregroundColor: onSurface.withValues(alpha: .76),
+        iconSize: ZephyrControls.mobileIconSize,
+        padding: EdgeInsets.zero,
+        minimumSize: const Size(
+          ZephyrControls.mobileButtonSize,
+          ZephyrControls.mobileButtonSize,
+        ),
+        fixedSize: const Size(
+          ZephyrControls.mobileButtonSize,
+          ZephyrControls.mobileButtonSize,
+        ),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.standard,
+        shape: circle,
+        overlayColor: accent.withValues(alpha: .12),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: onSurface,
+        iconSize: ZephyrControls.mobileIconSize,
+        shape: stadium,
+        visualDensity: VisualDensity.compact,
+      ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        foregroundColor: onSurface,
+        backgroundColor: accent.withValues(alpha: .24),
+        iconSize: ZephyrControls.mobileIconSize,
+        shape: stadium,
+        visualDensity: VisualDensity.compact,
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: onSurface,
+        iconSize: ZephyrControls.mobileIconSize,
+        shape: stadium.copyWith(side: hairline),
+        side: hairline,
+        visualDensity: VisualDensity.compact,
+      ),
+    ),
+  );
+}

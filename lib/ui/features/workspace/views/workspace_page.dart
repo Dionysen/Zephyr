@@ -11,6 +11,7 @@ import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_status_bar.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
+import '../../../core/zephyr_theme.dart';
 import '../../editor/view_models/editor_preferences_view_model.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../settings/views/settings_page.dart';
@@ -83,62 +84,65 @@ class _WorkspacePageState extends State<WorkspacePage> {
                 constraints.maxWidth * 0.88,
               );
               final immersive = immersiveStatusBar;
-              return ZephyrStatusBar(
-                immersive: immersive,
-                statusBarColor: surface,
-                child: Scaffold(
-                  backgroundColor: surface,
-                  body: ColoredBox(
-                    color: surface,
-                    child: ZephyrTopSafeArea(
-                      // Immersive: editor may draw under the status band;
-                      // chrome (banner / drawer / initial top bar) still pads.
-                      top: !immersive,
-                      child: Column(
-                        children: [
-                          if (model.needsLibrarySetup)
-                            Padding(
-                              padding: EdgeInsets.only(
-                                top: immersive ? zephyrTopInset(context) : 0,
+              return Theme(
+                data: withMobileRoundControls(Theme.of(context)),
+                child: ZephyrStatusBar(
+                  immersive: immersive,
+                  statusBarColor: surface,
+                  child: Scaffold(
+                    backgroundColor: surface,
+                    body: ColoredBox(
+                      color: surface,
+                      child: ZephyrTopSafeArea(
+                        // Immersive: editor may draw under the status band;
+                        // chrome (banner / drawer / initial top bar) still pads.
+                        top: !immersive,
+                        child: Column(
+                          children: [
+                            if (model.needsLibrarySetup)
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  top: immersive ? zephyrTopInset(context) : 0,
+                                ),
+                                child: _LibrarySetupBanner(
+                                  openLibrary: _openLibrary,
+                                ),
                               ),
-                              child: _LibrarySetupBanner(
-                                openLibrary: _openLibrary,
-                              ),
-                            ),
-                          Expanded(
-                            child: ZephyrSwipeDrawer(
-                              drawerWidth: drawerWidth,
-                              drawer: Material(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerLowest,
-                                child: immersive
-                                    ? ZephyrTopSafeArea(
-                                        bottom: false,
-                                        left: false,
-                                        right: false,
-                                        child: WorkspaceSidebar(
+                            Expanded(
+                              child: ZephyrSwipeDrawer(
+                                drawerWidth: drawerWidth,
+                                drawer: Material(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerLowest,
+                                  child: immersive
+                                      ? ZephyrTopSafeArea(
+                                          bottom: false,
+                                          left: false,
+                                          right: false,
+                                          child: WorkspaceSidebar(
+                                            model: model,
+                                            mode: SidebarMode.drawer,
+                                            openLibrary: _openLibrary,
+                                            openSettings: _openSettings,
+                                          ),
+                                        )
+                                      : WorkspaceSidebar(
                                           model: model,
                                           mode: SidebarMode.drawer,
                                           openLibrary: _openLibrary,
                                           openSettings: _openSettings,
                                         ),
-                                      )
-                                    : WorkspaceSidebar(
-                                        model: model,
-                                        mode: SidebarMode.drawer,
-                                        openLibrary: _openLibrary,
-                                        openSettings: _openSettings,
-                                      ),
-                              ),
-                              body: _MobileEditorChrome(
-                                model: model,
-                                preferences: scope.editorPreferences,
-                                invadeStatusBar: immersive,
+                                ),
+                                body: _MobileEditorChrome(
+                                  model: model,
+                                  preferences: scope.editorPreferences,
+                                  invadeStatusBar: immersive,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),

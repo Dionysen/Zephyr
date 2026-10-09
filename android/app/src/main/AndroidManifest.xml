@@ -15,6 +15,7 @@
         android:label="Zephyr"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
+        android:appCategory="productivity"
         android:requestLegacyExternalStorage="true">
         <activity
             android:name=".MainActivity"

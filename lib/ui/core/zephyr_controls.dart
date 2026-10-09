@@ -8,6 +8,10 @@ abstract final class ZephyrControls {
   static const double buttonSize = 28;
   static const double iconSize = 16;
 
+  /// Compact / mobile chrome: slightly larger circular icon buttons.
+  static const double mobileButtonSize = 40;
+  static const double mobileIconSize = 22;
+
   /// Fallback when a [BuildContext] theme extension is unavailable.
   static const double defaultCornerRadius = 8;
 

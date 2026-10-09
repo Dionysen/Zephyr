@@ -149,16 +149,19 @@ class _ReorderModeButton extends StatelessWidget {
     required this.enabled,
     required this.active,
     required this.onPressed,
+    this.style,
   });
 
   final bool enabled;
   final bool active;
   final VoidCallback onPressed;
+  final ButtonStyle? style;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return IconButton(
+      style: style,
       onPressed: enabled ? onPressed : null,
       isSelected: active,
       icon: const Icon(Icons.swap_vert),
@@ -196,14 +199,30 @@ class _DrawerSidebarHeader extends StatelessWidget {
         ? theme.colorScheme.error
         : theme.colorScheme.onSurfaceVariant;
 
+    final toolStyle = IconButton.styleFrom(
+      iconSize: ZephyrControls.mobileIconSize,
+      padding: EdgeInsets.zero,
+      minimumSize: const Size(
+        ZephyrControls.mobileButtonSize,
+        ZephyrControls.mobileButtonSize,
+      ),
+      fixedSize: const Size(
+        ZephyrControls.mobileButtonSize,
+        ZephyrControls.mobileButtonSize,
+      ),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.standard,
+      shape: const CircleBorder(),
+    );
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 10, 6, 0),
+      padding: const EdgeInsets.fromLTRB(14, 10, 4, 12),
       child: Row(
         children: [
           if (isTrash) ...[
             Icon(
               Icons.delete_outline,
-              size: ZephyrControls.iconSize,
+              size: ZephyrControls.mobileIconSize,
               color: theme.colorScheme.error,
             ),
             const SizedBox(width: 8),
@@ -234,6 +253,7 @@ class _DrawerSidebarHeader extends StatelessWidget {
             ),
           ),
           IconButton(
+            style: toolStyle,
             onPressed: onToggleAllVolumes,
             icon: Icon(
               model.areAllVolumesExpanded
@@ -245,11 +265,13 @@ class _DrawerSidebarHeader extends StatelessWidget {
                 : 'Expand all',
           ),
           IconButton(
+            style: toolStyle,
             onPressed: model.isReadOnly || isTrash ? null : model.createVolume,
             icon: const Icon(Icons.create_new_folder_outlined),
             tooltip: 'New volume',
           ),
           IconButton(
+            style: toolStyle,
             onPressed: model.isReadOnly || isTrash ? null : model.createArticle,
             icon: const Icon(Icons.note_add_outlined),
             tooltip: 'New chapter',
@@ -258,6 +280,7 @@ class _DrawerSidebarHeader extends StatelessWidget {
             enabled: canReorder,
             active: model.isReorderMode,
             onPressed: model.toggleReorderMode,
+            style: toolStyle,
           ),
         ],
       ),
@@ -420,7 +443,7 @@ class WorkspaceMobileBookBar extends StatelessWidget {
       fixedSize: const Size(_iconButtonSize, _iconButtonSize),
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       visualDensity: VisualDensity.standard,
-      shape: context.zephyrShape.iconButtonShape,
+      shape: const CircleBorder(),
     );
   }
 
