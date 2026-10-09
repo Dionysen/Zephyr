@@ -17,6 +17,56 @@ import 'workspace_sidebar_library_actions.dart';
 
 enum SidebarMode { docked, drawer }
 
+/// Shared shell for the editor top bar and sidebar library dock.
+class _FloatingChrome extends StatelessWidget {
+  const _FloatingChrome({
+    required this.borderRadius,
+    required this.child,
+  });
+
+  final BorderRadius borderRadius;
+  final Widget child;
+
+  static List<BoxShadow> shadowsFor(ColorScheme scheme) {
+    final shadow = scheme.shadow;
+    final dark = scheme.brightness == Brightness.dark;
+    return [
+      BoxShadow(
+        color: shadow.withValues(alpha: dark ? 0.30 : 0.10),
+        blurRadius: 14,
+        offset: const Offset(0, 1.5),
+      ),
+      BoxShadow(
+        color: shadow.withValues(alpha: dark ? 0.16 : 0.06),
+        blurRadius: 5,
+        offset: const Offset(0, 0.5),
+      ),
+      BoxShadow(
+        color: shadow.withValues(alpha: dark ? 0.10 : 0.04),
+        blurRadius: 2,
+      ),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: borderRadius,
+        boxShadow: shadowsFor(theme.colorScheme),
+      ),
+      child: Material(
+        elevation: 0,
+        color: theme.colorScheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: borderRadius),
+        clipBehavior: Clip.antiAlias,
+        child: child,
+      ),
+    );
+  }
+}
+
 class WorkspaceSidebar extends StatefulWidget {
   const WorkspaceSidebar({
     super.key,
@@ -127,16 +177,28 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
               ),
             ],
             Expanded(
-              child: _ChapterTree(
-                key: _chapterTreeKey,
-                model: model,
-                library: model.library!,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: _ChapterTree(
+                      key: _chapterTreeKey,
+                      model: model,
+                      library: model.library!,
+                      bottomInset: _LibraryDock.overlayExtent,
+                    ),
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: _LibraryDock(
+                      model: model,
+                      openLibrary: widget.openLibrary,
+                      openSettings: widget.openSettings,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            _LibraryDock(
-              model: model,
-              openLibrary: widget.openLibrary,
-              openSettings: widget.openSettings,
             ),
           ],
         ),
@@ -345,94 +407,65 @@ class WorkspaceMobileBookBar extends StatelessWidget {
     final isTrash = book?.isTrash == true;
     final l10n = context.l10n;
     final bookName = book?.name ?? l10n.selectBook;
-    final surface = theme.colorScheme.surface;
-    final shadow = theme.colorScheme.shadow;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        boxShadow: [
-          BoxShadow(
-            color: shadow.withValues(alpha: 0.14),
-            blurRadius: 18,
-            spreadRadius: 0,
-            offset: const Offset(0, 6),
-          ),
-          BoxShadow(
-            color: shadow.withValues(alpha: 0.08),
-            blurRadius: 6,
-            spreadRadius: 0,
-            offset: const Offset(0, 1),
-          ),
-          BoxShadow(
-            color: shadow.withValues(alpha: 0.05),
-            blurRadius: 2,
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: Material(
-        elevation: 0,
-        color: surface,
-        shape: RoundedRectangleBorder(borderRadius: radius),
-        clipBehavior: Clip.antiAlias,
-        child: SizedBox(
-          height: height,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Row(
-              children: [
-                IconButton(
-                  style: _mobileBarIconStyle(context),
-                  onPressed: onOpenMenu,
-                  icon: const Icon(Icons.menu, size: _iconSize),
-                  tooltip: l10n.tooltipOpenLibrary,
-                ),
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => _showBookSheet(context, library: library),
-                    style: TextButton.styleFrom(
-                      foregroundColor: isTrash
-                          ? theme.colorScheme.error
-                          : theme.colorScheme.onSurface,
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      minimumSize: const Size(0, _iconButtonSize),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      alignment: Alignment.centerLeft,
-                    ),
-                    child: Row(
-                      children: [
-                        if (isTrash) ...[
-                          Icon(
-                            Icons.delete_outline,
-                            size: _iconSize,
-                            color: theme.colorScheme.error,
-                          ),
-                          const SizedBox(width: 6),
-                        ],
-                        Flexible(
-                          child: Text(
-                            bookName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.left,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              color: isTrash ? theme.colorScheme.error : null,
-                            ),
+    return _FloatingChrome(
+      borderRadius: radius,
+      child: SizedBox(
+        height: height,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            children: [
+              IconButton(
+                style: _mobileBarIconStyle(context),
+                onPressed: onOpenMenu,
+                icon: const Icon(Icons.menu, size: _iconSize),
+                tooltip: l10n.tooltipOpenLibrary,
+              ),
+              Expanded(
+                child: TextButton(
+                  onPressed: () => _showBookSheet(context, library: library),
+                  style: TextButton.styleFrom(
+                    foregroundColor: isTrash
+                        ? theme.colorScheme.error
+                        : theme.colorScheme.onSurface,
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    minimumSize: const Size(0, _iconButtonSize),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    alignment: Alignment.centerLeft,
+                  ),
+                  child: Row(
+                    children: [
+                      if (isTrash) ...[
+                        Icon(
+                          Icons.delete_outline,
+                          size: _iconSize,
+                          color: theme.colorScheme.error,
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Flexible(
+                        child: Text(
+                          bookName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.left,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: isTrash ? theme.colorScheme.error : null,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-                IconButton(
-                  style: _mobileBarIconStyle(context),
-                  onPressed: () => _showToolsSheet(context),
-                  icon: const Icon(Icons.more_vert, size: _iconSize),
-                  tooltip: l10n.tooltipMore,
-                ),
-              ],
-            ),
+              ),
+              IconButton(
+                style: _mobileBarIconStyle(context),
+                onPressed: () => _showToolsSheet(context),
+                icon: const Icon(Icons.more_vert, size: _iconSize),
+                tooltip: l10n.tooltipMore,
+              ),
+            ],
           ),
         ),
       ),
@@ -1074,10 +1107,12 @@ class _ChapterTree extends StatefulWidget {
     super.key,
     required this.model,
     required this.library,
+    this.bottomInset = 0,
   });
 
   final LibraryViewModel model;
   final WritingLibrary library;
+  final double bottomInset;
 
   @override
   State<_ChapterTree> createState() => _ChapterTreeState();
@@ -1321,7 +1356,11 @@ class _ChapterTreeState extends State<_ChapterTree> {
         ),
       );
     }
-    slivers.add(const SliverToBoxAdapter(child: SizedBox(height: 12)));
+    slivers.add(
+      SliverToBoxAdapter(
+        child: SizedBox(height: 12 + widget.bottomInset),
+      ),
+    );
     return CustomScrollView(controller: _scrollController, slivers: slivers);
   }
 }
@@ -1823,46 +1862,62 @@ class _LibraryDock extends StatelessWidget {
     required this.openSettings,
   });
 
+  static const dockHeight = 52.0;
+  static const _padTop = 10.0;
+  static const _padBottom = 12.0;
+  static const overlayExtent = _padTop + dockHeight + _padBottom;
+
   final LibraryViewModel model;
   final Future<void> Function() openLibrary;
   final VoidCallback openSettings;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = context.l10n;
     final radius = context.zephyrBarBorderRadius;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
-      child: Material(
-        color: theme.colorScheme.surfaceContainerHigh,
-        shape: RoundedRectangleBorder(
-          borderRadius: radius,
-          side: context.zephyrOutlineSide(),
-        ),
-        child: InkWell(
-          borderRadius: radius,
-          onTap: openLibrary,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            child: Row(
-              children: [
-                const Icon(Icons.menu_book_outlined),
-                const SizedBox(width: 9),
-                Expanded(
-                  child: Text(
-                    model.displayLibraryName(l10n),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
+      child: _FloatingChrome(
+        borderRadius: radius,
+        child: SizedBox(
+          height: dockHeight,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: openLibrary,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 0, 8, 0),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.menu_book_outlined),
+                        const SizedBox(width: 9),
+                        Expanded(
+                          child: Text(
+                            model.displayLibraryName(l10n),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                IconButton(
-                  onPressed: openSettings,
-                  icon: const Icon(Icons.settings_outlined),
-                  tooltip: l10n.tooltipSettings,
+              ),
+              Tooltip(
+                message: l10n.tooltipSettings,
+                child: InkWell(
+                  onTap: openSettings,
+                  child: const SizedBox(
+                    width: 48,
+                    child: Center(
+                      child: Icon(Icons.settings_outlined),
+                    ),
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
