@@ -443,6 +443,8 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
         widget.invadeStatusBar ? zephyrTopInset(context) : 0.0;
     // Keep scroll padding stable — bar show/hide must not reflow the editor.
     final contentTop = statusTop + _barTravel;
+    final barBottom = statusTop + _barInset + WorkspaceMobileBookBar.height;
+    final surface = Theme.of(context).colorScheme.surface;
     final wordCount = widget.model.article?.wordCount;
     return NotificationListener<ScrollNotification>(
       onNotification: _onScroll,
@@ -454,6 +456,17 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
               preferences: widget.preferences,
               contentTopInset: contentTop,
               showWordCount: false,
+            ),
+          ),
+          // Opaque band above the bar's bottom edge — no text, only surface.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: barBottom,
+            child: _chromeFade(
+              travel: contentTop,
+              child: ColoredBox(color: surface),
             ),
           ),
           Positioned(
