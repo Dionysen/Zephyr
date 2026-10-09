@@ -11,6 +11,7 @@ import 'input/plain_text_input_client.dart';
 import 'layout/editor_typography.dart';
 import 'layout/plain_text_layout_engine.dart';
 import 'render/plain_text_editor_render_object.dart';
+import 'zephyr_editor_scrollbar.dart';
 
 /// High-performance plain-text editor backed by per-paragraph [TextPainter]s.
 class ZephyrPlainTextEditor extends StatefulWidget {
@@ -27,6 +28,7 @@ class ZephyrPlainTextEditor extends StatefulWidget {
     required this.cursorColor,
     required this.selectionColor,
     this.header,
+    this.scrollbarPadding = EdgeInsets.zero,
   });
 
   final PlainTextEditingController controller;
@@ -42,6 +44,9 @@ class ZephyrPlainTextEditor extends StatefulWidget {
 
   /// Scrolls with the document, above the body (e.g. chapter title block).
   final Widget? header;
+
+  /// Outer inset for the editor scrollbar track (e.g. below a floating top bar).
+  final EdgeInsets scrollbarPadding;
 
   @override
   State<ZephyrPlainTextEditor> createState() => _ZephyrPlainTextEditorState();
@@ -494,8 +499,9 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                 .clamp(0.0, double.infinity)
             : 0.0;
 
-        return Scrollbar(
+        return ZephyrEditorScrollbar(
           controller: _scrollController,
+          padding: widget.scrollbarPadding,
           child: SingleChildScrollView(
             controller: _scrollController,
             // Lock scrolling while a selection handle owns the pointer;

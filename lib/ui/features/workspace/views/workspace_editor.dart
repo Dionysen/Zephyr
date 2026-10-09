@@ -429,6 +429,9 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
               cursorColor: cursorColor,
               selectionColor: selectionColor,
               header: _titleHeader(context, preferences),
+              scrollbarPadding: EdgeInsets.symmetric(
+                vertical: widget.contentTopInset,
+              ),
               onTextChanged: (_) {},
               onSelectionChanged: _onSelectionChanged,
             ),
