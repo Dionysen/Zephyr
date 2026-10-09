@@ -47,7 +47,7 @@ class ZephyrPlainTextEditor extends StatefulWidget {
 }
 
 class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final PlainTextLayoutEngine _engine;
   late final ScrollController _scrollController;
   late final FocusNode _focusNode;
@@ -64,10 +64,12 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   double _headerExtent = 0;
   String _lastText = '';
   TextSelection _lastSelection = const TextSelection.collapsed(offset: 0);
+  double _lastKeyboardInset = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _engine = PlainTextLayoutEngine();
     _ownsScroll = widget.scrollController == null;
     _scrollController = widget.scrollController ?? ScrollController();
@@ -132,6 +134,7 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _inputClient?.detach();
     widget.controller.removeListener(_onControllerTick);
     _focusNode.removeListener(_onFocusChange);
@@ -141,6 +144,22 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     if (_ownsScroll) _scrollController.dispose();
     _engine.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    if (!mounted || !_focusNode.hasPrimaryFocus) return;
+    final view = View.maybeOf(context);
+    if (view == null) return;
+    final keyboard = view.viewInsets.bottom / view.devicePixelRatio;
+    if ((keyboard - _lastKeyboardInset).abs() < 0.5) return;
+    _lastKeyboardInset = keyboard;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _focusNode.hasPrimaryFocus) {
+        _ensureCaretVisible();
+      }
+    });
   }
 
   void _onScroll() {
@@ -155,6 +174,11 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     if (_focusNode.hasPrimaryFocus) {
       _attachIme();
       _caretBlink.forward();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _focusNode.hasPrimaryFocus) {
+          _ensureCaretVisible();
+        }
+      });
     } else {
       _inputClient?.detach();
       _caretBlink.stop();
@@ -168,6 +192,11 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     _inputClient?.attach();
     _inputClient?.markImeDirty();
     _inputClient?.syncImeIfNeeded();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _focusNode.hasPrimaryFocus) {
+        _ensureCaretVisible();
+      }
+    });
   }
 
   void _onControllerTick() {
@@ -213,17 +242,23 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     final top = caret.top + _headerExtent;
     final bottom = caret.bottom + _headerExtent;
     final viewTop = _scrollController.offset;
-    final viewBottom = viewTop + _scrollController.position.viewportDimension;
-    const margin = 48.0;
-    if (top < viewTop + margin) {
-      _scrollController.jumpTo(
-        (top - margin).clamp(0.0, _scrollController.position.maxScrollExtent),
-      );
-    } else if (bottom > viewBottom - margin) {
-      _scrollController.jumpTo(
-        (bottom - _scrollController.position.viewportDimension + margin)
-            .clamp(0.0, _scrollController.position.maxScrollExtent),
-      );
+    final viewport = _scrollController.position.viewportDimension;
+    // When the scaffold does not shrink for the IME, viewInsets still covers
+    // the caret; when it does resize, insets are usually 0 and viewport is
+    // already shorter — subtracting both never double-counts.
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    final viewBottom = viewTop + viewport - keyboard;
+    final line =
+        widget.typography.fontSize * widget.typography.lineHeight;
+    // Keep the caret about two lines above the keyboard / visible bottom.
+    final bottomMargin = line * 2;
+    final topMargin = line;
+    final max = _scrollController.position.maxScrollExtent;
+    if (top < viewTop + topMargin) {
+      _scrollController.jumpTo((top - topMargin).clamp(0.0, max));
+    } else if (bottom > viewBottom - bottomMargin) {
+      final target = bottom - (viewport - keyboard) + bottomMargin;
+      _scrollController.jumpTo(target.clamp(0.0, max));
     }
   }
 

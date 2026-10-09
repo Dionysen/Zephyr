@@ -15,6 +15,7 @@ class WorkspaceEditor extends StatefulWidget {
     required this.model,
     required this.preferences,
     this.contentTopInset = 0,
+    this.showWordCount = true,
   });
 
   final LibraryViewModel model;
@@ -22,6 +23,9 @@ class WorkspaceEditor extends StatefulWidget {
 
   /// Extra top padding so content clears a floating overlay (e.g. mobile book bar).
   final double contentTopInset;
+
+  /// When false, the host (e.g. mobile chrome) owns the word-count capsule.
+  final bool showWordCount;
 
   @override
   State<WorkspaceEditor> createState() => _WorkspaceEditorState();
@@ -34,11 +38,18 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   final _controller = PlainTextEditingController();
   final _titleController = TextEditingController();
 
+  /// Last caret per article for the current editor session.
+  final Map<String, TextSelection> _carets = {};
+
+  /// Last scroll offset per article for the current editor session.
+  final Map<String, double> _scrolls = {};
+
   String? _articleId;
   int? _indent;
   String _lastEmitted = '';
   var _suppressControllerNotify = false;
   var _suppressTitleNotify = false;
+  var _showJumpToEnd = false;
 
   @override
   void initState() {
@@ -62,6 +73,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
 
   @override
   void dispose() {
+    _persistEditorPosition();
     widget.preferences.removeListener(_onPreferences);
     _controller.removeListener(_onControllerChanged);
     _titleController.removeListener(_onTitleChanged);
@@ -83,9 +95,44 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     setState(() {});
   }
 
+  void _persistEditorPosition() {
+    final id = _articleId;
+    if (id == null) return;
+    _carets[id] = _controller.selection;
+    if (_scrollController.hasClients) {
+      _scrolls[id] = _scrollController.offset;
+    }
+  }
+
+  void _restoreScroll(String articleId) {
+    if (!_scrollController.hasClients) return;
+    final saved = _scrolls[articleId];
+    if (saved == null) return;
+    final max = _scrollController.position.maxScrollExtent;
+    _scrollController.jumpTo(saved.clamp(0.0, max));
+  }
+
+  void _jumpToEnd() {
+    final len = _controller.text.length;
+    _suppressControllerNotify = true;
+    _controller.setSelection(TextSelection.collapsed(offset: len));
+    _suppressControllerNotify = false;
+    if (_scrollController.hasClients) {
+      final max = _scrollController.position.maxScrollExtent;
+      _scrollController.animateTo(
+        max,
+        duration: const Duration(milliseconds: 280),
+        curve: const Cubic(0.2, 0.0, 0.0, 1.0),
+      );
+    }
+    _focusNode.requestFocus();
+    setState(() => _showJumpToEnd = false);
+  }
+
   void _syncFromModel() {
     final article = widget.model.article;
     if (article == null) {
+      _persistEditorPosition();
       _articleId = null;
       _suppressControllerNotify = true;
       _controller.setText('');
@@ -94,6 +141,9 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
       _suppressTitleNotify = true;
       _titleController.text = '';
       _suppressTitleNotify = false;
+      if (_showJumpToEnd) {
+        setState(() => _showJumpToEnd = false);
+      }
       return;
     }
 
@@ -121,13 +171,41 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
       return;
     }
 
-    final keepSelection =
-        article.id == _articleId ? _controller.selection : null;
+    final switching = article.id != _articleId;
+    if (switching && _articleId != null) {
+      _persistEditorPosition();
+    }
+
+    final keepSelection = switching
+        ? _carets[article.id]
+        : _controller.selection;
     _articleId = article.id;
     _lastEmitted = content;
     _suppressControllerNotify = true;
     _controller.setText(content, selection: keepSelection);
     _suppressControllerNotify = false;
+
+    if (switching) {
+      final caretAtEnd =
+          _controller.selection.extentOffset >= content.length;
+      final hadScroll = _scrolls.containsKey(article.id);
+      // Show only when the restored caret/scroll is not already at the end.
+      _showJumpToEnd = !caretAtEnd;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _articleId != article.id) return;
+        _restoreScroll(article.id);
+        var show = !caretAtEnd;
+        if (!show && hadScroll && _scrollController.hasClients) {
+          final max = _scrollController.position.maxScrollExtent;
+          final atEnd =
+              max <= 8 || _scrollController.offset >= max - 32;
+          show = !atEnd;
+        }
+        if (show != _showJumpToEnd) {
+          setState(() => _showJumpToEnd = show);
+        }
+      });
+    }
   }
 
   void _applyIndent(int indent) {
@@ -298,6 +376,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     final cursorColor =
         theme.textSelectionTheme.cursorColor ?? theme.colorScheme.onSurface;
     final typography = _typography(context, preferences);
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Stack(
       children: [
@@ -317,17 +396,126 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
             ),
           ),
         ),
-        Positioned(
-          right: 18,
-          bottom: 14,
-          child: IgnorePointer(
-            child: Text(
-              '${article.wordCount} characters',
-              style: Theme.of(context).textTheme.labelMedium,
+        if (widget.showWordCount)
+          Positioned(
+            top: 12 + widget.contentTopInset,
+            right: 14,
+            child: IgnorePointer(
+              child: EditorOverlayCapsule(
+                compact: true,
+                child: Text(
+                  '${article.wordCount}',
+                  style: TextStyle(
+                    fontSize: 9,
+                    height: 1.2,
+                    color: EditorOverlayCapsule.foregroundOf(context),
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
+        if (_showJumpToEnd)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 18 + bottomInset,
+            child: Center(
+              child: EditorOverlayCapsule(
+                onTap: _jumpToEnd,
+                child: Text(
+                  '跳到文末',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: EditorOverlayCapsule.foregroundOf(context),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
+    );
+  }
+}
+
+/// Rounded-rect overlay chip: white in light mode, black in dark mode, with shadow.
+class EditorOverlayCapsule extends StatelessWidget {
+  const EditorOverlayCapsule({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.compact = false,
+  });
+
+  final Widget child;
+  final VoidCallback? onTap;
+
+  /// Tighter padding / softer shadow for small status chips (e.g. word count).
+  final bool compact;
+
+  static bool _isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
+
+  /// Contrasting label color for content inside the chip.
+  static Color foregroundOf(BuildContext context) {
+    final onPill = _isDark(context) ? Colors.white : Colors.black;
+    return onPill.withValues(alpha: 0.82);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = _isDark(context);
+    final pillColor = (dark ? Colors.black : Colors.white).withValues(
+      alpha: compact ? 0.55 : 0.72,
+    );
+    final shadow = Theme.of(context).colorScheme.shadow;
+    // Large corners, but short of a stadium so it still reads as a rounded rect.
+    final radius = BorderRadius.circular(compact ? 6 : 10);
+    final shape = RoundedRectangleBorder(borderRadius: radius);
+    final body = Padding(
+      padding: compact
+          ? const EdgeInsets.symmetric(horizontal: 7, vertical: 3)
+          : const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      child: child,
+    );
+    final pill = Material(
+      color: pillColor,
+      shape: shape,
+      clipBehavior: Clip.antiAlias,
+      elevation: 0,
+      child: onTap == null
+          ? body
+          : InkWell(
+              onTap: onTap,
+              customBorder: shape,
+              child: body,
+            ),
+    );
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        boxShadow: compact
+            ? [
+                BoxShadow(
+                  color: shadow.withValues(alpha: dark ? 0.40 : 0.14),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: shadow.withValues(alpha: dark ? 0.45 : 0.18),
+                  blurRadius: 16,
+                  spreadRadius: 0,
+                  offset: const Offset(0, 4),
+                ),
+                BoxShadow(
+                  color: shadow.withValues(alpha: dark ? 0.28 : 0.08),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+      ),
+      child: pill,
     );
   }
 }

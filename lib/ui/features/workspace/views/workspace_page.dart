@@ -389,6 +389,44 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
     return false;
   }
 
+  Widget _chromeFade({required Widget child, required double travel}) {
+    return AnimatedBuilder(
+      animation: _hide,
+      builder: (context, child) {
+        final t = _hide.value;
+        return IgnorePointer(
+          ignoring: t > 0.85,
+          child: Opacity(
+            opacity: (1.0 - t).clamp(0.0, 1.0),
+            child: Transform.translate(
+              offset: Offset(0, -travel * t),
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+
+  /// Word count: same show/hide gate as the bar, but opacity only (no slide).
+  Widget _wordCountFade({required Widget child}) {
+    return AnimatedBuilder(
+      animation: _hide,
+      builder: (context, child) {
+        final t = _hide.value;
+        return IgnorePointer(
+          ignoring: true,
+          child: Opacity(
+            opacity: (1.0 - t).clamp(0.0, 1.0),
+            child: child,
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final articleId = widget.model.article?.id;
@@ -400,6 +438,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
         widget.invadeStatusBar ? zephyrTopInset(context) : 0.0;
     // Keep scroll padding stable — bar show/hide must not reflow the editor.
     final contentTop = statusTop + _barTravel;
+    final wordCount = widget.model.article?.wordCount;
     return NotificationListener<ScrollNotification>(
       onNotification: _onScroll,
       child: Stack(
@@ -409,33 +448,40 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
               model: widget.model,
               preferences: widget.preferences,
               contentTopInset: contentTop,
+              showWordCount: false,
             ),
           ),
           Positioned(
             top: statusTop + _barInset,
             left: _barSideInset,
             right: _barSideInset,
-            child: AnimatedBuilder(
-              animation: _hide,
-              builder: (context, child) {
-                final t = _hide.value;
-                return IgnorePointer(
-                  ignoring: t > 0.85,
-                  child: Opacity(
-                    opacity: (1.0 - t).clamp(0.0, 1.0),
-                    child: Transform.translate(
-                      offset: Offset(0, -contentTop * t),
-                      child: child,
-                    ),
-                  ),
-                );
-              },
+            child: _chromeFade(
+              travel: contentTop,
               child: WorkspaceMobileBookBar(
                 model: widget.model,
                 onOpenMenu: () => ZephyrSwipeDrawer.of(context).open(),
               ),
             ),
           ),
+          if (wordCount != null)
+            Positioned(
+              // Below the book bar, top-right of the reading area.
+              top: statusTop + _barTravel,
+              right: 8,
+              child: _wordCountFade(
+                child: EditorOverlayCapsule(
+                  compact: true,
+                  child: Text(
+                    '$wordCount',
+                    style: TextStyle(
+                      fontSize: 9,
+                      height: 1.2,
+                      color: EditorOverlayCapsule.foregroundOf(context),
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
