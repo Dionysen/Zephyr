@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../../data/services/android_storage_access.dart';
 import '../../../../data/services/folder_bookmark.dart';
 
+import '../../../../domain/models/status_bar_mode.dart';
 import '../../../core/breakpoints.dart';
 import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_scope.dart';
@@ -50,12 +51,15 @@ class _WorkspacePageState extends State<WorkspacePage> {
   Widget build(BuildContext context) {
     final scope = ZephyrScope.of(context);
     return ListenableBuilder(
-      listenable: scope.library,
+      listenable: Listenable.merge([scope.library, scope.theme]),
       builder: (context, _) {
         final model = scope.library;
+        final statusBarMode = scope.theme.ui.statusBarMode;
         final surface = Theme.of(context).colorScheme.surface;
         if (model.error != null && model.library == null) {
           return ZephyrStatusBar(
+            mode: statusBarMode,
+            statusBarColor: surface,
             child: _LibrarySetupPage(
               error: model.error,
               openLibrary: _openLibrary,
@@ -63,8 +67,10 @@ class _WorkspacePageState extends State<WorkspacePage> {
           );
         }
         if (model.library == null) {
-          return const ZephyrStatusBar(
-            child: Scaffold(
+          return ZephyrStatusBar(
+            mode: statusBarMode,
+            statusBarColor: surface,
+            child: const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             ),
           );
@@ -77,16 +83,30 @@ class _WorkspacePageState extends State<WorkspacePage> {
                 260.0,
                 constraints.maxWidth * 0.88,
               );
+              final immersive =
+                  statusBarMode == StatusBarMode.immersive;
               return ZephyrStatusBar(
+                mode: statusBarMode,
+                statusBarColor: surface,
                 child: Scaffold(
                   backgroundColor: surface,
                   body: ColoredBox(
                     color: surface,
-                    child: SafeArea(
+                    child: ZephyrTopSafeArea(
+                      // Immersive: editor may draw under the status band;
+                      // chrome (banner / drawer / initial top bar) still pads.
+                      top: !immersive,
                       child: Column(
                         children: [
                           if (model.needsLibrarySetup)
-                            _LibrarySetupBanner(openLibrary: _openLibrary),
+                            Padding(
+                              padding: EdgeInsets.only(
+                                top: immersive ? zephyrTopInset(context) : 0,
+                              ),
+                              child: _LibrarySetupBanner(
+                                openLibrary: _openLibrary,
+                              ),
+                            ),
                           Expanded(
                             child: ZephyrSwipeDrawer(
                               drawerWidth: drawerWidth,
@@ -94,16 +114,29 @@ class _WorkspacePageState extends State<WorkspacePage> {
                                 color: Theme.of(context)
                                     .colorScheme
                                     .surfaceContainerLowest,
-                                child: WorkspaceSidebar(
-                                  model: model,
-                                  mode: SidebarMode.drawer,
-                                  openLibrary: _openLibrary,
-                                  openSettings: _openSettings,
-                                ),
+                                child: immersive
+                                    ? ZephyrTopSafeArea(
+                                        bottom: false,
+                                        left: false,
+                                        right: false,
+                                        child: WorkspaceSidebar(
+                                          model: model,
+                                          mode: SidebarMode.drawer,
+                                          openLibrary: _openLibrary,
+                                          openSettings: _openSettings,
+                                        ),
+                                      )
+                                    : WorkspaceSidebar(
+                                        model: model,
+                                        mode: SidebarMode.drawer,
+                                        openLibrary: _openLibrary,
+                                        openSettings: _openSettings,
+                                      ),
                               ),
                               body: _MobileEditorChrome(
                                 model: model,
                                 preferences: scope.editorPreferences,
+                                invadeStatusBar: immersive,
                               ),
                             ),
                           ),
@@ -164,13 +197,15 @@ class _WorkspacePageState extends State<WorkspacePage> {
               ],
             );
             return ZephyrStatusBar(
+              mode: statusBarMode,
+              statusBarColor: surface,
               child: Scaffold(
                 backgroundColor: surface,
                 body: WindowChrome.isDesktop
                     ? SafeArea(top: false, child: shell)
                     : ColoredBox(
                         color: surface,
-                        child: SafeArea(child: shell),
+                        child: ZephyrTopSafeArea(child: shell),
                       ),
               ),
             );
@@ -232,10 +267,15 @@ class _MobileEditorChrome extends StatefulWidget {
   const _MobileEditorChrome({
     required this.model,
     required this.preferences,
+    this.invadeStatusBar = false,
   });
 
   final LibraryViewModel model;
   final EditorPreferencesViewModel preferences;
+
+  /// When true, the editor extends under the status band so scrolled text can
+  /// enter it naturally. Top-bar show/hide never changes scroll padding.
+  final bool invadeStatusBar;
 
   @override
   State<_MobileEditorChrome> createState() => _MobileEditorChromeState();
@@ -261,8 +301,6 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
 
   double get _barTravel =>
       _barInset + WorkspaceMobileBookBar.height + _barGapBelow;
-
-  double get _topOverlay => _barTravel;
 
   bool get _isHidden => _hide.value >= 0.999;
   bool get _isVisible => _hide.value <= 0.001;
@@ -355,6 +393,10 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
       _articleId = articleId;
       _showBar(immediate: true);
     }
+    final statusTop =
+        widget.invadeStatusBar ? zephyrTopInset(context) : 0.0;
+    // Keep scroll padding stable — bar show/hide must not reflow the editor.
+    final contentTop = statusTop + _barTravel;
     return NotificationListener<ScrollNotification>(
       onNotification: _onScroll,
       child: Stack(
@@ -363,11 +405,11 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
             child: WorkspaceEditor(
               model: widget.model,
               preferences: widget.preferences,
-              contentTopInset: _topOverlay,
+              contentTopInset: contentTop,
             ),
           ),
           Positioned(
-            top: _barInset,
+            top: statusTop + _barInset,
             left: _barSideInset,
             right: _barSideInset,
             child: AnimatedBuilder(
@@ -379,7 +421,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                   child: Opacity(
                     opacity: (1.0 - t).clamp(0.0, 1.0),
                     child: Transform.translate(
-                      offset: Offset(0, -_barTravel * t),
+                      offset: Offset(0, -contentTop * t),
                       child: child,
                     ),
                   ),
@@ -460,7 +502,7 @@ class _LibrarySetupPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      body: SafeArea(
+      body: ZephyrTopSafeArea(
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),

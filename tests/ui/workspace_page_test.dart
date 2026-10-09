@@ -246,12 +246,12 @@ void main() {
     );
     final reorderButton = tester.getRect(find.byTooltip('Reorder'));
     expect(reorderButton.right, closeTo(sidebar.right, 8));
-    expect(find.byIcon(Icons.drag_handle), findsNothing);
+    expect(find.byIcon(Icons.drag_indicator), findsNothing);
 
     await tester.tap(find.byTooltip('Reorder'));
     await tester.pumpAndSettle();
     expect(find.byTooltip('Done reordering'), findsOneWidget);
-    expect(find.byIcon(Icons.drag_handle), findsWidgets);
+    expect(find.byIcon(Icons.drag_indicator), findsWidgets);
 
     await tester.tap(find.byTooltip('Collapse all'));
     await tester.pumpAndSettle();

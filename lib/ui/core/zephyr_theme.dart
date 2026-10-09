@@ -262,7 +262,11 @@ ThemeData zephyrTheme(
       foregroundColor: primaryText,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
-      systemOverlayStyle: ZephyrStatusBar.styleFor(brightness),
+      systemOverlayStyle: ZephyrStatusBar.styleFor(
+        brightness,
+        mode: ui.statusBarMode,
+        statusBarColor: editor,
+      ),
     ),
     textSelectionTheme: TextSelectionThemeData(
       cursorColor: cursor,

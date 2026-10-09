@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../../../../domain/models/editor_preferences.dart';
+import '../../../../domain/models/status_bar_mode.dart';
 import '../../../../domain/models/theme_tokens.dart';
 import '../../../../domain/models/ui_preferences.dart';
 import '../../../../domain/repositories/editor_preferences_repository.dart';
@@ -144,6 +145,9 @@ class ThemeViewModel extends ChangeNotifier {
           .toDouble(),
     ),
   );
+
+  void updateStatusBarMode(StatusBarMode value) =>
+      _updateUi(_ui.copyWith(statusBarMode: value));
 
   void _updateUi(UiPreferences value) {
     _ui = value;

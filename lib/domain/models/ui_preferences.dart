@@ -1,3 +1,5 @@
+import 'status_bar_mode.dart';
+
 /// Shell chrome typography and shape, independent of the writing-column editor.
 class UiPreferences {
   const UiPreferences({
@@ -8,6 +10,7 @@ class UiPreferences {
     required this.showBorders,
     required this.sidebarItemInset,
     required this.sidebarVolumeGap,
+    required this.statusBarMode,
   });
 
   /// [fontSize] maps to [TextTheme.titleSmall]; other styles scale from
@@ -20,6 +23,7 @@ class UiPreferences {
     showBorders: true,
     sidebarItemInset: 6,
     sidebarVolumeGap: 6,
+    statusBarMode: StatusBarMode.transparent,
   );
 
   static const referenceFontSize = 15.0;
@@ -49,6 +53,9 @@ class UiPreferences {
   /// Vertical gap between volume groups in the sidebar.
   final double sidebarVolumeGap;
 
+  /// Mobile system status bar presentation.
+  final StatusBarMode statusBarMode;
+
   double get scale => fontSize / referenceFontSize;
 
   UiPreferences copyWith({
@@ -60,6 +67,7 @@ class UiPreferences {
     bool? showBorders,
     double? sidebarItemInset,
     double? sidebarVolumeGap,
+    StatusBarMode? statusBarMode,
   }) => UiPreferences(
     fontFamily: clearFontFamily ? null : fontFamily ?? this.fontFamily,
     fontPath: clearFontFamily ? null : fontPath ?? this.fontPath,
@@ -68,5 +76,6 @@ class UiPreferences {
     showBorders: showBorders ?? this.showBorders,
     sidebarItemInset: sidebarItemInset ?? this.sidebarItemInset,
     sidebarVolumeGap: sidebarVolumeGap ?? this.sidebarVolumeGap,
+    statusBarMode: statusBarMode ?? this.statusBarMode,
   );
 }

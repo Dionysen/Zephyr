@@ -13,6 +13,7 @@ import '../../../core/zephyr_theme.dart';
 import '../../workspace/views/workspace_sidebar.dart';
 import '../models/settings_section.dart';
 import 'editor_settings_view.dart';
+import 'general_settings_view.dart';
 import 'theme_settings_view.dart';
 
 /// Settings is a normal route on every platform so appearance stays live
@@ -44,9 +45,10 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     final scope = ZephyrScope.of(context);
     return ListenableBuilder(
-      listenable: scope.settings,
+      listenable: Listenable.merge([scope.settings, scope.theme]),
       builder: (context, _) {
         final section = scope.settings.section;
+        final statusBarMode = scope.theme.ui.statusBarMode;
         return LayoutBuilder(
           builder: (context, constraints) {
             final compact = ZephyrBreakpoints.isCompact(
@@ -60,14 +62,16 @@ class _SettingsPageState extends State<SettingsPage> {
             if (compact) {
               final barColor = ZephyrSettingsAppBar.backgroundColor(context);
               return ZephyrStatusBar(
+                mode: statusBarMode,
+                statusBarColor: barColor,
                 child: Scaffold(
                   backgroundColor: Theme.of(context).colorScheme.surface,
                   body: Column(
                     children: [
                       ColoredBox(
-                        // Transparent status bar reveals the settings chrome.
+                        // Status bar region shows settings chrome color.
                         color: barColor,
-                        child: SafeArea(
+                        child: ZephyrTopSafeArea(
                           bottom: false,
                           child: ZephyrSettingsAppBar(
                             title: _editingTokens ? '自定义颜色' : '设置',
@@ -114,50 +118,30 @@ class _SettingsPageState extends State<SettingsPage> {
             );
             final desktopSurface = Theme.of(context).colorScheme.surface;
             return ZephyrStatusBar(
+              mode: statusBarMode,
+              statusBarColor: desktopSurface,
               child: Scaffold(
                 backgroundColor: desktopSurface,
-                body: SafeArea(
-                  top: !WindowChrome.isDesktop,
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: sidebarWidth,
-                        child: Material(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerLowest,
-                          child: _SettingsNavigation(
-                            selected: section,
-                            onSelected: _select,
-                            onBack: () => Navigator.of(context).maybePop(),
-                          ),
+                body: WindowChrome.isDesktop
+                    ? SafeArea(
+                        top: false,
+                        child: _desktopSettingsRow(
+                          scope: scope,
+                          section: section,
+                          sidebarWidth: sidebarWidth,
+                          maxSidebarWidth: maxSidebarWidth,
+                          content: content,
+                        ),
+                      )
+                    : ZephyrTopSafeArea(
+                        child: _desktopSettingsRow(
+                          scope: scope,
+                          section: section,
+                          sidebarWidth: sidebarWidth,
+                          maxSidebarWidth: maxSidebarWidth,
+                          content: content,
                         ),
                       ),
-                      ZephyrResizeHandle(
-                        onDragStart: () =>
-                            scope.settings.setSidebarResizing(true),
-                        onDragUpdate: (delta) => scope.settings.resizeSidebar(
-                          (sidebarWidth + delta).clamp(
-                            SettingsNavigation.minSidebarWidth,
-                            maxSidebarWidth,
-                          ),
-                        ),
-                        onDragEnd: () =>
-                            scope.settings.setSidebarResizing(false),
-                        onDragCancel: () =>
-                            scope.settings.setSidebarResizing(false),
-                      ),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            const _DesktopSettingsHeader(),
-                            Expanded(child: content),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ),
             );
           },
@@ -165,6 +149,47 @@ class _SettingsPageState extends State<SettingsPage> {
       },
     );
   }
+
+  Widget _desktopSettingsRow({
+    required ZephyrScope scope,
+    required SettingsSection section,
+    required double sidebarWidth,
+    required double maxSidebarWidth,
+    required Widget content,
+  }) => Row(
+    children: [
+      SizedBox(
+        width: sidebarWidth,
+        child: Material(
+          color: Theme.of(context).colorScheme.surfaceContainerLowest,
+          child: _SettingsNavigation(
+            selected: section,
+            onSelected: _select,
+            onBack: () => Navigator.of(context).maybePop(),
+          ),
+        ),
+      ),
+      ZephyrResizeHandle(
+        onDragStart: () => scope.settings.setSidebarResizing(true),
+        onDragUpdate: (delta) => scope.settings.resizeSidebar(
+          (sidebarWidth + delta).clamp(
+            SettingsNavigation.minSidebarWidth,
+            maxSidebarWidth,
+          ),
+        ),
+        onDragEnd: () => scope.settings.setSidebarResizing(false),
+        onDragCancel: () => scope.settings.setSidebarResizing(false),
+      ),
+      Expanded(
+        child: Column(
+          children: [
+            const _DesktopSettingsHeader(),
+            Expanded(child: content),
+          ],
+        ),
+      ),
+    ],
+  );
 
   void _select(SettingsSection section) {
     setState(() => _editingTokens = false);
@@ -182,6 +207,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget _buildDesktopSection(ZephyrScope scope, SettingsSection section) =>
       switch (section) {
+        SettingsSection.general => GeneralSettingsView(
+          viewModel: scope.theme,
+        ),
         SettingsSection.theme when _editingTokens => ThemeTokenEditor(
           viewModel: scope.theme,
           onBack: () => setState(() => _editingTokens = false),
@@ -224,6 +252,10 @@ class _CompactSettingsList extends StatelessWidget {
             title: section.compactTitle,
           ),
           switch (section) {
+            SettingsSection.general => GeneralSettingsView(
+              viewModel: scope.theme,
+              compact: true,
+            ),
             SettingsSection.theme => ThemeCatalog(
               viewModel: scope.theme,
               compact: true,

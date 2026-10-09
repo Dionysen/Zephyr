@@ -1,3 +1,4 @@
+import '../../domain/models/status_bar_mode.dart';
 import '../../domain/models/theme_tokens.dart';
 import '../../domain/models/ui_preferences.dart';
 import '../../domain/repositories/theme_preferences_repository.dart';
@@ -76,6 +77,11 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
             UiPreferences.maxSidebarVolumeGap,
           )
           .toDouble(),
+      statusBarMode: _statusBarMode(
+        values,
+        'uiStatusBarMode',
+        UiPreferences.defaults.statusBarMode,
+      ),
     );
   }
 
@@ -100,6 +106,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'uiShowBorders': ui.showBorders,
     'uiSidebarItemInset': ui.sidebarItemInset,
     'uiSidebarVolumeGap': ui.sidebarVolumeGap,
+    'uiStatusBarMode': ui.statusBarMode.name,
   });
 
   int _color(Map<String, Object?> values, String key, {int? fallback}) {
@@ -123,5 +130,19 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     if (value == null) return fallback;
     if (value is! bool) throw FormatException('Invalid $key preference.');
     return value;
+  }
+
+  StatusBarMode _statusBarMode(
+    Map<String, Object?> values,
+    String key,
+    StatusBarMode fallback,
+  ) {
+    final value = values[key];
+    if (value == null) return fallback;
+    if (value is! String) throw FormatException('Invalid $key preference.');
+    for (final mode in StatusBarMode.values) {
+      if (mode.name == value) return mode;
+    }
+    return fallback;
   }
 }
