@@ -96,6 +96,18 @@ class ThemeCatalog extends StatelessWidget {
                   divisions: 20,
                   onChanged: viewModel.updateCornerRadius,
                 ),
+                ZephyrSettingsAdaptiveNumber(
+                  compact: true,
+                  title: '栏圆角',
+                  description: '编辑器顶栏与侧边栏底栏的圆角。',
+                  value: viewModel.ui.barCornerRadius,
+                  min: UiPreferences.minBarCornerRadius,
+                  max: UiPreferences.maxBarCornerRadius,
+                  defaultValue: defaults.barCornerRadius,
+                  suffix: 'px',
+                  divisions: 24,
+                  onChanged: viewModel.updateBarCornerRadius,
+                ),
                 ZephyrSettingsSwitchTile(
                   title: '显示边框',
                   subtitle: '关闭后控件无描边；开启时卷与书库栏显示边框。',
@@ -238,6 +250,19 @@ class ThemeCatalog extends StatelessWidget {
             suffix: 'px',
             divisions: 20,
             onChanged: viewModel.updateCornerRadius,
+          ),
+          ZephyrSettingsAdaptiveNumber(
+            compact: false,
+            title: 'Bar corner radius',
+            description:
+                'Roundness of the floating editor top bar and sidebar library dock.',
+            value: viewModel.ui.barCornerRadius,
+            min: UiPreferences.minBarCornerRadius,
+            max: UiPreferences.maxBarCornerRadius,
+            defaultValue: defaults.barCornerRadius,
+            suffix: 'px',
+            divisions: 24,
+            onChanged: viewModel.updateBarCornerRadius,
           ),
           ZephyrSettingsSwitchTile(
             title: 'Show borders',

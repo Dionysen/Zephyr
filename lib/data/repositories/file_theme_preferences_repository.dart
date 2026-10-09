@@ -42,6 +42,11 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
       'uiCornerRadius',
       UiPreferences.defaults.cornerRadius,
     );
+    final barRadius = _double(
+      values,
+      'uiBarCornerRadius',
+      UiPreferences.defaults.barCornerRadius,
+    );
     final itemInset = _double(
       values,
       'uiSidebarItemInset',
@@ -58,6 +63,12 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
       fontSize: _double(values, 'uiFontSize', UiPreferences.defaults.fontSize),
       cornerRadius: radius
           .clamp(UiPreferences.minCornerRadius, UiPreferences.maxCornerRadius)
+          .toDouble(),
+      barCornerRadius: barRadius
+          .clamp(
+            UiPreferences.minBarCornerRadius,
+            UiPreferences.maxBarCornerRadius,
+          )
           .toDouble(),
       showBorders: _bool(
         values,
@@ -103,6 +114,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'uiFontPath': ui.fontPath,
     'uiFontSize': ui.fontSize,
     'uiCornerRadius': ui.cornerRadius,
+    'uiBarCornerRadius': ui.barCornerRadius,
     'uiShowBorders': ui.showBorders,
     'uiSidebarItemInset': ui.sidebarItemInset,
     'uiSidebarVolumeGap': ui.sidebarVolumeGap,

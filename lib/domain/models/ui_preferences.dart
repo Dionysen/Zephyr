@@ -5,6 +5,7 @@ class UiPreferences {
     required this.fontPath,
     required this.fontSize,
     required this.cornerRadius,
+    required this.barCornerRadius,
     required this.showBorders,
     required this.sidebarItemInset,
     required this.sidebarVolumeGap,
@@ -19,6 +20,7 @@ class UiPreferences {
     fontPath: null,
     fontSize: 16,
     cornerRadius: 8,
+    barCornerRadius: 8,
     showBorders: true,
     sidebarItemInset: 6,
     sidebarVolumeGap: 6,
@@ -29,6 +31,8 @@ class UiPreferences {
   static const referenceFontSize = 15.0;
   static const minCornerRadius = 0.0;
   static const maxCornerRadius = 20.0;
+  static const minBarCornerRadius = 0.0;
+  static const maxBarCornerRadius = 24.0;
   static const minSidebarItemInset = 0.0;
   static const maxSidebarItemInset = 24.0;
   static const minSidebarVolumeGap = 1.0;
@@ -42,6 +46,9 @@ class UiPreferences {
 
   /// Shared corner radius for chrome controls, menus, cards, and dialogs.
   final double cornerRadius;
+
+  /// Corner radius for the floating editor top bar and the sidebar library dock.
+  final double barCornerRadius;
 
   /// When false, chrome controls omit outline borders; volume rows and the
   /// library dock also drop their strokes.
@@ -69,6 +76,7 @@ class UiPreferences {
     bool clearFontFamily = false,
     double? fontSize,
     double? cornerRadius,
+    double? barCornerRadius,
     bool? showBorders,
     double? sidebarItemInset,
     double? sidebarVolumeGap,
@@ -79,6 +87,7 @@ class UiPreferences {
     fontPath: clearFontFamily ? null : fontPath ?? this.fontPath,
     fontSize: fontSize ?? this.fontSize,
     cornerRadius: cornerRadius ?? this.cornerRadius,
+    barCornerRadius: barCornerRadius ?? this.barCornerRadius,
     showBorders: showBorders ?? this.showBorders,
     sidebarItemInset: sidebarItemInset ?? this.sidebarItemInset,
     sidebarVolumeGap: sidebarVolumeGap ?? this.sidebarVolumeGap,

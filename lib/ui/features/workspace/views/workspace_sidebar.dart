@@ -335,7 +335,7 @@ class WorkspaceMobileBookBar extends StatelessWidget {
     final theme = Theme.of(context);
     final library = model.library;
     if (library == null) return const SizedBox.shrink();
-    final radius = context.zephyrBorderRadius;
+    final radius = context.zephyrBarBorderRadius;
     final book = model.selectedBook;
     final isTrash = book?.isTrash == true;
     final bookName = book?.name ?? '选择书籍';
@@ -1810,7 +1810,7 @@ class _LibraryDock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final radius = context.zephyrBorderRadius;
+    final radius = context.zephyrBarBorderRadius;
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
       child: Material(

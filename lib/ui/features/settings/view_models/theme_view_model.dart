@@ -119,6 +119,17 @@ class ThemeViewModel extends ChangeNotifier {
     ),
   );
 
+  void updateBarCornerRadius(double value) => _updateUi(
+    _ui.copyWith(
+      barCornerRadius: value
+          .clamp(
+            UiPreferences.minBarCornerRadius,
+            UiPreferences.maxBarCornerRadius,
+          )
+          .toDouble(),
+    ),
+  );
+
   void updateShowBorders(bool value) =>
       _updateUi(_ui.copyWith(showBorders: value));
 

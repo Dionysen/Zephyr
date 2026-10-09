@@ -12,17 +12,21 @@ import 'zephyr_status_bar.dart';
 class ZephyrShapeTheme extends ThemeExtension<ZephyrShapeTheme> {
   const ZephyrShapeTheme({
     required this.cornerRadius,
+    this.barCornerRadius = 8,
     this.showBorders = true,
     this.sidebarItemInset = 0,
     this.sidebarVolumeGap = 6,
   });
 
   final double cornerRadius;
+  final double barCornerRadius;
   final bool showBorders;
   final double sidebarItemInset;
   final double sidebarVolumeGap;
 
   BorderRadius get borderRadius => BorderRadius.circular(cornerRadius);
+
+  BorderRadius get barBorderRadius => BorderRadius.circular(barCornerRadius);
 
   OutlinedBorder get iconButtonShape =>
       ZephyrControls.iconButtonShapeFor(cornerRadius);
@@ -39,11 +43,13 @@ class ZephyrShapeTheme extends ThemeExtension<ZephyrShapeTheme> {
   @override
   ZephyrShapeTheme copyWith({
     double? cornerRadius,
+    double? barCornerRadius,
     bool? showBorders,
     double? sidebarItemInset,
     double? sidebarVolumeGap,
   }) => ZephyrShapeTheme(
     cornerRadius: cornerRadius ?? this.cornerRadius,
+    barCornerRadius: barCornerRadius ?? this.barCornerRadius,
     showBorders: showBorders ?? this.showBorders,
     sidebarItemInset: sidebarItemInset ?? this.sidebarItemInset,
     sidebarVolumeGap: sidebarVolumeGap ?? this.sidebarVolumeGap,
@@ -54,6 +60,7 @@ class ZephyrShapeTheme extends ThemeExtension<ZephyrShapeTheme> {
     if (other is! ZephyrShapeTheme) return this;
     return ZephyrShapeTheme(
       cornerRadius: lerpDouble(cornerRadius, other.cornerRadius, t)!,
+      barCornerRadius: lerpDouble(barCornerRadius, other.barCornerRadius, t)!,
       showBorders: t < 0.5 ? showBorders : other.showBorders,
       sidebarItemInset: lerpDouble(
         sidebarItemInset,
@@ -79,6 +86,10 @@ extension ZephyrThemeContext on BuildContext {
   double get zephyrCornerRadius => zephyrShape.cornerRadius;
 
   BorderRadius get zephyrBorderRadius => zephyrShape.borderRadius;
+
+  double get zephyrBarCornerRadius => zephyrShape.barCornerRadius;
+
+  BorderRadius get zephyrBarBorderRadius => zephyrShape.barBorderRadius;
 
   bool get zephyrShowBorders => zephyrShape.showBorders;
 
@@ -116,6 +127,10 @@ ThemeData zephyrTheme(
     UiPreferences.minCornerRadius,
     UiPreferences.maxCornerRadius,
   );
+  final barRadius = ui.barCornerRadius.clamp(
+    UiPreferences.minBarCornerRadius,
+    UiPreferences.maxBarCornerRadius,
+  );
   final itemInset = ui.sidebarItemInset.clamp(
     UiPreferences.minSidebarItemInset,
     UiPreferences.maxSidebarItemInset,
@@ -126,6 +141,7 @@ ThemeData zephyrTheme(
   );
   final shape = ZephyrShapeTheme(
     cornerRadius: radius,
+    barCornerRadius: barRadius,
     showBorders: ui.showBorders,
     sidebarItemInset: itemInset,
     sidebarVolumeGap: volumeGap,

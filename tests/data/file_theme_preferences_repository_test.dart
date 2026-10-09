@@ -33,6 +33,7 @@ void main() {
         fontPath: r'C:\Fonts\Inter.ttf',
         fontSize: 12,
         cornerRadius: 10,
+        barCornerRadius: 14,
         showBorders: false,
         sidebarItemInset: 12,
         sidebarVolumeGap: 4,
@@ -51,6 +52,7 @@ void main() {
       expect(actualUi.fontPath, expectedUi.fontPath);
       expect(actualUi.fontSize, expectedUi.fontSize);
       expect(actualUi.cornerRadius, expectedUi.cornerRadius);
+      expect(actualUi.barCornerRadius, expectedUi.barCornerRadius);
       expect(actualUi.showBorders, expectedUi.showBorders);
       expect(actualUi.sidebarItemInset, expectedUi.sidebarItemInset);
       expect(actualUi.sidebarVolumeGap, expectedUi.sidebarVolumeGap);
@@ -81,6 +83,7 @@ void main() {
 
     expect(ui.fontSize, UiPreferences.defaults.fontSize);
     expect(ui.cornerRadius, UiPreferences.defaults.cornerRadius);
+    expect(ui.barCornerRadius, UiPreferences.defaults.barCornerRadius);
     expect(ui.showBorders, UiPreferences.defaults.showBorders);
     expect(ui.sidebarItemInset, UiPreferences.defaults.sidebarItemInset);
     expect(ui.sidebarVolumeGap, UiPreferences.defaults.sidebarVolumeGap);

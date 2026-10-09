@@ -67,6 +67,15 @@ void main() {
     expect(model.tokens, ThemeTokens.defaults);
   });
 
+  test('bar corner radius updates independently of control radius', () {
+    final model = ThemeViewModel(_ThemeRepository(ThemeTokens.defaults));
+
+    model.updateBarCornerRadius(16);
+
+    expect(model.ui.barCornerRadius, 16);
+    expect(model.ui.cornerRadius, UiPreferences.defaults.cornerRadius);
+  });
+
   test('show borders updates independently of color tokens', () {
     final model = ThemeViewModel(_ThemeRepository(ThemeTokens.defaults));
 
