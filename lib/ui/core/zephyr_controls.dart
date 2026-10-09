@@ -43,6 +43,9 @@ abstract final class ZephyrControls {
   static const double fieldHeight = 36;
   static const double menuInsets = 4;
 
+  /// Material [Switch] track is ~52×32; scale down for denser settings rows.
+  static const double settingsSwitchScale = 0.82;
+
   /// Hairline width for themed outlines, cards, and dividers.
   static const double borderWidth = 1;
 
