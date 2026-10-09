@@ -64,7 +64,10 @@ class ThemeViewModel extends ChangeNotifier {
 
   void restoreDefaults() {
     _tokens = ThemeTokens.defaults;
-    _ui = UiPreferences.defaults;
+    // Keep language; theme restore should not force the UI locale.
+    _ui = UiPreferences.defaults.copyWith(
+      localePreference: _ui.localePreference,
+    );
     _scheduleSave();
     notifyListeners();
   }
@@ -160,6 +163,9 @@ class ThemeViewModel extends ChangeNotifier {
 
   void updateHideStatusBarIcons(bool value) =>
       _updateUi(_ui.copyWith(hideStatusBarIcons: value));
+
+  void updateLocalePreference(AppLocalePreference value) =>
+      _updateUi(_ui.copyWith(localePreference: value));
 
   void _updateUi(UiPreferences value) {
     _ui = value;

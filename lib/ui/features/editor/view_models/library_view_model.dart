@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 
 import '../../../../domain/models/purewriter_models.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../domain/models/workspace_layout.dart';
 import '../../../../domain/repositories/workspace_layout_repository.dart';
 import '../../../../domain/repositories/writing_library_repository.dart';
@@ -60,12 +61,20 @@ class LibraryViewModel extends ChangeNotifier {
       );
   WritingFolder? get selectedBook =>
       _library?.folders.where((book) => book.id == _selectedBookId).firstOrNull;
+  /// Folder basename for the open library, or empty while using a temp library.
   String get libraryName {
     if (needsLibrarySetup) {
-      return '临时书库';
+      return '';
     }
-    final name = path.basename(_repository.location?.rootPath ?? '');
-    return name.isEmpty ? 'Untitled library' : name;
+    return path.basename(_repository.location?.rootPath ?? '');
+  }
+
+  String displayLibraryName(AppLocalizations l10n) {
+    if (needsLibrarySetup) {
+      return l10n.temporaryLibraryName;
+    }
+    final name = libraryName;
+    return name.isEmpty ? l10n.untitledLibrary : name;
   }
 
   double get sidebarScrollOffset {

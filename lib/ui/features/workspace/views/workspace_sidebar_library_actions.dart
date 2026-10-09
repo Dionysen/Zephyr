@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../domain/models/purewriter_models.dart';
 import '../../../core/breakpoints.dart';
+import '../../../core/zephyr_l10n.dart';
 import '../../editor/view_models/library_view_model.dart';
 
 class SidebarMenuAction {
@@ -101,44 +102,44 @@ RelativeRect secondaryMenuPosition(
   );
 }
 
-const volumeMenuActions = <SidebarMenuAction>[
+List<SidebarMenuAction> volumeMenuActions(AppLocalizations l10n) => [
   SidebarMenuAction(
     id: 'insert',
-    label: '下方插入卷',
+    label: l10n.volumeInsertBelow,
     icon: Icons.create_new_folder_outlined,
   ),
   SidebarMenuAction(
     id: 'rename',
-    label: '重命名',
+    label: l10n.actionRename,
     icon: Icons.drive_file_rename_outline,
   ),
   SidebarMenuAction(
     id: 'delete',
-    label: '删除',
+    label: l10n.actionDelete,
     icon: Icons.delete_outline,
     isDestructive: true,
   ),
 ];
 
-const chapterMenuActions = <SidebarMenuAction>[
+List<SidebarMenuAction> chapterMenuActions(AppLocalizations l10n) => [
   SidebarMenuAction(
     id: 'insert',
-    label: '下方插入章节',
+    label: l10n.chapterInsertBelow,
     icon: Icons.note_add_outlined,
   ),
   SidebarMenuAction(
     id: 'rename',
-    label: '重命名',
+    label: l10n.actionRename,
     icon: Icons.drive_file_rename_outline,
   ),
   SidebarMenuAction(
     id: 'move',
-    label: '移动到卷',
+    label: l10n.actionMoveToVolume,
     icon: Icons.drive_file_move_outline,
   ),
   SidebarMenuAction(
     id: 'delete',
-    label: '删除',
+    label: l10n.actionDelete,
     icon: Icons.delete_outline,
     isDestructive: true,
   ),
@@ -150,14 +151,15 @@ Future<void> handleVolumeMenuAction(
   required WritingCategory volume,
   required String actionId,
 }) async {
+  final l10n = context.l10n;
   switch (actionId) {
     case 'insert':
       await model.insertVolumeBelow(volume.id);
     case 'rename':
       final name = await showRenameDialog(
         context,
-        title: '重命名卷',
-        label: '卷名',
+        title: l10n.renameVolumeTitle,
+        label: l10n.volumeNameLabel,
         initialValue: volume.name,
       );
       if (name != null) {
@@ -182,14 +184,15 @@ Future<void> handleChapterMenuAction(
   required ArticleSummary chapter,
   required String actionId,
 }) async {
+  final l10n = context.l10n;
   switch (actionId) {
     case 'insert':
       await model.insertChapterBelow(chapter.id);
     case 'rename':
       final title = await showRenameDialog(
         context,
-        title: '重命名章节',
-        label: '章节名',
+        title: l10n.renameChapterTitle,
+        label: l10n.chapterNameLabel,
         initialValue: chapter.title,
       );
       if (title != null) {
@@ -241,18 +244,21 @@ Future<bool?> showDeleteChapterDialog(
   BuildContext context, {
   required String chapterTitle,
 }) {
-  final name = chapterTitle.trim().isEmpty ? 'Untitled' : chapterTitle.trim();
+  final l10n = context.l10n;
+  final name = chapterTitle.trim().isEmpty
+      ? l10n.untitled
+      : chapterTitle.trim();
   return showDialog<bool>(
     context: context,
     builder: (context) {
       final theme = Theme.of(context);
       return AlertDialog(
-        title: const Text('删除章节'),
-        content: Text('将“$name”移入回收站？'),
+        title: Text(l10n.deleteChapterTitle),
+        content: Text(l10n.deleteChapterBody(name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('取消'),
+            child: Text(l10n.actionCancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -260,7 +266,7 @@ Future<bool?> showDeleteChapterDialog(
               foregroundColor: theme.colorScheme.onError,
             ),
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('删除'),
+            child: Text(l10n.actionDelete),
           ),
         ],
       );
@@ -273,25 +279,26 @@ Future<bool?> showDeleteVolumeDialog(
   BuildContext context, {
   required String volumeName,
 }) {
-  final name = volumeName.trim().isEmpty ? 'Untitled' : volumeName.trim();
+  final l10n = context.l10n;
+  final name = volumeName.trim().isEmpty
+      ? l10n.untitled
+      : volumeName.trim();
   return showDialog<bool>(
     context: context,
     builder: (context) {
       final theme = Theme.of(context);
       return AlertDialog(
-        title: const Text('删除卷'),
-        content: Text(
-          '删除“$name”时，请选择如何处理卷内章节。',
-        ),
+        title: Text(l10n.deleteVolumeTitle),
+        content: Text(l10n.deleteVolumeBody(name)),
         actionsAlignment: MainAxisAlignment.end,
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消'),
+            child: Text(l10n.actionCancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('仅删除卷'),
+            child: Text(l10n.deleteVolumeOnly),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -299,7 +306,7 @@ Future<bool?> showDeleteVolumeDialog(
               foregroundColor: theme.colorScheme.onError,
             ),
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('删除卷及章节'),
+            child: Text(l10n.deleteVolumeAndChapters),
           ),
         ],
       );
@@ -307,12 +314,13 @@ Future<bool?> showDeleteVolumeDialog(
   );
 }
 
-/// Empty string means「未分卷」; null means cancelled.
+/// Empty string means unfiled; null means cancelled.
 Future<String?> showMoveChapterSheet(
   BuildContext context, {
   required List<WritingCategory> volumes,
   String? currentCategoryId,
 }) {
+  final l10n = context.l10n;
   return showModalBottomSheet<String>(
     context: context,
     showDragHandle: true,
@@ -325,13 +333,13 @@ Future<String?> showMoveChapterSheet(
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
               child: Text(
-                '移动到卷',
+                l10n.moveToVolumeSheetTitle,
                 style: Theme.of(sheetContext).textTheme.titleMedium,
               ),
             ),
             _CompactSheetTile(
               icon: Icons.inbox_outlined,
-              label: '未分卷',
+              label: l10n.unfiledVolume,
               selected: currentCategoryId == null,
               onTap: () => Navigator.of(sheetContext).pop(''),
             ),
@@ -451,6 +459,7 @@ class _RenameDialogState extends State<_RenameDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return AlertDialog(
       title: Text(widget.title),
       content: SizedBox(
@@ -463,7 +472,7 @@ class _RenameDialogState extends State<_RenameDialog> {
             decoration: InputDecoration(labelText: widget.label),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return '请输入名称';
+                return l10n.validationNameRequired;
               }
               return null;
             },
@@ -474,9 +483,9 @@ class _RenameDialogState extends State<_RenameDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('取消'),
+          child: Text(l10n.actionCancel),
         ),
-        FilledButton(onPressed: _submit, child: const Text('保存')),
+        FilledButton(onPressed: _submit, child: Text(l10n.actionSave)),
       ],
     );
   }

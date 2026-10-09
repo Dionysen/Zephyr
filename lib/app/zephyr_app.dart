@@ -16,11 +16,13 @@ import '../data/services/settings_navigation_file_storage.dart';
 import '../data/services/theme_file_storage.dart';
 import '../data/services/window_frame_file_storage.dart';
 import '../data/services/workspace_layout_file_storage.dart';
+import '../domain/models/ui_preferences.dart';
 import '../domain/models/window_frame.dart';
 import '../domain/repositories/window_frame_repository.dart';
 import '../domain/repositories/workspace_layout_repository.dart';
 import '../ui/core/window_chrome.dart';
 import '../ui/core/zephyr_controls.dart';
+import '../ui/core/zephyr_l10n.dart';
 import '../ui/core/zephyr_scope.dart';
 import '../ui/core/zephyr_theme.dart';
 import '../ui/features/editor/view_models/editor_preferences_view_model.dart';
@@ -87,6 +89,9 @@ class ZephyrApp extends StatelessWidget {
         title: 'Zephyr',
         debugShowCheckedModeBanner: false,
         theme: zephyrTheme(theme.tokens, ui: theme.ui),
+        locale: _localeFor(theme.ui.localePreference),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: DesktopWindowBackdrop(
           color: Color(theme.tokens.editorSurface),
           child: const WorkspacePage(),
@@ -95,6 +100,12 @@ class ZephyrApp extends StatelessWidget {
     ),
   );
 }
+
+Locale? _localeFor(AppLocalePreference preference) => switch (preference) {
+  AppLocalePreference.system => null,
+  AppLocalePreference.chinese => const Locale('zh'),
+  AppLocalePreference.english => const Locale('en'),
+};
 
 Future<void> initializeDesktopWindow({
   WindowFrameRepository? frameRepository,

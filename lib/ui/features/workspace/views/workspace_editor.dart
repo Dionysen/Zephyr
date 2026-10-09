@@ -10,6 +10,7 @@ import '../../editor/plain_text/layout/editor_typography.dart';
 import '../../editor/plain_text/zephyr_plain_text_editor.dart';
 import '../../editor/view_models/editor_preferences_view_model.dart';
 import '../../editor/view_models/library_view_model.dart';
+import '../../../core/zephyr_l10n.dart';
 
 class WorkspaceEditor extends StatefulWidget {
   const WorkspaceEditor({
@@ -368,7 +369,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
                 decoration: InputDecoration(
                   isDense: true,
                   filled: false,
-                  hintText: 'Untitled',
+                  hintText: context.l10n.untitled,
                   hintStyle: theme.textTheme.titleLarge?.copyWith(
                     fontSize: prefs.titleFontSize,
                     fontFamily: prefs.fontFamily,
@@ -397,9 +398,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   Widget build(BuildContext context) {
     final article = widget.model.article;
     if (article == null) {
-      return const Center(
-        child: Text('Choose or create a chapter to begin writing.'),
-      );
+      return Center(child: Text(context.l10n.editorEmptyState));
     }
 
     final preferences = widget.preferences.preferences;
@@ -460,7 +459,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
               child: EditorOverlayCapsule(
                 onTap: _jumpToEnd,
                 child: Text(
-                  '跳到文末',
+                  context.l10n.jumpToEnd,
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: EditorOverlayCapsule.foregroundOf(context),
                     fontWeight: FontWeight.w500,

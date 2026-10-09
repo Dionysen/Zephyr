@@ -7,6 +7,7 @@ import '../../../core/breakpoints.dart';
 import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_resize_handle.dart';
 import '../../../core/zephyr_scope.dart';
+import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_settings.dart';
 import '../../../core/zephyr_status_bar.dart';
 import '../../../core/zephyr_theme.dart';
@@ -47,6 +48,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return ListenableBuilder(
       listenable: Listenable.merge([scope.settings, scope.theme]),
       builder: (context, _) {
+        final l10n = context.l10n;
         final section = scope.settings.section;
         final immersiveStatusBar = scope.theme.ui.immersiveStatusBar;
         final hideStatusBarIcons = scope.theme.ui.hideStatusBarIcons;
@@ -81,7 +83,9 @@ class _SettingsPageState extends State<SettingsPage> {
                             child: ZephyrTopSafeArea(
                               bottom: false,
                               child: ZephyrSettingsAppBar(
-                                title: _editingTokens ? '自定义颜色' : '设置',
+                                title: _editingTokens
+                                    ? l10n.customColorsTitle
+                                    : l10n.settingsTitle,
                                 onBack: () {
                                   if (_editingTokens) {
                                     setState(() => _editingTokens = false);
@@ -254,13 +258,14 @@ class _CompactSettingsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
       children: [
         for (final section in SettingsSection.values) ...[
           ZephyrSettingsCategoryHeader(
             icon: section.icon,
-            title: section.compactTitle,
+            title: section.title(l10n),
           ),
           switch (section) {
             SettingsSection.general => GeneralSettingsView(
@@ -279,8 +284,8 @@ class _CompactSettingsList extends StatelessWidget {
             _ => ZephyrSettingsSection(
               children: [
                 ZephyrSettingsListTile(
-                  title: '即将推出',
-                  subtitle: '此分组的设置项稍后加入。',
+                  title: l10n.settingsComingSoonTitle,
+                  subtitle: l10n.settingsComingSoonSubtitle,
                   showDivider: false,
                 ),
               ],
@@ -298,6 +303,7 @@ class _DesktopSettingsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     return Material(
       color: theme.colorScheme.surface,
       child: SizedBox(
@@ -313,7 +319,7 @@ class _DesktopSettingsHeader extends StatelessWidget {
             IgnorePointer(
               child: Center(
                 child: Text(
-                  'Settings',
+                  l10n.settingsDesktopHeader,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall,
@@ -354,7 +360,9 @@ class _SettingsNavigation extends StatelessWidget {
   final VoidCallback onBack;
 
   @override
-  Widget build(BuildContext context) => Column(
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Column(
     children: [
       SizedBox(
         height: WorkspaceHeader.height,
@@ -370,9 +378,9 @@ class _SettingsNavigation extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(14, 4, 14, 12),
         child: TextField(
           readOnly: true,
-          decoration: const InputDecoration(
-            prefixIcon: Icon(Icons.search, size: 19),
-            hintText: 'Search settings',
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.search, size: 19),
+            hintText: l10n.settingsSearchHint,
           ),
         ),
       ),
@@ -391,12 +399,13 @@ class _SettingsNavigation extends StatelessWidget {
           child: OutlinedButton.icon(
             onPressed: onBack,
             icon: const Icon(Icons.arrow_back),
-            label: const Text('Back'),
+            label: Text(l10n.actionBack),
           ),
         ),
       ),
     ],
   );
+  }
 }
 
 class _SettingsNavigationItem extends StatelessWidget {
@@ -411,7 +420,9 @@ class _SettingsNavigationItem extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Padding(
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Padding(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
     child: Material(
       color: selected
@@ -428,7 +439,7 @@ class _SettingsNavigationItem extends StatelessWidget {
               Icon(section.icon, size: 19),
               const SizedBox(width: 12),
               Text(
-                section.title,
+                section.title(l10n),
                 style: Theme.of(context).textTheme.titleSmall,
               ),
             ],
@@ -437,6 +448,7 @@ class _SettingsNavigationItem extends StatelessWidget {
       ),
     ),
   );
+  }
 }
 
 class _SettingsPlaceholder extends StatelessWidget {
@@ -445,15 +457,18 @@ class _SettingsPlaceholder extends StatelessWidget {
   final SettingsSection section;
 
   @override
-  Widget build(BuildContext context) => Column(
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text(section.title, style: Theme.of(context).textTheme.titleLarge),
+      Text(section.title(l10n), style: Theme.of(context).textTheme.titleLarge),
       const SizedBox(height: 10),
       Text(
-        'This settings section is reserved for its own feature settings.',
+        l10n.settingsPlaceholderBody,
         style: Theme.of(context).textTheme.bodySmall,
       ),
     ],
   );
+  }
 }

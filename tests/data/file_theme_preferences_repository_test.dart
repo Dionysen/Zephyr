@@ -39,6 +39,7 @@ void main() {
         sidebarVolumeGap: 4,
         immersiveStatusBar: true,
         hideStatusBarIcons: false,
+        localePreference: AppLocalePreference.system,
       );
 
       await repository.save(tokens: expectedTokens, ui: expectedUi);
@@ -58,6 +59,7 @@ void main() {
       expect(actualUi.sidebarVolumeGap, expectedUi.sidebarVolumeGap);
       expect(actualUi.immersiveStatusBar, expectedUi.immersiveStatusBar);
       expect(actualUi.hideStatusBarIcons, expectedUi.hideStatusBarIcons);
+      expect(actualUi.localePreference, expectedUi.localePreference);
     },
   );
 
@@ -89,6 +91,7 @@ void main() {
     expect(ui.sidebarVolumeGap, UiPreferences.defaults.sidebarVolumeGap);
     expect(ui.immersiveStatusBar, UiPreferences.defaults.immersiveStatusBar);
     expect(ui.hideStatusBarIcons, UiPreferences.defaults.hideStatusBarIcons);
+    expect(ui.localePreference, UiPreferences.defaults.localePreference);
     expect(ui.fontFamily, isNull);
     expect(ui.fontPath, isNull);
     expect(tokens.cursor, ThemeTokens.defaults.cursor);

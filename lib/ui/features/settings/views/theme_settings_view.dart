@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../domain/models/theme_tokens.dart';
 import '../../../../domain/models/ui_preferences.dart';
+import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_settings.dart';
 import '../../../core/zephyr_theme.dart';
 import '../view_models/theme_view_model.dart';
@@ -23,6 +24,7 @@ class ThemeCatalog extends StatelessWidget {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: viewModel,
     builder: (context, _) {
+      final l10n = context.l10n;
       final active = viewModel.tokens.preset;
       final isLight =
           Color(viewModel.tokens.editorSurface).computeLuminance() > .5;
@@ -36,15 +38,25 @@ class ThemeCatalog extends StatelessWidget {
             ZephyrSettingsSection(
               children: [
                 ZephyrSettingsChoiceTile<String>(
-                  title: '主题模式',
-                  subtitle: '选择浅色、深色，或跟随系统外观。',
+                  title: l10n.themeModeTitle,
+                  subtitle: l10n.themeModeSubtitle,
                   selected: isLight ? 'light' : 'dark',
-                  choices: const [
-                    ZephyrSettingsChoice(value: 'system', label: '跟随系统'),
-                    ZephyrSettingsChoice(value: 'light', label: '浅色'),
-                    ZephyrSettingsChoice(value: 'dark', label: '深色'),
+                  choices: [
+                    ZephyrSettingsChoice(
+                      value: 'system',
+                      label: l10n.themeModeSystem,
+                    ),
+                    ZephyrSettingsChoice(
+                      value: 'light',
+                      label: l10n.themeModeLight,
+                    ),
+                    ZephyrSettingsChoice(
+                      value: 'dark',
+                      label: l10n.themeModeDark,
+                    ),
                   ],
-                  valueLabel: isLight ? '浅色' : '深色',
+                  valueLabel:
+                      isLight ? l10n.themeModeLight : l10n.themeModeDark,
                   onSelected: (mode) {
                     if (mode == 'system') {
                       final dark = MediaQuery.platformBrightnessOf(context) ==
@@ -62,8 +74,8 @@ class ThemeCatalog extends StatelessWidget {
                   },
                 ),
                 FontFilePickerRow(
-                  label: 'UI 字体',
-                  description: '用于界面与侧边栏的字体；导入后与正文字体共用应用字体库。',
+                  label: l10n.uiFontLabel,
+                  description: l10n.uiFontDescription,
                   fonts: viewModel.systemFonts,
                   selectedPath: viewModel.ui.fontPath,
                   isLoading: viewModel.isLoadingSystemFonts,
@@ -74,8 +86,8 @@ class ThemeCatalog extends StatelessWidget {
                 ),
                 ZephyrSettingsAdaptiveNumber(
                   compact: true,
-                  title: 'UI 字体大小',
-                  description: '侧边栏、设置与界面文字大小。',
+                  title: l10n.uiFontSizeTitle,
+                  description: l10n.uiFontSizeDescription,
                   value: viewModel.ui.fontSize,
                   min: 11,
                   max: 18,
@@ -86,8 +98,8 @@ class ThemeCatalog extends StatelessWidget {
                 ),
                 ZephyrSettingsAdaptiveNumber(
                   compact: true,
-                  title: '圆角',
-                  description: '按钮、菜单、卡片与输入框的圆角。',
+                  title: l10n.cornerRadiusTitle,
+                  description: l10n.cornerRadiusDescription,
                   value: viewModel.ui.cornerRadius,
                   min: UiPreferences.minCornerRadius,
                   max: UiPreferences.maxCornerRadius,
@@ -98,8 +110,8 @@ class ThemeCatalog extends StatelessWidget {
                 ),
                 ZephyrSettingsAdaptiveNumber(
                   compact: true,
-                  title: '栏圆角',
-                  description: '编辑器顶栏与侧边栏底栏的圆角。',
+                  title: l10n.barCornerRadiusTitle,
+                  description: l10n.barCornerRadiusDescription,
                   value: viewModel.ui.barCornerRadius,
                   min: UiPreferences.minBarCornerRadius,
                   max: UiPreferences.maxBarCornerRadius,
@@ -109,15 +121,15 @@ class ThemeCatalog extends StatelessWidget {
                   onChanged: viewModel.updateBarCornerRadius,
                 ),
                 ZephyrSettingsSwitchTile(
-                  title: '显示边框',
-                  subtitle: '关闭后控件无描边；开启时卷与书库栏显示边框。',
+                  title: l10n.showBordersTitle,
+                  subtitle: l10n.showBordersSubtitle,
                   value: viewModel.ui.showBorders,
                   onChanged: viewModel.updateShowBorders,
                 ),
                 ZephyrSettingsAdaptiveNumber(
                   compact: true,
-                  title: '侧边栏条目边距',
-                  description: '卷与章节左右边距（相等）。',
+                  title: l10n.sidebarItemInsetTitle,
+                  description: l10n.sidebarItemInsetDescription,
                   value: viewModel.ui.sidebarItemInset,
                   min: UiPreferences.minSidebarItemInset,
                   max: UiPreferences.maxSidebarItemInset,
@@ -128,8 +140,8 @@ class ThemeCatalog extends StatelessWidget {
                 ),
                 ZephyrSettingsAdaptiveNumber(
                   compact: true,
-                  title: '侧边栏内容上下间距',
-                  description: '卷与卷之间的间距。章节之间无间距，仅 1px 分隔线。',
+                  title: l10n.sidebarVolumeGapTitle,
+                  description: l10n.sidebarVolumeGapDescription,
                   value: viewModel.ui.sidebarVolumeGap,
                   min: UiPreferences.minSidebarVolumeGap,
                   max: UiPreferences.maxSidebarVolumeGap,
@@ -142,14 +154,14 @@ class ThemeCatalog extends StatelessWidget {
               ],
             ),
             ZephyrSettingsSection(
-              title: '主题预设',
+              title: l10n.themePresetsSectionTitle,
               footer: active == null
-                  ? '当前：自定义'
-                  : '当前：${_presetTitle(active)}',
+                  ? l10n.themeCurrentCustom
+                  : l10n.themeCurrentPreset(_presetTitle(l10n, active)),
               children: [
                 for (var i = 0; i < ThemePreset.values.length; i++)
                   ZephyrSettingsListTile(
-                    title: _presetTitle(ThemePreset.values[i]),
+                    title: _presetTitle(l10n, ThemePreset.values[i]),
                     showDivider: i != ThemePreset.values.length - 1,
                     trailing: ThemePreset.values[i] == active
                         ? Icon(
@@ -165,8 +177,8 @@ class ThemeCatalog extends StatelessWidget {
             ZephyrSettingsSection(
               children: [
                 ZephyrSettingsValueTile(
-                  title: '自定义颜色',
-                  subtitle: '调整主题语义色，修改后立即生效。',
+                  title: l10n.customColorsTitle,
+                  subtitle: l10n.customColorsSubtitle,
                   valueText: '',
                   showDivider: false,
                   onTap: onCustomize,
@@ -180,17 +192,20 @@ class ThemeCatalog extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Appearance', style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            l10n.appearanceSectionTitle,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
           const SizedBox(height: 8),
           Text(
-            'Choose a theme, then customize its semantic tokens if needed.',
+            l10n.appearanceSectionIntro,
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 20),
           Row(
             children: [
               _ModeChip(
-                label: 'System',
+                label: l10n.themeModeSystem,
                 selected: false,
                 onTap: () {
                   final dark =
@@ -202,12 +217,12 @@ class ThemeCatalog extends StatelessWidget {
                 },
               ),
               _ModeChip(
-                label: 'Light',
+                label: l10n.themeModeLight,
                 selected: isLight,
                 onTap: () => viewModel.applyPreset(ThemePreset.light),
               ),
               _ModeChip(
-                label: 'Dark',
+                label: l10n.themeModeDark,
                 selected: !isLight,
                 onTap: () => viewModel.applyPreset(ThemePreset.darkModern),
               ),
@@ -215,10 +230,8 @@ class ThemeCatalog extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           FontFilePickerRow(
-            label: 'UI font',
-            description:
-                'Typeface used by the writing shell chrome. Imports are '
-                'shared with the editor font library.',
+            label: l10n.uiFontLabel,
+            description: l10n.uiFontDescription,
             fonts: viewModel.systemFonts,
             selectedPath: viewModel.ui.fontPath,
             isLoading: viewModel.isLoadingSystemFonts,
@@ -228,8 +241,8 @@ class ThemeCatalog extends StatelessWidget {
           ),
           ZephyrSettingsAdaptiveNumber(
             compact: false,
-            title: 'UI font size',
-            description: 'Size of sidebar, settings, and chrome text.',
+            title: l10n.uiFontSizeTitle,
+            description: l10n.uiFontSizeDescription,
             value: viewModel.ui.fontSize,
             min: 11,
             max: 18,
@@ -240,9 +253,8 @@ class ThemeCatalog extends StatelessWidget {
           ),
           ZephyrSettingsAdaptiveNumber(
             compact: false,
-            title: 'Corner radius',
-            description:
-                'Shared roundness for buttons, menus, cards, and fields.',
+            title: l10n.cornerRadiusTitle,
+            description: l10n.cornerRadiusDescription,
             value: viewModel.ui.cornerRadius,
             min: UiPreferences.minCornerRadius,
             max: UiPreferences.maxCornerRadius,
@@ -253,9 +265,8 @@ class ThemeCatalog extends StatelessWidget {
           ),
           ZephyrSettingsAdaptiveNumber(
             compact: false,
-            title: 'Bar corner radius',
-            description:
-                'Roundness of the floating editor top bar and sidebar library dock.',
+            title: l10n.barCornerRadiusTitle,
+            description: l10n.barCornerRadiusDescription,
             value: viewModel.ui.barCornerRadius,
             min: UiPreferences.minBarCornerRadius,
             max: UiPreferences.maxBarCornerRadius,
@@ -265,17 +276,15 @@ class ThemeCatalog extends StatelessWidget {
             onChanged: viewModel.updateBarCornerRadius,
           ),
           ZephyrSettingsSwitchTile(
-            title: 'Show borders',
-            subtitle:
-                'When off, controls have no outlines. When on, volumes and '
-                'the library dock show borders.',
+            title: l10n.showBordersTitle,
+            subtitle: l10n.showBordersSubtitle,
             value: viewModel.ui.showBorders,
             onChanged: viewModel.updateShowBorders,
           ),
           ZephyrSettingsAdaptiveNumber(
             compact: false,
-            title: 'Sidebar item inset',
-            description: 'Equal left/right padding for volumes and chapters.',
+            title: l10n.sidebarItemInsetTitle,
+            description: l10n.sidebarItemInsetDescription,
             value: viewModel.ui.sidebarItemInset,
             min: UiPreferences.minSidebarItemInset,
             max: UiPreferences.maxSidebarItemInset,
@@ -286,9 +295,8 @@ class ThemeCatalog extends StatelessWidget {
           ),
           ZephyrSettingsAdaptiveNumber(
             compact: false,
-            title: 'Sidebar volume spacing',
-            description:
-                'Gap between volumes. Chapters stay flush with a 1px divider.',
+            title: l10n.sidebarVolumeGapTitle,
+            description: l10n.sidebarVolumeGapDescription,
             value: viewModel.ui.sidebarVolumeGap,
             min: UiPreferences.minSidebarVolumeGap,
             max: UiPreferences.maxSidebarVolumeGap,
@@ -300,13 +308,13 @@ class ThemeCatalog extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             active == null
-                ? 'Current theme: Custom'
-                : 'Current theme: ${_presetTitle(active)}',
+                ? l10n.themeCurrentCustomLong
+                : l10n.themeCurrentPresetLong(_presetTitle(l10n, active)),
             style: Theme.of(context).textTheme.titleSmall,
           ),
           const SizedBox(height: 8),
           Text(
-            'Theme presets apply to all writing-shell surfaces.',
+            l10n.themePresetsFooter,
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 16),
@@ -322,6 +330,7 @@ class ThemeCatalog extends StatelessWidget {
               itemBuilder: (context, index) {
                 final preset = ThemePreset.values[index];
                 return _ThemePresetCard(
+                  l10n: l10n,
                   preset: preset,
                   selected: preset == active,
                   onTap: () => viewModel.applyPreset(preset),
@@ -334,7 +343,7 @@ class ThemeCatalog extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: onCustomize,
               icon: const Icon(Icons.tune),
-              label: const Text('Customize tokens'),
+              label: Text(l10n.customizeTokensButton),
             ),
           ),
         ],
@@ -378,21 +387,23 @@ class _ThemeTokenEditorState extends State<ThemeTokenEditor> {
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: widget.viewModel,
-    builder: (context, _) => Column(
+    builder: (context, _) {
+      final l10n = context.l10n;
+      return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (widget.showBackButton) ...[
           TextButton.icon(
             onPressed: widget.onBack,
             icon: const Icon(Icons.arrow_back),
-            label: const Text('Back to themes'),
+            label: Text(l10n.backToThemesButton),
           ),
           const SizedBox(height: 8),
         ],
-        Text('Theme tokens', style: Theme.of(context).textTheme.titleLarge),
+        Text(l10n.themeTokensTitle, style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 8),
         Text(
-          'Use a six-digit hexadecimal color. Changes apply immediately.',
+          l10n.themeTokensIntro,
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 22),
@@ -401,8 +412,8 @@ class _ThemeTokenEditorState extends State<ThemeTokenEditor> {
             children: [
               for (final token in ThemeToken.values)
                 _TokenField(
-                  label: _tokenLabel(token),
-                  description: _tokenDescription(token),
+                  label: _tokenLabel(l10n, token),
+                  description: _tokenDescription(l10n, token),
                   controller: _controllers[token]!,
                   value: widget.viewModel.tokens.valueOf(token),
                   onChanged: (value) => widget.viewModel.update(token, value),
@@ -422,11 +433,12 @@ class _ThemeTokenEditorState extends State<ThemeTokenEditor> {
                 );
               }
             },
-            child: const Text('Restore Dark Modern defaults'),
+            child: Text(l10n.restoreDarkModernDefaults),
           ),
         ),
       ],
-    ),
+    );
+    },
   );
 }
 
@@ -463,11 +475,13 @@ class _ModeChip extends StatelessWidget {
 
 class _ThemePresetCard extends StatelessWidget {
   const _ThemePresetCard({
+    required this.l10n,
     required this.preset,
     required this.selected,
     required this.onTap,
   });
 
+  final AppLocalizations l10n;
   final ThemePreset preset;
   final bool selected;
   final VoidCallback onTap;
@@ -501,7 +515,7 @@ class _ThemePresetCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      _presetTitle(preset),
+                      _presetTitle(l10n, preset),
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                   ),
@@ -631,41 +645,43 @@ class _TokenField extends StatelessWidget {
   );
 }
 
-String _presetTitle(ThemePreset preset) => switch (preset) {
-  ThemePreset.light => 'Light',
-  ThemePreset.grey => 'Grey',
-  ThemePreset.slate => 'Slate',
-  ThemePreset.claude => 'Claude Code',
-  ThemePreset.mint => 'Mint',
-  ThemePreset.purple => 'Purple',
-  ThemePreset.hermes => 'Hermes',
-  ThemePreset.ocean => 'Ocean',
-  ThemePreset.darkModern => 'Dark Modern',
+String _presetTitle(AppLocalizations l10n, ThemePreset preset) =>
+    switch (preset) {
+      ThemePreset.light => l10n.themePresetLight,
+      ThemePreset.grey => l10n.themePresetGrey,
+      ThemePreset.slate => l10n.themePresetSlate,
+      ThemePreset.claude => l10n.themePresetClaude,
+      ThemePreset.mint => l10n.themePresetMint,
+      ThemePreset.purple => l10n.themePresetPurple,
+      ThemePreset.hermes => l10n.themePresetHermes,
+      ThemePreset.ocean => l10n.themePresetOcean,
+      ThemePreset.darkModern => l10n.themePresetDarkModern,
+    };
+
+String _tokenLabel(AppLocalizations l10n, ThemeToken token) => switch (token) {
+  ThemeToken.editorSurface => l10n.tokenEditorSurface,
+  ThemeToken.sidebarSurface => l10n.tokenSidebarSurface,
+  ThemeToken.controlSurface => l10n.tokenControlSurface,
+  ThemeToken.border => l10n.tokenBorder,
+  ThemeToken.divider => l10n.tokenDivider,
+  ThemeToken.primaryText => l10n.tokenPrimaryText,
+  ThemeToken.mutedText => l10n.tokenMutedText,
+  ThemeToken.accent => l10n.tokenAccent,
+  ThemeToken.cursor => l10n.tokenCursor,
 };
 
-String _tokenLabel(ThemeToken token) => switch (token) {
-  ThemeToken.editorSurface => 'Editor surface',
-  ThemeToken.sidebarSurface => 'Sidebar surface',
-  ThemeToken.controlSurface => 'Control surface',
-  ThemeToken.border => 'Border',
-  ThemeToken.divider => '分割线',
-  ThemeToken.primaryText => 'Primary text',
-  ThemeToken.mutedText => 'Muted text',
-  ThemeToken.accent => 'Accent',
-  ThemeToken.cursor => 'Cursor',
-};
-
-String _tokenDescription(ThemeToken token) => switch (token) {
-  ThemeToken.editorSurface => 'Background of the writing column.',
-  ThemeToken.sidebarSurface => 'Background of side panels and chrome.',
-  ThemeToken.controlSurface => 'Fill color for fields, menus, and cards.',
-  ThemeToken.border => 'Hairlines around controls.',
-  ThemeToken.divider => 'Sidebar chapter separators.',
-  ThemeToken.primaryText => 'Default title and body copy color.',
-  ThemeToken.mutedText => 'Dimmer copy used for setting hints and captions.',
-  ThemeToken.accent => 'Interactive highlights and selected states.',
-  ThemeToken.cursor => 'Caret color in the writing editor.',
-};
+String _tokenDescription(AppLocalizations l10n, ThemeToken token) =>
+    switch (token) {
+      ThemeToken.editorSurface => l10n.tokenEditorSurfaceDescription,
+      ThemeToken.sidebarSurface => l10n.tokenSidebarSurfaceDescription,
+      ThemeToken.controlSurface => l10n.tokenControlSurfaceDescription,
+      ThemeToken.border => l10n.tokenBorderDescription,
+      ThemeToken.divider => l10n.tokenDividerDescription,
+      ThemeToken.primaryText => l10n.tokenPrimaryTextDescription,
+      ThemeToken.mutedText => l10n.tokenMutedTextDescription,
+      ThemeToken.accent => l10n.tokenAccentDescription,
+      ThemeToken.cursor => l10n.tokenCursorDescription,
+    };
 
 String _hex(int value) =>
     '#${(value & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';

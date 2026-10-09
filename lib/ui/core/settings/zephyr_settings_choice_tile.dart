@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../zephyr_l10n.dart';
 import '../zephyr_theme.dart';
 import 'zephyr_settings_value_tile.dart';
 
@@ -29,11 +30,16 @@ Future<T?> showZephyrSettingsChoicePicker<T>(
   String? actionLabel,
   Future<void> Function()? onAction,
   Future<bool> Function(T value)? onDelete,
-  String deleteConfirmTitle = 'Delete?',
-  String deleteConfirmBody = 'Remove this item?',
-  String deleteConfirmAction = 'Delete',
-  String deleteCancelAction = 'Cancel',
+  String? deleteConfirmTitle,
+  String? deleteConfirmBody,
+  String? deleteConfirmAction,
+  String? deleteCancelAction,
 }) {
+  final l10n = context.l10n;
+  final confirmTitle = deleteConfirmTitle ?? l10n.choiceDeleteTitle;
+  final confirmBody = deleteConfirmBody ?? l10n.choiceDeleteBody;
+  final confirmAction = deleteConfirmAction ?? l10n.actionDelete;
+  final cancelAction = deleteCancelAction ?? l10n.actionCancel;
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: true,
@@ -51,10 +57,10 @@ Future<T?> showZephyrSettingsChoicePicker<T>(
         actionLabel: actionLabel,
         onAction: onAction,
         onDelete: onDelete,
-        deleteConfirmTitle: deleteConfirmTitle,
-        deleteConfirmBody: deleteConfirmBody,
-        deleteConfirmAction: deleteConfirmAction,
-        deleteCancelAction: deleteCancelAction,
+        deleteConfirmTitle: confirmTitle,
+        deleteConfirmBody: confirmBody,
+        deleteConfirmAction: confirmAction,
+        deleteCancelAction: cancelAction,
       );
     },
   );
@@ -206,10 +212,10 @@ class ZephyrSettingsChoiceTile<T> extends StatelessWidget {
     this.actionLabel,
     this.onAction,
     this.onDelete,
-    this.deleteConfirmTitle = 'Delete?',
-    this.deleteConfirmBody = 'Remove this item?',
-    this.deleteConfirmAction = 'Delete',
-    this.deleteCancelAction = 'Cancel',
+    this.deleteConfirmTitle,
+    this.deleteConfirmBody,
+    this.deleteConfirmAction,
+    this.deleteCancelAction,
     this.showDivider = true,
     this.enabled = true,
   });
@@ -223,10 +229,10 @@ class ZephyrSettingsChoiceTile<T> extends StatelessWidget {
   final String? actionLabel;
   final Future<void> Function()? onAction;
   final Future<bool> Function(T value)? onDelete;
-  final String deleteConfirmTitle;
-  final String deleteConfirmBody;
-  final String deleteConfirmAction;
-  final String deleteCancelAction;
+  final String? deleteConfirmTitle;
+  final String? deleteConfirmBody;
+  final String? deleteConfirmAction;
+  final String? deleteCancelAction;
   final bool showDivider;
   final bool enabled;
 
@@ -240,6 +246,11 @@ class ZephyrSettingsChoiceTile<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final confirmTitle = deleteConfirmTitle ?? l10n.choiceDeleteTitle;
+    final confirmBody = deleteConfirmBody ?? l10n.choiceDeleteBody;
+    final confirmAction = deleteConfirmAction ?? l10n.actionDelete;
+    final cancelAction = deleteCancelAction ?? l10n.actionCancel;
     return ZephyrSettingsValueTile(
       title: title,
       subtitle: subtitle,
@@ -257,10 +268,10 @@ class ZephyrSettingsChoiceTile<T> extends StatelessWidget {
                 actionLabel: actionLabel,
                 onAction: onAction,
                 onDelete: onDelete,
-                deleteConfirmTitle: deleteConfirmTitle,
-                deleteConfirmBody: deleteConfirmBody,
-                deleteConfirmAction: deleteConfirmAction,
-                deleteCancelAction: deleteCancelAction,
+                deleteConfirmTitle: confirmTitle,
+                deleteConfirmBody: confirmBody,
+                deleteConfirmAction: confirmAction,
+                deleteCancelAction: cancelAction,
               );
               if (next == null) return;
               onSelected(next);

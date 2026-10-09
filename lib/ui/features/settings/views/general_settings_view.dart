@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../domain/models/ui_preferences.dart';
+import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_settings.dart';
 import '../view_models/theme_view_model.dart';
 
@@ -17,23 +19,40 @@ class GeneralSettingsView extends StatelessWidget {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: viewModel,
     builder: (context, _) {
+      final l10n = context.l10n;
       final immersive = viewModel.ui.immersiveStatusBar;
+      final locale = viewModel.ui.localePreference;
       final children = [
+        ZephyrSettingsChoiceTile<AppLocalePreference>(
+          title: l10n.languageTitle,
+          subtitle: l10n.languageSubtitle,
+          selected: locale,
+          valueLabel: _localeLabel(l10n, locale),
+          choices: [
+            ZephyrSettingsChoice(
+              value: AppLocalePreference.system,
+              label: l10n.languageSystem,
+            ),
+            ZephyrSettingsChoice(
+              value: AppLocalePreference.chinese,
+              label: l10n.languageChinese,
+            ),
+            ZephyrSettingsChoice(
+              value: AppLocalePreference.english,
+              label: l10n.languageEnglish,
+            ),
+          ],
+          onSelected: viewModel.updateLocalePreference,
+        ),
         ZephyrSettingsSwitchTile(
-          title: compact ? '沉浸式通知栏' : 'Immersive status bar',
-          subtitle: compact
-              ? '开启后应用延伸到透明通知栏下（控件仍留白），正文可上滑进入该区域。'
-              : 'Draw under a transparent status bar (chrome stays padded); '
-                    'text may scroll into that band.',
+          title: l10n.immersiveStatusBarTitle,
+          subtitle: l10n.immersiveStatusBarSubtitle,
           value: immersive,
           onChanged: viewModel.updateImmersiveStatusBar,
         ),
         ZephyrSettingsSwitchTile(
-          title: compact ? '隐藏通知栏图标' : 'Hide status bar icons',
-          subtitle: compact
-              ? '仅在沉浸式通知栏开启时生效；图标自动隐藏，边缘滑动可临时显示。'
-              : 'Only when immersive is on. Icons auto-hide; swipe from the '
-                    'edge to peek.',
+          title: l10n.hideStatusBarIconsTitle,
+          subtitle: l10n.hideStatusBarIconsSubtitle,
           value: viewModel.ui.hideStatusBarIcons,
           showDivider: false,
           onChanged: immersive ? viewModel.updateHideStatusBarIcons : null,
@@ -48,7 +67,7 @@ class GeneralSettingsView extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(4, 8, 4, 24),
         children: [
           Text(
-            'General',
+            l10n.generalSectionTitle,
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 16),
@@ -58,3 +77,10 @@ class GeneralSettingsView extends StatelessWidget {
     },
   );
 }
+
+String _localeLabel(AppLocalizations l10n, AppLocalePreference preference) =>
+    switch (preference) {
+      AppLocalePreference.system => l10n.languageSystem,
+      AppLocalePreference.chinese => l10n.languageChinese,
+      AppLocalePreference.english => l10n.languageEnglish,
+    };

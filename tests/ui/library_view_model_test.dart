@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zephyr/l10n/app_localizations_en.dart';
 import 'package:zephyr/domain/models/purewriter_models.dart';
 import 'package:zephyr/domain/models/workspace_layout.dart';
 import 'package:zephyr/domain/repositories/workspace_layout_repository.dart';
@@ -94,7 +95,10 @@ void main() {
 
     expect(library.openedRoot, '/tmp/zephyr-temporary-library');
     expect(model.needsLibrarySetup, isTrue);
-    expect(model.libraryName, '临时书库');
+    expect(
+      model.displayLibraryName(AppLocalizationsEn()),
+      'Temporary library',
+    );
     expect(model.error, isNull);
   });
 

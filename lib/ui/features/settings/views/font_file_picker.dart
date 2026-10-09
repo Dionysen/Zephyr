@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../domain/models/editor_preferences.dart';
 import '../../../core/zephyr_dropdown.dart';
+import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_settings.dart';
 
 /// Font picker for editor / UI fonts.
@@ -41,15 +42,17 @@ class FontFilePickerRow extends StatelessWidget {
     return fonts.where((font) => font.path == path).firstOrNull;
   }
 
-  String get _selectedLabel {
+  String _selectedLabel(BuildContext context) {
+    final l10n = context.l10n;
     final path = selectedPath ?? '';
-    if (path.isEmpty) return compact ? '系统默认' : 'Platform default';
+    if (path.isEmpty) return l10n.platformDefaultFont;
     final font = _selectedFont;
     if (font != null) return font.family;
     return path.split(RegExp(r'[/\\]')).last;
   }
 
   Future<void> _import(BuildContext context) async {
+    final l10n = context.l10n;
     final file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: const ['ttf', 'otf', 'ttc', 'otc'],
@@ -61,17 +64,14 @@ class FontFilePickerRow extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          ok
-              ? (compact
-                    ? '已导入到应用字体库，可在 UI 与正文字体中选用。'
-                    : 'Font imported into the app library.')
-              : (compact ? '无法导入该字体文件。' : 'Could not import that font file.'),
+          ok ? l10n.fontImportSuccess : l10n.fontImportFailure,
         ),
       ),
     );
   }
 
   Future<bool> _delete(BuildContext context, SystemFont font) async {
+    final l10n = context.l10n;
     final delete = onDeleteFont;
     if (delete == null || !font.imported) return false;
 
@@ -79,18 +79,16 @@ class FontFilePickerRow extends StatelessWidget {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Delete font?'),
-          content: Text(
-            'Remove “${font.family}” from the app font library to free space?',
-          ),
+          title: Text(l10n.fontDeleteDialogTitle),
+          content: Text(l10n.fontDeleteDialogBody(font.family)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
+              child: Text(l10n.actionCancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Delete'),
+              child: Text(l10n.actionDelete),
             ),
           ],
         ),
@@ -102,11 +100,7 @@ class FontFilePickerRow extends StatelessWidget {
     if (!context.mounted) return ok;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          ok
-              ? (compact ? '已从应用字体库删除。' : 'Removed from the app font library.')
-              : (compact ? '无法删除该字体。' : 'Could not delete that font.'),
-        ),
+        content: Text(ok ? l10n.fontDeleteSuccess : l10n.fontDeleteFailure),
       ),
     );
     return ok;
@@ -114,6 +108,7 @@ class FontFilePickerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     if (isLoading) {
       if (compact) {
         return ZephyrSettingsListTile(
@@ -137,7 +132,7 @@ class FontFilePickerRow extends StatelessWidget {
 
     if (compact) {
       final choices = <ZephyrSettingsChoice<String>>[
-        const ZephyrSettingsChoice(value: '', label: '系统默认'),
+        ZephyrSettingsChoice(value: '', label: l10n.platformDefaultFont),
         for (final font in fonts)
           ZephyrSettingsChoice(
             value: font.path,
@@ -150,14 +145,14 @@ class FontFilePickerRow extends StatelessWidget {
         subtitle: description,
         choices: choices,
         selected: selectedPath ?? '',
-        valueLabel: _selectedLabel,
+        valueLabel: _selectedLabel(context),
         showDivider: showDivider,
-        actionLabel: '从文件导入…',
+        actionLabel: l10n.fontImportFromFile,
         onAction: () => _import(context),
-        deleteConfirmTitle: '删除字体？',
-        deleteConfirmBody: '从应用字体库中移除以释放空间？',
-        deleteConfirmAction: '删除',
-        deleteCancelAction: '取消',
+        deleteConfirmTitle: l10n.fontDeleteDialogTitle,
+        deleteConfirmBody: l10n.fontDeleteDialogBodyCompact,
+        deleteConfirmAction: l10n.actionDelete,
+        deleteCancelAction: l10n.actionCancel,
         onDelete: onDeleteFont == null
             ? null
             : (path) async {
@@ -181,13 +176,13 @@ class FontFilePickerRow extends StatelessWidget {
     final selected = selectedPath ?? '';
     final selectedFont = _selectedFont;
     final items = <ZephyrDropdownItem<String>>[
-      const ZephyrDropdownItem(value: '', label: 'Platform default'),
+      ZephyrDropdownItem(value: '', label: l10n.platformDefaultFont),
       for (final font in fonts)
         ZephyrDropdownItem(value: font.path, label: font.family),
     ];
     if (selected.isNotEmpty && !items.any((item) => item.value == selected)) {
       items.add(
-        ZephyrDropdownItem(value: selected, label: _selectedLabel),
+        ZephyrDropdownItem(value: selected, label: _selectedLabel(context)),
       );
     }
 
@@ -200,7 +195,7 @@ class FontFilePickerRow extends StatelessWidget {
         children: [
           ZephyrDropdown<String>(
             value: selected,
-            hint: 'Platform default',
+            hint: l10n.platformDefaultFont,
             items: items,
             onChanged: (path) {
               if (path.isEmpty) {
@@ -219,7 +214,7 @@ class FontFilePickerRow extends StatelessWidget {
               TextButton.icon(
                 onPressed: () => _import(context),
                 icon: const Icon(Icons.folder_open, size: 18),
-                label: const Text('Choose font file…'),
+                label: Text(l10n.fontImportFromFile),
               ),
               if (selectedFont != null &&
                   selectedFont.imported &&
@@ -227,7 +222,7 @@ class FontFilePickerRow extends StatelessWidget {
                 TextButton.icon(
                   onPressed: () => _delete(context, selectedFont),
                   icon: const Icon(Icons.delete_outline, size: 18),
-                  label: const Text('Delete from library'),
+                  label: Text(l10n.fontDeleteFromLibrary),
                 ),
             ],
           ),

@@ -1,3 +1,22 @@
+/// Interface language preference stored with other UI chrome settings.
+enum AppLocalePreference {
+  system,
+  chinese,
+  english;
+
+  String get storageValue => switch (this) {
+    AppLocalePreference.system => 'system',
+    AppLocalePreference.chinese => 'zh',
+    AppLocalePreference.english => 'en',
+  };
+
+  static AppLocalePreference fromStorage(String? value) => switch (value) {
+    'zh' || 'zh_CN' || 'zh-CN' || 'chinese' => AppLocalePreference.chinese,
+    'en' || 'en_US' || 'en-US' || 'english' => AppLocalePreference.english,
+    _ => AppLocalePreference.system,
+  };
+}
+
 /// Shell chrome typography and shape, independent of the writing-column editor.
 class UiPreferences {
   const UiPreferences({
@@ -11,6 +30,7 @@ class UiPreferences {
     required this.sidebarVolumeGap,
     required this.immersiveStatusBar,
     required this.hideStatusBarIcons,
+    required this.localePreference,
   });
 
   /// [fontSize] maps to [TextTheme.titleSmall]; other styles scale from
@@ -26,6 +46,7 @@ class UiPreferences {
     sidebarVolumeGap: 6,
     immersiveStatusBar: false,
     hideStatusBarIcons: true,
+    localePreference: AppLocalePreference.system,
   );
 
   static const referenceFontSize = 15.0;
@@ -68,6 +89,9 @@ class UiPreferences {
   /// (immersive sticky). Ignored while immersive is off.
   final bool hideStatusBarIcons;
 
+  /// App UI language: system, Simplified Chinese, or English.
+  final AppLocalePreference localePreference;
+
   double get scale => fontSize / referenceFontSize;
 
   UiPreferences copyWith({
@@ -82,6 +106,7 @@ class UiPreferences {
     double? sidebarVolumeGap,
     bool? immersiveStatusBar,
     bool? hideStatusBarIcons,
+    AppLocalePreference? localePreference,
   }) => UiPreferences(
     fontFamily: clearFontFamily ? null : fontFamily ?? this.fontFamily,
     fontPath: clearFontFamily ? null : fontPath ?? this.fontPath,
@@ -93,5 +118,6 @@ class UiPreferences {
     sidebarVolumeGap: sidebarVolumeGap ?? this.sidebarVolumeGap,
     immersiveStatusBar: immersiveStatusBar ?? this.immersiveStatusBar,
     hideStatusBarIcons: hideStatusBarIcons ?? this.hideStatusBarIcons,
+    localePreference: localePreference ?? this.localePreference,
   );
 }

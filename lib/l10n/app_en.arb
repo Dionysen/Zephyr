@@ -1,0 +1,258 @@
+{
+  "@@locale": "en",
+  "appTitle": "Zephyr",
+  "actionCancel": "Cancel",
+  "actionSave": "Save",
+  "actionDelete": "Delete",
+  "actionDone": "Done",
+  "actionRename": "Rename",
+  "actionBack": "Back",
+  "untitled": "Untitled",
+  "untitledLibrary": "Untitled library",
+  "temporaryLibraryName": "Temporary library",
+  "platformDefaultFont": "Platform default",
+  "searchHint": "Search",
+  "dropdownHintSelect": "Select",
+  "dropdownNoMatches": "No matches",
+  "languageTitle": "Language",
+  "languageSubtitle": "App interface language.",
+  "languageSystem": "System default",
+  "languageChinese": "简体中文",
+  "languageEnglish": "English",
+  "settingsTitle": "Settings",
+  "settingsDesktopHeader": "Settings",
+  "settingsSearchHint": "Search settings",
+  "settingsBackTooltip": "Back",
+  "settingsCustomColorsTitle": "Custom colors",
+  "settingsComingSoonTitle": "Coming soon",
+  "settingsComingSoonSubtitle": "Settings for this section will arrive later.",
+  "settingsPlaceholderBody": "This settings section is reserved for its own feature settings.",
+  "settingsSectionGeneral": "General",
+  "settingsSectionCloud": "Cloud sync",
+  "settingsSectionEditor": "Editor",
+  "settingsSectionShortcuts": "Shortcuts",
+  "settingsSectionTheme": "Theme",
+  "settingsSectionAbout": "About",
+  "generalSectionTitle": "General",
+  "immersiveStatusBarTitle": "Immersive status bar",
+  "immersiveStatusBarSubtitle": "Draw under a transparent status bar (chrome stays padded); text may scroll into that band.",
+  "hideStatusBarIconsTitle": "Hide status bar icons",
+  "hideStatusBarIconsSubtitle": "Only when immersive is on. Icons auto-hide; swipe from the edge to peek.",
+  "editorSectionTitle": "Editor",
+  "editorSectionIntro": "Typography and reading-column preferences apply immediately.",
+  "editorSectionFooter": "Changes apply to the writing area immediately.",
+  "editorFontLabel": "Font",
+  "editorFontDescription": "Typeface used in the writing editor. Imports are shared with the UI font library.",
+  "editorFontSizeTitle": "Font size",
+  "editorFontSizeDescription": "Size of the writing-column body text.",
+  "editorTitleSizeTitle": "Title size",
+  "editorTitleSizeDescription": "Font size of the chapter title above the body.",
+  "editorTitleCenteredTitle": "Center title",
+  "editorTitleCenteredSubtitle": "When on, center the title in the reading column; when off, align it to the body left edge.",
+  "editorLineHeightTitle": "Line height",
+  "editorLineHeightDescription": "Uniform line-height multiplier within a paragraph.",
+  "editorParagraphSpacingTitle": "Paragraph spacing",
+  "editorParagraphSpacingDescription": "Gap between paragraphs, as a font-size multiplier.",
+  "editorFirstLineIndentTitle": "First-line indent",
+  "editorFirstLineIndentDescription": "Width inserted by Tab, and applied when opening chapters. Enter copies the previous paragraph's indent.",
+  "editorMarginLeftTitle": "Left margin",
+  "editorMarginLeftDescription": "Left inset of the reading column. When space is tight, both margins shrink in proportion.",
+  "editorMarginRightTitle": "Right margin",
+  "editorMarginRightDescription": "Right inset of the reading column. Equal values stay strictly symmetric.",
+  "appearanceSectionTitle": "Appearance",
+  "appearanceSectionIntro": "Choose a theme, then customize its semantic tokens if needed.",
+  "themeModeTitle": "Theme mode",
+  "themeModeSubtitle": "Choose light, dark, or follow the system appearance.",
+  "themeModeSystem": "System",
+  "themeModeLight": "Light",
+  "themeModeDark": "Dark",
+  "uiFontLabel": "UI font",
+  "uiFontDescription": "Typeface used by the writing shell chrome. Imports are shared with the editor font library.",
+  "uiFontSizeTitle": "UI font size",
+  "uiFontSizeDescription": "Size of sidebar, settings, and chrome text.",
+  "cornerRadiusTitle": "Corner radius",
+  "cornerRadiusDescription": "Shared roundness for buttons, menus, cards, and fields.",
+  "barCornerRadiusTitle": "Bar corner radius",
+  "barCornerRadiusDescription": "Roundness of the floating editor top bar and sidebar library dock.",
+  "showBordersTitle": "Show borders",
+  "showBordersSubtitle": "When off, controls have no outlines. When on, volumes and the library dock show borders.",
+  "sidebarItemInsetTitle": "Sidebar item inset",
+  "sidebarItemInsetDescription": "Equal left/right padding for volumes and chapters.",
+  "sidebarVolumeGapTitle": "Sidebar volume spacing",
+  "sidebarVolumeGapDescription": "Gap between volumes. Chapters stay flush with a 1px divider.",
+  "themePresetsSectionTitle": "Theme presets",
+  "themeCurrentCustom": "Current: Custom",
+  "themeCurrentPreset": "Current: {preset}",
+  "@themeCurrentPreset": {
+    "placeholders": {
+      "preset": {
+        "type": "String"
+      }
+    }
+  },
+  "themeCurrentCustomLong": "Current theme: Custom",
+  "themeCurrentPresetLong": "Current theme: {preset}",
+  "@themeCurrentPresetLong": {
+    "placeholders": {
+      "preset": {
+        "type": "String"
+      }
+    }
+  },
+  "themePresetsFooter": "Theme presets apply to all writing-shell surfaces.",
+  "customColorsTitle": "Custom colors",
+  "customColorsSubtitle": "Adjust semantic theme colors; changes apply immediately.",
+  "customizeTokensButton": "Customize tokens",
+  "backToThemesButton": "Back to themes",
+  "themeTokensTitle": "Theme tokens",
+  "themeTokensIntro": "Use a six-digit hexadecimal color. Changes apply immediately.",
+  "restoreDarkModernDefaults": "Restore Dark Modern defaults",
+  "themePresetLight": "Light",
+  "themePresetGrey": "Grey",
+  "themePresetSlate": "Slate",
+  "themePresetClaude": "Claude Code",
+  "themePresetMint": "Mint",
+  "themePresetPurple": "Purple",
+  "themePresetHermes": "Hermes",
+  "themePresetOcean": "Ocean",
+  "themePresetDarkModern": "Dark Modern",
+  "tokenEditorSurface": "Editor surface",
+  "tokenSidebarSurface": "Sidebar surface",
+  "tokenControlSurface": "Control surface",
+  "tokenBorder": "Border",
+  "tokenDivider": "Divider",
+  "tokenPrimaryText": "Primary text",
+  "tokenMutedText": "Muted text",
+  "tokenAccent": "Accent",
+  "tokenCursor": "Cursor",
+  "tokenEditorSurfaceDescription": "Background of the writing column.",
+  "tokenSidebarSurfaceDescription": "Background of side panels and chrome.",
+  "tokenControlSurfaceDescription": "Fill color for fields, menus, and cards.",
+  "tokenBorderDescription": "Hairlines around controls.",
+  "tokenDividerDescription": "Sidebar chapter separators.",
+  "tokenPrimaryTextDescription": "Default title and body copy color.",
+  "tokenMutedTextDescription": "Dimmer copy used for setting hints and captions.",
+  "tokenAccentDescription": "Interactive highlights and selected states.",
+  "tokenCursorDescription": "Caret color in the writing editor.",
+  "fontImportSuccess": "Font imported into the app library.",
+  "fontImportFailure": "Could not import that font file.",
+  "fontDeleteSuccess": "Removed from the app font library.",
+  "fontDeleteFailure": "Could not delete that font.",
+  "fontImportFromFile": "Choose font file…",
+  "fontDeleteFromLibrary": "Delete from library",
+  "fontDeleteDialogTitle": "Delete font?",
+  "fontDeleteDialogBody": "Remove “{family}” from the app font library to free space?",
+  "@fontDeleteDialogBody": {
+    "placeholders": {
+      "family": {
+        "type": "String"
+      }
+    }
+  },
+  "fontDeleteDialogBodyCompact": "Remove it from the app font library to free space?",
+  "choiceDeleteTitle": "Delete?",
+  "choiceDeleteBody": "Remove this item?",
+  "numberPickerDefaultLabel": "Default {value}",
+  "@numberPickerDefaultLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "numberPickerRestoreDefault": "Restore default ({value})",
+  "@numberPickerRestoreDefault": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "tempLibraryBannerTitle": "Using a temporary library",
+  "tempLibraryBannerSubtitle": "Choose a PureWriter library folder to open your work",
+  "chooseLibraryButton": "Choose library",
+  "librarySetupTitle": "Choose a PureWriter library",
+  "librarySetupBody": "Zephyr needs a library folder that contains App/Room.db. You can also start with a temporary library and switch later.",
+  "chooseLibraryDirectoryButton": "Choose library folder",
+  "editorEmptyState": "Choose or create a chapter to begin writing.",
+  "jumpToEnd": "Jump to end",
+  "volumeInsertBelow": "Insert volume below",
+  "chapterInsertBelow": "Insert chapter below",
+  "actionMoveToVolume": "Move to volume",
+  "renameVolumeTitle": "Rename volume",
+  "renameChapterTitle": "Rename chapter",
+  "volumeNameLabel": "Volume name",
+  "chapterNameLabel": "Chapter name",
+  "validationNameRequired": "Please enter a name",
+  "deleteChapterTitle": "Delete chapter",
+  "deleteChapterBody": "Move “{name}” to the trash?",
+  "@deleteChapterBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteVolumeTitle": "Delete volume",
+  "deleteVolumeBody": "When deleting “{name}”, choose what to do with its chapters.",
+  "@deleteVolumeBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteVolumeOnly": "Delete volume only",
+  "deleteVolumeAndChapters": "Delete volume and chapters",
+  "moveToVolumeSheetTitle": "Move to volume",
+  "unfiledVolume": "Unfiled",
+  "unfiledChaptersHeader": "Unfiled chapters",
+  "tooltipHideSidebar": "Hide sidebar",
+  "tooltipNewVolume": "New volume",
+  "tooltipNewChapter": "New chapter",
+  "tooltipCollapseAll": "Collapse all",
+  "tooltipExpandAll": "Expand all",
+  "tooltipReorder": "Reorder",
+  "tooltipDoneReordering": "Done reordering",
+  "tooltipOpenLibrary": "Open library",
+  "tooltipOpenSidebar": "Open sidebar",
+  "tooltipMore": "More",
+  "tooltipEditBook": "Edit book",
+  "tooltipSettings": "Settings",
+  "selectBook": "Select a book",
+  "moreSheetTitle": "More",
+  "noMobileTools": "No tools available",
+  "editBookTitle": "Edit book",
+  "bookNameLabel": "Book title",
+  "bookNameHint": "Enter a book title",
+  "bookNameRequired": "Please enter a book title",
+  "bookTagsLabel": "Tags",
+  "bookTagsHint": "e.g. Literature",
+  "bookDescriptionLabel": "Description",
+  "bookDescriptionHint": "Briefly describe this book",
+  "bookStatsMeta": "{volumes} volumes · {chapters} chapters",
+  "@bookStatsMeta": {
+    "placeholders": {
+      "volumes": {
+        "type": "int"
+      },
+      "chapters": {
+        "type": "int"
+      }
+    }
+  },
+  "chapterMeta": "Created {created} · Edited {modified} · {wordCount} words",
+  "@chapterMeta": {
+    "placeholders": {
+      "created": {
+        "type": "String"
+      },
+      "modified": {
+        "type": "String"
+      },
+      "wordCount": {
+        "type": "int"
+      }
+    }
+  }
+}

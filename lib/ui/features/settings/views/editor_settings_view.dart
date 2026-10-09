@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../domain/models/editor_preferences.dart';
 import '../../../core/zephyr_controls.dart';
+import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_settings.dart';
 import '../../editor/view_models/editor_preferences_view_model.dart';
 import 'font_file_picker.dart';
@@ -33,17 +34,15 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: widget.viewModel,
     builder: (context, _) {
+      final l10n = context.l10n;
       final viewModel = widget.viewModel;
       final preferences = viewModel.preferences;
       final compact = widget.compact;
       final defaults = EditorPreferences.defaults;
 
       final fontPicker = FontFilePickerRow(
-        label: compact ? '字体' : 'Font',
-        description: compact
-            ? '写作区正文字体；导入后与 UI 字体共用应用字体库。'
-            : 'Typeface used in the writing editor. Imports are shared with '
-                  'the UI font library.',
+        label: l10n.editorFontLabel,
+        description: l10n.editorFontDescription,
         fonts: viewModel.systemFonts,
         selectedPath: preferences.fontPath,
         isLoading: viewModel.isLoadingSystemFonts,
@@ -56,10 +55,8 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
       final numbers = <Widget>[
         ZephyrSettingsAdaptiveNumber(
           compact: compact,
-          title: compact ? '字体大小' : 'Font size',
-          description: compact
-              ? '写作区正文字号。'
-              : 'Size of the writing-column body text.',
+          title: l10n.editorFontSizeTitle,
+          description: l10n.editorFontSizeDescription,
           value: preferences.fontSize,
           min: 12,
           max: 32,
@@ -70,10 +67,8 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
         ),
         ZephyrSettingsAdaptiveNumber(
           compact: compact,
-          title: compact ? '标题字号' : 'Title size',
-          description: compact
-              ? '文章标题块字号。'
-              : 'Font size of the chapter title above the body.',
+          title: l10n.editorTitleSizeTitle,
+          description: l10n.editorTitleSizeDescription,
           value: preferences.titleFontSize,
           min: EditorPreferences.minTitleFontSize,
           max: EditorPreferences.maxTitleFontSize,
@@ -86,17 +81,15 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
         ),
         if (compact)
           ZephyrSettingsSwitchTile(
-            title: '标题居中',
-            subtitle: '开则居中；关则与正文左边界对齐。',
+            title: l10n.editorTitleCenteredTitle,
+            subtitle: l10n.editorTitleCenteredSubtitle,
             value: preferences.titleCentered,
             onChanged: viewModel.updateTitleCentered,
           )
         else
           ZephyrSettingsDesktopRow(
-            label: 'Center title',
-            description:
-                'When on, center the title in the reading column; when off, '
-                'align it to the body left edge.',
+            label: l10n.editorTitleCenteredTitle,
+            description: l10n.editorTitleCenteredSubtitle,
             child: Transform.scale(
               scale: ZephyrControls.settingsSwitchScale,
               alignment: Alignment.centerLeft,
@@ -109,10 +102,8 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
           ),
         ZephyrSettingsAdaptiveNumber(
           compact: compact,
-          title: compact ? '行高' : 'Line height',
-          description: compact
-              ? '段内行距倍数。'
-              : 'Uniform line-height multiplier within a paragraph.',
+          title: l10n.editorLineHeightTitle,
+          description: l10n.editorLineHeightDescription,
           value: preferences.lineHeight,
           min: 1.2,
           max: 2.4,
@@ -122,10 +113,8 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
         ),
         ZephyrSettingsAdaptiveNumber(
           compact: compact,
-          title: compact ? '段间距' : 'Paragraph spacing',
-          description: compact
-              ? '段落之间的间距（字号倍数）。'
-              : 'Gap between paragraphs, as a font-size multiplier.',
+          title: l10n.editorParagraphSpacingTitle,
+          description: l10n.editorParagraphSpacingDescription,
           value: preferences.paragraphSpacing,
           min: 0,
           max: 2.5,
@@ -135,11 +124,8 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
         ),
         ZephyrSettingsAdaptiveNumber(
           compact: compact,
-          title: compact ? '首行缩进' : 'First-line indent',
-          description: compact
-              ? 'Tab 插入的缩进宽度；打开章节时也会应用。'
-              : 'Width inserted by Tab, and applied when opening chapters. '
-                    'Enter copies the previous paragraph\'s indent.',
+          title: l10n.editorFirstLineIndentTitle,
+          description: l10n.editorFirstLineIndentDescription,
           value: preferences.firstLineIndent.toDouble(),
           min: 0,
           max: 4,
@@ -150,11 +136,8 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
         ),
         ZephyrSettingsAdaptiveNumber(
           compact: compact,
-          title: compact ? '左边距' : 'Left margin',
-          description: compact
-              ? '正文左侧边距；空间不足时与右边距按比例缩小。'
-              : 'Left inset of the reading column. When space is tight, '
-                    'both margins shrink in proportion.',
+          title: l10n.editorMarginLeftTitle,
+          description: l10n.editorMarginLeftDescription,
           value: preferences.marginLeft,
           min: EditorPreferences.minMargin,
           max: EditorPreferences.maxMargin,
@@ -165,11 +148,8 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
         ),
         ZephyrSettingsAdaptiveNumber(
           compact: compact,
-          title: compact ? '右边距' : 'Right margin',
-          description: compact
-              ? '正文右侧边距；与左边距相等时始终严格对称。'
-              : 'Right inset of the reading column. Equal values stay '
-                    'strictly symmetric.',
+          title: l10n.editorMarginRightTitle,
+          description: l10n.editorMarginRightDescription,
           value: preferences.marginRight,
           min: EditorPreferences.minMargin,
           max: EditorPreferences.maxMargin,
@@ -187,7 +167,7 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ZephyrSettingsSection(
-              footer: '更改会立即应用到写作区。',
+              footer: l10n.editorSectionFooter,
               children: [fontPicker, ...numbers],
             ),
           ],
@@ -200,10 +180,13 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
           controller: _scrollController,
           padding: EdgeInsets.zero,
           children: [
-            Text('Editor', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              l10n.editorSectionTitle,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 8),
             Text(
-              'Typography and reading-column preferences apply immediately.',
+              l10n.editorSectionIntro,
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 24),

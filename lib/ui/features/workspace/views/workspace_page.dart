@@ -11,6 +11,7 @@ import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_status_bar.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
+import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_theme.dart';
 import '../../editor/view_models/editor_preferences_view_model.dart';
 import '../../editor/view_models/library_view_model.dart';
@@ -500,6 +501,7 @@ class _LibrarySetupBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     return Material(
       color: theme.colorScheme.secondaryContainer,
       child: Padding(
@@ -516,13 +518,13 @@ class _LibrarySetupBanner extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '当前使用临时书库',
+                    l10n.tempLibraryBannerTitle,
                     style: theme.textTheme.titleSmall?.copyWith(
                       color: theme.colorScheme.onSecondaryContainer,
                     ),
                   ),
                   Text(
-                    '选择 PureWriter 书库目录以打开你的作品',
+                    l10n.tempLibraryBannerSubtitle,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSecondaryContainer,
                     ),
@@ -533,7 +535,7 @@ class _LibrarySetupBanner extends StatelessWidget {
             const SizedBox(width: 8),
             FilledButton(
               onPressed: openLibrary,
-              child: const Text('选择书库'),
+              child: Text(l10n.chooseLibraryButton),
             ),
           ],
         ),
@@ -554,6 +556,7 @@ class _LibrarySetupPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     return Scaffold(
       body: ZephyrTopSafeArea(
         child: Center(
@@ -571,14 +574,13 @@ class _LibrarySetupPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '选择 PureWriter 书库',
+                    l10n.librarySetupTitle,
                     style: theme.textTheme.headlineSmall,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Zephyr 需要打开包含 App/Room.db 的书库目录。'
-                    '也可以先使用临时书库开始写作，稍后再切换。',
+                    l10n.librarySetupBody,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -598,7 +600,7 @@ class _LibrarySetupPage extends StatelessWidget {
                   FilledButton.icon(
                     onPressed: openLibrary,
                     icon: const Icon(Icons.folder_open),
-                    label: const Text('选择书库目录'),
+                    label: Text(l10n.chooseLibraryDirectoryButton),
                   ),
                 ],
               ),

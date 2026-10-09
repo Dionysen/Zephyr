@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../zephyr_l10n.dart';
 import '../zephyr_theme.dart';
 import 'zephyr_settings_value_tile.dart';
 
@@ -105,6 +106,7 @@ class _ZephyrSettingsNumberPickerDialogState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final radius = context.zephyrCornerRadius;
     final defaultLabel = _format(widget.defaultValue);
 
@@ -126,7 +128,7 @@ class _ZephyrSettingsNumberPickerDialogState
           ),
           const SizedBox(height: 8),
           Text(
-            '默认 $defaultLabel',
+            l10n.numberPickerDefaultLabel(defaultLabel),
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
@@ -162,7 +164,7 @@ class _ZephyrSettingsNumberPickerDialogState
             alignment: Alignment.center,
             child: TextButton(
               onPressed: () => setState(() => _value = widget.defaultValue),
-              child: Text('恢复默认（$defaultLabel）'),
+              child: Text(l10n.numberPickerRestoreDefault(defaultLabel)),
             ),
           ),
         ],
@@ -170,11 +172,11 @@ class _ZephyrSettingsNumberPickerDialogState
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('取消'),
+          child: Text(l10n.actionCancel),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(_value),
-          child: const Text('完成'),
+          child: Text(l10n.actionDone),
         ),
       ],
     );

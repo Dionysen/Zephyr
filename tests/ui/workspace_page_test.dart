@@ -16,6 +16,7 @@ import 'package:zephyr/ui/features/editor/view_models/library_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/font_library.dart';
 import 'package:zephyr/ui/features/settings/view_models/settings_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/theme_view_model.dart';
+import 'package:zephyr/l10n/app_localizations.dart';
 import 'package:zephyr/ui/features/workspace/views/workspace_page.dart';
 import 'package:zephyr/ui/features/workspace/views/workspace_sidebar.dart';
 
@@ -281,7 +282,7 @@ void main() {
         find.text('First line Second line Third line'),
       );
       final metadata = tester.widget<Text>(
-        find.text('创建于2025-12-19 - 修改于2026-01-02 - 42字'),
+        find.text('Created 2025-12-19 · Edited 2026-01-02 · 42 words'),
       );
       expect(preview.style?.fontSize, metadata.style?.fontSize);
       expect(find.text('First line\n\u3000\u3000Second line\r\n\u3000\u3000Third line'), findsNothing);
@@ -323,14 +324,14 @@ void main() {
 
     await tester.tap(find.text('Volume A'), buttons: 2);
     await tester.pumpAndSettle();
-    expect(find.text('下方插入卷'), findsOneWidget);
+    expect(find.text('Insert volume below'), findsOneWidget);
     expect(find.byIcon(Icons.delete_outline), findsWidgets);
 
-    await tester.tap(find.text('删除'));
+    await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
-    expect(find.text('删除卷'), findsOneWidget);
-    expect(find.text('仅删除卷'), findsOneWidget);
-    expect(find.text('删除卷及章节'), findsOneWidget);
+    expect(find.text('Delete volume'), findsOneWidget);
+    expect(find.text('Delete volume only'), findsOneWidget);
+    expect(find.text('Delete volume and chapters'), findsOneWidget);
   });
 
   testWidgets('chapter context menu confirms trash before deleting', (
@@ -352,13 +353,13 @@ void main() {
       buttons: 2,
     );
     await tester.pumpAndSettle();
-    expect(find.text('下方插入章节'), findsOneWidget);
-    expect(find.text('移动到卷'), findsOneWidget);
+    expect(find.text('Insert chapter below'), findsOneWidget);
+    expect(find.text('Move to volume'), findsOneWidget);
 
-    await tester.tap(find.text('删除').last);
+    await tester.tap(find.text('Delete').last);
     await tester.pumpAndSettle();
-    expect(find.text('删除章节'), findsOneWidget);
-    expect(find.textContaining('移入回收站'), findsOneWidget);
+    expect(find.text('Delete chapter'), findsOneWidget);
+    expect(find.textContaining('to the trash'), findsOneWidget);
   });
 
   testWidgets('sidebar new-volume button creates a volume in the book', (
@@ -443,9 +444,9 @@ void main() {
     await tester.pumpWidget(_app(needsLibrarySetup: true));
     await tester.pumpAndSettle();
 
-    expect(find.text('当前使用临时书库'), findsOneWidget);
-    expect(find.text('选择书库'), findsOneWidget);
-    expect(find.text('临时书库'), findsWidgets);
+    expect(find.text('Using a temporary library'), findsOneWidget);
+    expect(find.text('Choose library'), findsOneWidget);
+    expect(find.text('Temporary library'), findsWidgets);
   });
 
   testWidgets('compact top bar opens book and tools sheets', (tester) async {
@@ -468,11 +469,11 @@ void main() {
       find.descendant(of: bookBar, matching: find.text('Book A')),
     );
     await tester.pumpAndSettle();
-    expect(find.text('选择书籍'), findsOneWidget);
+    expect(find.text('Select a book'), findsOneWidget);
 
     await tester.tap(find.text('Book B').last);
     await tester.pumpAndSettle();
-    expect(find.text('选择书籍'), findsNothing);
+    expect(find.text('Select a book'), findsNothing);
     expect(
       find.descendant(of: bookBar, matching: find.text('Book B')),
       findsOneWidget,
@@ -480,8 +481,8 @@ void main() {
 
     await tester.tap(find.byTooltip('More'));
     await tester.pumpAndSettle();
-    expect(find.text('更多'), findsOneWidget);
-    expect(find.text('暂无可用工具'), findsOneWidget);
+    expect(find.text('More'), findsOneWidget);
+    expect(find.text('No tools available'), findsOneWidget);
   });
 }
 
@@ -503,6 +504,8 @@ Widget _app({LibraryViewModel? library, bool needsLibrarySetup = false}) {
     editorPreferences: editorPreferences,
     settings: settings,
     child: MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: zephyrTheme(theme.tokens),
       home: const WorkspacePage(),
     ),

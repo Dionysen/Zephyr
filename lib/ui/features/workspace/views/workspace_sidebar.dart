@@ -10,6 +10,7 @@ import '../../../core/zephyr_controls.dart';
 import '../../../core/zephyr_dropdown.dart';
 import '../../../core/zephyr_resize_handle.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
+import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_theme.dart';
 import '../../editor/view_models/library_view_model.dart';
 import 'workspace_sidebar_library_actions.dart';
@@ -44,6 +45,7 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final drawer = widget.mode == SidebarMode.drawer;
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -72,7 +74,7 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                     IconButton(
                       onPressed: model.toggleSidebar,
                       icon: const Icon(Icons.menu_open),
-                      tooltip: 'Hide sidebar',
+                      tooltip: l10n.tooltipHideSidebar,
                     ),
                     const Expanded(
                       child: WindowDragArea(child: SizedBox.expand()),
@@ -80,7 +82,7 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                     IconButton(
                       onPressed: _canCreateVolume ? model.createVolume : null,
                       icon: const Icon(Icons.create_new_folder_outlined),
-                      tooltip: 'New volume',
+                      tooltip: l10n.tooltipNewVolume,
                     ),
                     _ReorderModeButton(
                       enabled: _canReorder,
@@ -107,8 +109,8 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                             : Icons.unfold_more,
                       ),
                       tooltip: model.areAllVolumesExpanded
-                          ? 'Collapse all'
-                          : 'Expand all',
+                          ? l10n.tooltipCollapseAll
+                          : l10n.tooltipExpandAll,
                     ),
                     const SizedBox(width: 4),
                     IconButton(
@@ -118,7 +120,7 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                           ? null
                           : model.createArticle,
                       icon: const Icon(Icons.note_add_outlined),
-                      tooltip: 'New chapter',
+                      tooltip: l10n.tooltipNewChapter,
                     ),
                   ],
                 ),
@@ -169,7 +171,9 @@ class _ReorderModeButton extends StatelessWidget {
         Icons.swap_vert,
         color: theme.colorScheme.primary,
       ),
-      tooltip: active ? 'Done reordering' : 'Reorder',
+      tooltip: active
+          ? context.l10n.tooltipDoneReordering
+          : context.l10n.tooltipReorder,
     );
   }
 }
@@ -188,11 +192,12 @@ class _DrawerSidebarHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final book = model.selectedBook;
     final stats = book == null ? null : model.bookStats(book.id);
     final meta = stats == null
         ? null
-        : '${stats.volumes}卷 ${stats.chapters}章';
+        : l10n.bookStatsMeta(stats.volumes, stats.chapters);
     final isTrash = book?.isTrash == true;
     final titleColor = isTrash ? theme.colorScheme.error : null;
     final metaColor = isTrash
@@ -233,7 +238,7 @@ class _DrawerSidebarHeader extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  book?.name ?? 'Select a book',
+                  book?.name ?? l10n.selectBook,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(
@@ -261,20 +266,20 @@ class _DrawerSidebarHeader extends StatelessWidget {
                   : Icons.unfold_more,
             ),
             tooltip: model.areAllVolumesExpanded
-                ? 'Collapse all'
-                : 'Expand all',
+                ? l10n.tooltipCollapseAll
+                : l10n.tooltipExpandAll,
           ),
           IconButton(
             style: toolStyle,
             onPressed: model.isReadOnly || isTrash ? null : model.createVolume,
             icon: const Icon(Icons.create_new_folder_outlined),
-            tooltip: 'New volume',
+            tooltip: l10n.tooltipNewVolume,
           ),
           IconButton(
             style: toolStyle,
             onPressed: model.isReadOnly || isTrash ? null : model.createArticle,
             icon: const Icon(Icons.note_add_outlined),
-            tooltip: 'New chapter',
+            tooltip: l10n.tooltipNewChapter,
           ),
           _ReorderModeButton(
             enabled: canReorder,
@@ -338,7 +343,8 @@ class WorkspaceMobileBookBar extends StatelessWidget {
     final radius = context.zephyrBarBorderRadius;
     final book = model.selectedBook;
     final isTrash = book?.isTrash == true;
-    final bookName = book?.name ?? '选择书籍';
+    final l10n = context.l10n;
+    final bookName = book?.name ?? l10n.selectBook;
     final surface = theme.colorScheme.surface;
     final shadow = theme.colorScheme.shadow;
 
@@ -380,7 +386,7 @@ class WorkspaceMobileBookBar extends StatelessWidget {
                   style: _mobileBarIconStyle(context),
                   onPressed: onOpenMenu,
                   icon: const Icon(Icons.menu, size: _iconSize),
-                  tooltip: 'Open library',
+                  tooltip: l10n.tooltipOpenLibrary,
                 ),
                 Expanded(
                   child: TextButton(
@@ -423,7 +429,7 @@ class WorkspaceMobileBookBar extends StatelessWidget {
                   style: _mobileBarIconStyle(context),
                   onPressed: () => _showToolsSheet(context),
                   icon: const Icon(Icons.more_vert, size: _iconSize),
-                  tooltip: 'More',
+                  tooltip: l10n.tooltipMore,
                 ),
               ],
             ),
@@ -500,6 +506,7 @@ class _MobileBookSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final books = library.folders;
     final maxHeight = MediaQuery.sizeOf(context).height * 0.7;
 
@@ -512,7 +519,7 @@ class _MobileBookSheet extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-              child: Text('选择书籍', style: theme.textTheme.titleMedium),
+              child: Text(l10n.selectBook, style: theme.textTheme.titleMedium),
             ),
             Flexible(
               child: ListView.builder(
@@ -524,7 +531,7 @@ class _MobileBookSheet extends StatelessWidget {
                   final isTrash = book.isTrash;
                   final stats = model.bookStats(book.id);
                   final subtitle = _mobileBookSubtitle(book) ??
-                      '${stats.volumes}卷 ${stats.chapters}章';
+                      l10n.bookStatsMeta(stats.volumes, stats.chapters);
                   final accent = isTrash ? theme.colorScheme.error : null;
 
                   return ListTile(
@@ -550,7 +557,7 @@ class _MobileBookSheet extends StatelessWidget {
                     trailing: isTrash
                         ? null
                         : IconButton(
-                            tooltip: '编辑书籍',
+                            tooltip: l10n.tooltipEditBook,
                             onPressed: model.isReadOnly
                                 ? null
                                 : () async {
@@ -597,6 +604,7 @@ class _MobileToolsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     return SafeArea(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -604,13 +612,13 @@ class _MobileToolsSheet extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-            child: Text('更多', style: theme.textTheme.titleMedium),
+            child: Text(l10n.moreSheetTitle, style: theme.textTheme.titleMedium),
           ),
           if (tools.isEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
               child: Text(
-                '暂无可用工具',
+                l10n.noMobileTools,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -654,6 +662,7 @@ class WorkspaceHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final title = model.article?.title.trim();
     final leadingInset = showSidebarToggle
         ? WindowChrome.leadingChromeInset
@@ -675,13 +684,13 @@ class WorkspaceHeader extends StatelessWidget {
                     onPressed: onOpenMenu ??
                         () => Scaffold.maybeOf(context)?.openDrawer(),
                     icon: const Icon(Icons.menu),
-                    tooltip: 'Open library',
+                    tooltip: l10n.tooltipOpenLibrary,
                   ),
                 if (showSidebarToggle)
                   IconButton(
                     onPressed: model.toggleSidebar,
                     icon: const Icon(Icons.menu_open),
-                    tooltip: 'Open sidebar',
+                    tooltip: l10n.tooltipOpenSidebar,
                   ),
                 const Expanded(child: WindowDragArea(child: SizedBox.expand())),
                 const WindowCaptionButtons(),
@@ -694,7 +703,7 @@ class WorkspaceHeader extends StatelessWidget {
                     horizontal: showMenuButton || showSidebarToggle ? 48 : 16,
                   ),
                   child: Text(
-                    title?.isNotEmpty == true ? title! : 'Untitled',
+                    title?.isNotEmpty == true ? title! : l10n.untitled,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.titleSmall,
@@ -723,6 +732,7 @@ class WorkspaceBookPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final hostContext = context;
     final books = library.folders;
     final bookById = {for (final book in books) book.id: book};
@@ -732,7 +742,7 @@ class WorkspaceBookPicker extends StatelessWidget {
           : const EdgeInsets.fromLTRB(10, 8, 10, 4),
       child: ZephyrDropdown<String>(
         value: model.selectedBook?.id,
-        hint: 'Select a book',
+        hint: l10n.selectBook,
         items: [
           for (final book in books)
             ZephyrDropdownItem(
@@ -747,7 +757,7 @@ class WorkspaceBookPicker extends StatelessWidget {
           final stats = book == null ? null : model.bookStats(book.id);
           final meta = stats == null
               ? null
-              : '${stats.volumes}卷 ${stats.chapters}章';
+              : l10n.bookStatsMeta(stats.volumes, stats.chapters);
           final theme = Theme.of(context);
           final isTrash = book?.isTrash == true;
           return Padding(
@@ -764,7 +774,7 @@ class WorkspaceBookPicker extends StatelessWidget {
                 ],
                 Expanded(
                   child: Text(
-                    selected?.label ?? 'Select a book',
+                    selected?.label ?? l10n.selectBook,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.titleSmall?.copyWith(
@@ -774,12 +784,16 @@ class WorkspaceBookPicker extends StatelessWidget {
                 ),
                 if (meta != null) ...[
                   const SizedBox(width: 8),
-                  Text(
-                    meta,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: isTrash
-                          ? theme.colorScheme.error
-                          : theme.colorScheme.onSurfaceVariant,
+                  Flexible(
+                    child: Text(
+                      meta,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: isTrash
+                            ? theme.colorScheme.error
+                            : theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 ],
@@ -993,8 +1007,9 @@ class _EditBookDialogState extends State<_EditBookDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     return AlertDialog(
-      title: Text('编辑书籍', style: theme.textTheme.titleLarge),
+      title: Text(l10n.editBookTitle, style: theme.textTheme.titleLarge),
       content: SizedBox(
         width: 380,
         child: Form(
@@ -1006,14 +1021,14 @@ class _EditBookDialogState extends State<_EditBookDialog> {
               TextFormField(
                 controller: _name,
                 autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: '书名',
-                  hintText: '输入书名',
+                decoration: InputDecoration(
+                  labelText: l10n.bookNameLabel,
+                  hintText: l10n.bookNameHint,
                 ),
                 textInputAction: TextInputAction.next,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return '请输入书名';
+                    return l10n.bookNameRequired;
                   }
                   return null;
                 },
@@ -1022,18 +1037,18 @@ class _EditBookDialogState extends State<_EditBookDialog> {
               const SizedBox(height: 14),
               TextFormField(
                 controller: _tags,
-                decoration: const InputDecoration(
-                  labelText: '标签',
-                  hintText: '例如：文学',
+                decoration: InputDecoration(
+                  labelText: l10n.bookTagsLabel,
+                  hintText: l10n.bookTagsHint,
                 ),
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 14),
               TextFormField(
                 controller: _description,
-                decoration: const InputDecoration(
-                  labelText: '简介',
-                  hintText: '简要说明这本书',
+                decoration: InputDecoration(
+                  labelText: l10n.bookDescriptionLabel,
+                  hintText: l10n.bookDescriptionHint,
                   alignLabelWithHint: true,
                 ),
                 minLines: 3,
@@ -1046,9 +1061,9 @@ class _EditBookDialogState extends State<_EditBookDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('取消'),
+          child: Text(l10n.actionCancel),
         ),
-        FilledButton(onPressed: _submit, child: const Text('保存')),
+        FilledButton(onPressed: _submit, child: Text(l10n.actionSave)),
       ],
     );
   }
@@ -1213,6 +1228,7 @@ class _ChapterTreeState extends State<_ChapterTree> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final model = widget.model;
     final library = widget.library;
     final bookId = model.selectedBook?.id;
@@ -1282,10 +1298,10 @@ class _ChapterTreeState extends State<_ChapterTree> {
     if (loose.isNotEmpty) {
       if (!isTrash) {
         slivers.add(
-          const SliverToBoxAdapter(
+          SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(18, 14, 18, 4),
-              child: Text('Unfiled chapters'),
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 4),
+              child: Text(l10n.unfiledChaptersHeader),
             ),
           ),
         );
@@ -1451,7 +1467,7 @@ class _VolumeRow extends StatelessWidget {
     if (!canManage) return;
     final actionId = await showSidebarLibraryMenu(
       context,
-      actions: volumeMenuActions,
+      actions: volumeMenuActions(context.l10n),
       position: position,
     );
     if (actionId == null || !context.mounted) return;
@@ -1582,7 +1598,7 @@ class _ChapterRow extends StatelessWidget {
     if (!canManage) return;
     final actionId = await showSidebarLibraryMenu(
       context,
-      actions: chapterMenuActions,
+      actions: chapterMenuActions(context.l10n),
       position: position,
     );
     if (actionId == null || !context.mounted) return;
@@ -1615,17 +1631,21 @@ class _ChapterRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final radius = context.zephyrBorderRadius;
     final compact = ZephyrBreakpoints.isCompact(MediaQuery.sizeOf(context).width);
     final activeArticle = model.article?.id == chapter.id ? model.article : null;
     final selected = activeArticle != null;
-    final metaText =
-        '创建于${_formatDate(chapter.createdAt)} - 修改于${_formatDate(activeArticle?.updatedAt ?? chapter.updatedAt)} - ${activeArticle?.wordCount ?? chapter.wordCount}字';
+    final metaText = l10n.chapterMeta(
+      _formatDate(chapter.createdAt),
+      _formatDate(activeArticle?.updatedAt ?? chapter.updatedAt),
+      activeArticle?.wordCount ?? chapter.wordCount,
+    );
     final preview = chapter.summary
         .replaceAll(RegExp(r'[\r\n]+'), ' ')
         .replaceAll('\u3000', '')
         .trim();
-    final title = chapter.title.isEmpty ? 'Untitled' : chapter.title;
+    final title = chapter.title.isEmpty ? l10n.untitled : chapter.title;
     final listInset = context.zephyrSidebarItemInset;
     final divider = isFirst
         ? null
@@ -1810,6 +1830,7 @@ class _LibraryDock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final radius = context.zephyrBarBorderRadius;
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
@@ -1830,7 +1851,7 @@ class _LibraryDock extends StatelessWidget {
                 const SizedBox(width: 9),
                 Expanded(
                   child: Text(
-                    model.libraryName,
+                    model.displayLibraryName(l10n),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1838,7 +1859,7 @@ class _LibraryDock extends StatelessWidget {
                 IconButton(
                   onPressed: openSettings,
                   icon: const Icon(Icons.settings_outlined),
-                  tooltip: 'Settings',
+                  tooltip: l10n.tooltipSettings,
                 ),
               ],
             ),

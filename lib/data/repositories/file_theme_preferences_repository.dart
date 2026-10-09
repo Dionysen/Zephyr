@@ -93,6 +93,9 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
         'uiHideStatusBarIcons',
         UiPreferences.defaults.hideStatusBarIcons,
       ),
+      localePreference: AppLocalePreference.fromStorage(
+        values['uiLocale'] as String?,
+      ),
     );
   }
 
@@ -120,6 +123,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'uiSidebarVolumeGap': ui.sidebarVolumeGap,
     'uiImmersiveStatusBar': ui.immersiveStatusBar,
     'uiHideStatusBarIcons': ui.hideStatusBarIcons,
+    'uiLocale': ui.localePreference.storageValue,
   });
 
   int _color(Map<String, Object?> values, String key, {int? fallback}) {

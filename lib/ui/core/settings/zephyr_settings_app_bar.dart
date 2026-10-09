@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../zephyr_l10n.dart';
+
 /// Compact settings top bar: deeper surface, back control on the leading edge.
 class ZephyrSettingsAppBar extends StatelessWidget
     implements PreferredSizeWidget {
@@ -40,7 +42,7 @@ class ZephyrSettingsAppBar extends StatelessWidget
         child: NavigationToolbar(
           leading: IconButton(
             onPressed: onBack,
-            tooltip: '返回',
+            tooltip: context.l10n.settingsBackTooltip,
             icon: const Icon(Icons.arrow_back),
             color: foreground,
           ),

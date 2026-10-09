@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'zephyr_controls.dart';
+import 'zephyr_l10n.dart';
 import 'zephyr_theme.dart';
 
 class ZephyrDropdownItem<T> {
@@ -45,7 +46,7 @@ class ZephyrDropdown<T> extends StatefulWidget {
     required this.items,
     required this.onChanged,
     this.value,
-    this.hint = 'Select',
+    this.hint,
     this.triggerBuilder,
     this.itemBuilder,
   });
@@ -53,7 +54,7 @@ class ZephyrDropdown<T> extends StatefulWidget {
   final T? value;
   final List<ZephyrDropdownItem<T>> items;
   final ValueChanged<T> onChanged;
-  final String hint;
+  final String? hint;
   final ZephyrDropdownTriggerBuilder<T>? triggerBuilder;
   final ZephyrDropdownItemBuilder<T>? itemBuilder;
 
@@ -150,7 +151,7 @@ class _ZephyrDropdownState<T> extends State<ZephyrDropdown<T>> {
             _isOpen ? Icons.expand_less : Icons.expand_more,
             size: ZephyrControls.iconSize,
           ),
-          label: selected?.label ?? widget.hint,
+          label: selected?.label ?? widget.hint ?? context.l10n.dropdownHintSelect,
         );
     final shape = context.zephyrShape.labeledButtonShape;
     return CompositedTransformTarget(
@@ -342,13 +343,13 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
                       Divider(height: 1, color: theme.colorScheme.outline),
                       Flexible(
                         child: items.isEmpty
-                            ? const SizedBox(
+                            ? SizedBox(
                                 height: ZephyrControls.fieldHeight,
                                 child: _DropdownRow(
-                                  leading: SizedBox(
+                                  leading: const SizedBox(
                                     width: ZephyrControls.iconSize,
                                   ),
-                                  label: 'No matches',
+                                  label: context.l10n.dropdownNoMatches,
                                 ),
                               )
                             : ListView.builder(
@@ -445,7 +446,7 @@ class _DropdownSearchField extends StatelessWidget {
                 cursorColor: theme.colorScheme.primary,
                 decoration: InputDecoration(
                   isDense: true,
-                  hintText: 'Search',
+                  hintText: context.l10n.searchHint,
                   hintStyle: theme.inputDecorationTheme.hintStyle,
                   filled: false,
                   border: InputBorder.none,
