@@ -60,6 +60,10 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   bool _showCaret = true;
   bool _selecting = false;
   bool _draggingHandle = false;
+  /// When true, gaining focus does not open the soft keyboard (e.g. long-press
+  /// selection). Cleared when a short tap confirms editing intent.
+  bool _suppressImeAttach = false;
+  TapDownDetails? _pendingTapDetails;
   final GlobalKey _documentStackKey = GlobalKey();
   final GlobalKey _headerKey = GlobalKey();
   double _headerExtent = 0;
@@ -176,7 +180,9 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     // Use primary focus so a sibling field (chapter title) does not keep the
     // body IME/caret alive via ancestor [FocusNode.hasFocus].
     if (_focusNode.hasPrimaryFocus) {
-      _attachIme();
+      if (!_suppressImeAttach) {
+        _attachIme();
+      }
       _caretBlink.forward();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _focusNode.hasPrimaryFocus) {
@@ -184,6 +190,7 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
         }
       });
     } else {
+      _suppressImeAttach = false;
       _inputClient?.detach();
       _caretBlink.stop();
       setState(() => _showCaret = false);
@@ -192,7 +199,11 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   }
 
   void _attachIme() {
-    if (widget.readOnly || !_focusNode.hasPrimaryFocus) return;
+    if (widget.readOnly ||
+        _suppressImeAttach ||
+        !_focusNode.hasPrimaryFocus) {
+      return;
+    }
     _inputClient?.attach();
     _inputClient?.markImeDirty();
     _inputClient?.syncImeIfNeeded();
@@ -201,6 +212,19 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
         _ensureCaretVisible();
       }
     });
+  }
+
+  /// Confirmed short tap: place caret and open the IME. Scroll drags cancel
+  /// [GestureDetector.onTap], so they never reach here.
+  void _onBodyTap() {
+    final details = _pendingTapDetails;
+    if (details == null) return;
+    _suppressImeAttach = false;
+    _focusNode.requestFocus();
+    // Always re-show IME: focus may already be true after the user dismissed
+    // the soft keyboard.
+    _attachIme();
+    _gestures.handleTapDown(details, details.localPosition);
   }
 
   void _onControllerTick() {
@@ -531,19 +555,19 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                             child: GestureDetector(
                               behavior: HitTestBehavior.translucent,
                               onTapDown: (details) {
-                                _focusNode.requestFocus();
-                                // Always re-show IME: focus may already be true
-                                // after the user dismissed the soft keyboard.
-                                _attachIme();
-                                _gestures.handleTapDown(
-                                  details,
-                                  details.localPosition,
-                                );
+                                // Defer focus/IME to [onTap] so a finger-down
+                                // that becomes a scroll does not open the
+                                // keyboard.
+                                _pendingTapDetails = details;
                               },
+                              onTap: _onBodyTap,
                               onLongPressStart: widget.readOnly
                                   ? null
                                   : (details) {
                                       _selecting = true;
+                                      // Selection without popping the IME until
+                                      // the press ends (or a short tap follows).
+                                      _suppressImeAttach = true;
                                       _focusNode.requestFocus();
                                       _gestures.handleDragStart(
                                         details.localPosition,
@@ -557,7 +581,15 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                                         selecting: true,
                                       );
                                     },
-                              onLongPressEnd: (_) => _selecting = false,
+                              onLongPressEnd: widget.readOnly
+                                  ? null
+                                  : (_) {
+                                      _selecting = false;
+                                      _suppressImeAttach = false;
+                                      if (_focusNode.hasPrimaryFocus) {
+                                        _attachIme();
+                                      }
+                                    },
                               child: Semantics(
                                 textField: true,
                                 multiline: true,
