@@ -182,5 +182,8 @@
   "bookDescriptionLabel": "简介",
   "bookDescriptionHint": "简要说明这本书",
   "bookStatsMeta": "{volumes}卷 {chapters}章",
-  "chapterMeta": "创建于{created} - 修改于{modified} - {wordCount}字"
+  "chapterMeta": "创建于{created} - 修改于{modified} - {wordCount}字",
+  "themeSlotLight": "亮色",
+  "themeSlotDark": "暗色",
+  "themePresetsSubtitle": "点按展开，分别为亮色与暗色模式指定主题"
 }

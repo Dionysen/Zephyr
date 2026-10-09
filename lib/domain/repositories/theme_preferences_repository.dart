@@ -1,9 +1,24 @@
+import '../models/app_theme_mode.dart';
 import '../models/theme_tokens.dart';
 import '../models/ui_preferences.dart';
 
-/// Persists the user-owned appearance tokens independently of a library.
+/// Persisted light/dark theme packs plus chrome UI preferences.
+class ThemeAppearance {
+  const ThemeAppearance({
+    required this.mode,
+    required this.lightTokens,
+    required this.darkTokens,
+    required this.ui,
+  });
+
+  final AppThemeMode mode;
+  final ThemeTokens lightTokens;
+  final ThemeTokens darkTokens;
+  final UiPreferences ui;
+}
+
+/// Persists the user-owned appearance independently of a library.
 abstract interface class ThemePreferencesRepository {
-  Future<ThemeTokens> loadTokens();
-  Future<UiPreferences> loadUi();
-  Future<void> save({required ThemeTokens tokens, required UiPreferences ui});
+  Future<ThemeAppearance> load();
+  Future<void> save(ThemeAppearance appearance);
 }

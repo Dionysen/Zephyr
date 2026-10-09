@@ -611,4 +611,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String chapterMeta(String created, String modified, int wordCount) {
     return 'Created $created · Edited $modified · $wordCount words';
   }
+
+  @override
+  String get themeSlotLight => 'Light';
+
+  @override
+  String get themeSlotDark => 'Dark';
+
+  @override
+  String get themePresetsSubtitle =>
+      'Tap to choose light and dark theme packs.';
 }

@@ -27,8 +27,6 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  var _editingTokens = false;
-
   @override
   void initState() {
     super.initState();
@@ -83,41 +81,14 @@ class _SettingsPageState extends State<SettingsPage> {
                             child: ZephyrTopSafeArea(
                               bottom: false,
                               child: ZephyrSettingsAppBar(
-                                title: _editingTokens
-                                    ? l10n.customColorsTitle
-                                    : l10n.settingsTitle,
-                                onBack: () {
-                                  if (_editingTokens) {
-                                    setState(() => _editingTokens = false);
-                                    return;
-                                  }
-                                  Navigator.of(context).maybePop();
-                                },
+                                title: l10n.settingsTitle,
+                                onBack: () =>
+                                    Navigator.of(context).maybePop(),
                               ),
                             ),
                           ),
                           Expanded(
-                            child: _editingTokens
-                                ? Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                      16,
-                                      12,
-                                      16,
-                                      24,
-                                    ),
-                                    child: ThemeTokenEditor(
-                                      viewModel: scope.theme,
-                                      showBackButton: false,
-                                      onBack: () => setState(
-                                        () => _editingTokens = false,
-                                      ),
-                                    ),
-                                  )
-                                : _CompactSettingsList(
-                                    scope: scope,
-                                    onCustomizeTheme: () =>
-                                        setState(() => _editingTokens = true),
-                                  ),
+                            child: _CompactSettingsList(scope: scope),
                           ),
                         ],
                       ),
@@ -207,7 +178,6 @@ class _SettingsPageState extends State<SettingsPage> {
   );
 
   void _select(SettingsSection section) {
-    setState(() => _editingTokens = false);
     final scope = ZephyrScope.of(context);
     scope.settings.select(section);
     switch (section) {
@@ -225,13 +195,8 @@ class _SettingsPageState extends State<SettingsPage> {
         SettingsSection.general => GeneralSettingsView(
           viewModel: scope.theme,
         ),
-        SettingsSection.theme when _editingTokens => ThemeTokenEditor(
-          viewModel: scope.theme,
-          onBack: () => setState(() => _editingTokens = false),
-        ),
         SettingsSection.theme => ThemeCatalog(
           viewModel: scope.theme,
-          onCustomize: () => setState(() => _editingTokens = true),
         ),
         SettingsSection.editor => EditorSettingsView(
           viewModel: scope.editorPreferences,
@@ -248,13 +213,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
 /// Single scroll of every settings category; icons/titles act as dividers.
 class _CompactSettingsList extends StatelessWidget {
-  const _CompactSettingsList({
-    required this.scope,
-    required this.onCustomizeTheme,
-  });
+  const _CompactSettingsList({required this.scope});
 
   final ZephyrScope scope;
-  final VoidCallback onCustomizeTheme;
 
   @override
   Widget build(BuildContext context) {
@@ -275,7 +236,6 @@ class _CompactSettingsList extends StatelessWidget {
             SettingsSection.theme => ThemeCatalog(
               viewModel: scope.theme,
               compact: true,
-              onCustomize: onCustomizeTheme,
             ),
             SettingsSection.editor => EditorSettingsView(
               viewModel: scope.editorPreferences,

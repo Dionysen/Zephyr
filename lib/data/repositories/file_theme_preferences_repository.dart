@@ -1,3 +1,4 @@
+import '../../domain/models/app_theme_mode.dart';
 import '../../domain/models/theme_tokens.dart';
 import '../../domain/models/ui_preferences.dart';
 import '../../domain/repositories/theme_preferences_repository.dart';
@@ -9,34 +10,92 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
   final ThemeFileStorage _storage;
 
   @override
-  Future<ThemeTokens> loadTokens() async {
+  Future<ThemeAppearance> load() async {
     final values = await _storage.read();
-    if (values == null) return ThemeTokens.defaults;
-    return ThemeTokens(
-      editorSurface: _color(values, 'editorSurface'),
-      sidebarSurface: _color(values, 'sidebarSurface'),
-      controlSurface: _color(values, 'controlSurface'),
-      border: _color(values, 'border'),
-      divider: _color(
-        values,
-        'divider',
-        fallback: ThemeTokens.defaults.divider,
-      ),
-      primaryText: _color(values, 'primaryText'),
-      mutedText: _color(values, 'mutedText'),
-      accent: _color(values, 'accent'),
-      cursor: _color(
-        values,
-        'cursor',
-        fallback: ThemeTokens.defaults.cursor,
-      ),
+    if (values == null) {
+      return ThemeAppearance(
+        mode: AppThemeMode.system,
+        lightTokens: ThemeTokens.presets[ThemePreset.light]!,
+        darkTokens: ThemeTokens.defaults,
+        ui: UiPreferences.defaults,
+      );
+    }
+
+    final legacy = _readTokens(values, prefix: '');
+    final light = _readTokens(values, prefix: 'light') ??
+        (legacy != null && legacy.isLight
+            ? legacy
+            : ThemeTokens.presets[ThemePreset.light]!);
+    final dark = _readTokens(values, prefix: 'dark') ??
+        (legacy != null && !legacy.isLight ? legacy : ThemeTokens.defaults);
+
+    return ThemeAppearance(
+      mode: AppThemeMode.fromStorage(values['themeMode'] as String?),
+      lightTokens: light,
+      darkTokens: dark,
+      ui: _readUi(values),
     );
   }
 
   @override
-  Future<UiPreferences> loadUi() async {
-    final values = await _storage.read();
-    if (values == null) return UiPreferences.defaults;
+  Future<void> save(ThemeAppearance appearance) => _storage.write({
+    'themeMode': appearance.mode.storageValue,
+    ..._writeTokens(appearance.lightTokens, prefix: 'light'),
+    ..._writeTokens(appearance.darkTokens, prefix: 'dark'),
+    // Keep a resolved snapshot for older readers / debugging.
+    ..._writeTokens(
+      appearance.mode == AppThemeMode.dark
+          ? appearance.darkTokens
+          : appearance.lightTokens,
+      prefix: '',
+    ),
+    ..._writeUi(appearance.ui),
+  });
+
+  ThemeTokens? _readTokens(Map<String, Object?> values, {required String prefix}) {
+    String key(String name) => prefix.isEmpty ? name : '$prefix${_cap(name)}';
+    if (values[key('editorSurface')] == null) return null;
+    try {
+      return ThemeTokens(
+        editorSurface: _color(values, key('editorSurface')),
+        sidebarSurface: _color(values, key('sidebarSurface')),
+        controlSurface: _color(values, key('controlSurface')),
+        border: _color(values, key('border')),
+        divider: _color(
+          values,
+          key('divider'),
+          fallback: ThemeTokens.defaults.divider,
+        ),
+        primaryText: _color(values, key('primaryText')),
+        mutedText: _color(values, key('mutedText')),
+        accent: _color(values, key('accent')),
+        cursor: _color(
+          values,
+          key('cursor'),
+          fallback: ThemeTokens.defaults.cursor,
+        ),
+      );
+    } on Object {
+      return null;
+    }
+  }
+
+  Map<String, Object?> _writeTokens(ThemeTokens tokens, {required String prefix}) {
+    String key(String name) => prefix.isEmpty ? name : '$prefix${_cap(name)}';
+    return {
+      key('editorSurface'): tokens.editorSurface,
+      key('sidebarSurface'): tokens.sidebarSurface,
+      key('controlSurface'): tokens.controlSurface,
+      key('border'): tokens.border,
+      key('divider'): tokens.divider,
+      key('primaryText'): tokens.primaryText,
+      key('mutedText'): tokens.mutedText,
+      key('accent'): tokens.accent,
+      key('cursor'): tokens.cursor,
+    };
+  }
+
+  UiPreferences _readUi(Map<String, Object?> values) {
     final radius = _double(
       values,
       'uiCornerRadius',
@@ -99,20 +158,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     );
   }
 
-  @override
-  Future<void> save({
-    required ThemeTokens tokens,
-    required UiPreferences ui,
-  }) => _storage.write({
-    'editorSurface': tokens.editorSurface,
-    'sidebarSurface': tokens.sidebarSurface,
-    'controlSurface': tokens.controlSurface,
-    'border': tokens.border,
-    'divider': tokens.divider,
-    'primaryText': tokens.primaryText,
-    'mutedText': tokens.mutedText,
-    'accent': tokens.accent,
-    'cursor': tokens.cursor,
+  Map<String, Object?> _writeUi(UiPreferences ui) => {
     'uiFontFamily': ui.fontFamily,
     'uiFontPath': ui.fontPath,
     'uiFontSize': ui.fontSize,
@@ -124,7 +170,10 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'uiImmersiveStatusBar': ui.immersiveStatusBar,
     'uiHideStatusBarIcons': ui.hideStatusBarIcons,
     'uiLocale': ui.localePreference.storageValue,
-  });
+  };
+
+  String _cap(String name) =>
+      name.isEmpty ? name : '${name[0].toUpperCase()}${name.substring(1)}';
 
   int _color(Map<String, Object?> values, String key, {int? fallback}) {
     final value = values[key];
@@ -149,7 +198,6 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     return value;
   }
 
-  /// Prefers [uiImmersiveStatusBar]; migrates legacy [uiStatusBarMode] strings.
   bool _immersiveStatusBar(Map<String, Object?> values) {
     final modern = values['uiImmersiveStatusBar'];
     if (modern is bool) return modern;

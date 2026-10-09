@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zephyr/domain/models/app_theme_mode.dart';
 import 'package:zephyr/domain/models/editor_preferences.dart';
 import 'package:zephyr/domain/models/purewriter_models.dart';
 import 'package:zephyr/domain/models/settings_navigation.dart';
@@ -744,16 +745,15 @@ class _LibraryRepository implements WritingLibraryRepository {
 
 class _ThemeRepository implements ThemePreferencesRepository {
   @override
-  Future<ThemeTokens> loadTokens() async => ThemeTokens.defaults;
+  Future<ThemeAppearance> load() async => ThemeAppearance(
+    mode: AppThemeMode.system,
+    lightTokens: ThemeTokens.presets[ThemePreset.light]!,
+    darkTokens: ThemeTokens.defaults,
+    ui: UiPreferences.defaults,
+  );
 
   @override
-  Future<UiPreferences> loadUi() async => UiPreferences.defaults;
-
-  @override
-  Future<void> save({
-    required ThemeTokens tokens,
-    required UiPreferences ui,
-  }) async {}
+  Future<void> save(ThemeAppearance appearance) async {}
 }
 
 class _PreferencesRepository implements EditorPreferencesRepository {

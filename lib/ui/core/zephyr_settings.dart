@@ -1,6 +1,7 @@
 /// Reusable settings controls for desktop (inline) and mobile (list + dialogs).
 library;
 
+export 'settings/zephyr_color_picker.dart';
 export 'settings/zephyr_settings_adaptive_number.dart';
 export 'settings/zephyr_settings_app_bar.dart';
 export 'settings/zephyr_settings_category_header.dart';

@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 
+import '../../../../domain/models/app_theme_mode.dart';
 import '../../../../domain/models/editor_preferences.dart';
 import '../../../../domain/models/theme_tokens.dart';
 import '../../../../domain/models/ui_preferences.dart';
@@ -21,19 +23,39 @@ class ThemeViewModel extends ChangeNotifier {
   final ThemePreferencesRepository _repository;
   final FontLibrary? _fonts;
   final Future<void> Function()? _onPersisted;
-  ThemeTokens _tokens = ThemeTokens.defaults;
+  ThemeTokens _lightTokens = ThemeTokens.presets[ThemePreset.light]!;
+  ThemeTokens _darkTokens = ThemeTokens.defaults;
+  AppThemeMode _mode = AppThemeMode.system;
+  Brightness _platformBrightness = Brightness.light;
   UiPreferences _ui = UiPreferences.defaults;
   Timer? _pendingSave;
 
-  ThemeTokens get tokens => _tokens;
+  ThemeTokens get lightTokens => _lightTokens;
+  ThemeTokens get darkTokens => _darkTokens;
+  AppThemeMode get themeMode => _mode;
+
+  /// Tokens for the currently effective brightness (mode + platform).
+  ThemeTokens get tokens => _useDark ? _darkTokens : _lightTokens;
+
   UiPreferences get ui => _ui;
   List<SystemFont> get systemFonts => _fonts?.fonts ?? const [];
   bool get isLoadingSystemFonts => _fonts?.isLoading ?? false;
 
+  bool get _useDark => switch (_mode) {
+    AppThemeMode.dark => true,
+    AppThemeMode.light => false,
+    AppThemeMode.system => _platformBrightness == Brightness.dark,
+  };
+
+  bool get isEffectivelyDark => _useDark;
+
   Future<void> load({bool loadSavedFont = true}) async {
     try {
-      _tokens = await _repository.loadTokens();
-      _ui = await _repository.loadUi();
+      final appearance = await _repository.load();
+      _mode = appearance.mode;
+      _lightTokens = appearance.lightTokens;
+      _darkTokens = appearance.darkTokens;
+      _ui = appearance.ui;
       if (loadSavedFont) await _loadSavedFont();
       notifyListeners();
     } on Object {
@@ -41,7 +63,17 @@ class ThemeViewModel extends ChangeNotifier {
     }
   }
 
-  /// Discovers fonts only when the appearance settings page needs them.
+  /// Keep system theme mode in sync with the device appearance.
+  void syncPlatformBrightness(Brightness brightness) {
+    if (_platformBrightness == brightness) return;
+    _platformBrightness = brightness;
+    if (_mode != AppThemeMode.system) return;
+    // Avoid notifyListeners during MaterialApp.builder.
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (hasListeners) notifyListeners();
+    });
+  }
+
   Future<void> loadSystemFonts() async {
     final fonts = _fonts;
     if (fonts == null) {
@@ -51,20 +83,37 @@ class ThemeViewModel extends ChangeNotifier {
   }
 
   void update(ThemeToken token, int value) {
-    _tokens = _tokens.withValue(token, value);
+    if (_useDark) {
+      _darkTokens = _darkTokens.withValue(token, value);
+    } else {
+      _lightTokens = _lightTokens.withValue(token, value);
+    }
     _scheduleSave();
     notifyListeners();
   }
 
+  /// Applies [preset] to the light or dark slot based on the preset family.
   void applyPreset(ThemePreset preset) {
-    _tokens = ThemeTokens.presets[preset]!;
+    final pack = ThemeTokens.presets[preset]!;
+    if (preset.isLightFamily) {
+      _lightTokens = pack;
+    } else {
+      _darkTokens = pack;
+    }
+    _scheduleSave();
+    notifyListeners();
+  }
+
+  void setThemeMode(AppThemeMode mode) {
+    if (_mode == mode) return;
+    _mode = mode;
     _scheduleSave();
     notifyListeners();
   }
 
   void restoreDefaults() {
-    _tokens = ThemeTokens.defaults;
-    // Keep language; theme restore should not force the UI locale.
+    _lightTokens = ThemeTokens.presets[ThemePreset.light]!;
+    _darkTokens = ThemeTokens.defaults;
     _ui = UiPreferences.defaults.copyWith(
       localePreference: _ui.localePreference,
     );
@@ -85,7 +134,6 @@ class ThemeViewModel extends ChangeNotifier {
     }
   }
 
-  /// Imports a font file into the app directory, then selects it for UI chrome.
   Future<bool> importUiFontFromPath(String sourcePath) async {
     final fonts = _fonts;
     if (fonts == null) return false;
@@ -97,7 +145,6 @@ class ThemeViewModel extends ChangeNotifier {
     return _ui.fontPath == imported.path;
   }
 
-  /// Removes an app-imported font and clears UI selection if it was in use.
   Future<bool> deleteImportedFont(SystemFont font) async {
     final fonts = _fonts;
     if (fonts == null) return false;
@@ -176,13 +223,20 @@ class ThemeViewModel extends ChangeNotifier {
   void _scheduleSave() {
     _pendingSave?.cancel();
     _pendingSave = Timer(const Duration(milliseconds: 250), () {
-      unawaited(_save(_tokens, _ui));
+      unawaited(_save());
     });
   }
 
-  Future<void> _save(ThemeTokens tokens, UiPreferences ui) async {
+  Future<void> _save() async {
     try {
-      await _repository.save(tokens: tokens, ui: ui);
+      await _repository.save(
+        ThemeAppearance(
+          mode: _mode,
+          lightTokens: _lightTokens,
+          darkTokens: _darkTokens,
+          ui: _ui,
+        ),
+      );
       await _onPersisted?.call();
     } on Object {
       // Appearance must never prevent opening a user's writing library.

@@ -3,12 +3,14 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/data/repositories/file_theme_preferences_repository.dart';
 import 'package:zephyr/data/services/theme_file_storage.dart';
+import 'package:zephyr/domain/models/app_theme_mode.dart';
 import 'package:zephyr/domain/models/theme_tokens.dart';
 import 'package:zephyr/domain/models/ui_preferences.dart';
+import 'package:zephyr/domain/repositories/theme_preferences_repository.dart';
 
 void main() {
   test(
-    'round-trips every theme token and ui preference through storage',
+    'round-trips light/dark packs, mode, and ui preferences',
     () async {
       final directory = await Directory.systemTemp.createTemp(
         'zephyr-theme-test-',
@@ -17,49 +19,60 @@ void main() {
       final repository = FileThemePreferencesRepository(
         ThemeFileStorage(directoryProvider: () async => directory),
       );
-      const expectedTokens = ThemeTokens(
-        editorSurface: 0xFF010203,
-        sidebarSurface: 0xFF040506,
-        controlSurface: 0xFF070809,
-        border: 0xFF101112,
-        divider: 0xFF0A0B0C,
-        primaryText: 0xFFEEF0F2,
-        mutedText: 0xFF818283,
-        accent: 0xFFAABBCC,
-        cursor: 0xFFFFFFFF,
-      );
-      const expectedUi = UiPreferences(
-        fontFamily: 'Inter',
-        fontPath: r'C:\Fonts\Inter.ttf',
-        fontSize: 12,
-        cornerRadius: 10,
-        barCornerRadius: 14,
-        showBorders: false,
-        sidebarItemInset: 12,
-        sidebarVolumeGap: 4,
-        immersiveStatusBar: true,
-        hideStatusBarIcons: false,
-        localePreference: AppLocalePreference.system,
+      final expected = ThemeAppearance(
+        mode: AppThemeMode.dark,
+        lightTokens: const ThemeTokens(
+          editorSurface: 0xFF010203,
+          sidebarSurface: 0xFF040506,
+          controlSurface: 0xFF070809,
+          border: 0xFF101112,
+          divider: 0xFF0A0B0C,
+          primaryText: 0xFFEEF0F2,
+          mutedText: 0xFF818283,
+          accent: 0xFFAABBCC,
+          cursor: 0xFFFFFFFF,
+        ),
+        darkTokens: ThemeTokens.presets[ThemePreset.ocean]!,
+        ui: const UiPreferences(
+          fontFamily: 'Inter',
+          fontPath: r'C:\Fonts\Inter.ttf',
+          fontSize: 12,
+          cornerRadius: 10,
+          barCornerRadius: 14,
+          showBorders: false,
+          sidebarItemInset: 12,
+          sidebarVolumeGap: 4,
+          immersiveStatusBar: true,
+          hideStatusBarIcons: false,
+          localePreference: AppLocalePreference.system,
+        ),
       );
 
-      await repository.save(tokens: expectedTokens, ui: expectedUi);
-      final actualTokens = await repository.loadTokens();
-      final actualUi = await repository.loadUi();
+      await repository.save(expected);
+      final actual = await repository.load();
 
+      expect(actual.mode, expected.mode);
       for (final token in ThemeToken.values) {
-        expect(actualTokens.valueOf(token), expectedTokens.valueOf(token));
+        expect(
+          actual.lightTokens.valueOf(token),
+          expected.lightTokens.valueOf(token),
+        );
+        expect(
+          actual.darkTokens.valueOf(token),
+          expected.darkTokens.valueOf(token),
+        );
       }
-      expect(actualUi.fontFamily, expectedUi.fontFamily);
-      expect(actualUi.fontPath, expectedUi.fontPath);
-      expect(actualUi.fontSize, expectedUi.fontSize);
-      expect(actualUi.cornerRadius, expectedUi.cornerRadius);
-      expect(actualUi.barCornerRadius, expectedUi.barCornerRadius);
-      expect(actualUi.showBorders, expectedUi.showBorders);
-      expect(actualUi.sidebarItemInset, expectedUi.sidebarItemInset);
-      expect(actualUi.sidebarVolumeGap, expectedUi.sidebarVolumeGap);
-      expect(actualUi.immersiveStatusBar, expectedUi.immersiveStatusBar);
-      expect(actualUi.hideStatusBarIcons, expectedUi.hideStatusBarIcons);
-      expect(actualUi.localePreference, expectedUi.localePreference);
+      expect(actual.ui.fontFamily, expected.ui.fontFamily);
+      expect(actual.ui.fontPath, expected.ui.fontPath);
+      expect(actual.ui.fontSize, expected.ui.fontSize);
+      expect(actual.ui.cornerRadius, expected.ui.cornerRadius);
+      expect(actual.ui.barCornerRadius, expected.ui.barCornerRadius);
+      expect(actual.ui.showBorders, expected.ui.showBorders);
+      expect(actual.ui.sidebarItemInset, expected.ui.sidebarItemInset);
+      expect(actual.ui.sidebarVolumeGap, expected.ui.sidebarVolumeGap);
+      expect(actual.ui.immersiveStatusBar, expected.ui.immersiveStatusBar);
+      expect(actual.ui.hideStatusBarIcons, expected.ui.hideStatusBarIcons);
+      expect(actual.ui.localePreference, expected.ui.localePreference);
     },
   );
 
@@ -80,22 +93,34 @@ void main() {
     });
     final repository = FileThemePreferencesRepository(storage);
 
-    final ui = await repository.loadUi();
-    final tokens = await repository.loadTokens();
+    final appearance = await repository.load();
 
-    expect(ui.fontSize, UiPreferences.defaults.fontSize);
-    expect(ui.cornerRadius, UiPreferences.defaults.cornerRadius);
-    expect(ui.barCornerRadius, UiPreferences.defaults.barCornerRadius);
-    expect(ui.showBorders, UiPreferences.defaults.showBorders);
-    expect(ui.sidebarItemInset, UiPreferences.defaults.sidebarItemInset);
-    expect(ui.sidebarVolumeGap, UiPreferences.defaults.sidebarVolumeGap);
-    expect(ui.immersiveStatusBar, UiPreferences.defaults.immersiveStatusBar);
-    expect(ui.hideStatusBarIcons, UiPreferences.defaults.hideStatusBarIcons);
-    expect(ui.localePreference, UiPreferences.defaults.localePreference);
-    expect(ui.fontFamily, isNull);
-    expect(ui.fontPath, isNull);
-    expect(tokens.cursor, ThemeTokens.defaults.cursor);
-    expect(tokens.divider, ThemeTokens.defaults.divider);
+    expect(appearance.ui.fontSize, UiPreferences.defaults.fontSize);
+    expect(appearance.ui.cornerRadius, UiPreferences.defaults.cornerRadius);
+    expect(appearance.ui.barCornerRadius, UiPreferences.defaults.barCornerRadius);
+    expect(appearance.ui.showBorders, UiPreferences.defaults.showBorders);
+    expect(
+      appearance.ui.sidebarItemInset,
+      UiPreferences.defaults.sidebarItemInset,
+    );
+    expect(
+      appearance.ui.sidebarVolumeGap,
+      UiPreferences.defaults.sidebarVolumeGap,
+    );
+    expect(
+      appearance.ui.immersiveStatusBar,
+      UiPreferences.defaults.immersiveStatusBar,
+    );
+    expect(
+      appearance.ui.hideStatusBarIcons,
+      UiPreferences.defaults.hideStatusBarIcons,
+    );
+    expect(appearance.ui.localePreference, UiPreferences.defaults.localePreference);
+    expect(appearance.ui.fontFamily, isNull);
+    expect(appearance.ui.fontPath, isNull);
+    expect(appearance.darkTokens.cursor, ThemeTokens.defaults.cursor);
+    expect(appearance.darkTokens.divider, ThemeTokens.defaults.divider);
+    expect(appearance.mode, AppThemeMode.system);
   });
 
   test('legacy uiStatusBarMode immersive migrates to immersiveStatusBar', () async {
@@ -114,7 +139,7 @@ void main() {
       'accent': ThemeTokens.defaults.accent,
       'uiStatusBarMode': 'immersive',
     });
-    final ui = await FileThemePreferencesRepository(storage).loadUi();
-    expect(ui.immersiveStatusBar, isTrue);
+    final appearance = await FileThemePreferencesRepository(storage).load();
+    expect(appearance.ui.immersiveStatusBar, isTrue);
   });
 }

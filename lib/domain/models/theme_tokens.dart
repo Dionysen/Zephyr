@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 /// Semantic color roles used by the writing shell.
 ///
 /// Values are opaque ARGB integers so this model stays independent from
@@ -23,7 +25,13 @@ enum ThemePreset {
   purple,
   hermes,
   ocean,
-  darkModern,
+  darkModern;
+
+  /// Whether this preset belongs in the light or dark theme slot.
+  bool get isLightFamily => switch (this) {
+    ThemePreset.ocean || ThemePreset.darkModern => false,
+    _ => true,
+  };
 }
 
 class ThemeTokens {
@@ -159,6 +167,22 @@ class ThemeTokens {
   ThemePreset? get preset => ThemePreset.values
       .where((candidate) => presets[candidate] == this)
       .firstOrNull;
+
+  /// Relative luminance of [editorSurface] in 0…1 (sRGB).
+  double get surfaceLuminance {
+    final c = editorSurface & 0xFFFFFF;
+    double linearize(int value) {
+      final v = value / 255.0;
+      return v <= 0.04045 ? v / 12.92 : math.pow((v + 0.055) / 1.055, 2.4).toDouble();
+    }
+
+    final r = linearize((c >> 16) & 0xFF);
+    final g = linearize((c >> 8) & 0xFF);
+    final b = linearize(c & 0xFF);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  }
+
+  bool get isLight => surfaceLuminance > 0.5;
 
   int valueOf(ThemeToken token) => switch (token) {
     ThemeToken.editorSurface => editorSurface,

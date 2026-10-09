@@ -254,5 +254,8 @@
         "type": "int"
       }
     }
-  }
+  },
+  "themeSlotLight": "Light",
+  "themeSlotDark": "Dark",
+  "themePresetsSubtitle": "Tap to choose light and dark theme packs."
 }

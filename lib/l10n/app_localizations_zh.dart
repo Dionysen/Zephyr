@@ -577,4 +577,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String chapterMeta(String created, String modified, int wordCount) {
     return '创建于$created - 修改于$modified - $wordCount字';
   }
+
+  @override
+  String get themeSlotLight => '亮色';
+
+  @override
+  String get themeSlotDark => '暗色';
+
+  @override
+  String get themePresetsSubtitle => '点按展开，分别为亮色与暗色模式指定主题';
 }

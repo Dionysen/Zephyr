@@ -92,6 +92,12 @@ class ZephyrApp extends StatelessWidget {
         locale: _localeFor(theme.ui.localePreference),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) {
+          theme.syncPlatformBrightness(
+            MediaQuery.platformBrightnessOf(context),
+          );
+          return child ?? const SizedBox.shrink();
+        },
         home: DesktopWindowBackdrop(
           color: Color(theme.tokens.editorSurface),
           child: const WorkspacePage(),

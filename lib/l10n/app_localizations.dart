@@ -1195,6 +1195,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Created {created} · Edited {modified} · {wordCount} words'**
   String chapterMeta(String created, String modified, int wordCount);
+
+  /// No description provided for @themeSlotLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeSlotLight;
+
+  /// No description provided for @themeSlotDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeSlotDark;
+
+  /// No description provided for @themePresetsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to choose light and dark theme packs.'**
+  String get themePresetsSubtitle;
 }
 
 class _AppLocalizationsDelegate
