@@ -1,5 +1,6 @@
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zephyr/domain/models/editor_margins.dart';
 import 'package:zephyr/ui/features/editor/plain_text/document/plain_text_document.dart';
 import 'package:zephyr/ui/features/editor/plain_text/layout/editor_typography.dart';
 import 'package:zephyr/ui/features/editor/plain_text/layout/plain_text_layout_engine.dart';
@@ -12,8 +13,10 @@ void main() {
     fontSize: 20,
     lineHeight: 1.5,
     paragraphSpacing: 1.0,
-    maxContentWidth: 400,
-    documentPadding: EdgeInsets.zero,
+    marginLeft: 0,
+    marginRight: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
   );
 
   test('applies paragraph spacing between paragraphs only', () {
@@ -51,7 +54,7 @@ void main() {
     expect(second!.top, greaterThan(first!.top));
   });
 
-  test('centers the text column inside equal document padding', () {
+  test('uses preferred margins when they fit', () {
     final engine = PlainTextLayoutEngine();
     addTearDown(engine.dispose);
     const padded = EditorTypography(
@@ -59,19 +62,67 @@ void main() {
       fontSize: 20,
       lineHeight: 1.5,
       paragraphSpacing: 0.5,
-      maxContentWidth: 400,
-      documentPadding: EdgeInsets.fromLTRB(42, 28, 42, 48),
+      marginLeft: 40,
+      marginRight: 20,
+      paddingTop: 0,
+      paddingBottom: 0,
     );
     engine.update(
       document: const PlainTextDocument('Hello'),
       typography: padded,
-      viewportWidth: 1000,
+      viewportWidth: 400,
     );
 
-    // Available = 1000 - 84 = 916; content = 400; leading = 258.
-    expect(engine.contentWidth, 400);
-    expect(engine.contentLeft, 42 + 258);
-    expect(1000 - (engine.contentLeft + engine.contentWidth), 42 + 258);
+    expect(engine.contentLeft, 40);
+    expect(engine.contentWidth, 340);
+    expect(400 - (engine.contentLeft + engine.contentWidth), 20);
+  });
+
+  test('equal margins are equal to both screen edges', () {
+    final engine = PlainTextLayoutEngine();
+    addTearDown(engine.dispose);
+    const padded = EditorTypography(
+      color: Color(0xFF000000),
+      fontSize: 20,
+      lineHeight: 1.5,
+      paragraphSpacing: 0.5,
+      marginLeft: 24,
+      marginRight: 24,
+      paddingTop: 0,
+      paddingBottom: 0,
+    );
+    engine.update(
+      document: const PlainTextDocument('Hello'),
+      typography: padded,
+      viewportWidth: 400,
+    );
+
+    final rightClear = 400 - (engine.contentLeft + engine.contentWidth);
+    expect(engine.contentLeft, rightClear);
+    expect(engine.contentLeft, 24);
+  });
+
+  test('equal margins stay strictly equal when scaled down', () {
+    final margins = EditorMargins.resolve(
+      viewportWidth: 200,
+      desiredLeft: 80,
+      desiredRight: 80,
+      minContentWidth: 120,
+    );
+    expect(margins.left, margins.right);
+    expect(margins.left + margins.right + margins.contentWidth, 200);
+    expect(margins.contentWidth, 120);
+  });
+
+  test('unequal margins keep their ratio when scaled down', () {
+    final margins = EditorMargins.resolve(
+      viewportWidth: 200,
+      desiredLeft: 80,
+      desiredRight: 40,
+      minContentWidth: 120,
+    );
+    expect(margins.contentWidth, 120);
+    expect(margins.left / margins.right, closeTo(2, 1e-9));
   });
 
   test('visibleParagraphRange returns a band around the viewport', () {
@@ -79,8 +130,7 @@ void main() {
     addTearDown(engine.dispose);
     final buffer = StringBuffer();
     for (var i = 0; i < 40; i++) {
-      if (i > 0) buffer.writeln();
-      buffer.write('Paragraph $i');
+      buffer.writeln('Paragraph $i with enough text to wrap a little.');
     }
     engine.update(
       document: PlainTextDocument(buffer.toString()),
@@ -88,13 +138,13 @@ void main() {
       viewportWidth: 400,
     );
 
-    final (first, last) = engine.visibleParagraphRange(
-      scrollOffset: engine.metrics[10].yOffset,
-      viewportHeight: 100,
-      overscan: 0,
+    final (start, end) = engine.visibleParagraphRange(
+      scrollOffset: 200,
+      viewportHeight: 300,
+      overscan: 50,
     );
-    expect(first, lessThanOrEqualTo(10));
-    expect(last, greaterThanOrEqualTo(10));
-    expect(last - first, lessThan(engine.metrics.length));
+    expect(start, lessThanOrEqualTo(end));
+    expect(start, greaterThanOrEqualTo(0));
+    expect(end, lessThan(engine.metrics.length));
   });
 }

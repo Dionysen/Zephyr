@@ -18,8 +18,10 @@ void main() {
         fontSize: 18,
         lineHeight: 1.5,
         paragraphSpacing: 0.5,
-        maxContentWidth: 400,
-        documentPadding: EdgeInsets.zero,
+        marginLeft: 0,
+        marginRight: 0,
+        paddingTop: 0,
+        paddingBottom: 0,
       ),
       viewportWidth: 400,
     );

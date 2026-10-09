@@ -22,7 +22,9 @@ class FileEditorPreferencesRepository implements EditorPreferencesRepository {
         fontSize,
       ),
       firstLineIndent: _int(values, 'firstLineIndent'),
-      maxContentWidth: _double(values, 'maxContentWidth'),
+      marginLeft: _optionalDouble(values, 'marginLeft') ?? defaults.marginLeft,
+      marginRight:
+          _optionalDouble(values, 'marginRight') ?? defaults.marginRight,
       titleFontSize: _optionalDouble(values, 'titleFontSize') ??
           defaults.titleFontSize,
       titleCentered:
@@ -46,7 +48,8 @@ class FileEditorPreferencesRepository implements EditorPreferencesRepository {
     'lineHeight': value.lineHeight,
     'paragraphSpacing': value.paragraphSpacing,
     'firstLineIndent': value.firstLineIndent,
-    'maxContentWidth': value.maxContentWidth,
+    'marginLeft': value.marginLeft,
+    'marginRight': value.marginRight,
     'titleFontSize': value.titleFontSize,
     'titleCentered': value.titleCentered,
   });

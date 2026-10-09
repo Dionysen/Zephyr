@@ -6,7 +6,8 @@ class EditorPreferences {
     required this.lineHeight,
     required this.paragraphSpacing,
     required this.firstLineIndent,
-    required this.maxContentWidth,
+    required this.marginLeft,
+    required this.marginRight,
     required this.titleFontSize,
     required this.titleCentered,
   });
@@ -18,13 +19,16 @@ class EditorPreferences {
     lineHeight: 1.75,
     paragraphSpacing: 0.5,
     firstLineIndent: 2,
-    maxContentWidth: 760,
+    marginLeft: 24,
+    marginRight: 24,
     titleFontSize: 25,
     titleCentered: true,
   );
 
   static const minTitleFontSize = 14.0;
   static const maxTitleFontSize = 48.0;
+  static const minMargin = 0.0;
+  static const maxMargin = 120.0;
 
   final String? fontFamily;
 
@@ -39,7 +43,13 @@ class EditorPreferences {
   /// Gap between paragraphs as a font-size multiplier (block padding).
   final double paragraphSpacing;
   final int firstLineIndent;
-  final double maxContentWidth;
+
+  /// Preferred left inset of the reading column (px). May shrink proportionally
+  /// with [marginRight] when the viewport is too narrow.
+  final double marginLeft;
+
+  /// Preferred right inset of the reading column (px).
+  final double marginRight;
 
   /// Chapter title block above the writing column.
   final double titleFontSize;
@@ -56,7 +66,8 @@ class EditorPreferences {
     double? lineHeight,
     double? paragraphSpacing,
     int? firstLineIndent,
-    double? maxContentWidth,
+    double? marginLeft,
+    double? marginRight,
     double? titleFontSize,
     bool? titleCentered,
   }) => EditorPreferences(
@@ -66,7 +77,8 @@ class EditorPreferences {
     lineHeight: lineHeight ?? this.lineHeight,
     paragraphSpacing: paragraphSpacing ?? this.paragraphSpacing,
     firstLineIndent: firstLineIndent ?? this.firstLineIndent,
-    maxContentWidth: maxContentWidth ?? this.maxContentWidth,
+    marginLeft: marginLeft ?? this.marginLeft,
+    marginRight: marginRight ?? this.marginRight,
     titleFontSize: titleFontSize ?? this.titleFontSize,
     titleCentered: titleCentered ?? this.titleCentered,
   );

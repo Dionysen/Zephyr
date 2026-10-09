@@ -1,8 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
+import '../../../../domain/models/editor_margins.dart';
 import '../../../../domain/models/editor_preferences.dart';
 import '../../../../domain/use_cases/paragraph_indentation.dart';
-import '../../../core/breakpoints.dart';
 import '../../editor/plain_text/input/plain_text_editing_controller.dart';
 import '../../editor/plain_text/layout/editor_typography.dart';
 import '../../editor/plain_text/zephyr_plain_text_editor.dart';
@@ -310,21 +312,8 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     }
   }
 
-  /// Compact layouts keep a 12px floor so “editor width” can widen to the
-  /// screen edge; desktop keeps the wider reading gutter.
-  static const _compactHorizontalPadding = 12.0;
-  static const _expandedHorizontalPadding = 42.0;
-
-  double _horizontalPadding(BuildContext context) {
-    final compact = ZephyrBreakpoints.isCompact(
-      MediaQuery.sizeOf(context).width,
-    );
-    return compact ? _compactHorizontalPadding : _expandedHorizontalPadding;
-  }
-
   EditorTypography _typography(BuildContext context, EditorPreferences prefs) {
     final color = Theme.of(context).colorScheme.onSurface;
-    final horizontal = _horizontalPadding(context);
     // Title block owns the top inset; body only needs a short gap below it.
     return EditorTypography(
       color: color,
@@ -332,23 +321,28 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
       fontFamily: prefs.fontFamily,
       lineHeight: prefs.lineHeight,
       paragraphSpacing: prefs.paragraphSpacing,
-      maxContentWidth: prefs.maxContentWidth,
+      marginLeft: prefs.marginLeft,
+      marginRight: prefs.marginRight,
       firstLineIndent: prefs.firstLineIndent,
-      documentPadding: EdgeInsets.fromLTRB(horizontal, 12, horizontal, 48),
+      paddingTop: 12,
+      paddingBottom: 48,
     );
   }
 
   Widget _titleHeader(BuildContext context, EditorPreferences prefs) {
     final theme = Theme.of(context);
-    final horizontal = _horizontalPadding(context);
     final top = 20 + widget.contentTopInset;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(horizontal, top, horizontal, 0),
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: prefs.maxContentWidth),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final margins = EditorMargins.resolve(
+          viewportWidth: constraints.maxWidth,
+          desiredLeft: prefs.marginLeft,
+          desiredRight: prefs.marginRight,
+          minContentWidth: math.max(120.0, prefs.fontSize * 8),
+        );
+        return Padding(
+          padding: EdgeInsets.fromLTRB(margins.left, top, margins.right, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -394,8 +388,8 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
               const SizedBox(height: 4),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

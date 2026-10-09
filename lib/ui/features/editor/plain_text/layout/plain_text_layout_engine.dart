@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart' show TextSelection;
 
+import '../../../../../domain/models/editor_margins.dart';
 import '../document/plain_text_document.dart';
 import 'editor_typography.dart';
 import 'paragraph_layout_cache.dart';
@@ -21,12 +22,14 @@ class PlainTextLayoutEngine {
     fontSize: 18,
     lineHeight: 1.75,
     paragraphSpacing: 0.5,
-    maxContentWidth: 760,
+    marginLeft: 24,
+    marginRight: 24,
   );
   double _viewportWidth = 760;
 
   List<ParagraphMetrics> _metrics = const [];
   double _contentWidth = 0;
+  double _contentLeft = 0;
   double _totalHeight = 0;
   List<int> _paragraphStarts = const [];
 
@@ -36,19 +39,15 @@ class PlainTextLayoutEngine {
   double get contentWidth => _contentWidth;
   List<ParagraphMetrics> get metrics => _metrics;
 
-  /// Left edge of the text column inside the viewport.
-  ///
-  /// Centers [contentWidth] within the area inside [documentPadding]; do not
-  /// also bake the centering inset into [EditorTypography.documentPadding].
-  double get contentLeft {
-    final pad = _typography.documentPadding;
-    final available = math.max(
-      0.0,
-      _viewportWidth - pad.horizontal,
-    );
-    final leading = ((available - _contentWidth) / 2).clamp(0.0, double.infinity);
-    return pad.left + leading;
-  }
+  /// Left edge of the text column inside the viewport (resolved margin).
+  double get contentLeft => _contentLeft;
+
+  EditorMargins _resolveMargins() => EditorMargins.resolve(
+    viewportWidth: _viewportWidth,
+    desiredLeft: _typography.marginLeft,
+    desiredRight: _typography.marginRight,
+    minContentWidth: math.max(120.0, _typography.fontSize * 8),
+  );
 
   void dispose() {
     _metrics = const [];
@@ -74,18 +73,13 @@ class PlainTextLayoutEngine {
   void _relayoutAll() {
     final paras = _document.paragraphs;
     _paragraphStarts = _document.paragraphStarts();
-    final maxTextWidth = math.max(
-      1.0,
-      math.min(
-        _typography.maxContentWidth,
-        _viewportWidth -
-            _typography.documentPadding.horizontal,
-      ),
-    );
+    final margins = _resolveMargins();
+    _contentLeft = margins.left;
+    final maxTextWidth = math.max(1.0, margins.contentWidth);
     _contentWidth = maxTextWidth;
 
     final next = <ParagraphMetrics>[];
-    var y = _typography.documentPadding.top;
+    var y = _typography.paddingTop;
     for (var i = 0; i < paras.length; i++) {
       final text = paras[i];
       final painter = _cache.painterFor(
@@ -111,7 +105,7 @@ class PlainTextLayoutEngine {
       );
       y += contentHeight + gap;
     }
-    y += _typography.documentPadding.bottom;
+    y += _typography.paddingBottom;
     _metrics = next;
     _totalHeight = y;
 

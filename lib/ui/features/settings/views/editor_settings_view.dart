@@ -150,20 +150,34 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
         ),
         ZephyrSettingsAdaptiveNumber(
           compact: compact,
-          title: compact ? '栏宽' : 'Editor width',
+          title: compact ? '左边距' : 'Left margin',
           description: compact
-              ? '阅读栏最大宽度；侧边距最小 12。'
-              : 'Maximum width of the reading column.',
-          value: preferences.maxContentWidth,
-          // Compact screens are often < 480px; a lower floor lets the control
-          // actually widen/narrow the column against the 12px gutter.
-          min: compact ? 240 : 480,
-          max: 1200,
-          defaultValue: defaults.maxContentWidth,
+              ? '正文左侧边距；空间不足时与右边距按比例缩小。'
+              : 'Left inset of the reading column. When space is tight, '
+                    'both margins shrink in proportion.',
+          value: preferences.marginLeft,
+          min: EditorPreferences.minMargin,
+          max: EditorPreferences.maxMargin,
+          defaultValue: defaults.marginLeft,
           suffix: 'px',
-          divisions: compact ? 96 : 72,
+          divisions: EditorPreferences.maxMargin.toInt(),
+          onChanged: viewModel.updateMarginLeft,
+        ),
+        ZephyrSettingsAdaptiveNumber(
+          compact: compact,
+          title: compact ? '右边距' : 'Right margin',
+          description: compact
+              ? '正文右侧边距；与左边距相等时始终严格对称。'
+              : 'Right inset of the reading column. Equal values stay '
+                    'strictly symmetric.',
+          value: preferences.marginRight,
+          min: EditorPreferences.minMargin,
+          max: EditorPreferences.maxMargin,
+          defaultValue: defaults.marginRight,
+          suffix: 'px',
+          divisions: EditorPreferences.maxMargin.toInt(),
           showDivider: false,
-          onChanged: viewModel.updateMaxContentWidth,
+          onChanged: viewModel.updateMarginRight,
         ),
       ];
 

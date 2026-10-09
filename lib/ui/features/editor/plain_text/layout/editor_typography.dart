@@ -7,10 +7,12 @@ class EditorTypography {
     required this.fontSize,
     required this.lineHeight,
     required this.paragraphSpacing,
-    required this.maxContentWidth,
+    required this.marginLeft,
+    required this.marginRight,
     this.fontFamily,
     this.firstLineIndent = 0,
-    this.documentPadding = const EdgeInsets.fromLTRB(42, 28, 42, 48),
+    this.paddingTop = 12,
+    this.paddingBottom = 48,
   });
 
   final Color color;
@@ -23,9 +25,14 @@ class EditorTypography {
   /// Gap after each paragraph (except the last), as a font-size multiplier.
   final double paragraphSpacing;
 
-  final double maxContentWidth;
+  /// Preferred left / right reading margins (px). Resolved against the
+  /// viewport in [PlainTextLayoutEngine].
+  final double marginLeft;
+  final double marginRight;
+
   final int firstLineIndent;
-  final EdgeInsets documentPadding;
+  final double paddingTop;
+  final double paddingBottom;
 
   double get paragraphGap => fontSize * paragraphSpacing;
 
@@ -50,18 +57,22 @@ class EditorTypography {
     bool clearFontFamily = false,
     double? lineHeight,
     double? paragraphSpacing,
-    double? maxContentWidth,
+    double? marginLeft,
+    double? marginRight,
     int? firstLineIndent,
-    EdgeInsets? documentPadding,
+    double? paddingTop,
+    double? paddingBottom,
   }) => EditorTypography(
     color: color ?? this.color,
     fontSize: fontSize ?? this.fontSize,
     fontFamily: clearFontFamily ? null : fontFamily ?? this.fontFamily,
     lineHeight: lineHeight ?? this.lineHeight,
     paragraphSpacing: paragraphSpacing ?? this.paragraphSpacing,
-    maxContentWidth: maxContentWidth ?? this.maxContentWidth,
+    marginLeft: marginLeft ?? this.marginLeft,
+    marginRight: marginRight ?? this.marginRight,
     firstLineIndent: firstLineIndent ?? this.firstLineIndent,
-    documentPadding: documentPadding ?? this.documentPadding,
+    paddingTop: paddingTop ?? this.paddingTop,
+    paddingBottom: paddingBottom ?? this.paddingBottom,
   );
 
   @override
@@ -72,9 +83,11 @@ class EditorTypography {
       fontFamily == other.fontFamily &&
       lineHeight == other.lineHeight &&
       paragraphSpacing == other.paragraphSpacing &&
-      maxContentWidth == other.maxContentWidth &&
+      marginLeft == other.marginLeft &&
+      marginRight == other.marginRight &&
       firstLineIndent == other.firstLineIndent &&
-      documentPadding == other.documentPadding;
+      paddingTop == other.paddingTop &&
+      paddingBottom == other.paddingBottom;
 
   @override
   int get hashCode => Object.hash(
@@ -83,8 +96,10 @@ class EditorTypography {
     fontFamily,
     lineHeight,
     paragraphSpacing,
-    maxContentWidth,
+    marginLeft,
+    marginRight,
     firstLineIndent,
-    documentPadding,
+    paddingTop,
+    paddingBottom,
   );
 }

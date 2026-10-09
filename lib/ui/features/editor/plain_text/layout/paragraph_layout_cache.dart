@@ -26,21 +26,24 @@ class ParagraphLayoutCache {
     final painter = TextPainter(
       text: TextSpan(text: text.isEmpty ? ' ' : text, style: typography.textStyle),
       textDirection: TextDirection.ltr,
-      textAlign: TextAlign.left,
+      // Flush wrapped lines to both column edges so equal side margins read as
+      // equal against the screen (last line stays start-aligned).
+      textAlign: TextAlign.justify,
       strutStyle: typography.strutStyle,
       textHeightBehavior: const TextHeightBehavior(
         applyHeightToFirstAscent: false,
         applyHeightToLastDescent: false,
       ),
-    )..layout(maxWidth: maxWidth);
+    )..layout(minWidth: maxWidth, maxWidth: maxWidth);
     // Empty paragraphs still need a line box; we laid out a space then measure
     // preferred height from strut.
     if (text.isEmpty) {
       final empty = TextPainter(
         text: TextSpan(text: '', style: typography.textStyle),
         textDirection: TextDirection.ltr,
+        textAlign: TextAlign.justify,
         strutStyle: typography.strutStyle,
-      )..layout(maxWidth: maxWidth);
+      )..layout(minWidth: maxWidth, maxWidth: maxWidth);
       painter.dispose();
       _painters[text] = empty;
       return empty;

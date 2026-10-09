@@ -80,8 +80,22 @@ class EditorPreferencesViewModel extends ChangeNotifier {
       _update(_preferences.copyWith(paragraphSpacing: value));
   void updateFirstLineIndent(int value) =>
       _update(_preferences.copyWith(firstLineIndent: value));
-  void updateMaxContentWidth(double value) =>
-      _update(_preferences.copyWith(maxContentWidth: value));
+  void updateMarginLeft(double value) => _update(
+    _preferences.copyWith(
+      marginLeft: value.clamp(
+        EditorPreferences.minMargin,
+        EditorPreferences.maxMargin,
+      ),
+    ),
+  );
+  void updateMarginRight(double value) => _update(
+    _preferences.copyWith(
+      marginRight: value.clamp(
+        EditorPreferences.minMargin,
+        EditorPreferences.maxMargin,
+      ),
+    ),
+  );
   void updateTitleFontSize(double value) => _update(
     _preferences.copyWith(
       titleFontSize: value.clamp(

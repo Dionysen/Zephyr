@@ -12,7 +12,7 @@ class ZephyrEditorScrollbar extends StatefulWidget {
     super.key,
     required this.controller,
     required this.child,
-    this.thumbExtent = 36,
+    this.thumbExtent = defaultThumbExtent,
     this.mainAxisMargin = 8,
     this.padding = EdgeInsets.zero,
   });
@@ -31,6 +31,9 @@ class ZephyrEditorScrollbar extends StatefulWidget {
 
   /// How much of the diameter protrudes into the document (rest is clipped).
   static const double visibleDiameterFraction = 2 / 3;
+
+  /// Default thumb diameter (keep in sync with [thumbExtent] default).
+  static const double defaultThumbExtent = 36;
 
   /// Visible width = [visibleDiameterFraction] of the diameter.
   double get thumbThickness => thumbExtent * visibleDiameterFraction;
