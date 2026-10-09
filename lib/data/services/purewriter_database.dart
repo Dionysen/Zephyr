@@ -415,5 +415,7 @@ const _schemaStatements = <String>[
   'CREATE TABLE Shortcut (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, title TEXT NOT NULL, content TEXT NOT NULL, cursorIndexStart INTEGER NOT NULL, cursorIndexEnd INTEGER NOT NULL, rank INTEGER NOT NULL, deletable INTEGER NOT NULL, folderId TEXT, updateTime INTEGER NOT NULL, rankUpdateTime INTEGER NOT NULL, deleted INTEGER NOT NULL, deletedTime INTEGER NOT NULL, lineId INTEGER NOT NULL DEFAULT 0)',
   'CREATE TABLE License (id TEXT NOT NULL, deviceId TEXT NOT NULL, PRIMARY KEY(id))',
   'CREATE TABLE UserMessage (id TEXT NOT NULL PRIMARY KEY, fromUserId TEXT NOT NULL, type TEXT NOT NULL, content BLOB NOT NULL, createdTime INTEGER NOT NULL, shownState INTEGER NOT NULL, extra TEXT, updateTime INTEGER NOT NULL, deleted INTEGER NOT NULL, deletedTime INTEGER NOT NULL)',
-  'CREATE TABLE android_metadata (locale TEXT)',
+  // Native Android/iOS sqflite already creates this table before onCreate;
+  // IF NOT EXISTS keeps desktop FFI and mobile create paths aligned.
+  'CREATE TABLE IF NOT EXISTS android_metadata (locale TEXT)',
 ];

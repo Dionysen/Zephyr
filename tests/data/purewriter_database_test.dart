@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:zephyr/data/repositories/purewriter_writing_library_repository.dart';
 import 'package:zephyr/data/services/purewriter_database.dart';
 
@@ -185,6 +186,36 @@ void main() {
       () => store.openLibrary(emptyRoot.path),
       throwsA(isA<ArgumentError>()),
     );
+  });
+
+  test('creates library over Room.db that only has android_metadata', () async {
+    // Android sqflite inserts android_metadata before onCreate. A failed
+    // schema create used to leave that stub; opening the folder again must
+    // still build a writable library when createIfMissing is true.
+    final root = await Directory.systemTemp.createTemp(
+      'zephyr-android-metadata-stub-',
+    );
+    addTearDown(() => root.delete(recursive: true));
+    final libraryRoot = await Directory(path.join(root.path, 'Lib')).create();
+    final app = await Directory(path.join(libraryRoot.path, 'App')).create();
+    final room = File(path.join(app.path, 'Room.db'));
+
+    sqfliteFfiInit();
+    final stub = await databaseFactoryFfi.openDatabase(room.path);
+    await stub.execute('CREATE TABLE android_metadata (locale TEXT)');
+    await stub.close();
+
+    final store = PureWriterDatabase(supportDirectory: () async => root);
+    addTearDown(store.close);
+    final location = await store.openLibrary(
+      libraryRoot.path,
+      createIfMissing: true,
+    );
+    expect(location.schema.writesAllowed, isTrue);
+    final tables = await store.database.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type = 'table'",
+    );
+    expect(tables.map((row) => row['name']), contains('Article'));
   });
 
   test('repairs a Zephyr library that only received a partial schema', () async {

@@ -1,0 +1,54 @@
+---
+description: Zephyr project map — PureWriter library, key paths, mobile chrome, known pitfalls
+alwaysApply: true
+---
+
+# Zephyr project map
+
+Zephyr is a Flutter local-first plain-text editor. The document library is a **PureWriter-compatible SQLite** `App/Room.db` (v27 Room fingerprint), not a folder of text files.
+
+## Architecture (where to look)
+
+| Concern | Path |
+| --- | --- |
+| App entry / startup library | `lib/main.dart`, `lib/data/services/startup_library.dart` |
+| Room.db open / schema / repair | `lib/data/services/purewriter_database.dart` |
+| `.pwb` backup restore | `lib/data/services/purewriter_backup.dart` |
+| Library CRUD | `lib/data/repositories/purewriter_writing_library_repository.dart` |
+| Domain models | `lib/domain/models/purewriter_models.dart` |
+| Library UI state | `lib/ui/features/editor/view_models/library_view_model.dart` |
+| Adaptive workspace shell | `lib/ui/features/workspace/views/workspace_page.dart` |
+| Sidebar + mobile top bar | `lib/ui/features/workspace/views/workspace_sidebar.dart` |
+| Editor + scroll padding | `lib/ui/features/workspace/views/workspace_editor.dart` |
+| Swipe drawer (IME dismiss) | `lib/ui/core/zephyr_swipe_drawer.dart` |
+| Shared control sizes / theme | `lib/ui/core/zephyr_controls.dart`, `lib/ui/core/zephyr_theme.dart` |
+
+## Startup & temporary library
+
+- Startup opens last chosen PureWriter folder; on failure falls back to **app-support temporary library** (`openDefaultLibrary`).
+- `LibraryViewModel.needsLibrarySetup` is true until a user-chosen path is remembered → setup banner /「临时书库」.
+- Never leave the UI blocked only by `StateError('No PureWriter library is open.')`; recover via default library or setup sheet.
+
+## Mobile compact chrome
+
+- Floating top bar: `WorkspaceMobileBookBar` in `workspace_sidebar.dart` (opaque surface, shadow, no border).
+- Layout: menu (48→40) · left-aligned book name button · `more_vert` overflow.
+- Book button → bottom sheet select/edit; More → `WorkspaceMobileTool` / `showWorkspaceMobileToolsSheet` (reserved API).
+- Scroll hide/show: `_MobileEditorChrome` in `workspace_page.dart` — slop threshold then **independent** show/hide animation (no scroll-linked drag, no overshoot).
+- Opening the swipe drawer dismisses the IME (`FocusManager.unfocus` in `zephyr_swipe_drawer.dart`).
+
+## Database pitfalls (Android)
+
+- Native **sqflite allows one SQL statement per `execute`**. Schema must be `_schemaStatements` + `batch`, not a multi-statement string (FFI desktop hid this bug).
+- Incomplete Zephyr DBs (fingerprint + missing `Article`) are repaired in `_ensureCompleteSchema`.
+- Existing PureWriter libraries open as-is (no `onUpgrade`); stub `Room.db` may restore from `Backups/*.pwb`.
+
+## Tests
+
+- DB: `tests/data/purewriter_database_test.dart`
+- Startup: `tests/data/startup_library_test.dart`
+- Workspace / mobile bar: `tests/ui/workspace_page_test.dart`, `tests/ui/library_view_model_test.dart`
+
+## Wireless debug note
+
+Wireless `adb` + Flutter VM Service port-forward is flaky (`127.0.0.1` connection refused). Prefer USB for hot reload; wireless is fine for smoke UI only.
