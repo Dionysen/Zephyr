@@ -73,9 +73,16 @@ class EditorPreferences {
 }
 
 class SystemFont {
-  const SystemFont({required this.family, required this.path});
+  const SystemFont({
+    required this.family,
+    required this.path,
+    this.imported = false,
+  });
   final String family;
   final String path;
+
+  /// True when the file lives in the app-owned fonts directory (can be deleted).
+  final bool imported;
 
   @override
   bool operator ==(Object other) => other is SystemFont && other.path == path;

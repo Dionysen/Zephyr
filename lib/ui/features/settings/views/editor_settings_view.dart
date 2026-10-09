@@ -41,14 +41,15 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
       final fontPicker = FontFilePickerRow(
         label: compact ? '字体' : 'Font',
         description: compact
-            ? '写作区正文字体；从文件导入会复制到应用目录。'
-            : 'Typeface used in the writing editor. Files are copied into '
-                  'the app so the original can be deleted.',
+            ? '写作区正文字体；导入后与 UI 字体共用应用字体库。'
+            : 'Typeface used in the writing editor. Imports are shared with '
+                  'the UI font library.',
         fonts: viewModel.systemFonts,
         selectedPath: preferences.fontPath,
         isLoading: viewModel.isLoadingSystemFonts,
         onSelected: viewModel.selectFont,
         onImportPath: viewModel.importFontFromPath,
+        onDeleteFont: viewModel.deleteImportedFont,
         compact: compact,
       );
 

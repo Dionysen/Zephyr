@@ -8,11 +8,13 @@ class ZephyrSettingsChoice<T> {
     required this.value,
     required this.label,
     this.subtitle,
+    this.deletable = false,
   });
 
   final T value;
   final String label;
   final String? subtitle;
+  final bool deletable;
 }
 
 /// Opens a modal list to pick one option.
@@ -26,6 +28,11 @@ Future<T?> showZephyrSettingsChoicePicker<T>(
   required T? selected,
   String? actionLabel,
   Future<void> Function()? onAction,
+  Future<bool> Function(T value)? onDelete,
+  String deleteConfirmTitle = 'Delete?',
+  String deleteConfirmBody = 'Remove this item?',
+  String deleteConfirmAction = 'Delete',
+  String deleteCancelAction = 'Cancel',
 }) {
   return showModalBottomSheet<T>(
     context: context,
@@ -37,62 +44,153 @@ Future<T?> showZephyrSettingsChoicePicker<T>(
       ),
     ),
     builder: (context) {
-      final theme = Theme.of(context);
-      final height = MediaQuery.sizeOf(context).height * 0.55;
-      return SafeArea(
-        child: SizedBox(
-          height: height,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-                child: Text(title, style: theme.textTheme.titleMedium),
-              ),
-              if (actionLabel != null && onAction != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: () async {
-                        Navigator.of(context).pop();
-                        await onAction();
-                      },
-                      icon: const Icon(Icons.folder_open, size: 18),
-                      label: Text(actionLabel),
-                    ),
-                  ),
-                ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: choices.length,
-                  itemBuilder: (context, index) {
-                    final choice = choices[index];
-                    final isSelected = choice.value == selected;
-                    return ListTile(
-                      title: Text(choice.label),
-                      subtitle: choice.subtitle == null
-                          ? null
-                          : Text(choice.subtitle!),
-                      trailing: isSelected
-                          ? Icon(
-                              Icons.check,
-                              color: theme.colorScheme.primary,
-                            )
-                          : null,
-                      selected: isSelected,
-                      onTap: () => Navigator.of(context).pop(choice.value),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
+      return _ZephyrSettingsChoiceSheet<T>(
+        title: title,
+        initialChoices: choices,
+        selected: selected,
+        actionLabel: actionLabel,
+        onAction: onAction,
+        onDelete: onDelete,
+        deleteConfirmTitle: deleteConfirmTitle,
+        deleteConfirmBody: deleteConfirmBody,
+        deleteConfirmAction: deleteConfirmAction,
+        deleteCancelAction: deleteCancelAction,
       );
     },
   );
+}
+
+class _ZephyrSettingsChoiceSheet<T> extends StatefulWidget {
+  const _ZephyrSettingsChoiceSheet({
+    required this.title,
+    required this.initialChoices,
+    required this.selected,
+    this.actionLabel,
+    this.onAction,
+    this.onDelete,
+    required this.deleteConfirmTitle,
+    required this.deleteConfirmBody,
+    required this.deleteConfirmAction,
+    required this.deleteCancelAction,
+  });
+
+  final String title;
+  final List<ZephyrSettingsChoice<T>> initialChoices;
+  final T? selected;
+  final String? actionLabel;
+  final Future<void> Function()? onAction;
+  final Future<bool> Function(T value)? onDelete;
+  final String deleteConfirmTitle;
+  final String deleteConfirmBody;
+  final String deleteConfirmAction;
+  final String deleteCancelAction;
+
+  @override
+  State<_ZephyrSettingsChoiceSheet<T>> createState() =>
+      _ZephyrSettingsChoiceSheetState<T>();
+}
+
+class _ZephyrSettingsChoiceSheetState<T>
+    extends State<_ZephyrSettingsChoiceSheet<T>> {
+  late List<ZephyrSettingsChoice<T>> _choices = List.of(widget.initialChoices);
+
+  Future<void> _delete(ZephyrSettingsChoice<T> choice) async {
+    final onDelete = widget.onDelete;
+    if (onDelete == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(widget.deleteConfirmTitle),
+        content: Text(widget.deleteConfirmBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(widget.deleteCancelAction),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(widget.deleteConfirmAction),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final ok = await onDelete(choice.value);
+    if (!mounted || !ok) return;
+    setState(() {
+      _choices = _choices.where((item) => item.value != choice.value).toList();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final height = MediaQuery.sizeOf(context).height * 0.55;
+    return SafeArea(
+      child: SizedBox(
+        height: height,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+              child: Text(widget.title, style: theme.textTheme.titleMedium),
+            ),
+            if (widget.actionLabel != null && widget.onAction != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () async {
+                      Navigator.of(context).pop();
+                      await widget.onAction!();
+                    },
+                    icon: const Icon(Icons.folder_open, size: 18),
+                    label: Text(widget.actionLabel!),
+                  ),
+                ),
+              ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _choices.length,
+                itemBuilder: (context, index) {
+                  final choice = _choices[index];
+                  final isSelected = choice.value == widget.selected;
+                  final showDelete =
+                      choice.deletable && widget.onDelete != null;
+                  return ListTile(
+                    title: Text(choice.label),
+                    subtitle: choice.subtitle == null
+                        ? null
+                        : Text(choice.subtitle!),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (isSelected)
+                          Icon(
+                            Icons.check,
+                            color: theme.colorScheme.primary,
+                          ),
+                        if (showDelete)
+                          IconButton(
+                            tooltip: widget.deleteConfirmAction,
+                            icon: const Icon(Icons.delete_outline, size: 20),
+                            onPressed: () => _delete(choice),
+                          ),
+                      ],
+                    ),
+                    selected: isSelected,
+                    onTap: () => Navigator.of(context).pop(choice.value),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// Value tile that opens [showZephyrSettingsChoicePicker].
@@ -107,6 +205,11 @@ class ZephyrSettingsChoiceTile<T> extends StatelessWidget {
     this.valueLabel,
     this.actionLabel,
     this.onAction,
+    this.onDelete,
+    this.deleteConfirmTitle = 'Delete?',
+    this.deleteConfirmBody = 'Remove this item?',
+    this.deleteConfirmAction = 'Delete',
+    this.deleteCancelAction = 'Cancel',
     this.showDivider = true,
     this.enabled = true,
   });
@@ -119,6 +222,11 @@ class ZephyrSettingsChoiceTile<T> extends StatelessWidget {
   final String? valueLabel;
   final String? actionLabel;
   final Future<void> Function()? onAction;
+  final Future<bool> Function(T value)? onDelete;
+  final String deleteConfirmTitle;
+  final String deleteConfirmBody;
+  final String deleteConfirmAction;
+  final String deleteCancelAction;
   final bool showDivider;
   final bool enabled;
 
@@ -148,6 +256,11 @@ class ZephyrSettingsChoiceTile<T> extends StatelessWidget {
                 selected: selected,
                 actionLabel: actionLabel,
                 onAction: onAction,
+                onDelete: onDelete,
+                deleteConfirmTitle: deleteConfirmTitle,
+                deleteConfirmBody: deleteConfirmBody,
+                deleteConfirmAction: deleteConfirmAction,
+                deleteCancelAction: deleteCancelAction,
               );
               if (next == null) return;
               onSelected(next);

@@ -25,6 +25,7 @@ import '../ui/core/zephyr_scope.dart';
 import '../ui/core/zephyr_theme.dart';
 import '../ui/features/editor/view_models/editor_preferences_view_model.dart';
 import '../ui/features/editor/view_models/library_view_model.dart';
+import '../ui/features/settings/view_models/font_library.dart';
 import '../ui/features/settings/view_models/settings_view_model.dart';
 import '../ui/features/settings/view_models/theme_view_model.dart';
 import '../ui/features/workspace/views/workspace_page.dart';
@@ -37,7 +38,7 @@ void runZephyr(
   final layout =
       layoutRepository ??
       FileWorkspaceLayoutRepository(WorkspaceLayoutFileStorage());
-  final fonts = FileSystemFontRepository();
+  final fonts = FontLibrary(FileSystemFontRepository());
   runApp(
     ZephyrApp(
       library: LibraryViewModel(
@@ -47,7 +48,7 @@ void runZephyr(
       ),
       theme: ThemeViewModel(
         FileThemePreferencesRepository(ThemeFileStorage()),
-        fontRepository: fonts,
+        fontLibrary: fonts,
       )..load(),
       editorPreferences: EditorPreferencesViewModel(
         FileEditorPreferencesRepository(EditorPreferencesFileStorage()),

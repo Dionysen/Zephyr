@@ -12,4 +12,8 @@ abstract interface class SystemFontRepository {
   /// Copies [sourcePath] into the app fonts directory and returns the durable
   /// font identity. The original file may be deleted afterwards.
   Future<SystemFont?> importFont(String sourcePath);
+
+  /// Deletes an app-imported font file. Returns false for system fonts or
+  /// paths outside the app fonts directory.
+  Future<bool> deleteImportedFont(SystemFont font);
 }

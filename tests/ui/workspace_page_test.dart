@@ -13,6 +13,7 @@ import 'package:zephyr/ui/core/zephyr_scope.dart';
 import 'package:zephyr/ui/core/zephyr_theme.dart';
 import 'package:zephyr/ui/features/editor/view_models/editor_preferences_view_model.dart';
 import 'package:zephyr/ui/features/editor/view_models/library_view_model.dart';
+import 'package:zephyr/ui/features/settings/view_models/font_library.dart';
 import 'package:zephyr/ui/features/settings/view_models/settings_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/theme_view_model.dart';
 import 'package:zephyr/ui/features/workspace/views/workspace_page.dart';
@@ -489,10 +490,11 @@ Widget _app({LibraryViewModel? library, bool needsLibrarySetup = false}) {
     _LibraryRepository(),
     needsLibrarySetup: needsLibrarySetup,
   );
-  final theme = ThemeViewModel(_ThemeRepository());
+  final fonts = FontLibrary(_FontRepository());
+  final theme = ThemeViewModel(_ThemeRepository(), fontLibrary: fonts);
   final editorPreferences = EditorPreferencesViewModel(
     _PreferencesRepository(),
-    _FontRepository(),
+    fonts,
   );
   final settings = SettingsViewModel(_SettingsRepository());
   return ZephyrScope(
@@ -780,4 +782,7 @@ class _FontRepository implements SystemFontRepository {
 
   @override
   Future<SystemFont?> importFont(String sourcePath) async => null;
+
+  @override
+  Future<bool> deleteImportedFont(SystemFont font) async => false;
 }

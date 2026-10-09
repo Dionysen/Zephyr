@@ -63,12 +63,13 @@ class ThemeCatalog extends StatelessWidget {
                 ),
                 FontFilePickerRow(
                   label: 'UI 字体',
-                  description: '用于界面与侧边栏的字体。',
+                  description: '用于界面与侧边栏的字体；导入后与正文字体共用应用字体库。',
                   fonts: viewModel.systemFonts,
                   selectedPath: viewModel.ui.fontPath,
                   isLoading: viewModel.isLoadingSystemFonts,
                   onSelected: viewModel.selectUiFont,
                   onImportPath: viewModel.importUiFontFromPath,
+                  onDeleteFont: viewModel.deleteImportedFont,
                   compact: true,
                 ),
                 ZephyrSettingsAdaptiveNumber(
@@ -204,13 +205,14 @@ class ThemeCatalog extends StatelessWidget {
           FontFilePickerRow(
             label: 'UI font',
             description:
-                'Typeface used by the writing shell chrome. Files are copied '
-                'into the app so the original can be deleted.',
+                'Typeface used by the writing shell chrome. Imports are '
+                'shared with the editor font library.',
             fonts: viewModel.systemFonts,
             selectedPath: viewModel.ui.fontPath,
             isLoading: viewModel.isLoadingSystemFonts,
             onSelected: viewModel.selectUiFont,
             onImportPath: viewModel.importUiFontFromPath,
+            onDeleteFont: viewModel.deleteImportedFont,
           ),
           ZephyrSettingsAdaptiveNumber(
             compact: false,

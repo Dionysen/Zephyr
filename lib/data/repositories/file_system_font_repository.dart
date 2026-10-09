@@ -123,7 +123,40 @@ class FileSystemFontRepository implements SystemFontRepository {
     return SystemFont(
       family: _displayName(sourcePath),
       path: dest.path,
+      imported: true,
     );
+  }
+
+  @override
+  Future<bool> deleteImportedFont(SystemFont font) async {
+    if (!font.imported || font.path.isEmpty) {
+      return false;
+    }
+    late final Directory root;
+    try {
+      root = await _importedFontsDirectory();
+    } on Object {
+      return false;
+    }
+    final rootPath = p.normalize(root.absolute.path);
+    final fontPath = p.normalize(File(font.path).absolute.path);
+    if (fontPath != rootPath && !p.isWithin(rootPath, fontPath)) {
+      return false;
+    }
+    final file = File(fontPath);
+    if (!await file.exists()) {
+      _loadedFamilies.remove(font.path);
+      _loadedFamilies.remove(fontPath);
+      return true;
+    }
+    try {
+      await file.delete();
+      _loadedFamilies.remove(font.path);
+      _loadedFamilies.remove(fontPath);
+      return true;
+    } on Object {
+      return false;
+    }
   }
 
   Future<List<SystemFont>> _listImportedFonts() async {
@@ -138,7 +171,11 @@ class FileSystemFontRepository implements SystemFontRepository {
           continue;
         }
         fonts.add(
-          SystemFont(family: _displayName(entity.path), path: entity.path),
+          SystemFont(
+            family: _displayName(entity.path),
+            path: entity.path,
+            imported: true,
+          ),
         );
       }
     } on Object {

@@ -4,25 +4,26 @@ import 'package:flutter/foundation.dart';
 
 import '../../../../domain/models/editor_preferences.dart';
 import '../../../../domain/repositories/editor_preferences_repository.dart';
+import '../../settings/view_models/font_library.dart';
 
 class EditorPreferencesViewModel extends ChangeNotifier {
   EditorPreferencesViewModel(
     this._preferencesRepository,
-    this._fontRepository, {
+    this._fontLibrary, {
     Future<void> Function()? onPersisted,
-  }) : _onPersisted = onPersisted == null ? null : (() => onPersisted());
+  }) : _onPersisted = onPersisted == null ? null : (() => onPersisted()) {
+    _fontLibrary.addListener(_onFontLibraryChanged);
+  }
 
   final EditorPreferencesRepository _preferencesRepository;
-  final SystemFontRepository _fontRepository;
+  final FontLibrary _fontLibrary;
   final Future<void> Function()? _onPersisted;
   EditorPreferences _preferences = EditorPreferences.defaults;
-  List<SystemFont> _systemFonts = const [];
-  bool _isLoadingSystemFonts = false;
   Timer? _pendingSave;
 
   EditorPreferences get preferences => _preferences;
-  List<SystemFont> get systemFonts => _systemFonts;
-  bool get isLoadingSystemFonts => _isLoadingSystemFonts;
+  List<SystemFont> get systemFonts => _fontLibrary.fonts;
+  bool get isLoadingSystemFonts => _fontLibrary.isLoading;
 
   Future<void> load({bool loadSavedFont = true}) async {
     try {
@@ -36,28 +37,14 @@ class EditorPreferencesViewModel extends ChangeNotifier {
 
   /// Discovers fonts only when the editor settings page needs to display them.
   /// Scanning system font directories during every window startup is costly.
-  Future<void> loadSystemFonts() async {
-    if (_isLoadingSystemFonts || _systemFonts.isNotEmpty) {
-      return;
-    }
-    _isLoadingSystemFonts = true;
-    notifyListeners();
-    try {
-      _systemFonts = await _fontRepository.listFonts();
-    } on Object {
-      // Keep the platform default font available if discovery fails.
-    } finally {
-      _isLoadingSystemFonts = false;
-      notifyListeners();
-    }
-  }
+  Future<void> loadSystemFonts() => _fontLibrary.ensureLoaded();
 
   Future<void> selectFont(SystemFont? font) async {
     if (font == null) {
       _update(_preferences.copyWith(clearFontFamily: true));
       return;
     }
-    final family = await _fontRepository.loadFont(font);
+    final family = await _fontLibrary.loadFont(font);
     if (family != null) {
       _update(_preferences.copyWith(fontFamily: family, fontPath: font.path));
     }
@@ -65,18 +52,24 @@ class EditorPreferencesViewModel extends ChangeNotifier {
 
   /// Imports a font file into the app directory, then selects it.
   Future<bool> importFontFromPath(String sourcePath) async {
-    final imported = await _fontRepository.importFont(sourcePath);
+    final imported = await _fontLibrary.importFont(sourcePath);
     if (imported == null) {
       return false;
     }
-    try {
-      _systemFonts = await _fontRepository.listFonts();
-    } on Object {
-      // Selection can still proceed with the imported path alone.
-    }
     await selectFont(imported);
-    notifyListeners();
     return _preferences.fontPath == imported.path;
+  }
+
+  /// Removes an app-imported font and clears selection if it was in use.
+  Future<bool> deleteImportedFont(SystemFont font) async {
+    final ok = await _fontLibrary.deleteImportedFont(font);
+    if (!ok) {
+      return false;
+    }
+    if (_preferences.fontPath == font.path) {
+      await selectFont(null);
+    }
+    return true;
   }
 
   void updateFontSize(double value) =>
@@ -123,7 +116,11 @@ class EditorPreferencesViewModel extends ChangeNotifier {
     if (path == null) {
       return;
     }
-    final family = await _fontRepository.loadFont(
+    if (await _fontLibrary.fontFileMissing(path)) {
+      _preferences = _preferences.copyWith(clearFontFamily: true);
+      return;
+    }
+    final family = await _fontLibrary.loadFont(
       SystemFont(family: '', path: path),
     );
     if (family != null) {
@@ -131,8 +128,24 @@ class EditorPreferencesViewModel extends ChangeNotifier {
     }
   }
 
+  void _onFontLibraryChanged() {
+    unawaited(_clearStaleSelection());
+    notifyListeners();
+  }
+
+  Future<void> _clearStaleSelection() async {
+    final path = _preferences.fontPath;
+    if (path == null || !_fontLibrary.hasLoaded) {
+      return;
+    }
+    if (await _fontLibrary.fontFileMissing(path)) {
+      selectFont(null);
+    }
+  }
+
   @override
   void dispose() {
+    _fontLibrary.removeListener(_onFontLibraryChanged);
     _pendingSave?.cancel();
     super.dispose();
   }

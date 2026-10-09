@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/data/repositories/file_system_font_repository.dart';
 import 'package:zephyr/data/services/system_font_catalog.dart';
 import 'package:zephyr/domain/models/editor_preferences.dart';
+import 'package:zephyr/ui/features/settings/view_models/font_library.dart';
 
 void main() {
   test('discovers ttf, otf, and collection fonts from a directory', () async {
@@ -24,6 +25,7 @@ void main() {
       'PingFang',
       'SourceHanSerif',
     });
+    expect(fonts.every((font) => !font.imported), isTrue);
   });
 
   test('importFont copies into the app fonts directory', () async {
@@ -42,6 +44,7 @@ void main() {
     final imported = await repository.importFont(source.path);
     expect(imported, isNotNull);
     expect(imported!.family, 'SourceHan');
+    expect(imported.imported, isTrue);
     expect(imported.path.startsWith(importedDir.path), isTrue);
     expect(File(imported.path).existsSync(), isTrue);
 
@@ -50,6 +53,69 @@ void main() {
     final fonts = await repository.listFonts();
     expect(fonts.single.path, imported.path);
     expect(fonts.single.family, 'SourceHan');
+    expect(fonts.single.imported, isTrue);
+  });
+
+  test('deleteImportedFont removes app copy and refuses system paths', () async {
+    final root = await Directory.systemTemp.createTemp('zephyr-delete-fonts');
+    addTearDown(() => root.delete(recursive: true));
+    final importedDir = Directory('${root.path}/imported');
+    final systemDir = Directory('${root.path}/system')..createSync();
+    final systemFont = File('${systemDir.path}/SystemFace.ttf')
+      ..writeAsBytesSync(List<int>.generate(32, (i) => i));
+    final source = File('${root.path}/Custom.ttf')
+      ..writeAsBytesSync(List<int>.generate(64, (i) => i + 1));
+
+    final repository = FileSystemFontRepository(
+      catalog: _EmptyCatalog(),
+      directories: [systemDir],
+      importedFontsDirectory: () async => importedDir,
+    );
+
+    final imported = await repository.importFont(source.path);
+    expect(imported, isNotNull);
+
+    final refused = await repository.deleteImportedFont(
+      SystemFont(family: 'SystemFace', path: systemFont.path),
+    );
+    expect(refused, isFalse);
+    expect(systemFont.existsSync(), isTrue);
+
+    final deleted = await repository.deleteImportedFont(imported!);
+    expect(deleted, isTrue);
+    expect(File(imported.path).existsSync(), isFalse);
+    final remaining = await repository.listFonts();
+    expect(remaining.map((font) => font.family), ['SystemFace']);
+    expect(remaining.single.imported, isFalse);
+  });
+
+  test('FontLibrary import and delete refresh the shared list', () async {
+    final root = await Directory.systemTemp.createTemp('zephyr-font-library');
+    addTearDown(() => root.delete(recursive: true));
+    final importedDir = Directory('${root.path}/imported');
+    final source = File('${root.path}/Shared.ttf')
+      ..writeAsBytesSync(List<int>.generate(48, (i) => i));
+
+    final library = FontLibrary(
+      FileSystemFontRepository(
+        catalog: _EmptyCatalog(),
+        directories: const [],
+        importedFontsDirectory: () async => importedDir,
+      ),
+    );
+
+    await library.ensureLoaded();
+    expect(library.fonts, isEmpty);
+
+    final imported = await library.importFont(source.path);
+    expect(imported, isNotNull);
+    expect(library.fonts.single.path, imported!.path);
+    expect(library.fonts.single.imported, isTrue);
+
+    final deleted = await library.deleteImportedFont(imported);
+    expect(deleted, isTrue);
+    expect(library.fonts, isEmpty);
+    expect(File(imported.path).existsSync(), isFalse);
   });
 }
 

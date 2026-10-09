@@ -5,30 +5,30 @@ import 'package:flutter/foundation.dart';
 import '../../../../domain/models/editor_preferences.dart';
 import '../../../../domain/models/theme_tokens.dart';
 import '../../../../domain/models/ui_preferences.dart';
-import '../../../../domain/repositories/editor_preferences_repository.dart';
 import '../../../../domain/repositories/theme_preferences_repository.dart';
+import 'font_library.dart';
 
 class ThemeViewModel extends ChangeNotifier {
   ThemeViewModel(
     this._repository, {
-    SystemFontRepository? fontRepository,
+    FontLibrary? fontLibrary,
     Future<void> Function()? onPersisted,
-  }) : _fonts = fontRepository,
-       _onPersisted = onPersisted == null ? null : (() => onPersisted());
+  }) : _fonts = fontLibrary,
+       _onPersisted = onPersisted == null ? null : (() => onPersisted()) {
+    _fonts?.addListener(_onFontLibraryChanged);
+  }
 
   final ThemePreferencesRepository _repository;
-  final SystemFontRepository? _fonts;
+  final FontLibrary? _fonts;
   final Future<void> Function()? _onPersisted;
   ThemeTokens _tokens = ThemeTokens.defaults;
   UiPreferences _ui = UiPreferences.defaults;
-  List<SystemFont> _systemFonts = const [];
-  bool _isLoadingSystemFonts = false;
   Timer? _pendingSave;
 
   ThemeTokens get tokens => _tokens;
   UiPreferences get ui => _ui;
-  List<SystemFont> get systemFonts => _systemFonts;
-  bool get isLoadingSystemFonts => _isLoadingSystemFonts;
+  List<SystemFont> get systemFonts => _fonts?.fonts ?? const [];
+  bool get isLoadingSystemFonts => _fonts?.isLoading ?? false;
 
   Future<void> load({bool loadSavedFont = true}) async {
     try {
@@ -44,19 +44,10 @@ class ThemeViewModel extends ChangeNotifier {
   /// Discovers fonts only when the appearance settings page needs them.
   Future<void> loadSystemFonts() async {
     final fonts = _fonts;
-    if (fonts == null || _isLoadingSystemFonts || _systemFonts.isNotEmpty) {
+    if (fonts == null) {
       return;
     }
-    _isLoadingSystemFonts = true;
-    notifyListeners();
-    try {
-      _systemFonts = await fonts.listFonts();
-    } on Object {
-      // Keep the platform default font available if discovery fails.
-    } finally {
-      _isLoadingSystemFonts = false;
-      notifyListeners();
-    }
+    await fonts.ensureLoaded();
   }
 
   void update(ThemeToken token, int value) {
@@ -99,14 +90,22 @@ class ThemeViewModel extends ChangeNotifier {
     if (imported == null) {
       return false;
     }
-    try {
-      _systemFonts = await fonts.listFonts();
-    } on Object {
-      // Selection can still proceed with the imported path alone.
-    }
     await selectUiFont(imported);
-    notifyListeners();
     return _ui.fontPath == imported.path;
+  }
+
+  /// Removes an app-imported font and clears UI selection if it was in use.
+  Future<bool> deleteImportedFont(SystemFont font) async {
+    final fonts = _fonts;
+    if (fonts == null) return false;
+    final ok = await fonts.deleteImportedFont(font);
+    if (!ok) {
+      return false;
+    }
+    if (_ui.fontPath == font.path) {
+      await selectUiFont(null);
+    }
+    return true;
   }
 
   void updateUiFontSize(double value) =>
@@ -179,14 +178,35 @@ class ThemeViewModel extends ChangeNotifier {
     if (fonts == null || path == null) {
       return;
     }
+    if (await fonts.fontFileMissing(path)) {
+      _ui = _ui.copyWith(clearFontFamily: true);
+      return;
+    }
     final family = await fonts.loadFont(SystemFont(family: '', path: path));
     if (family != null) {
       _ui = _ui.copyWith(fontFamily: family);
     }
   }
 
+  void _onFontLibraryChanged() {
+    unawaited(_clearStaleSelection());
+    notifyListeners();
+  }
+
+  Future<void> _clearStaleSelection() async {
+    final fonts = _fonts;
+    final path = _ui.fontPath;
+    if (fonts == null || path == null || !fonts.hasLoaded) {
+      return;
+    }
+    if (await fonts.fontFileMissing(path)) {
+      await selectUiFont(null);
+    }
+  }
+
   @override
   void dispose() {
+    _fonts?.removeListener(_onFontLibraryChanged);
     _pendingSave?.cancel();
     super.dispose();
   }
