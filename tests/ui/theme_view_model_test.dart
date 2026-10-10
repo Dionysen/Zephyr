@@ -167,10 +167,10 @@ void main() {
   test('show borders updates independently of color tokens', () {
     final model = ThemeViewModel(_ThemeRepository());
 
-    expect(model.ui.showBorders, isTrue);
-    model.updateShowBorders(false);
-
     expect(model.ui.showBorders, isFalse);
+    model.updateShowBorders(true);
+
+    expect(model.ui.showBorders, isTrue);
     expect(model.lightTokens, ThemeTokens.presets[ThemePreset.light]);
   });
 
@@ -199,11 +199,11 @@ void main() {
   test('immersive status bar updates independently of color tokens', () {
     final model = ThemeViewModel(_ThemeRepository());
 
-    expect(model.ui.immersiveStatusBar, isFalse);
-    model.updateImmersiveStatusBar(true);
     expect(model.ui.immersiveStatusBar, isTrue);
     model.updateImmersiveStatusBar(false);
     expect(model.ui.immersiveStatusBar, isFalse);
+    model.updateImmersiveStatusBar(true);
+    expect(model.ui.immersiveStatusBar, isTrue);
     expect(model.lightTokens, ThemeTokens.presets[ThemePreset.light]);
   });
 
