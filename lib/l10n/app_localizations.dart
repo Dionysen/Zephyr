@@ -1867,6 +1867,24 @@ abstract class AppLocalizations {
   /// **'New chapter'**
   String get tooltipNewChapter;
 
+  /// No description provided for @tooltipAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get tooltipAdd;
+
+  /// No description provided for @tooltipSearchChapters.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get tooltipSearchChapters;
+
+  /// No description provided for @tooltipLocateCurrentChapter.
+  ///
+  /// In en, this message translates to:
+  /// **'Locate current chapter'**
+  String get tooltipLocateCurrentChapter;
+
   /// No description provided for @tooltipCollapseAll.
   ///
   /// In en, this message translates to:

@@ -978,6 +978,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tooltipNewChapter => 'New chapter';
 
   @override
+  String get tooltipAdd => 'Add';
+
+  @override
+  String get tooltipSearchChapters => 'Search';
+
+  @override
+  String get tooltipLocateCurrentChapter => 'Locate current chapter';
+
+  @override
   String get tooltipCollapseAll => 'Collapse all';
 
   @override

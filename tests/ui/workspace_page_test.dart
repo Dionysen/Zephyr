@@ -376,7 +376,7 @@ void main() {
     expect(find.textContaining('to the trash'), findsOneWidget);
   });
 
-  testWidgets('sidebar new-volume button creates a volume in the book', (
+  testWidgets('sidebar add menu creates a volume in the book', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(1200, 800);
@@ -387,8 +387,11 @@ void main() {
     final library = LibraryViewModel(_LibraryRepository());
     await tester.pumpWidget(_app(library: library));
     await tester.pumpAndSettle();
+    final l10n = _l10n(tester);
 
-    await tester.tap(find.byTooltip('New volume'));
+    await tester.tap(find.byTooltip(l10n.tooltipAdd));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.tooltipNewVolume));
     await tester.pumpAndSettle();
     expect(
       find.descendant(

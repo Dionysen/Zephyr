@@ -931,6 +931,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get tooltipNewChapter => '新建章节';
 
   @override
+  String get tooltipAdd => '添加';
+
+  @override
+  String get tooltipSearchChapters => '搜索';
+
+  @override
+  String get tooltipLocateCurrentChapter => '定位到当前章节';
+
+  @override
   String get tooltipCollapseAll => '全部折叠';
 
   @override

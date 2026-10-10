@@ -237,6 +237,10 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                 onToggleAllVolumes: model.hasVolumes
                     ? () => _chapterTreeKey.currentState?.toggleAllVolumes()
                     : null,
+                onLocateCurrent: model.article == null
+                    ? null
+                    : () => _chapterTreeKey.currentState
+                        ?.scrollToCurrentArticle(),
                 canReorder: _canReorder,
               )
             else ...[
@@ -255,10 +259,19 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                     const Expanded(
                       child: WindowDragArea(child: SizedBox.expand()),
                     ),
+                    _SidebarAddMenuButton(enabled: _canCreateVolume, model: model),
                     IconButton(
-                      onPressed: _canCreateVolume ? model.createVolume : null,
-                      icon: const Icon(Icons.create_new_folder_outlined),
-                      tooltip: l10n.tooltipNewVolume,
+                      onPressed: null,
+                      icon: const Icon(Icons.search),
+                      tooltip: l10n.tooltipSearchChapters,
+                    ),
+                    IconButton(
+                      onPressed: model.article == null
+                          ? null
+                          : () => _chapterTreeKey.currentState
+                              ?.scrollToCurrentArticle(),
+                      icon: const Icon(Icons.my_location_outlined),
+                      tooltip: l10n.tooltipLocateCurrentChapter,
                     ),
                     _ReorderModeButton(
                       enabled: _canReorder,
@@ -287,16 +300,6 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                       tooltip: model.areAllVolumesExpanded
                           ? l10n.tooltipCollapseAll
                           : l10n.tooltipExpandAll,
-                    ),
-                    const SizedBox(width: 4),
-                    IconButton(
-                      onPressed:
-                          model.isReadOnly ||
-                              model.selectedBook?.isTrash == true
-                          ? null
-                          : model.createArticle,
-                      icon: const Icon(Icons.note_add_outlined),
-                      tooltip: l10n.tooltipNewChapter,
                     ),
                   ],
                 ),
@@ -366,15 +369,65 @@ class _ReorderModeButton extends StatelessWidget {
   }
 }
 
+/// Plus button that opens a menu to create a chapter or volume.
+class _SidebarAddMenuButton extends StatelessWidget {
+  const _SidebarAddMenuButton({
+    required this.enabled,
+    required this.model,
+    this.style,
+  });
+
+  final bool enabled;
+  final LibraryViewModel model;
+  final ButtonStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return MenuAnchor(
+      builder: (context, controller, _) {
+        return IconButton(
+          style: style,
+          onPressed: !enabled
+              ? null
+              : () {
+                  if (controller.isOpen) {
+                    controller.close();
+                  } else {
+                    controller.open();
+                  }
+                },
+          icon: const Icon(Icons.add),
+          tooltip: l10n.tooltipAdd,
+        );
+      },
+      menuChildren: [
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.note_add_outlined),
+          onPressed: () => unawaited(model.createArticle()),
+          child: Text(l10n.tooltipNewChapter),
+        ),
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.create_new_folder_outlined),
+          onPressed: () => unawaited(model.createVolume()),
+          child: Text(l10n.tooltipNewVolume),
+        ),
+      ],
+    );
+  }
+}
+
 class _DrawerSidebarHeader extends StatelessWidget {
   const _DrawerSidebarHeader({
     required this.model,
     required this.onToggleAllVolumes,
+    required this.onLocateCurrent,
     required this.canReorder,
   });
 
   final LibraryViewModel model;
   final VoidCallback? onToggleAllVolumes;
+  final VoidCallback? onLocateCurrent;
   final bool canReorder;
 
   @override
@@ -443,17 +496,24 @@ class _DrawerSidebarHeader extends StatelessWidget {
                 ? l10n.tooltipCollapseAll
                 : l10n.tooltipExpandAll,
           ),
-          IconButton(
+          _SidebarAddMenuButton(
+            enabled: canReorder,
+            model: model,
             style: toolStyle,
-            onPressed: model.isReadOnly || isTrash ? null : model.createVolume,
-            icon: const Icon(Icons.create_new_folder_outlined),
-            tooltip: l10n.tooltipNewVolume,
           ),
           IconButton(
             style: toolStyle,
-            onPressed: model.isReadOnly || isTrash ? null : model.createArticle,
-            icon: const Icon(Icons.note_add_outlined),
-            tooltip: l10n.tooltipNewChapter,
+            onPressed: null,
+            icon: const Icon(Icons.search),
+            tooltip: l10n.tooltipSearchChapters,
+          ),
+          IconButton(
+            style: toolStyle,
+            onPressed: model.article == null || onLocateCurrent == null
+                ? null
+                : onLocateCurrent,
+            icon: const Icon(Icons.my_location_outlined),
+            tooltip: l10n.tooltipLocateCurrentChapter,
           ),
           _ReorderModeButton(
             enabled: canReorder,
@@ -1723,6 +1783,7 @@ class _ChapterTree extends StatefulWidget {
 class _ChapterTreeState extends State<_ChapterTree> {
   final _scrollController = ScrollController();
   final _volumeKeys = <String, GlobalKey>{};
+  final _chapterKeys = <String, GlobalKey>{};
   String? _restoredBookId;
 
   @override
@@ -1783,6 +1844,41 @@ class _ChapterTreeState extends State<_ChapterTree> {
 
   GlobalKey _volumeKeyFor(String volumeId) =>
       _volumeKeys.putIfAbsent(volumeId, GlobalKey.new);
+
+  GlobalKey _chapterKeyFor(String chapterId) =>
+      _chapterKeys.putIfAbsent(chapterId, GlobalKey.new);
+
+  /// Expands the current chapter's volume if needed, then scrolls it into view.
+  Future<void> scrollToCurrentArticle() async {
+    final articleId = widget.model.article?.id;
+    if (articleId == null) return;
+    final chapter = widget.library.articles
+        .where((item) => item.id == articleId)
+        .firstOrNull;
+    if (chapter == null) return;
+
+    final volumeId = chapter.categoryId;
+    if (volumeId != null && !widget.model.isVolumeExpanded(volumeId)) {
+      widget.model.ensureVolumeExpanded(volumeId);
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+    }
+
+    var target = _chapterKeyFor(articleId).currentContext;
+    if (target == null) {
+      // Chapter may still be building after expand; try once more next frame.
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+      target = _chapterKeyFor(articleId).currentContext;
+    }
+    if (target == null || !target.mounted) return;
+    await Scrollable.ensureVisible(
+      target,
+      alignment: 0.25,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   RenderSliver? _volumeSliver(String volumeId) {
     final renderObject = _volumeKeyFor(
@@ -1916,14 +2012,20 @@ class _ChapterTreeState extends State<_ChapterTree> {
             if (model.isVolumeExpanded(volume.id) && volumeChapters.isNotEmpty)
               SliverList.builder(
                 itemCount: volumeChapters.length,
-                itemBuilder: (context, index) => _ChapterRow(
-                  chapter: volumeChapters[index],
-                  model: model,
-                  siblingIds: chapterIds,
-                  canManage: canManage,
-                  showDragHandle: showDragHandles,
-                  isFirst: index == 0,
-                ),
+                itemBuilder: (context, index) {
+                  final chapter = volumeChapters[index];
+                  return KeyedSubtree(
+                    key: _chapterKeyFor(chapter.id),
+                    child: _ChapterRow(
+                      chapter: chapter,
+                      model: model,
+                      siblingIds: chapterIds,
+                      canManage: canManage,
+                      showDragHandle: showDragHandles,
+                      isFirst: index == 0,
+                    ),
+                  );
+                },
               ),
           ],
         ),
@@ -1947,14 +2049,20 @@ class _ChapterTreeState extends State<_ChapterTree> {
       slivers.add(
         SliverList.builder(
           itemCount: loose.length,
-          itemBuilder: (context, index) => _ChapterRow(
-            chapter: loose[index],
-            model: model,
-            siblingIds: looseIds,
-            canManage: canManage,
-            showDragHandle: showDragHandles,
-            isFirst: index == 0,
-          ),
+          itemBuilder: (context, index) {
+            final chapter = loose[index];
+            return KeyedSubtree(
+              key: _chapterKeyFor(chapter.id),
+              child: _ChapterRow(
+                chapter: chapter,
+                model: model,
+                siblingIds: looseIds,
+                canManage: canManage,
+                showDragHandle: showDragHandles,
+                isFirst: index == 0,
+              ),
+            );
+          },
         ),
       );
     }
@@ -2238,7 +2346,12 @@ class _VolumeRow extends StatelessWidget {
                   )
               : null,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+            padding: EdgeInsets.fromLTRB(
+              8,
+              9,
+              showDragHandle ? _SidebarDragHandle.trailingInset : 8,
+              9,
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -2403,7 +2516,12 @@ class _ChapterRow extends StatelessWidget {
                   )
               : null,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            padding: EdgeInsets.fromLTRB(
+              12,
+              12,
+              showDragHandle ? _SidebarDragHandle.trailingInset : 12,
+              12,
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -2443,7 +2561,8 @@ class _ChapterRow extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (showDragHandle)
+                if (showDragHandle) ...[
+                  const SizedBox(width: 4),
                   _SidebarDragHandle<_ChapterDragData>(
                     data: _ChapterDragData(
                       articleId: chapter.id,
@@ -2451,6 +2570,7 @@ class _ChapterRow extends StatelessWidget {
                     ),
                     feedbackLabel: title,
                   ),
+                ],
               ],
             ),
           ),
@@ -2490,6 +2610,8 @@ class _SidebarDragHandle<T extends Object> extends StatelessWidget {
     this.onDragEnded,
   });
 
+  /// Right inset shared by volume and chapter rows so handles align.
+  static const double trailingInset = 8;
   static const double _iconSize = 18;
 
   final T data;

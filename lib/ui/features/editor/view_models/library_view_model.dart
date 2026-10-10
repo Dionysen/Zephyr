@@ -178,6 +178,12 @@ class LibraryViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Expands [volumeId] if collapsed; no-op when already open.
+  void ensureVolumeExpanded(String volumeId) {
+    if (isVolumeExpanded(volumeId)) return;
+    toggleVolume(volumeId);
+  }
+
   void toggleAllVolumes() {
     if (!hasVolumes) return;
     final bookId = _selectedBookId;
