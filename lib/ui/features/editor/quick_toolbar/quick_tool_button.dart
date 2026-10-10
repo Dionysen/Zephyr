@@ -1,4 +1,3 @@
-import 'package:characters/characters.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../domain/models/quick_toolbar_config.dart';
@@ -24,21 +23,23 @@ class QuickToolButton extends StatelessWidget {
   final bool selected;
   final String? tooltip;
 
-  /// Article body font; used for phrase chips.
+  /// Article body font; used for non-symbol phrase chips.
   final String? bodyFontFamily;
 
   static const double height = 32;
   static const double iconExtent = 32;
   static const double iconSize = 18;
-  static const double phraseFontSize = 13;
-  static const double symbolFontSize = 20;
+  static const double phraseFontSize = 12;
+  static const double symbolFontSize = 15;
 
   @override
   Widget build(BuildContext context) {
     final color = foreground.withValues(alpha: enabled ? 1 : 0.35);
     final child = switch (tool.kind) {
       QuickToolKind.phrase => _PhraseChip(
-        label: tool.label ?? '',
+        label: (tool.label?.trim().isNotEmpty ?? false)
+            ? tool.label!.trim()
+            : (tool.payload ?? ''),
         foreground: color,
         selected: selected,
         onPressed: enabled ? onPressed : null,
@@ -87,6 +88,20 @@ bool quickToolbarLabelLooksLikeSymbol(String label) {
   return !RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(trimmed);
 }
 
+/// Chip-only: map fullwidth ASCII punctuation to proportional glyphs so a
+/// pair still fits a square. Insert payload is unchanged.
+String compactSymbolChipLabel(String label) {
+  const map = {
+    '（': '(',
+    '）': ')',
+    '［': '[',
+    '］': ']',
+    '｛': '{',
+    '｝': '}',
+  };
+  return label.characters.map((g) => map[g] ?? g).join();
+}
+
 class _PhraseChip extends StatelessWidget {
   const _PhraseChip({
     required this.label,
@@ -105,13 +120,26 @@ class _PhraseChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final symbol = quickToolbarLabelLooksLikeSymbol(label);
+    final display = symbol ? compactSymbolChipLabel(label) : label;
+    // Symbol chips stay 32×32. Use the platform UI sans (proportional
+    // punctuation) instead of the article CJK font.
     final style = TextStyle(
-      fontFamily: fontFamily,
+      fontFamily: symbol ? null : fontFamily,
+      fontFamilyFallback: symbol
+          ? const ['Roboto', 'Segoe UI', 'sans-serif']
+          : null,
       fontSize: symbol
           ? QuickToolButton.symbolFontSize
           : QuickToolButton.phraseFontSize,
       height: 1,
       color: foreground,
+      fontFeatures: symbol
+          ? const [
+              FontFeature.enable('palt'),
+              FontFeature.enable('halt'),
+              FontFeature.enable('pwid'),
+            ]
+          : null,
     );
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: symbol ? 0 : 2),
@@ -136,12 +164,15 @@ class _PhraseChip extends StatelessWidget {
         ),
         child: Align(
           alignment: Alignment.center,
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: style,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              display,
+              maxLines: 1,
+              overflow: TextOverflow.visible,
+              textAlign: TextAlign.center,
+              style: style,
+            ),
           ),
         ),
       ),

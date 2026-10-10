@@ -402,11 +402,17 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   /// [ignoreCaret]: used on chapter open — restored/default caret is often at
   /// EOF even when the viewport is still at the top; only hide for caret-at-end
   /// after the user moves the selection.
+  bool _isImeVisible() {
+    if (!mounted) return false;
+    return MediaQuery.viewInsetsOf(context).bottom > 0.5;
+  }
+
   bool _shouldOfferJumpToEnd({
     TextSelection? selection,
     bool ignoreCaret = false,
   }) {
     if (_controller.text.isEmpty) return false;
+    if (_isImeVisible()) return false;
     if (_isScrollAtEnd()) return false;
     if (!ignoreCaret) {
       final sel = selection ?? _controller.selection;
@@ -721,6 +727,13 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     final typography = _typography(context, preferences);
     // viewPadding keeps the gesture-bar height after edge-to-edge removePadding.
     final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    final showJump = _showJumpToEnd && keyboardInset <= 0.5;
+    if (_showJumpToEnd && keyboardInset > 0.5) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _dismissJumpToEnd();
+      });
+    }
 
     return Stack(
       children: [
@@ -765,13 +778,11 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
               ),
             ),
           ),
-        if (_showJumpToEnd)
+        if (showJump)
           Positioned(
             left: 0,
             right: 0,
-            bottom: 24 +
-                bottomInset +
-                MediaQuery.viewInsetsOf(context).bottom,
+            bottom: 24 + bottomInset + keyboardInset,
             child: Center(
               child: EditorOverlayCapsule(
                 onTap: _jumpToEnd,

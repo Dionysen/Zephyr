@@ -53,9 +53,9 @@ class ZephyrStatusBar extends StatefulWidget {
       statusBarIconBrightness: iconBrightness,
       statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
       systemStatusBarContrastEnforced: false,
-      // Draw under the gesture / 3-button nav bar (true edge-to-edge).
-      systemNavigationBarColor: Colors.transparent,
-      systemNavigationBarDividerColor: Colors.transparent,
+      // Gesture / 3-button nav stays visible; app paints through a clear bar.
+      systemNavigationBarColor: const Color(0x00000000),
+      systemNavigationBarDividerColor: const Color(0x00000000),
       systemNavigationBarIconBrightness: iconBrightness,
       systemNavigationBarContrastEnforced: false,
     );
@@ -64,13 +64,21 @@ class ZephyrStatusBar extends StatefulWidget {
   static Future<void> applySystemUiMode({
     required bool immersive,
     required bool hideIcons,
+    SystemUiOverlayStyle? overlayStyle,
   }) async {
     if (!_isMobileShell) return;
     if (immersive && hideIcons) {
-      // Auto-hide icons; swipe edge to peek. App still paints under the band.
-      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      // Hide status icons only. Keep the bottom gesture / nav bar on screen
+      // (immersiveSticky would hide it).
+      await SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.manual,
+        overlays: const [SystemUiOverlay.bottom],
+      );
     } else {
       await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
+    if (overlayStyle != null) {
+      SystemChrome.setSystemUIOverlayStyle(overlayStyle);
     }
   }
 
@@ -104,10 +112,20 @@ class _ZephyrStatusBarState extends State<ZephyrStatusBar> {
     }
     _appliedImmersive = widget.immersive;
     _appliedHideIcons = widget.hideIcons;
+    final resolved = widget.brightness ?? Theme.of(context).brightness;
+    final surface =
+        widget.statusBarColor ?? Theme.of(context).colorScheme.surface;
+    final overlay = ZephyrStatusBar.styleFor(
+      resolved,
+      immersive: widget.immersive,
+      hideIcons: widget.hideIcons,
+      statusBarColor: surface,
+    );
     // ignore: discarded_futures
     ZephyrStatusBar.applySystemUiMode(
       immersive: widget.immersive,
       hideIcons: widget.hideIcons,
+      overlayStyle: overlay,
     );
   }
 

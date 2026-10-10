@@ -19,6 +19,11 @@ void main() {
     expect(quickToolbarLabelLooksLikeSymbol('……完'), isFalse);
   });
 
+  test('compact chip label maps fullwidth parens to proportional ASCII', () {
+    expect(compactSymbolChipLabel('（）'), '()');
+    expect(compactSymbolChipLabel('“”'), '“”');
+  });
+
   testWidgets('fixed tools stay outside the horizontal scroller', (tester) async {
     final pressed = <String>[];
     await tester.pumpWidget(
