@@ -35,6 +35,7 @@ class UiPreferences {
     required this.hideStatusBarIcons,
     required this.hideQuickToolbar,
     required this.localePreference,
+    this.mobileToolsOrder = const [],
     this.lightEditorBackground = EditorBackgroundConfig.defaults,
     this.darkEditorBackground = EditorBackgroundConfig.defaults,
   });
@@ -54,6 +55,7 @@ class UiPreferences {
     hideStatusBarIcons: true,
     hideQuickToolbar: false,
     localePreference: AppLocalePreference.system,
+    mobileToolsOrder: [],
   );
 
   static const referenceFontSize = 15.0;
@@ -102,6 +104,11 @@ class UiPreferences {
   /// App UI language: system, Simplified Chinese, or English.
   final AppLocalePreference localePreference;
 
+  /// Stable ids for the compact editor “more” tools sheet order.
+  ///
+  /// Empty means use the order tools were registered in.
+  final List<String> mobileToolsOrder;
+
   /// Writing-column background image for light appearance.
   final EditorBackgroundConfig lightEditorBackground;
 
@@ -127,6 +134,7 @@ class UiPreferences {
     bool? hideStatusBarIcons,
     bool? hideQuickToolbar,
     AppLocalePreference? localePreference,
+    List<String>? mobileToolsOrder,
     EditorBackgroundConfig? lightEditorBackground,
     EditorBackgroundConfig? darkEditorBackground,
   }) => UiPreferences(
@@ -144,6 +152,7 @@ class UiPreferences {
     hideStatusBarIcons: hideStatusBarIcons ?? this.hideStatusBarIcons,
     hideQuickToolbar: hideQuickToolbar ?? this.hideQuickToolbar,
     localePreference: localePreference ?? this.localePreference,
+    mobileToolsOrder: mobileToolsOrder ?? this.mobileToolsOrder,
     lightEditorBackground:
         lightEditorBackground ?? this.lightEditorBackground,
     darkEditorBackground: darkEditorBackground ?? this.darkEditorBackground,

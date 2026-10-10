@@ -301,6 +301,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
       localePreference: AppLocalePreference.fromStorage(
         values['uiLocale'] as String?,
       ),
+      mobileToolsOrder: _stringList(values, 'uiMobileToolsOrder'),
       lightEditorBackground: _readEditorBackground(values, 'light'),
       darkEditorBackground: _readEditorBackground(values, 'dark'),
     );
@@ -319,6 +320,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'uiHideStatusBarIcons': ui.hideStatusBarIcons,
     'uiHideQuickToolbar': ui.hideQuickToolbar,
     'uiLocale': ui.localePreference.storageValue,
+    'uiMobileToolsOrder': ui.mobileToolsOrder,
     ..._writeEditorBackground(ui.lightEditorBackground, 'light'),
     ..._writeEditorBackground(ui.darkEditorBackground, 'dark'),
   };
@@ -392,6 +394,13 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     if (value == null) return fallback;
     if (value is! bool) throw FormatException('Invalid $key preference.');
     return value;
+  }
+
+  List<String> _stringList(Map<String, Object?> values, String key) {
+    final value = values[key];
+    if (value == null) return const [];
+    if (value is! List) throw FormatException('Invalid $key preference.');
+    return value.whereType<String>().toList(growable: false);
   }
 
   bool _immersiveStatusBar(Map<String, Object?> values) {

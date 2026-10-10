@@ -18,6 +18,7 @@ import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_settings.dart';
+import '../../../core/zephyr_snackbar.dart';
 import '../../../core/zephyr_status_bar.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
 import '../../../core/zephyr_theme.dart';
@@ -26,6 +27,7 @@ import '../../editor/quick_toolbar/workspace_editor_bridge.dart';
 import '../../editor/view_models/editor_preferences_view_model.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../settings/view_models/theme_view_model.dart';
+import '../../settings/views/backup_settings_view.dart';
 import '../../settings/views/settings_page.dart';
 import 'library_search_sheet.dart';
 import 'workspace_editor.dart';
@@ -690,9 +692,12 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                     transparentBackground: widget.transparentTopBar,
                     toolsBuilder: (barContext) {
                       final l10n = barContext.l10n;
-                      final themeVm = ZephyrScope.of(barContext).theme;
+                      final scope = ZephyrScope.of(barContext);
+                      final themeVm = scope.theme;
+                      final backup = scope.backup;
                       return [
                         WorkspaceMobileTool(
+                          id: WorkspaceMobileToolId.search,
                           icon: Icons.search,
                           label: l10n.tooltipSearchChapters,
                           onTap: () => unawaited(
@@ -703,6 +708,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                           ),
                         ),
                         WorkspaceMobileTool(
+                          id: WorkspaceMobileToolId.themeMode,
                           icon: Icons.brightness_6_outlined,
                           label: l10n.mobileToolThemeMode,
                           onTap: () => unawaited(
@@ -710,6 +716,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                           ),
                         ),
                         WorkspaceMobileTool(
+                          id: WorkspaceMobileToolId.switchTheme,
                           icon: Icons.palette_outlined,
                           label: l10n.mobileToolSwitchTheme,
                           onTap: () => unawaited(
@@ -717,6 +724,25 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                           ),
                         ),
                         WorkspaceMobileTool(
+                          id: WorkspaceMobileToolId.backup,
+                          icon: Icons.backup_outlined,
+                          label: l10n.quickToolbarBackupTooltip,
+                          enabled: !backup.busy,
+                          onTap: () => unawaited(
+                            _mobileBackupNow(barContext),
+                          ),
+                        ),
+                        WorkspaceMobileTool(
+                          id: WorkspaceMobileToolId.restore,
+                          icon: Icons.restore_rounded,
+                          label: l10n.quickToolbarRestoreTooltip,
+                          enabled: !backup.busy && backup.backups.isNotEmpty,
+                          onTap: () => unawaited(
+                            showBackupRestoreFlow(barContext, backup),
+                          ),
+                        ),
+                        WorkspaceMobileTool(
+                          id: WorkspaceMobileToolId.settings,
                           icon: Icons.settings_outlined,
                           label: l10n.tooltipSettings,
                           onTap: widget.openSettings,
@@ -902,6 +928,20 @@ class _LibrarySetupPage extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<void> _mobileBackupNow(BuildContext context) async {
+  final backup = ZephyrScope.of(context).backup;
+  final l10n = context.l10n;
+  await backup.backupNow();
+  if (!context.mounted) return;
+  final error = backup.error;
+  ZephyrSnackBar.show(
+    context,
+    error == null
+        ? l10n.backupNowSuccess
+        : l10n.backupFailed(error.toString()),
+  );
 }
 
 Future<void> _pickMobileThemeMode(

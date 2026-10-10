@@ -357,6 +357,9 @@ class ThemeViewModel extends ChangeNotifier {
   void updateLocalePreference(AppLocalePreference value) =>
       _updateUi(_ui.copyWith(localePreference: value));
 
+  void updateMobileToolsOrder(List<String> order) =>
+      _updateUi(_ui.copyWith(mobileToolsOrder: List<String>.from(order)));
+
   EditorBackgroundConfig editorBackground({required bool dark}) =>
       _ui.editorBackgroundFor(dark: dark);
 

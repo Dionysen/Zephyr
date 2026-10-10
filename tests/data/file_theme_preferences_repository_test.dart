@@ -66,6 +66,7 @@ void main() {
           hideStatusBarIcons: false,
           hideQuickToolbar: true,
           localePreference: AppLocalePreference.system,
+          mobileToolsOrder: ['settings', 'search'],
           lightEditorBackground: EditorBackgroundConfig(
             imagePath: r'C:\App\backgrounds\paper.jpg',
             fit: EditorBackgroundFit.cover,
@@ -110,6 +111,7 @@ void main() {
       expect(actual.ui.hideStatusBarIcons, expected.ui.hideStatusBarIcons);
       expect(actual.ui.hideQuickToolbar, expected.ui.hideQuickToolbar);
       expect(actual.ui.localePreference, expected.ui.localePreference);
+      expect(actual.ui.mobileToolsOrder, expected.ui.mobileToolsOrder);
       expect(
         actual.ui.lightEditorBackground,
         expected.ui.lightEditorBackground,

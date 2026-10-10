@@ -16,6 +16,7 @@ import '../../../core/zephyr_dropdown.dart';
 import '../../../core/zephyr_icon_toolbar.dart';
 import '../../../core/zephyr_resize_handle.dart';
 import '../../../core/zephyr_snackbar.dart';
+import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_theme.dart';
@@ -577,22 +578,53 @@ class _DrawerSidebarHeader extends StatelessWidget {
   }
 }
 
+/// Stable ids for compact editor “more” sheet tools (order is persisted).
+abstract final class WorkspaceMobileToolId {
+  static const search = 'search';
+  static const themeMode = 'themeMode';
+  static const switchTheme = 'switchTheme';
+  static const backup = 'backup';
+  static const restore = 'restore';
+  static const settings = 'settings';
+}
+
 /// One overflow action for the mobile editor “more” sheet.
 ///
 /// Pass tools via [WorkspaceMobileBookBar.tools] (or [toolsBuilder]) so future
 /// settings/actions can plug in without changing the bar layout.
 class WorkspaceMobileTool {
   const WorkspaceMobileTool({
+    required this.id,
     required this.label,
     required this.onTap,
     this.icon,
     this.enabled = true,
   });
 
+  final String id;
   final String label;
   final VoidCallback onTap;
   final IconData? icon;
   final bool enabled;
+}
+
+/// Apply a saved id order; unknown ids are dropped, new tools append in
+/// registration order.
+List<WorkspaceMobileTool> orderWorkspaceMobileTools(
+  List<WorkspaceMobileTool> tools,
+  List<String> order,
+) {
+  if (tools.isEmpty || order.isEmpty) return tools;
+  final byId = <String, WorkspaceMobileTool>{
+    for (final tool in tools) tool.id: tool,
+  };
+  final ordered = <WorkspaceMobileTool>[];
+  for (final id in order) {
+    final tool = byId.remove(id);
+    if (tool != null) ordered.add(tool);
+  }
+  ordered.addAll(byId.values);
+  return ordered;
 }
 
 /// Floating chrome for the compact editor surface.
@@ -748,9 +780,18 @@ class WorkspaceMobileBookBar extends StatelessWidget {
   Future<void> _showToolsSheet(BuildContext context) async {
     FocusManager.instance.primaryFocus?.unfocus();
     final built = toolsBuilder?.call(context) ?? const <WorkspaceMobileTool>[];
+    final theme = ZephyrScope.maybeOf(context)?.theme;
+    final merged = [...tools, ...built];
+    final ordered = orderWorkspaceMobileTools(
+      merged,
+      theme?.ui.mobileToolsOrder ?? const [],
+    );
     await showWorkspaceMobileToolsSheet(
       context,
-      tools: [...tools, ...built],
+      tools: ordered,
+      onReorder: theme == null
+          ? null
+          : (ids) => theme.updateMobileToolsOrder(ids),
     );
   }
 }
@@ -759,11 +800,15 @@ class WorkspaceMobileBookBar extends StatelessWidget {
 Future<void> showWorkspaceMobileToolsSheet(
   BuildContext context, {
   List<WorkspaceMobileTool> tools = const [],
+  ValueChanged<List<String>>? onReorder,
 }) {
   return showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
-    builder: (sheetContext) => _MobileToolsSheet(tools: tools),
+    builder: (sheetContext) => _MobileToolsSheet(
+      tools: tools,
+      onReorder: onReorder,
+    ),
   );
 }
 
@@ -1319,13 +1364,47 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
   }
 }
 
-class _MobileToolsSheet extends StatelessWidget {
-  const _MobileToolsSheet({required this.tools});
+class _MobileToolsSheet extends StatefulWidget {
+  const _MobileToolsSheet({
+    required this.tools,
+    this.onReorder,
+  });
 
   static const _columns = 5;
   static const _iconSize = 26.0;
 
   final List<WorkspaceMobileTool> tools;
+  final ValueChanged<List<String>>? onReorder;
+
+  @override
+  State<_MobileToolsSheet> createState() => _MobileToolsSheetState();
+}
+
+class _MobileToolsSheetState extends State<_MobileToolsSheet> {
+  late List<WorkspaceMobileTool> _tools;
+
+  @override
+  void initState() {
+    super.initState();
+    _tools = List<WorkspaceMobileTool>.from(widget.tools);
+  }
+
+  @override
+  void didUpdateWidget(covariant _MobileToolsSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.tools, widget.tools)) {
+      _tools = List<WorkspaceMobileTool>.from(widget.tools);
+    }
+  }
+
+  void _reorder(int from, int to) {
+    if (from == to || from < 0 || to < 0 || from >= _tools.length) return;
+    setState(() {
+      final item = _tools.removeAt(from);
+      _tools.insert(to.clamp(0, _tools.length), item);
+    });
+    widget.onReorder?.call([for (final tool in _tools) tool.id]);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1344,7 +1423,7 @@ class _MobileToolsSheet extends StatelessWidget {
               style: ZephyrBottomSheet.titleStyle(theme),
             ),
           ),
-          if (tools.isEmpty)
+          if (_tools.isEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
               child: Text(
@@ -1358,65 +1437,126 @@ class _MobileToolsSheet extends StatelessWidget {
               child: GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: tools.length,
+                itemCount: _tools.length,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: _columns,
+                  crossAxisCount: _MobileToolsSheet._columns,
                   mainAxisSpacing: 4,
                   crossAxisSpacing: 4,
                   childAspectRatio: 0.82,
                 ),
                 itemBuilder: (context, index) {
-                  final tool = tools[index];
-                  final enabled = tool.enabled;
-                  final fg = enabled
-                      ? theme.colorScheme.onSurface
-                      : theme.colorScheme.onSurface.withValues(alpha: 0.38);
-                  return Material(
-                    type: MaterialType.transparency,
-                    child: InkWell(
+                  final tool = _tools[index];
+                  Widget tile({VoidCallback? onTap}) => _MobileToolTile(
+                    tool: tool,
+                    iconSize: _MobileToolsSheet._iconSize,
+                    borderRadius: radius,
+                    onTap: onTap,
+                  );
+                  final onTap = !tool.enabled
+                      ? null
+                      : () {
+                          Navigator.of(context).pop();
+                          tool.onTap();
+                        };
+                  if (widget.onReorder == null) return tile(onTap: onTap);
+                  return LongPressDraggable<int>(
+                    data: index,
+                    dragAnchorStrategy: pointerDragAnchorStrategy,
+                    feedback: Material(
+                      color: Colors.transparent,
+                      elevation: 6,
+                      shadowColor: Colors.black54,
                       borderRadius: radius,
-                      onTap: !enabled
-                          ? null
-                          : () {
-                              Navigator.of(context).pop();
-                              tool.onTap();
-                            },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 2,
-                          vertical: 8,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              tool.icon ?? Icons.circle_outlined,
-                              size: _iconSize,
-                              color: enabled
-                                  ? theme.colorScheme.onSurface
-                                      .withValues(alpha: 0.82)
-                                  : fg,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              tool.label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: fg,
-                                height: 1.15,
-                              ),
-                            ),
-                          ],
-                        ),
+                      child: SizedBox(
+                        width: (MediaQuery.sizeOf(context).width - 24) /
+                            _MobileToolsSheet._columns,
+                        child: tile(),
                       ),
+                    ),
+                    childWhenDragging: Opacity(
+                      opacity: 0.28,
+                      child: tile(),
+                    ),
+                    child: DragTarget<int>(
+                      onWillAcceptWithDetails: (details) =>
+                          details.data != index,
+                      onAcceptWithDetails: (details) =>
+                          _reorder(details.data, index),
+                      builder: (context, candidate, rejected) {
+                        final highlight = candidate.isNotEmpty;
+                        return DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: radius,
+                            color: highlight
+                                ? theme.colorScheme.primary
+                                    .withValues(alpha: 0.10)
+                                : null,
+                          ),
+                          child: tile(onTap: onTap),
+                        );
+                      },
                     ),
                   );
                 },
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _MobileToolTile extends StatelessWidget {
+  const _MobileToolTile({
+    required this.tool,
+    required this.iconSize,
+    required this.borderRadius,
+    this.onTap,
+  });
+
+  final WorkspaceMobileTool tool;
+  final double iconSize;
+  final BorderRadius borderRadius;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final enabled = tool.enabled;
+    final fg = enabled
+        ? theme.colorScheme.onSurface
+        : theme.colorScheme.onSurface.withValues(alpha: 0.38);
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        borderRadius: borderRadius,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                tool.icon ?? Icons.circle_outlined,
+                size: iconSize,
+                color: enabled
+                    ? theme.colorScheme.onSurface.withValues(alpha: 0.82)
+                    : fg,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                tool.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: fg,
+                  height: 1.15,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
