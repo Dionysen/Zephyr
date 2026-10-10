@@ -21,6 +21,7 @@ import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_theme.dart';
 import '../../editor/view_models/library_view_model.dart';
 import 'library_search_sheet.dart';
+import 'library_switcher_menu.dart';
 import 'workspace_sidebar_library_actions.dart';
 
 enum SidebarMode { docked, drawer }
@@ -2967,47 +2968,33 @@ class _LibraryDock extends StatelessWidget {
     final bottomSafe = MediaQuery.viewPaddingOf(context).bottom;
     return Padding(
       padding: EdgeInsets.fromLTRB(10, 10, 10, 12 + bottomSafe),
-      child: _FloatingChrome(
-        borderRadius: radius,
-        child: SizedBox(
-          height: dockHeight,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: openLibrary,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 0, 8, 0),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.menu_book_outlined),
-                        const SizedBox(width: 9),
-                        Expanded(
-                          child: Text(
-                            model.displayLibraryName(l10n),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+      child: LibrarySwitcherMenu(
+        model: model,
+        onAddLibrary: openLibrary,
+        child: _FloatingChrome(
+          borderRadius: radius,
+          child: SizedBox(
+            height: dockHeight,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: LibrarySwitcherButton(model: model),
+                ),
+                Tooltip(
+                  message: l10n.tooltipSettings,
+                  child: InkWell(
+                    onTap: openSettings,
+                    child: const SizedBox(
+                      width: 48,
+                      child: Center(
+                        child: Icon(Icons.settings_outlined),
+                      ),
                     ),
                   ),
                 ),
-              ),
-              Tooltip(
-                message: l10n.tooltipSettings,
-                child: InkWell(
-                  onTap: openSettings,
-                  child: const SizedBox(
-                    width: 48,
-                    child: Center(
-                      child: Icon(Icons.settings_outlined),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

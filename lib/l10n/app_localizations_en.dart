@@ -1050,6 +1050,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tooltipOpenLibrary => 'Open library';
 
   @override
+  String get librarySwitcherAdd => 'Add library';
+
+  @override
+  String get librarySwitcherRename => 'Rename';
+
+  @override
+  String get librarySwitcherRemove => 'Remove from list';
+
+  @override
+  String get librarySwitcherRenameTitle => 'Rename library';
+
+  @override
+  String get librarySwitcherRenameHint => 'Display name';
+
+  @override
+  String get librarySwitcherRenameEmpty => 'Please enter a name';
+
+  @override
+  String get librarySwitcherRemoveTitle => 'Remove library?';
+
+  @override
+  String librarySwitcherRemoveBody(String name) {
+    return '“$name” will be removed from the list. Files on disk are not deleted.';
+  }
+
+  @override
+  String get librarySwitcherRemoveAction => 'Remove';
+
+  @override
+  String get librarySwitcherOpenFailed => 'Could not open this library.';
+
+  @override
+  String get librarySwitcherOpen => 'Open';
+
+  @override
   String get tooltipOpenSidebar => 'Open sidebar';
 
   @override

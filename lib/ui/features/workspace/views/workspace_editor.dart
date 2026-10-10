@@ -6,6 +6,7 @@ import '../../../../domain/models/editor_margins.dart';
 import '../../../../domain/models/editor_preferences.dart';
 import '../../../../domain/use_cases/paired_punctuation.dart';
 import '../../../../domain/use_cases/paragraph_indentation.dart';
+import '../../../../domain/use_cases/plain_text_word_count.dart';
 import '../../editor/plain_text/decoration/text_decoration_model.dart';
 import '../../editor/plain_text/input/plain_text_editing_controller.dart';
 import '../../editor/plain_text/layout/editor_typography.dart';
@@ -937,21 +938,9 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
             top: 12 + widget.contentTopInset,
             right: 14,
             child: IgnorePointer(
-              child: EditorOverlayCapsule(
-                compact: true,
-                child: Text(
-                  '${article.wordCount}',
-                  textHeightBehavior: const TextHeightBehavior(
-                    applyHeightToFirstAscent: false,
-                    applyHeightToLastDescent: false,
-                  ),
-                  style: TextStyle(
-                    fontSize: 9,
-                    height: 1,
-                    leadingDistribution: TextLeadingDistribution.even,
-                    color: EditorOverlayCapsule.foregroundOf(context),
-                  ),
-                ),
+              child: EditorWordCountChip(
+                controller: _controller,
+                focusNode: _focusNode,
               ),
             ),
           ),
@@ -993,6 +982,92 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// Compact word-count capsule: total when unfocused; `caret / total` when focused.
+class EditorWordCountChip extends StatefulWidget {
+  const EditorWordCountChip({
+    super.key,
+    required this.controller,
+    required this.focusNode,
+    this.fallbackTotal,
+  });
+
+  final PlainTextEditingController controller;
+  final FocusNode focusNode;
+
+  /// Used only when [controller] text is empty and the model still has a count.
+  final int? fallbackTotal;
+
+  @override
+  State<EditorWordCountChip> createState() => _EditorWordCountChipState();
+}
+
+class _EditorWordCountChipState extends State<EditorWordCountChip> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onChange);
+    widget.focusNode.addListener(_onChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant EditorWordCountChip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_onChange);
+      widget.controller.addListener(_onChange);
+    }
+    if (oldWidget.focusNode != widget.focusNode) {
+      oldWidget.focusNode.removeListener(_onChange);
+      widget.focusNode.addListener(_onChange);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onChange);
+    widget.focusNode.removeListener(_onChange);
+    super.dispose();
+  }
+
+  void _onChange() {
+    if (mounted) setState(() {});
+  }
+
+  String get _label {
+    final text = widget.controller.text;
+    if (text.isEmpty &&
+        widget.fallbackTotal != null &&
+        !widget.focusNode.hasFocus) {
+      return '${widget.fallbackTotal}';
+    }
+    return plainTextWordCountLabel(
+      text: text,
+      caretOffset: widget.controller.selection.extentOffset,
+      focused: widget.focusNode.hasFocus,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return EditorOverlayCapsule(
+      compact: true,
+      child: Text(
+        _label,
+        textHeightBehavior: const TextHeightBehavior(
+          applyHeightToFirstAscent: false,
+          applyHeightToLastDescent: false,
+        ),
+        style: TextStyle(
+          fontSize: 9,
+          height: 1.2,
+          leadingDistribution: TextLeadingDistribution.even,
+          color: EditorOverlayCapsule.foregroundOf(context),
+        ),
+      ),
     );
   }
 }

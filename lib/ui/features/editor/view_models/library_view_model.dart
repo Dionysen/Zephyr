@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
+import 'package:uuid/uuid.dart';
 
 import '../../../../domain/models/chapter_sort_mode.dart';
 import '../../../../domain/models/library_backup.dart';
@@ -38,10 +39,13 @@ class LibraryViewModel extends ChangeNotifier {
     Object? initialError,
     this._layoutRepository,
     bool needsLibrarySetup = true,
+    Uuid? uuid,
   }) : _error = initialError,
-       _needsLibrarySetup = needsLibrarySetup;
+       _needsLibrarySetup = needsLibrarySetup,
+       _uuid = uuid ?? const Uuid();
   final WritingLibraryRepository _repository;
   final WorkspaceLayoutRepository? _layoutRepository;
+  final Uuid _uuid;
   WritingLibrary? _library;
   WritingArticle? _article;
   Object? _error;
@@ -64,6 +68,8 @@ class LibraryViewModel extends ChangeNotifier {
   bool _booksSheetDualColumnHydrated = false;
   String? _lastLibraryRoot;
   String? _lastLibraryBookmark;
+  String? _activeLibraryId;
+  List<LibraryRegistryEntry> _libraries = const [];
   String? _selectedBookId;
   String? _selectedArticleId;
   final Map<String, Set<String>> _expandedVolumesByBook = {};
@@ -113,6 +119,20 @@ class LibraryViewModel extends ChangeNotifier {
       );
   WritingFolder? get selectedBook =>
       _library?.folders.where((book) => book.id == _selectedBookId).firstOrNull;
+  /// Registered libraries (ordered). Empty while using only the temporary library.
+  List<LibraryRegistryEntry> get libraries => _libraries;
+
+  String? get activeLibraryId => _activeLibraryId;
+
+  LibraryRegistryEntry? get activeLibrary {
+    final id = _activeLibraryId;
+    if (id == null) return null;
+    for (final entry in _libraries) {
+      if (entry.id == id) return entry;
+    }
+    return null;
+  }
+
   /// Folder basename for the open library, or empty while using a temp library.
   String get libraryName {
     if (needsLibrarySetup) {
@@ -124,6 +144,10 @@ class LibraryViewModel extends ChangeNotifier {
   String displayLibraryName(AppLocalizations l10n) {
     if (needsLibrarySetup) {
       return l10n.temporaryLibraryName;
+    }
+    final registered = activeLibrary?.displayName.trim();
+    if (registered != null && registered.isNotEmpty) {
+      return registered;
     }
     final name = libraryName;
     return name.isEmpty ? l10n.untitledLibrary : name;
@@ -390,20 +414,27 @@ class LibraryViewModel extends ChangeNotifier {
     );
   }
 
-  Future<void> openLibrary(String rootPath, {String? bookmark}) async {
+  /// Opens [rootPath], registering it in the library list when new.
+  Future<void> openLibrary(String rootPath, {String? bookmark}) =>
+      addLibrary(rootPath, bookmark: bookmark);
+
+  /// Adds or activates a library at [rootPath] and opens it.
+  Future<void> addLibrary(
+    String rootPath, {
+    String? bookmark,
+    String? displayName,
+  }) async {
     try {
       await flushPending();
       await _repository.openLibrary(rootPath);
-      _lastLibraryRoot = _repository.location?.rootPath ?? rootPath;
+      final opened = _repository.location?.rootPath ?? rootPath;
+      _registerOrActivate(
+        rootPath: opened,
+        bookmark: bookmark,
+        displayName: displayName,
+      );
       _needsLibrarySetup = false;
-      if (bookmark != null) {
-        _lastLibraryBookmark = bookmark;
-      }
-      _expandedVolumesByBook.clear();
-      _sidebarScrollOffsetByBook.clear();
-      _chapterSortByBook.clear();
-      _selectedBookId = null;
-      _selectedArticleId = null;
+      _resetBookUiState();
       await _saveLayout();
       await load();
     } on Object catch (error) {
@@ -412,11 +443,139 @@ class LibraryViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> switchLibrary(String id) async {
+    final entry = _libraries.where((item) => item.id == id).firstOrNull;
+    if (entry == null) return;
+    if (entry.id == _activeLibraryId &&
+        _repository.location?.rootPath == entry.rootPath) {
+      return;
+    }
+    try {
+      await flushPending();
+      await _repository.openLibrary(entry.rootPath);
+      _activeLibraryId = entry.id;
+      _lastLibraryRoot = _repository.location?.rootPath ?? entry.rootPath;
+      _lastLibraryBookmark = entry.bookmark;
+      _needsLibrarySetup = false;
+      _resetBookUiState();
+      await _saveLayout();
+      await load();
+    } on Object catch (error) {
+      _error = error;
+      notifyListeners();
+    }
+  }
+
+  Future<void> renameLibrary(String id, String displayName) async {
+    final trimmed = displayName.trim();
+    if (trimmed.isEmpty) return;
+    final index = _libraries.indexWhere((item) => item.id == id);
+    if (index < 0) return;
+    final next = List<LibraryRegistryEntry>.from(_libraries);
+    next[index] = next[index].copyWith(displayName: trimmed);
+    _libraries = List<LibraryRegistryEntry>.unmodifiable(next);
+    await _saveLayout();
+    notifyListeners();
+  }
+
+  /// Removes [id] from the registry only (does not delete files on disk).
+  Future<void> removeLibrary(String id) async {
+    final index = _libraries.indexWhere((item) => item.id == id);
+    if (index < 0) return;
+    final removedActive = _activeLibraryId == id;
+    final next = List<LibraryRegistryEntry>.from(_libraries)..removeAt(index);
+    for (var i = 0; i < next.length; i++) {
+      next[i] = next[i].copyWith(rank: i);
+    }
+    _libraries = List<LibraryRegistryEntry>.unmodifiable(next);
+
+    if (!removedActive) {
+      await _saveLayout();
+      notifyListeners();
+      return;
+    }
+
+    if (_libraries.isEmpty) {
+      try {
+        await flushPending();
+        await _repository.openDefaultLibrary();
+        _activeLibraryId = null;
+        _lastLibraryRoot = null;
+        _lastLibraryBookmark = null;
+        _needsLibrarySetup = true;
+        _resetBookUiState();
+        await _saveLayout();
+        await load();
+      } on Object catch (error) {
+        _error = error;
+        notifyListeners();
+      }
+      return;
+    }
+
+    final fallback = _libraries[index.clamp(0, _libraries.length - 1)];
+    await switchLibrary(fallback.id);
+  }
+
+  void _registerOrActivate({
+    required String rootPath,
+    String? bookmark,
+    String? displayName,
+  }) {
+    final existingIndex = _libraries.indexWhere(
+      (entry) => _sameLibraryPath(entry.rootPath, rootPath),
+    );
+    if (existingIndex >= 0) {
+      final existing = _libraries[existingIndex];
+      final next = List<LibraryRegistryEntry>.from(_libraries);
+      next[existingIndex] = existing.copyWith(
+        rootPath: rootPath,
+        bookmark: bookmark ?? existing.bookmark,
+        displayName: displayName?.trim().isNotEmpty == true
+            ? displayName!.trim()
+            : existing.displayName,
+      );
+      _libraries = List<LibraryRegistryEntry>.unmodifiable(next);
+      _activeLibraryId = existing.id;
+      _lastLibraryRoot = rootPath;
+      _lastLibraryBookmark = next[existingIndex].bookmark;
+      return;
+    }
+
+    final entry = LibraryRegistryEntry(
+      id: _uuid.v4(),
+      displayName: (displayName?.trim().isNotEmpty == true)
+          ? displayName!.trim()
+          : path.basename(rootPath),
+      rootPath: rootPath,
+      bookmark: bookmark,
+      rank: _libraries.length,
+    );
+    _libraries = List<LibraryRegistryEntry>.unmodifiable([
+      ..._libraries,
+      entry,
+    ]);
+    _activeLibraryId = entry.id;
+    _lastLibraryRoot = rootPath;
+    _lastLibraryBookmark = bookmark;
+  }
+
+  void _resetBookUiState() {
+    _expandedVolumesByBook.clear();
+    _sidebarScrollOffsetByBook.clear();
+    _chapterSortByBook.clear();
+    _selectedBookId = null;
+    _selectedArticleId = null;
+  }
+
+  bool _sameLibraryPath(String a, String b) =>
+      path.normalize(a) == path.normalize(b);
+
   Future<void> load() async {
     try {
       await flushPending();
       await _loadLayout();
-      if (_lastLibraryRoot != null) {
+      if (_activeLibraryId != null || _lastLibraryRoot != null) {
         _needsLibrarySetup = false;
       } else if (_layoutRepository != null) {
         // A persisted layout with no chosen folder means temporary-library mode.
@@ -785,7 +944,7 @@ class LibraryViewModel extends ChangeNotifier {
     }
   }
 
-  /// Persists any pending content/title immediately (by article id snapshot).
+  /// Persists any pending content/title/layout immediately.
   Future<void> flushPending() async {
     _pendingSave?.cancel();
     _pendingSave = null;
@@ -813,6 +972,19 @@ class LibraryViewModel extends ChangeNotifier {
     if (titleId != null && title != null) {
       await _persistTitle(titleId, title);
     }
+
+    // Flush a pending layout write so last book/article survive pause/dispose.
+    // Skip when nothing is queued — [load] also calls this and must not
+    // overwrite disk with a still-null cold-start selection.
+    if (_pendingLayoutSave != null) {
+      await _flushLayout();
+    }
+  }
+
+  Future<void> _flushLayout() async {
+    _pendingLayoutSave?.cancel();
+    _pendingLayoutSave = null;
+    await _saveLayout();
   }
 
   Future<void> save() async {
@@ -963,22 +1135,35 @@ class LibraryViewModel extends ChangeNotifier {
 
   Future<void> _restoreArticle() async {
     final library = _library;
-    final bookId = _selectedBookId;
-    if (library == null || bookId == null) {
+    if (library == null) {
       _article = null;
       return;
     }
-    final chapters = library.articles
-        .where((chapter) => chapter.folderId == bookId)
-        .toList(growable: false);
+
     ArticleSummary? chosen;
+    // Prefer the remembered article across the whole library so a stale or
+    // missing book id cannot drop the user onto another book's first chapter.
     if (_selectedArticleId != null) {
-      chosen = chapters
+      chosen = library.articles
           .where((chapter) => chapter.id == _selectedArticleId)
           .firstOrNull;
     }
-    chosen ??= chapters.firstOrNull;
+    if (chosen == null) {
+      final bookId = _selectedBookId;
+      if (bookId != null) {
+        chosen = library.articles
+            .where((chapter) => chapter.folderId == bookId)
+            .firstOrNull;
+      }
+    }
+    chosen ??= library.articles
+        .where((chapter) => chapter.folderId != WritingFolder.trashId)
+        .firstOrNull;
+
     _selectedArticleId = chosen?.id;
+    if (chosen != null) {
+      _selectedBookId = chosen.folderId;
+    }
     _article = chosen == null
         ? null
         : await _repository.getArticle(chosen.id);
@@ -994,6 +1179,8 @@ class LibraryViewModel extends ChangeNotifier {
       _sidebarWidth = layout.sidebarWidth;
       _lastLibraryRoot = layout.lastLibraryRoot;
       _lastLibraryBookmark = layout.lastLibraryBookmark;
+      _activeLibraryId = layout.activeLibraryId;
+      _libraries = layout.libraries;
       // Keep an in-session selection across library refreshes (e.g. reorder).
       // Disk may still be null/stale when selection was only restored in memory.
       _selectedBookId ??= layout.selectedBookId;
@@ -1041,6 +1228,8 @@ class LibraryViewModel extends ChangeNotifier {
           sidebarWidth: _sidebarWidth,
           lastLibraryRoot: _lastLibraryRoot,
           lastLibraryBookmark: _lastLibraryBookmark,
+          activeLibraryId: _activeLibraryId,
+          libraries: _libraries,
           selectedBookId: _selectedBookId,
           selectedArticleId: _selectedArticleId,
           expandedVolumesByBook: {
@@ -1065,7 +1254,6 @@ class LibraryViewModel extends ChangeNotifier {
   @override
   void dispose() {
     unawaited(flushPending());
-    _pendingLayoutSave?.cancel();
     super.dispose();
   }
 

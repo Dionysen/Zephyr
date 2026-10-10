@@ -431,6 +431,22 @@
   "chapterSortTitleAsc": "Name · A→Z",
   "chapterSortTitleDesc": "Name · Z→A",
   "tooltipOpenLibrary": "Open library",
+  "librarySwitcherAdd": "Add library",
+  "librarySwitcherRename": "Rename",
+  "librarySwitcherRemove": "Remove from list",
+  "librarySwitcherRenameTitle": "Rename library",
+  "librarySwitcherRenameHint": "Display name",
+  "librarySwitcherRenameEmpty": "Please enter a name",
+  "librarySwitcherRemoveTitle": "Remove library?",
+  "librarySwitcherRemoveBody": "“{name}” will be removed from the list. Files on disk are not deleted.",
+  "@librarySwitcherRemoveBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "librarySwitcherRemoveAction": "Remove",
+  "librarySwitcherOpenFailed": "Could not open this library.",
+  "librarySwitcherOpen": "Open",
   "tooltipOpenSidebar": "Open sidebar",
   "tooltipMore": "More",
   "tooltipEditBook": "Edit book",

@@ -712,16 +712,32 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                   top: statusTop + _barTravel,
                   right: 8,
                   child: _wordCountFade(
-                    child: EditorOverlayCapsule(
-                      compact: true,
-                      child: Text(
-                        '$wordCount',
-                        style: TextStyle(
-                          fontSize: 9,
-                          height: 1.2,
-                          color: EditorOverlayCapsule.foregroundOf(context),
-                        ),
-                      ),
+                    child: ListenableBuilder(
+                      listenable: _editorBridge,
+                      builder: (context, _) {
+                        final controller = _editorBridge.controller;
+                        final focusNode = _editorBridge.focusNode;
+                        if (controller == null || focusNode == null) {
+                          return EditorOverlayCapsule(
+                            compact: true,
+                            child: Text(
+                              '$wordCount',
+                              style: TextStyle(
+                                fontSize: 9,
+                                height: 1.2,
+                                color: EditorOverlayCapsule.foregroundOf(
+                                  context,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                        return EditorWordCountChip(
+                          controller: controller,
+                          focusNode: focusNode,
+                          fallbackTotal: wordCount,
+                        );
+                      },
                     ),
                   ),
                 ),

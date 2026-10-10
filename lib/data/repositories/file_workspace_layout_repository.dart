@@ -1,11 +1,16 @@
+import 'package:path/path.dart' as path;
+import 'package:uuid/uuid.dart';
+
 import '../../domain/models/workspace_layout.dart';
 import '../../domain/repositories/workspace_layout_repository.dart';
 import '../services/workspace_layout_file_storage.dart';
 
 class FileWorkspaceLayoutRepository implements WorkspaceLayoutRepository {
-  FileWorkspaceLayoutRepository(this._storage);
+  FileWorkspaceLayoutRepository(this._storage, {Uuid? uuid})
+    : _uuid = uuid ?? const Uuid();
 
   final WorkspaceLayoutFileStorage _storage;
+  final Uuid _uuid;
 
   @override
   Future<WorkspaceLayout> load() async {
@@ -18,16 +23,56 @@ class FileWorkspaceLayoutRepository implements WorkspaceLayoutRepository {
     final bookmark = values['lastLibraryBookmark'];
     final selectedBookId = values['selectedBookId'];
     final selectedArticleId = values['selectedArticleId'];
+    final lastLibraryRoot = lastRoot is String && lastRoot.isNotEmpty
+        ? lastRoot
+        : null;
+    final lastLibraryBookmark = bookmark is String && bookmark.isNotEmpty
+        ? bookmark
+        : null;
+
+    var libraries = _parseLibraries(values['libraries']);
+    var activeLibraryId = values['activeLibraryId'] is String &&
+            (values['activeLibraryId'] as String).isNotEmpty
+        ? values['activeLibraryId'] as String
+        : null;
+
+    // Migrate pre-registry layouts that only stored lastLibraryRoot.
+    if (libraries.isEmpty && lastLibraryRoot != null) {
+      final id = _uuid.v4();
+      libraries = [
+        LibraryRegistryEntry(
+          id: id,
+          displayName: path.basename(lastLibraryRoot),
+          rootPath: lastLibraryRoot,
+          bookmark: lastLibraryBookmark,
+          rank: 0,
+        ),
+      ];
+      activeLibraryId = id;
+    } else if (activeLibraryId != null &&
+        libraries.every((entry) => entry.id != activeLibraryId)) {
+      activeLibraryId = libraries.isEmpty ? null : libraries.first.id;
+    } else if (activeLibraryId == null && libraries.isNotEmpty) {
+      // Prefer matching lastLibraryRoot, else first entry.
+      activeLibraryId = libraries
+              .where((entry) => entry.rootPath == lastLibraryRoot)
+              .map((entry) => entry.id)
+              .firstOrNull ??
+          libraries.first.id;
+    }
+
+    final active = libraries
+        .where((entry) => entry.id == activeLibraryId)
+        .firstOrNull;
+
     return WorkspaceLayout(
       sidebarWidth: width is num
           ? WorkspaceLayout.clamped(width.toDouble()).sidebarWidth
           : WorkspaceLayout.defaultSidebarWidth,
-      lastLibraryRoot: lastRoot is String && lastRoot.isNotEmpty
-          ? lastRoot
-          : null,
-      lastLibraryBookmark: bookmark is String && bookmark.isNotEmpty
-          ? bookmark
-          : null,
+      lastLibraryRoot: active?.rootPath ?? lastLibraryRoot,
+      lastLibraryBookmark: active?.bookmark ?? lastLibraryBookmark,
+      activeLibraryId: activeLibraryId,
+      libraries: libraries,
       selectedBookId: selectedBookId is String && selectedBookId.isNotEmpty
           ? selectedBookId
           : null,
@@ -47,6 +92,10 @@ class FileWorkspaceLayoutRepository implements WorkspaceLayoutRepository {
     'sidebarWidth': layout.sidebarWidth,
     'lastLibraryRoot': layout.lastLibraryRoot,
     'lastLibraryBookmark': layout.lastLibraryBookmark,
+    'activeLibraryId': layout.activeLibraryId,
+    'libraries': [
+      for (final entry in layout.libraries) entry.toJson(),
+    ],
     'selectedBookId': layout.selectedBookId,
     'selectedArticleId': layout.selectedArticleId,
     'expandedVolumesByBook': layout.expandedVolumesByBook,
@@ -54,6 +103,17 @@ class FileWorkspaceLayoutRepository implements WorkspaceLayoutRepository {
     'chapterSortByBook': layout.chapterSortByBook,
     'booksSheetDualColumn': layout.booksSheetDualColumn,
   });
+
+  List<LibraryRegistryEntry> _parseLibraries(Object? raw) {
+    if (raw is! List) return const [];
+    final entries = <LibraryRegistryEntry>[];
+    for (final item in raw) {
+      final entry = LibraryRegistryEntry.fromJson(item);
+      if (entry != null) entries.add(entry);
+    }
+    entries.sort((a, b) => a.rank.compareTo(b.rank));
+    return List<LibraryRegistryEntry>.unmodifiable(entries);
+  }
 
   Map<String, List<String>> _stringListMap(Object? raw) {
     if (raw is! Map) return const {};

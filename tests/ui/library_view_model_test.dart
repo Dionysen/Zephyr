@@ -159,6 +159,58 @@ void main() {
     expect(layout.layout.lastLibraryBookmark, 'bookmark-data');
     expect(model.needsLibrarySetup, isFalse);
     expect(model.libraryName, 'book');
+    expect(model.libraries, hasLength(1));
+    expect(model.libraries.single.displayName, 'book');
+    expect(model.activeLibraryId, model.libraries.single.id);
+  });
+
+  test('renames library display name without changing path', () async {
+    final library = FakeLibraryRepository();
+    final layout = FakeLayoutRepository(WorkspaceLayout.defaults);
+    final model = LibraryViewModel(library, layoutRepository: layout);
+    await model.openLibrary('/writing/book');
+    final id = model.libraries.single.id;
+
+    await model.renameLibrary(id, '  Drafts  ');
+
+    expect(model.libraries.single.displayName, 'Drafts');
+    expect(model.libraries.single.rootPath, '/writing/book');
+    expect(model.displayLibraryName(AppLocalizationsEn()), 'Drafts');
+    expect(layout.layout.libraries.single.displayName, 'Drafts');
+  });
+
+  test('removeLibrary drops registry entry and keeps files conceptually', () async {
+    final library = FakeLibraryRepository();
+    final layout = FakeLayoutRepository(WorkspaceLayout.defaults);
+    final model = LibraryViewModel(library, layoutRepository: layout);
+    await model.openLibrary('/writing/a');
+    await model.openLibrary('/writing/b');
+    expect(model.libraries, hasLength(2));
+    final removeId = model.libraries.first.id;
+
+    await model.removeLibrary(removeId);
+
+    expect(model.libraries, hasLength(1));
+    expect(model.libraries.single.rootPath, '/writing/b');
+    expect(model.activeLibraryId, model.libraries.single.id);
+  });
+
+  test('removing the last library returns to temporary setup', () async {
+    final library = FakeLibraryRepository();
+    final layout = FakeLayoutRepository(WorkspaceLayout.defaults);
+    final model = LibraryViewModel(library, layoutRepository: layout);
+    await model.openLibrary('/writing/book');
+    final id = model.libraries.single.id;
+
+    await model.removeLibrary(id);
+
+    expect(model.libraries, isEmpty);
+    expect(model.needsLibrarySetup, isTrue);
+    expect(library.openedRoot, '/tmp/zephyr-temporary-library');
+    expect(
+      model.displayLibraryName(AppLocalizationsEn()),
+      'Temporary library',
+    );
   });
 
   test('opens a temporary library when none is open yet', () async {
@@ -347,6 +399,46 @@ void main() {
     expect(layout.layout.selectedBookId, 'book-b');
     expect(layout.layout.selectedArticleId, 'article-b');
     expect(layout.layout.sidebarScrollOffsetByBook['book-b'], 96);
+  });
+
+  test('flushPending writes pending article selection without waiting', () async {
+    final layout = FakeLayoutRepository(WorkspaceLayout.defaults);
+    final model = LibraryViewModel(
+      FakeLibraryRepository(),
+      layoutRepository: layout,
+    );
+    await model.load();
+    // Clear any load-time layout debounce so the next write is from select.
+    await model.flushPending();
+    expect(layout.layout.selectedArticleId, isNot('article-b'));
+
+    await model.selectArticle('article-b');
+    // Debounce has not fired yet — still the previous chapter on disk.
+    expect(layout.layout.selectedArticleId, isNot('article-b'));
+
+    await model.flushPending();
+
+    expect(layout.layout.selectedBookId, 'book-b');
+    expect(layout.layout.selectedArticleId, 'article-b');
+  });
+
+  test('restores remembered article even when saved book id is stale', () async {
+    final layout = FakeLayoutRepository(
+      const WorkspaceLayout(
+        sidebarWidth: 334,
+        selectedBookId: 'Default',
+        selectedArticleId: 'article-b',
+      ),
+    );
+    final model = LibraryViewModel(
+      FakeLibraryRepository(),
+      layoutRepository: layout,
+    );
+
+    await model.load();
+
+    expect(model.article?.id, 'article-b');
+    expect(model.selectedBook?.id, 'book-b');
   });
 
   test('reorderBooks keeps the currently selected book', () async {

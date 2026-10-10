@@ -1003,6 +1003,41 @@ class AppLocalizationsZh extends AppLocalizations {
   String get tooltipOpenLibrary => '打开书库';
 
   @override
+  String get librarySwitcherAdd => '添加文库';
+
+  @override
+  String get librarySwitcherRename => '重命名';
+
+  @override
+  String get librarySwitcherRemove => '从列表移除';
+
+  @override
+  String get librarySwitcherRenameTitle => '重命名文库';
+
+  @override
+  String get librarySwitcherRenameHint => '显示名称';
+
+  @override
+  String get librarySwitcherRenameEmpty => '请输入名称';
+
+  @override
+  String get librarySwitcherRemoveTitle => '移出文库？';
+
+  @override
+  String librarySwitcherRemoveBody(String name) {
+    return '将从列表中移除“$name”。不会删除磁盘上的文件。';
+  }
+
+  @override
+  String get librarySwitcherRemoveAction => '移除';
+
+  @override
+  String get librarySwitcherOpenFailed => '无法打开该文库。';
+
+  @override
+  String get librarySwitcherOpen => '打开';
+
+  @override
   String get tooltipOpenSidebar => '打开侧边栏';
 
   @override

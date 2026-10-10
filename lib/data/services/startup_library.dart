@@ -22,9 +22,9 @@ Future<LibraryLocation> openStartupLibrary({
       return await database.openLibrary(lastRoot);
     } on LibraryInUseException catch (error) {
       lastError = error;
-      await layout.save(saved.copyWith(clearLastLibraryRoot: true));
+      await layout.save(_withoutFailedLibrary(saved, lastRoot));
     } on Object {
-      await layout.save(saved.copyWith(clearLastLibraryRoot: true));
+      await layout.save(_withoutFailedLibrary(saved, lastRoot));
     }
   }
   try {
@@ -41,7 +41,8 @@ Future<String?> _restoreLastRoot(
   WorkspaceLayout saved,
   FolderBookmarkAccess? bookmarks,
 ) async {
-  final bookmark = saved.lastLibraryBookmark;
+  final active = saved.activeLibrary;
+  final bookmark = active?.bookmark ?? saved.lastLibraryBookmark;
   if (bookmark != null && bookmarks != null) {
     try {
       final restored = await bookmarks.restore(bookmark);
@@ -52,5 +53,22 @@ Future<String?> _restoreLastRoot(
       // Fall through to the stored path when the bookmark cannot be resolved.
     }
   }
-  return saved.lastLibraryRoot;
+  return active?.rootPath ?? saved.lastLibraryRoot;
+}
+
+/// Drops the failed folder from the registry and clears last/active pointers.
+WorkspaceLayout _withoutFailedLibrary(WorkspaceLayout saved, String failedRoot) {
+  final remaining = <LibraryRegistryEntry>[
+    for (final entry in saved.libraries)
+      if (entry.rootPath != failedRoot) entry,
+  ];
+  for (var i = 0; i < remaining.length; i++) {
+    remaining[i] = remaining[i].copyWith(rank: i);
+  }
+  return saved.copyWith(
+    clearLastLibraryRoot: true,
+    clearActiveLibraryId: remaining.isEmpty,
+    libraries: remaining,
+    activeLibraryId: remaining.isEmpty ? null : remaining.first.id,
+  );
 }

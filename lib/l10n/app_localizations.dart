@@ -2011,6 +2011,72 @@ abstract class AppLocalizations {
   /// **'Open library'**
   String get tooltipOpenLibrary;
 
+  /// No description provided for @librarySwitcherAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add library'**
+  String get librarySwitcherAdd;
+
+  /// No description provided for @librarySwitcherRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get librarySwitcherRename;
+
+  /// No description provided for @librarySwitcherRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from list'**
+  String get librarySwitcherRemove;
+
+  /// No description provided for @librarySwitcherRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename library'**
+  String get librarySwitcherRenameTitle;
+
+  /// No description provided for @librarySwitcherRenameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Display name'**
+  String get librarySwitcherRenameHint;
+
+  /// No description provided for @librarySwitcherRenameEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a name'**
+  String get librarySwitcherRenameEmpty;
+
+  /// No description provided for @librarySwitcherRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove library?'**
+  String get librarySwitcherRemoveTitle;
+
+  /// No description provided for @librarySwitcherRemoveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” will be removed from the list. Files on disk are not deleted.'**
+  String librarySwitcherRemoveBody(String name);
+
+  /// No description provided for @librarySwitcherRemoveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get librarySwitcherRemoveAction;
+
+  /// No description provided for @librarySwitcherOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open this library.'**
+  String get librarySwitcherOpenFailed;
+
+  /// No description provided for @librarySwitcherOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get librarySwitcherOpen;
+
   /// No description provided for @tooltipOpenSidebar.
   ///
   /// In en, this message translates to:
