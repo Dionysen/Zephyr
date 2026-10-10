@@ -119,5 +119,64 @@ void main() {
         'match',
       );
     });
+
+    test('sorts by book, volume, chapter, title hit, then offset', () {
+      final matches = [
+        const ArticleSearchMatch(
+          articleId: 'c2',
+          title: 'C2',
+          folderId: 'b2',
+          categoryId: 'v2',
+          query: 'x',
+          contentStart: 0,
+          contentEnd: 1,
+        ),
+        const ArticleSearchMatch(
+          articleId: 'c1',
+          title: 'C1',
+          folderId: 'b1',
+          categoryId: null,
+          query: 'x',
+          contentStart: 4,
+          contentEnd: 5,
+        ),
+        const ArticleSearchMatch(
+          articleId: 'c1',
+          title: 'C1',
+          folderId: 'b1',
+          categoryId: null,
+          query: 'x',
+        ),
+        const ArticleSearchMatch(
+          articleId: 'c0',
+          title: 'C0',
+          folderId: 'b1',
+          categoryId: 'v0',
+          query: 'x',
+          contentStart: 0,
+          contentEnd: 1,
+        ),
+      ];
+      final sorted = sortSearchMatchesByManuscriptOrder(
+        matches,
+        manuscriptSearchOrderFromLibrary(
+          folders: [(id: 'b1'), (id: 'b2')],
+          categories: [
+            (id: 'v0', folderId: 'b1'),
+            (id: 'v2', folderId: 'b2'),
+          ],
+          articles: [(id: 'c0'), (id: 'c1'), (id: 'c2')],
+        ),
+      );
+      expect(
+        sorted.map((m) => '${m.articleId}:${m.isTitleOnly}:${m.contentStart}'),
+        [
+          'c0:false:0',
+          'c1:true:null',
+          'c1:false:4',
+          'c2:false:0',
+        ],
+      );
+    });
   });
 }

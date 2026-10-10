@@ -33,6 +33,92 @@ class ArticleSearchMatch {
   bool get isTitleOnly => contentStart == null || contentEnd == null;
 }
 
+/// Library order indexes used by [sortSearchMatchesByManuscriptOrder].
+class ManuscriptSearchOrder {
+  const ManuscriptSearchOrder({
+    required this.bookIndexById,
+    required this.volumeIndexInBook,
+    required this.volumeCountByBook,
+    required this.articleIndexById,
+  });
+
+  final Map<String, int> bookIndexById;
+
+  /// Volume rank within its book (0-based among siblings).
+  final Map<String, int> volumeIndexInBook;
+
+  /// Number of volumes per book — unfiled chapters sort after these.
+  final Map<String, int> volumeCountByBook;
+
+  final Map<String, int> articleIndexById;
+
+  static const _missing = 1 << 30;
+
+  int bookIndex(String folderId) => bookIndexById[folderId] ?? _missing;
+
+  int volumeIndex(String folderId, String? categoryId) {
+    if (categoryId == null) {
+      return volumeCountByBook[folderId] ?? 0;
+    }
+    return volumeIndexInBook[categoryId] ?? _missing;
+  }
+
+  int articleIndex(String articleId) => articleIndexById[articleId] ?? _missing;
+}
+
+/// Builds [ManuscriptSearchOrder] from library lists already in sidebar order.
+ManuscriptSearchOrder manuscriptSearchOrderFromLibrary({
+  required List<({String id})> folders,
+  required List<({String id, String folderId})> categories,
+  required List<({String id})> articles,
+}) {
+  final bookIndexById = <String, int>{
+    for (var i = 0; i < folders.length; i++) folders[i].id: i,
+  };
+  final volumeIndexInBook = <String, int>{};
+  final volumeCountByBook = <String, int>{};
+  for (final volume in categories) {
+    final next = volumeCountByBook[volume.folderId] ?? 0;
+    volumeIndexInBook[volume.id] = next;
+    volumeCountByBook[volume.folderId] = next + 1;
+  }
+  final articleIndexById = <String, int>{
+    for (var i = 0; i < articles.length; i++) articles[i].id: i,
+  };
+  return ManuscriptSearchOrder(
+    bookIndexById: bookIndexById,
+    volumeIndexInBook: volumeIndexInBook,
+    volumeCountByBook: volumeCountByBook,
+    articleIndexById: articleIndexById,
+  );
+}
+
+/// Writing-app default: book → volume → chapter → title hit → content offset.
+List<ArticleSearchMatch> sortSearchMatchesByManuscriptOrder(
+  List<ArticleSearchMatch> matches,
+  ManuscriptSearchOrder order,
+) {
+  if (matches.length < 2) return matches;
+  final sorted = List<ArticleSearchMatch>.from(matches);
+  sorted.sort((a, b) {
+    final book = order.bookIndex(a.folderId).compareTo(order.bookIndex(b.folderId));
+    if (book != 0) return book;
+    final volume = order
+        .volumeIndex(a.folderId, a.categoryId)
+        .compareTo(order.volumeIndex(b.folderId, b.categoryId));
+    if (volume != 0) return volume;
+    final article =
+        order.articleIndex(a.articleId).compareTo(order.articleIndex(b.articleId));
+    if (article != 0) return article;
+    // Soft relevance: title matches before body matches in the same chapter.
+    if (a.isTitleOnly != b.isTitleOnly) {
+      return a.isTitleOnly ? -1 : 1;
+    }
+    return (a.contentStart ?? -1).compareTo(b.contentStart ?? -1);
+  });
+  return sorted;
+}
+
 /// Case-insensitive substring search over [articles]' titles and bodies.
 ///
 /// Content matches use UTF-16 indices compatible with Flutter text editing.

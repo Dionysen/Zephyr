@@ -7,6 +7,7 @@ import '../../../../domain/use_cases/article_text_search.dart';
 import '../../../core/zephyr_bottom_sheet.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
+import '../../../core/zephyr_theme.dart';
 import '../../editor/view_models/library_view_model.dart';
 
 enum LibrarySearchScope {
@@ -137,8 +138,27 @@ class _LibrarySearchSheetState extends State<_LibrarySearchSheet> {
         query: query,
       );
       if (!mounted || gen != _searchGen) return;
+      final library = widget.model.library;
+      final ordered = library == null
+          ? matches
+          : sortSearchMatchesByManuscriptOrder(
+              matches,
+              manuscriptSearchOrderFromLibrary(
+                folders: [
+                  for (final book in library.folders) (id: book.id),
+                ],
+                categories: [
+                  for (final volume in library.categories)
+                    (id: volume.id, folderId: volume.folderId),
+                ],
+                articles: [
+                  for (final chapter in library.articles) (id: chapter.id),
+                ],
+              ),
+            );
+      if (!mounted || gen != _searchGen) return;
       setState(() {
-        _results = matches;
+        _results = ordered;
         _loading = false;
       });
     } on Object {
@@ -193,6 +213,24 @@ class _LibrarySearchSheetState extends State<_LibrarySearchSheet> {
     );
   }
 
+  String _matchPathTitle(ArticleSearchMatch match, AppLocalizations l10n) {
+    final library = widget.model.library;
+    final bookName = library?.folders
+            .where((book) => book.id == match.folderId)
+            .map((book) => book.name)
+            .firstOrNull ??
+        l10n.untitled;
+    final volumeName = match.categoryId == null
+        ? l10n.unfiledVolume
+        : library?.categories
+                .where((volume) => volume.id == match.categoryId)
+                .map((volume) => volume.name)
+                .firstOrNull ??
+            l10n.unfiledVolume;
+    final chapterName = match.title.isEmpty ? l10n.untitled : match.title;
+    return '$bookName · $volumeName · $chapterName';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -212,7 +250,7 @@ class _LibrarySearchSheetState extends State<_LibrarySearchSheet> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
             child: TextField(
               controller: _queryController,
               focusNode: _queryFocus,
@@ -229,43 +267,60 @@ class _LibrarySearchSheetState extends State<_LibrarySearchSheet> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SegmentedButton<LibrarySearchScope>(
-                segments: [
-                  ButtonSegment(
-                    value: LibrarySearchScope.currentArticle,
-                    label: Text(l10n.searchScopeArticle),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final option in [
+                  (
+                    scope: LibrarySearchScope.currentArticle,
+                    label: l10n.searchScopeArticle,
                     enabled: hasArticle,
                   ),
-                  ButtonSegment(
-                    value: LibrarySearchScope.currentVolume,
-                    label: Text(l10n.searchScopeVolume),
+                  (
+                    scope: LibrarySearchScope.currentVolume,
+                    label: l10n.searchScopeVolume,
                     enabled: hasArticle,
                   ),
-                  ButtonSegment(
-                    value: LibrarySearchScope.currentBook,
-                    label: Text(l10n.searchScopeBook),
+                  (
+                    scope: LibrarySearchScope.currentBook,
+                    label: l10n.searchScopeBook,
+                    enabled: true,
                   ),
-                  ButtonSegment(
-                    value: LibrarySearchScope.allBooks,
-                    label: Text(l10n.searchScopeAllBooks),
+                  (
+                    scope: LibrarySearchScope.allBooks,
+                    label: l10n.searchScopeAllBooks,
+                    enabled: true,
                   ),
-                ],
-                selected: {_scope},
-                onSelectionChanged: (next) {
-                  if (next.isEmpty) return;
-                  _onScopeChanged(next.first);
-                },
-                showSelectedIcon: false,
-                style: ButtonStyle(
-                  visualDensity: VisualDensity.compact,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  textStyle: WidgetStatePropertyAll(
-                    theme.textTheme.labelSmall,
+                ])
+                  FilterChip(
+                    label: Text(
+                      option.label,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontSize: 12,
+                        height: 1.1,
+                      ),
+                    ),
+                    labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 0,
+                    ),
+                    selected: _scope == option.scope,
+                    showCheckmark: false,
+                    visualDensity: const VisualDensity(
+                      horizontal: -3,
+                      vertical: -3,
+                    ),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: context.zephyrBorderRadius,
+                    ),
+                    onSelected: !option.enabled
+                        ? null
+                        : (_) => _onScopeChanged(option.scope),
                   ),
-                ),
-              ),
+              ],
             ),
           ),
           if (_loading)
@@ -312,9 +367,13 @@ class _LibrarySearchSheetState extends State<_LibrarySearchSheet> {
       itemBuilder: (context, index) {
         final match = _results[index];
         return ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
           title: Text(
-            match.title.isEmpty ? l10n.untitled : match.title,
-            maxLines: 1,
+            _matchPathTitle(match, l10n),
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
           subtitle: _HighlightedSnippet(

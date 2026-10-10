@@ -1863,8 +1863,10 @@ class _ChapterTreeState extends State<_ChapterTree> {
 
     var target = _chapterKeyFor(articleId).currentContext;
     if (target == null) {
-      // Chapter may still be building after expand; try once more next frame.
-      await WidgetsBinding.instance.endOfFrame;
+      // Lazy [SliverList.builder] disposes rows far outside the cache extent, so
+      // the GlobalKey has no context. Jump near the estimated offset first so
+      // the row is rebuilt, then fine-tune with ensureVisible.
+      await _scrollTowardChapter(chapter);
       if (!mounted) return;
       target = _chapterKeyFor(articleId).currentContext;
     }
@@ -1875,6 +1877,135 @@ class _ChapterTreeState extends State<_ChapterTree> {
       duration: const Duration(milliseconds: 280),
       curve: Curves.easeOutCubic,
     );
+  }
+
+  /// Jumps the sidebar so [chapter] enters the lazy-build window.
+  Future<void> _scrollTowardChapter(ArticleSummary chapter) async {
+    if (!_scrollController.hasClients) {
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted || !_scrollController.hasClients) return;
+    }
+    final estimated = _estimateChapterScrollOffset(chapter);
+    if (estimated == null) {
+      await WidgetsBinding.instance.endOfFrame;
+      return;
+    }
+    final position = _scrollController.position;
+    final viewport = position.viewportDimension;
+    // Prefer putting the estimate near the upper quarter; nudge by ~1 viewport
+    // if row-height variance still leaves the row unbuilt.
+    for (final alignment in const [0.25, -0.65, 1.15]) {
+      final offset = (estimated - viewport * alignment)
+          .clamp(0.0, position.maxScrollExtent);
+      _scrollController.jumpTo(offset);
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+      if (_chapterKeyFor(chapter.id).currentContext != null) return;
+    }
+  }
+
+  /// Approximate scroll offset of [chapter] within the sidebar [CustomScrollView].
+  double? _estimateChapterScrollOffset(ArticleSummary chapter) {
+    final bookId = widget.model.selectedBook?.id;
+    if (bookId == null) return null;
+    final isTrash = bookId == WritingFolder.trashId;
+    final rowHeight = _sampleChapterRowHeight() ?? 88.0;
+
+    final volumeId = chapter.categoryId;
+    if (volumeId != null && !isTrash) {
+      final volumeSliver = _volumeSliver(volumeId);
+      if (volumeSliver == null) return null;
+      final chapters = widget.library.articles
+          .where(
+            (item) => item.folderId == bookId && item.categoryId == volumeId,
+          )
+          .toList(growable: false);
+      final index = chapters.indexWhere((item) => item.id == chapter.id);
+      if (index < 0) return null;
+      final within = _estimateOffsetWithinChapterList(
+        chapters,
+        index,
+        rowHeight,
+        volumeBodyExtent: () {
+          final header = _headerExtentOf(volumeSliver);
+          final total = volumeSliver.geometry?.scrollExtent ?? 0;
+          return (total - header).clamp(0.0, double.infinity);
+        },
+      );
+      return volumeSliver.constraints.precedingScrollExtent +
+          _headerExtentOf(volumeSliver) +
+          within;
+    }
+
+    var offset = 0.0;
+    if (!isTrash) {
+      for (final volume in widget.library.categories.where(
+        (item) => item.folderId == bookId,
+      )) {
+        final sliver = _volumeSliver(volume.id);
+        offset += sliver?.geometry?.scrollExtent ?? 0;
+      }
+      // Padding + label for the "unfiled" header ([SliverToBoxAdapter]).
+      offset += 36;
+    }
+    final loose = widget.library.articles
+        .where(
+          (item) =>
+              item.folderId == bookId && (isTrash || item.categoryId == null),
+        )
+        .toList(growable: false);
+    final index = loose.indexWhere((item) => item.id == chapter.id);
+    if (index < 0) return null;
+    return offset +
+        _estimateOffsetWithinChapterList(loose, index, rowHeight);
+  }
+
+  /// Offset of [index] inside a chapter sliver list, preferring a built sibling.
+  double _estimateOffsetWithinChapterList(
+    List<ArticleSummary> chapters,
+    int index,
+    double rowHeight, {
+    double Function()? volumeBodyExtent,
+  }) {
+    for (var i = 0; i < chapters.length; i++) {
+      final ctx = _chapterKeys[chapters[i].id]?.currentContext;
+      final box = ctx?.findRenderObject();
+      if (box is! RenderBox || !box.hasSize) continue;
+      final siblingOffset = _sliverChildScrollOffset(box);
+      if (siblingOffset == null) continue;
+      return siblingOffset + (index - i) * rowHeight;
+    }
+    final body = volumeBodyExtent?.call() ?? 0;
+    if (body > 0 && chapters.isNotEmpty) {
+      return body * (index / chapters.length);
+    }
+    return index * rowHeight;
+  }
+
+  double? _sampleChapterRowHeight() {
+    for (final key in _chapterKeys.values) {
+      final box = key.currentContext?.findRenderObject();
+      if (box is RenderBox && box.hasSize && box.size.height > 0) {
+        return box.size.height;
+      }
+    }
+    return null;
+  }
+
+  /// Scroll offset of [object] inside its parent [RenderSliverMultiBoxAdaptor].
+  double? _sliverChildScrollOffset(RenderObject object) {
+    var current = object;
+    for (
+      var parent = current.parent;
+      parent != null;
+      parent = current.parent
+    ) {
+      if (parent is RenderSliverMultiBoxAdaptor) {
+        return parent.childScrollOffset(current);
+      }
+      current = parent;
+    }
+    return null;
   }
 
   RenderSliver? _volumeSliver(String volumeId) {
