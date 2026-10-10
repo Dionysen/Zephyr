@@ -124,3 +124,39 @@ void prefetchWorkspaceSettingsFonts(BuildContext context) {
   unawaited(scope.editorPreferences.loadSystemFonts());
   unawaited(scope.theme.loadSystemFonts());
 }
+
+/// Slides the floating settings panel up once when mounted.
+class WorkspaceSettingsSlideIn extends StatefulWidget {
+  const WorkspaceSettingsSlideIn({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  State<WorkspaceSettingsSlideIn> createState() =>
+      _WorkspaceSettingsSlideInState();
+}
+
+class _WorkspaceSettingsSlideInState extends State<WorkspaceSettingsSlideIn>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: WorkspaceSettingsPanel.animationDuration,
+  )..forward();
+
+  late final Animation<Offset> _offset = Tween<Offset>(
+    begin: const Offset(0, 0.08),
+    end: Offset.zero,
+  ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => SlideTransition(
+        position: _offset,
+        child: widget.child,
+      );
+}

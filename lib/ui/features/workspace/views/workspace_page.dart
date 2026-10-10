@@ -255,22 +255,6 @@ class _WorkspacePageState extends State<WorkspacePage>
               );
             }
 
-            // Settings panel is left-aligned with the dock and at least
-            // [WorkspaceSettingsPanel.preferredWidth]; widen the sidebar slot
-            // so the overhang paints and hit-tests over the editor.
-            const settingsInset = 10.0;
-            final settingsPanelWidth = math.max(
-              WorkspaceSettingsPanel.preferredWidth,
-              model.sidebarWidth - 2 * settingsInset,
-            );
-            final sidebarSlotWidth = !model.isSidebarExpanded
-                ? 0.0
-                : _settingsOpen
-                ? math.max(
-                    model.sidebarWidth,
-                    settingsInset + settingsPanelWidth,
-                  )
-                : model.sidebarWidth;
             final workspace = Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -279,22 +263,17 @@ class _WorkspacePageState extends State<WorkspacePage>
                       ? Duration.zero
                       : const Duration(milliseconds: 180),
                   curve: Curves.easeOutCubic,
-                  width: sidebarSlotWidth,
+                  width: model.isSidebarExpanded ? model.sidebarWidth : 0,
                   child: ClipRect(
                     child: OverflowBox(
                       alignment: Alignment.topLeft,
-                      // Widen with the slot when settings overhangs so the
-                      // panel remains hit-testable past the chrome edge.
-                      minWidth: sidebarSlotWidth,
-                      maxWidth: sidebarSlotWidth,
+                      minWidth: model.sidebarWidth,
+                      maxWidth: model.sidebarWidth,
                       child: WorkspaceSidebar(
                         model: model,
                         mode: SidebarMode.docked,
                         openLibrary: _openLibrary,
                         openSettings: _openSettings,
-                        settingsOpen: _settingsOpen,
-                        onCloseSettings: _closeSettings,
-                        chromeWidth: model.sidebarWidth,
                       ),
                     ),
                   ),
@@ -324,21 +303,65 @@ class _WorkspacePageState extends State<WorkspacePage>
                 ),
               ],
             );
-            final shell = _settingsOpen
-                ? Focus(
+            // Floating settings: overlays the workspace without resizing the
+            // sidebar slot or the editor.
+            final settingsInset =
+                WorkspaceLibraryDockMetrics.horizontalInset;
+            final settingsPanelWidth = math.max(
+              WorkspaceSettingsPanel.preferredWidth,
+              model.sidebarWidth - 2 * settingsInset,
+            );
+            final settingsStackHeight = math.max(
+              0.0,
+              constraints.maxHeight -
+                  WorkspaceHeader.height -
+                  WorkspaceBookPicker.blockHeight,
+            );
+            final settingsPanelHeight = settingsStackHeight * 2 / 3;
+            final shell = Stack(
+              clipBehavior: Clip.none,
+              children: [
+                workspace,
+                if (_settingsOpen)
+                  Focus(
                     autofocus: true,
                     onKeyEvent: (node, event) {
-                      final action =
-                          scope.keyboardShortcuts.actionForKeyEvent(event);
+                      final action = scope.keyboardShortcuts
+                          .actionForKeyEvent(event);
                       if (action == ShortcutActionId.closeSettings) {
                         _closeSettings();
                         return KeyEventResult.handled;
                       }
                       return KeyEventResult.ignored;
                     },
-                    child: workspace,
-                  )
-                : workspace;
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: GestureDetector(
+                            onTap: _closeSettings,
+                            behavior: HitTestBehavior.opaque,
+                            child: const ColoredBox(color: Colors.transparent),
+                          ),
+                        ),
+                        Positioned(
+                          left: settingsInset,
+                          bottom:
+                              WorkspaceLibraryDockMetrics.settingsBottomInset(
+                            context,
+                          ),
+                          width: settingsPanelWidth,
+                          height: settingsPanelHeight,
+                          child: WorkspaceSettingsSlideIn(
+                            child: WorkspaceSettingsPanel(
+                              onClose: _closeSettings,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            );
             return ZephyrStatusBar(
               immersive: immersiveStatusBar,
               hideIcons: hideStatusBarIcons,

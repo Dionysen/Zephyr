@@ -408,13 +408,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(WorkspaceSettingsPanel).hitTestable(), findsOneWidget);
-    expect(
-      find.descendant(
-        of: find.byType(WorkspaceSidebar),
-        matching: find.byType(WorkspaceSettingsPanel),
-      ),
-      findsOneWidget,
-    );
     expect(find.text(l10n.settingsTitle), findsWidgets);
     expect(find.text(l10n.settingsSectionGeneral), findsWidgets);
     expect(find.text(l10n.languageTitle), findsOneWidget);
