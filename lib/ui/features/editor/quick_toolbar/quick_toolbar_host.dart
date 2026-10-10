@@ -1,8 +1,13 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
 import '../../../../domain/models/quick_toolbar_config.dart';
+import '../../../core/zephyr_l10n.dart';
+import '../../../core/zephyr_scope.dart';
+import '../../../core/zephyr_snackbar.dart';
+import '../../settings/views/backup_settings_view.dart';
 import '../view_models/quick_toolbar_view_model.dart';
 import 'quick_toolbar_bar.dart';
 import 'quick_toolbar_drawer.dart';
@@ -109,8 +114,13 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
   Widget build(BuildContext context) {
     final toolbar = widget.toolbar;
     final bridge = widget.bridge;
+    final backup = ZephyrScope.maybeOf(context)?.backup;
     return ListenableBuilder(
-      listenable: Listenable.merge([toolbar, bridge]),
+      listenable: Listenable.merge([
+        toolbar,
+        bridge,
+        ?backup,
+      ]),
       builder: (context, _) {
         final keyboard = MediaQuery.viewInsetsOf(context).bottom;
         final bodyFocused = bridge.bodyFocused;
@@ -201,8 +211,14 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
                           foreground: widget.foreground,
                           toolsDrawerOpen: drawerOpen,
                           canUndo: bridge.canUndo,
+                          canBackup: backup == null || !backup.busy,
+                          canRestore: backup != null &&
+                              !backup.busy &&
+                              backup.backups.isNotEmpty,
                           bodyFontFamily: widget.bodyFontFamily,
                           onToolPressed: (tool) => _onTool(context, tool),
+                          onReorderPinned: toolbar.reorderPinned,
+                          onReorderCustom: toolbar.reorderCustom,
                         ),
                       ),
                     ],
@@ -229,9 +245,31 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
         widget.bridge.insertIndent();
       case QuickToolKind.format:
         widget.bridge.applyFormat();
+      case QuickToolKind.backup:
+        unawaited(_backupNow(context));
+      case QuickToolKind.restore:
+        final backupVm = ZephyrScope.maybeOf(context)?.backup;
+        if (backupVm != null) {
+          unawaited(showBackupRestoreFlow(context, backupVm));
+        }
       case QuickToolKind.phrase:
         widget.bridge.insertPhrase(tool.payload ?? '');
     }
+  }
+
+  Future<void> _backupNow(BuildContext context) async {
+    final backup = ZephyrScope.maybeOf(context)?.backup;
+    if (backup == null) return;
+    final l10n = context.l10n;
+    await backup.backupNow();
+    if (!context.mounted) return;
+    final error = backup.error;
+    ZephyrSnackBar.show(
+      context,
+      error == null
+          ? l10n.backupNowSuccess
+          : l10n.backupFailed(error.toString()),
+    );
   }
 }
 

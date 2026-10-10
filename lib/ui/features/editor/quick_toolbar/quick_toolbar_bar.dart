@@ -17,6 +17,8 @@ Color quickToolbarForegroundOf(BuildContext context, Color fallback) =>
     Theme.of(context).brightness == Brightness.light ? Colors.black : fallback;
 
 /// Dual-zone IME accessory: fixed (non-scroll) | custom (horizontal scroll).
+///
+/// Long-press any non-tools button to drag-reorder within its zone.
 class QuickToolbarBar extends StatelessWidget {
   const QuickToolbarBar({
     super.key,
@@ -25,6 +27,10 @@ class QuickToolbarBar extends StatelessWidget {
     required this.toolsDrawerOpen,
     required this.canUndo,
     required this.onToolPressed,
+    this.canBackup = true,
+    this.canRestore = true,
+    this.onReorderPinned,
+    this.onReorderCustom,
     this.bodyFontFamily,
   });
 
@@ -32,7 +38,13 @@ class QuickToolbarBar extends StatelessWidget {
   final Color foreground;
   final bool toolsDrawerOpen;
   final bool canUndo;
+  final bool canBackup;
+  final bool canRestore;
   final ValueChanged<QuickTool> onToolPressed;
+
+  /// Destination index is post-removal (same as [ReorderableListView.onReorderItem]).
+  final void Function(int oldIndex, int newIndex)? onReorderPinned;
+  final void Function(int oldIndex, int newIndex)? onReorderCustom;
 
   /// Article body font for phrase chips.
   final String? bodyFontFamily;
@@ -59,33 +71,33 @@ class QuickToolbarBar extends StatelessWidget {
               bodyFontFamily: bodyFontFamily,
               onPressed: () => onToolPressed(QuickTool.tools),
             ),
-            for (final tool in pinned)
-              QuickToolButton(
-                tool: tool,
+            if (pinned.isNotEmpty)
+              _ReorderableToolRow(
+                tools: pinned,
                 foreground: chrome,
-                enabled: tool.kind != QuickToolKind.undo || canUndo,
-                tooltip: _tooltip(l10n, tool),
+                canUndo: canUndo,
+                canBackup: canBackup,
+                canRestore: canRestore,
                 bodyFontFamily: bodyFontFamily,
-                onPressed: () => onToolPressed(tool),
+                scrollable: false,
+                onToolPressed: onToolPressed,
+                onReorder: onReorderPinned,
+                tooltipFor: (tool) => _tooltip(l10n, tool),
               ),
             if (custom.isNotEmpty) ...[
               _ShortDivider(color: chrome),
               Expanded(
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: EdgeInsets.zero,
-                  itemCount: custom.length,
-                  itemBuilder: (context, index) {
-                    final tool = custom[index];
-                    return QuickToolButton(
-                      tool: tool,
-                      foreground: chrome,
-                      enabled: tool.kind != QuickToolKind.undo || canUndo,
-                      tooltip: _tooltip(l10n, tool),
-                      bodyFontFamily: bodyFontFamily,
-                      onPressed: () => onToolPressed(tool),
-                    );
-                  },
+                child: _ReorderableToolRow(
+                  tools: custom,
+                  foreground: chrome,
+                  canUndo: canUndo,
+                  canBackup: canBackup,
+                  canRestore: canRestore,
+                  bodyFontFamily: bodyFontFamily,
+                  scrollable: true,
+                  onToolPressed: onToolPressed,
+                  onReorder: onReorderCustom,
+                  tooltipFor: (tool) => _tooltip(l10n, tool),
                 ),
               ),
             ] else
@@ -101,9 +113,111 @@ class QuickToolbarBar extends StatelessWidget {
     QuickToolKind.paste => l10n.quickToolbarPasteTooltip,
     QuickToolKind.indent => l10n.quickToolbarIndentTooltip,
     QuickToolKind.format => l10n.quickToolbarFormatTooltip,
+    QuickToolKind.backup => l10n.quickToolbarBackupTooltip,
+    QuickToolKind.restore => l10n.quickToolbarRestoreTooltip,
     QuickToolKind.phrase => tool.label,
     QuickToolKind.tools => l10n.quickToolbarToolsTooltip,
   };
+}
+
+class _ReorderableToolRow extends StatelessWidget {
+  const _ReorderableToolRow({
+    required this.tools,
+    required this.foreground,
+    required this.canUndo,
+    required this.canBackup,
+    required this.canRestore,
+    required this.scrollable,
+    required this.onToolPressed,
+    required this.tooltipFor,
+    this.bodyFontFamily,
+    this.onReorder,
+  });
+
+  final List<QuickTool> tools;
+  final Color foreground;
+  final bool canUndo;
+  final bool canBackup;
+  final bool canRestore;
+  final bool scrollable;
+  final String? bodyFontFamily;
+  final ValueChanged<QuickTool> onToolPressed;
+  final void Function(int oldIndex, int newIndex)? onReorder;
+  final String? Function(QuickTool tool) tooltipFor;
+
+  bool _enabled(QuickTool tool) => switch (tool.kind) {
+    QuickToolKind.undo => canUndo,
+    QuickToolKind.backup => canBackup,
+    QuickToolKind.restore => canRestore,
+    _ => true,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    if (onReorder == null) {
+      final children = [
+        for (final tool in tools)
+          QuickToolButton(
+            tool: tool,
+            foreground: foreground,
+            enabled: _enabled(tool),
+            tooltip: tooltipFor(tool),
+            bodyFontFamily: bodyFontFamily,
+            onPressed: () => onToolPressed(tool),
+          ),
+      ];
+      if (!scrollable) {
+        return Row(mainAxisSize: MainAxisSize.min, children: children);
+      }
+      return ListView(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.zero,
+        children: children,
+      );
+    }
+
+    return ReorderableListView.builder(
+      scrollDirection: Axis.horizontal,
+      shrinkWrap: !scrollable,
+      physics: scrollable
+          ? null
+          : const NeverScrollableScrollPhysics(),
+      buildDefaultDragHandles: false,
+      padding: EdgeInsets.zero,
+      itemCount: tools.length,
+      onReorderItem: onReorder!,
+      proxyDecorator: (child, index, animation) {
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, child) {
+            final t = Curves.easeInOut.transform(animation.value);
+            return Material(
+              color: Colors.transparent,
+              elevation: 2 + 4 * t,
+              shadowColor: Colors.black54,
+              child: child,
+            );
+          },
+          child: child,
+        );
+      },
+      itemBuilder: (context, index) {
+        final tool = tools[index];
+        // No tooltip while reorder is enabled — long-press starts a drag.
+        return ReorderableDelayedDragStartListener(
+          key: ValueKey(tool.id),
+          index: index,
+          child: QuickToolButton(
+            tool: tool,
+            foreground: foreground,
+            enabled: _enabled(tool),
+            bodyFontFamily: bodyFontFamily,
+            onPressed: () => onToolPressed(tool),
+          ),
+        );
+      },
+    );
+  }
 }
 
 class _ShortDivider extends StatelessWidget {

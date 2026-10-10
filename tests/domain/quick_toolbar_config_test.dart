@@ -9,7 +9,11 @@ void main() {
       QuickTool.undoId,
       QuickTool.pasteId,
     ]);
-    expect(config.customIds, [QuickTool.indentId]);
+    expect(config.customIds, [
+      QuickTool.indentId,
+      QuickTool.backupId,
+      QuickTool.restoreId,
+    ]);
   });
 
   test('round-trips phrase catalog and layout', () {

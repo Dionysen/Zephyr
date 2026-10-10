@@ -1159,10 +1159,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get quickToolbarFormatTooltip => '一键格式化';
 
   @override
+  String get quickToolbarBackupTooltip => '立即备份';
+
+  @override
+  String get quickToolbarRestoreTooltip => '恢复备份';
+
+  @override
   String get quickToolbarEdit => '编辑工具栏';
 
   @override
-  String get quickToolbarEditHint => '拖拽排序，或在固定栏与自定义栏之间移动工具。';
+  String get quickToolbarEditHint => '在工具栏上长按拖动可排序；也可在此页拖拽，或在固定栏与自定义栏之间移动。';
 
   @override
   String get quickToolbarPinnedSection => '固定栏';

@@ -65,7 +65,7 @@ class BackupSettingsView extends StatelessWidget {
               : l10n.backupRestoreSubtitle(viewModel.backups.length),
           showDivider: false,
           enabled: !viewModel.busy && viewModel.backups.isNotEmpty,
-          onTap: () => _pickAndRestore(context),
+          onTap: () => showBackupRestoreFlow(context, viewModel),
           trailing: viewModel.isRestoring
               ? const SizedBox(
                   width: 20,
@@ -100,68 +100,79 @@ class BackupSettingsView extends StatelessWidget {
       );
     },
   );
+}
 
-  Future<void> _pickAndRestore(BuildContext context) async {
-    final l10n = context.l10n;
-    final entry = await showModalBottomSheet<BackupEntry>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => _BackupListSheet(
-        backups: viewModel.backups,
+/// Pick a backup, choose merge/overwrite, confirm, then restore.
+Future<void> showBackupRestoreFlow(
+  BuildContext context,
+  BackupViewModel viewModel,
+) async {
+  final l10n = context.l10n;
+  await viewModel.refreshBackups();
+  if (!context.mounted) return;
+  if (viewModel.backups.isEmpty) {
+    ZephyrSnackBar.show(context, l10n.backupRestoreEmpty);
+    return;
+  }
+
+  final entry = await showModalBottomSheet<BackupEntry>(
+    context: context,
+    isScrollControlled: true,
+    builder: (context) => _BackupListSheet(
+      backups: viewModel.backups,
+    ),
+  );
+  if (entry == null || !context.mounted) return;
+
+  final mode = await showZephyrSettingsChoicePicker<RestoreMode>(
+    context,
+    title: l10n.backupRestoreModeTitle,
+    selected: RestoreMode.merge,
+    choices: [
+      ZephyrSettingsChoice(
+        value: RestoreMode.merge,
+        label: l10n.backupRestoreModeMerge,
       ),
-    );
-    if (entry == null || !context.mounted) return;
+      ZephyrSettingsChoice(
+        value: RestoreMode.overwrite,
+        label: l10n.backupRestoreModeOverwrite,
+      ),
+    ],
+  );
+  if (mode == null || !context.mounted) return;
 
-    final mode = await showZephyrSettingsChoicePicker<RestoreMode>(
-      context,
-      title: l10n.backupRestoreModeTitle,
-      selected: RestoreMode.merge,
-      choices: [
-        ZephyrSettingsChoice(
-          value: RestoreMode.merge,
-          label: l10n.backupRestoreModeMerge,
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(l10n.backupRestoreConfirmTitle),
+      content: Text(
+        mode == RestoreMode.overwrite
+            ? l10n.backupRestoreConfirmOverwrite
+            : l10n.backupRestoreConfirmMerge,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text(l10n.actionCancel),
         ),
-        ZephyrSettingsChoice(
-          value: RestoreMode.overwrite,
-          label: l10n.backupRestoreModeOverwrite,
+        FilledButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: Text(l10n.backupRestoreAction),
         ),
       ],
-    );
-    if (mode == null || !context.mounted) return;
+    ),
+  );
+  if (confirmed != true || !context.mounted) return;
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.backupRestoreConfirmTitle),
-        content: Text(
-          mode == RestoreMode.overwrite
-              ? l10n.backupRestoreConfirmOverwrite
-              : l10n.backupRestoreConfirmMerge,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.actionCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.backupRestoreAction),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !context.mounted) return;
-
-    await viewModel.restore(entry: entry, mode: mode);
-    if (!context.mounted) return;
-    final error = viewModel.error;
-    ZephyrSnackBar.show(
-      context,
-      error == null
-          ? l10n.backupRestoreSuccess
-          : l10n.backupFailed(error.toString()),
-    );
-  }
+  await viewModel.restore(entry: entry, mode: mode);
+  if (!context.mounted) return;
+  final error = viewModel.error;
+  ZephyrSnackBar.show(
+    context,
+    error == null
+        ? l10n.backupRestoreSuccess
+        : l10n.backupFailed(error.toString()),
+  );
 }
 
 class _BackupListSheet extends StatelessWidget {

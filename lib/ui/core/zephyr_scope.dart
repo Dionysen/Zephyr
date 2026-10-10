@@ -32,10 +32,13 @@ class ZephyrScope extends InheritedWidget {
   final BackupViewModel backup;
 
   static ZephyrScope of(BuildContext context) {
-    final scope = context.dependOnInheritedWidgetOfExactType<ZephyrScope>();
+    final scope = maybeOf(context);
     assert(scope != null, 'ZephyrScope is missing from the widget tree.');
     return scope!;
   }
+
+  static ZephyrScope? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<ZephyrScope>();
 
   @override
   bool updateShouldNotify(ZephyrScope oldWidget) =>

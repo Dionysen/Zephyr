@@ -171,6 +171,8 @@ class _QuickToolbarEditBody extends StatelessWidget {
     QuickToolKind.paste => l10n.quickToolbarPasteTooltip,
     QuickToolKind.indent => l10n.quickToolbarIndentTooltip,
     QuickToolKind.format => l10n.quickToolbarFormatTooltip,
+    QuickToolKind.backup => l10n.quickToolbarBackupTooltip,
+    QuickToolKind.restore => l10n.quickToolbarRestoreTooltip,
     QuickToolKind.phrase => tool.label ?? l10n.quickToolbarAddPhrase,
   };
 

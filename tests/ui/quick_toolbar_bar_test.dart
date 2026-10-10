@@ -1,4 +1,5 @@
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/domain/models/quick_toolbar_config.dart';
@@ -48,6 +49,8 @@ void main() {
     expect(find.byIcon(Icons.undo_rounded), findsOneWidget);
     expect(find.byIcon(Icons.content_paste_rounded), findsOneWidget);
     expect(find.byIcon(Icons.format_indent_increase_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.backup_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.restore_rounded), findsOneWidget);
 
     final scrollable = find.descendant(
       of: find.byType(QuickToolbarBar),
@@ -63,6 +66,13 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(
+      find.descendant(
+        of: scrollable,
+        matching: find.byIcon(Icons.backup_outlined),
+      ),
+      findsOneWidget,
+    );
     // Undo stays in the fixed (non-scroll) zone.
     expect(
       find.descendant(
@@ -74,6 +84,58 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.apps_rounded));
     expect(pressed, [QuickTool.toolsId]);
+  });
+
+  testWidgets('long-press drag reorders custom-zone tools', (tester) async {
+    var customIds = <String>[
+      QuickTool.indentId,
+      QuickTool.backupId,
+      QuickTool.restoreId,
+    ];
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) {
+              return QuickToolbarBar(
+                config: QuickToolbarConfig(
+                  pinnedIds: const [QuickTool.undoId, QuickTool.pasteId],
+                  customIds: customIds,
+                  catalog: QuickTool.builtins,
+                ),
+                foreground: Colors.white,
+                toolsDrawerOpen: false,
+                canUndo: true,
+                onToolPressed: (_) {},
+                onReorderCustom: (oldIndex, newIndex) {
+                  setState(() {
+                    final next = List<String>.from(customIds);
+                    final id = next.removeAt(oldIndex);
+                    next.insert(newIndex.clamp(0, next.length), id);
+                    customIds = next;
+                  });
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    final indent = find.byIcon(Icons.format_indent_increase_rounded);
+    final backup = find.byIcon(Icons.backup_outlined);
+    expect(tester.getTopLeft(indent).dx, lessThan(tester.getTopLeft(backup).dx));
+
+    final gesture = await tester.startGesture(tester.getCenter(indent));
+    await tester.pump(kLongPressTimeout + kPressTimeout);
+    await gesture.moveTo(tester.getCenter(backup) + const Offset(40, 0));
+    await tester.pump();
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(customIds.indexOf(QuickTool.indentId), greaterThan(0));
   });
 
   testWidgets('tools drawer keeps toolbar while keyboard inset is latched', (

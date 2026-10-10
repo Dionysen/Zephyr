@@ -1208,11 +1208,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quickToolbarFormatTooltip => 'Format';
 
   @override
+  String get quickToolbarBackupTooltip => 'Back up now';
+
+  @override
+  String get quickToolbarRestoreTooltip => 'Restore backup';
+
+  @override
   String get quickToolbarEdit => 'Edit toolbar';
 
   @override
   String get quickToolbarEditHint =>
-      'Drag to reorder, or move tools between the fixed and custom zones.';
+      'Long-press and drag on the toolbar to reorder. You can also drag here, or move tools between the fixed and custom zones.';
 
   @override
   String get quickToolbarPinnedSection => 'Fixed bar';

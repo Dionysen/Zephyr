@@ -1,5 +1,14 @@
 /// Built-in and user-defined tools for the IME quick toolbar.
-enum QuickToolKind { tools, undo, paste, indent, format, phrase }
+enum QuickToolKind {
+  tools,
+  undo,
+  paste,
+  indent,
+  format,
+  backup,
+  restore,
+  phrase,
+}
 
 /// A single toolbar tool. Built-ins use stable [id]s matching [kind].name;
 /// phrases use generated ids with [label] / [payload].
@@ -16,14 +25,26 @@ class QuickTool {
   static const pasteId = 'paste';
   static const indentId = 'indent';
   static const formatId = 'format';
+  static const backupId = 'backup';
+  static const restoreId = 'restore';
 
   static const tools = QuickTool(id: toolsId, kind: QuickToolKind.tools);
   static const undo = QuickTool(id: undoId, kind: QuickToolKind.undo);
   static const paste = QuickTool(id: pasteId, kind: QuickToolKind.paste);
   static const indent = QuickTool(id: indentId, kind: QuickToolKind.indent);
   static const format = QuickTool(id: formatId, kind: QuickToolKind.format);
+  static const backup = QuickTool(id: backupId, kind: QuickToolKind.backup);
+  static const restore = QuickTool(id: restoreId, kind: QuickToolKind.restore);
 
-  static const builtins = [tools, undo, paste, indent, format];
+  static const builtins = [
+    tools,
+    undo,
+    paste,
+    indent,
+    format,
+    backup,
+    restore,
+  ];
 
   final String id;
   final QuickToolKind kind;
@@ -86,7 +107,11 @@ class QuickToolbarConfig {
 
   static final defaults = QuickToolbarConfig(
     pinnedIds: const [QuickTool.undoId, QuickTool.pasteId],
-    customIds: const [QuickTool.indentId],
+    customIds: const [
+      QuickTool.indentId,
+      QuickTool.backupId,
+      QuickTool.restoreId,
+    ],
     catalog: List<QuickTool>.from(QuickTool.builtins),
   );
 

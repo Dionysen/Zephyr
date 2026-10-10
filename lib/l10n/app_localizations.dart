@@ -2311,6 +2311,18 @@ abstract class AppLocalizations {
   /// **'Format'**
   String get quickToolbarFormatTooltip;
 
+  /// No description provided for @quickToolbarBackupTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Back up now'**
+  String get quickToolbarBackupTooltip;
+
+  /// No description provided for @quickToolbarRestoreTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore backup'**
+  String get quickToolbarRestoreTooltip;
+
   /// No description provided for @quickToolbarEdit.
   ///
   /// In en, this message translates to:
@@ -2320,7 +2332,7 @@ abstract class AppLocalizations {
   /// No description provided for @quickToolbarEditHint.
   ///
   /// In en, this message translates to:
-  /// **'Drag to reorder, or move tools between the fixed and custom zones.'**
+  /// **'Long-press and drag on the toolbar to reorder. You can also drag here, or move tools between the fixed and custom zones.'**
   String get quickToolbarEditHint;
 
   /// No description provided for @quickToolbarPinnedSection.
