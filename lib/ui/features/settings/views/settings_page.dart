@@ -108,7 +108,7 @@ class _SettingsHome extends StatelessWidget {
   }
 }
 
-/// Tabbed settings body with a floating stadium tab bar at the bottom.
+/// Tabbed settings body with a Material [NavigationBar] at the bottom.
 class CompactSettingsList extends StatelessWidget {
   const CompactSettingsList({
     super.key,
@@ -118,25 +118,22 @@ class CompactSettingsList extends StatelessWidget {
   /// When false, omits immersive / hide-icons toggles (desktop panel).
   final bool showStatusBarSettings;
 
-  static const _tabBarHeight = 64.0;
-  static const _tabBarBottomGap = 12.0;
-
   @override
   Widget build(BuildContext context) {
     final scope = ZephyrScope.of(context);
     final settings = scope.settings;
-    final bottomSafe = MediaQuery.viewPaddingOf(context).bottom;
-    final clearance = _tabBarHeight + _tabBarBottomGap + bottomSafe;
+    final l10n = context.l10n;
 
     return ListenableBuilder(
       listenable: settings,
       builder: (context, _) {
         final tab = settings.tab;
-        return Stack(
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Positioned.fill(
+            Expanded(
               child: ListView(
-                padding: EdgeInsets.fromLTRB(16, 12, 16, 24 + clearance),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 children: _pageChildren(
                   context,
                   tab: tab,
@@ -144,13 +141,27 @@ class CompactSettingsList extends StatelessWidget {
                 ),
               ),
             ),
-            Positioned(
-              left: 20,
-              right: 20,
-              bottom: _tabBarBottomGap + bottomSafe,
-              child: _SettingsFloatingTabBar(
-                selected: tab,
-                onSelected: settings.selectTab,
+            // NavigationBar's SafeArea also applies top view padding; when the
+            // bar sits in a Column (not Scaffold.bottomNavigationBar) that
+            // leaves a large empty band above the destinations.
+            MediaQuery.removePadding(
+              context: context,
+              removeTop: true,
+              child: NavigationBar(
+                height: 78,
+                selectedIndex: tab.index,
+                onDestinationSelected: (index) {
+                  settings.selectTab(SettingsTab.values[index]);
+                },
+                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                destinations: [
+                  for (final item in SettingsTab.values)
+                    NavigationDestination(
+                      key: ValueKey('settings-tab-${item.name}'),
+                      icon: Icon(item.icon, size: 22),
+                      label: item.title(l10n),
+                    ),
+                ],
               ),
             ),
           ],
@@ -234,132 +245,5 @@ class CompactSettingsList extends StatelessWidget {
         const AboutSettingsView(compact: true),
       ],
     };
-  }
-}
-
-class _SettingsFloatingTabBar extends StatelessWidget {
-  const _SettingsFloatingTabBar({
-    required this.selected,
-    required this.onSelected,
-  });
-
-  final SettingsTab selected;
-  final ValueChanged<SettingsTab> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = context.l10n;
-    final dark = theme.brightness == Brightness.dark;
-    final barColor = (dark ? Colors.black : Colors.white).withValues(
-      alpha: dark ? 0.82 : 0.92,
-    );
-    final shadow = theme.colorScheme.shadow;
-    const shape = StadiumBorder();
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(999),
-        boxShadow: [
-          BoxShadow(
-            color: shadow.withValues(alpha: dark ? 0.45 : 0.16),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-          BoxShadow(
-            color: shadow.withValues(alpha: dark ? 0.28 : 0.08),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Material(
-        color: barColor,
-        shape: shape,
-        clipBehavior: Clip.antiAlias,
-        elevation: 0,
-        child: SizedBox(
-          height: CompactSettingsList._tabBarHeight,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-            child: Row(
-              children: [
-                for (final tab in SettingsTab.values)
-                  Expanded(
-                    child: _SettingsTabItem(
-                      key: ValueKey('settings-tab-${tab.name}'),
-                      icon: tab.icon,
-                      label: tab.title(l10n),
-                      selected: tab == selected,
-                      onTap: () => onSelected(tab),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsTabItem extends StatelessWidget {
-  const _SettingsTabItem({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final fg = selected
-        ? scheme.onPrimary
-        : scheme.onSurface.withValues(alpha: 0.72);
-    final bg = selected ? scheme.primary : Colors.transparent;
-
-    return Material(
-      color: bg,
-      shape: const StadiumBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        customBorder: const StadiumBorder(),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 20, color: fg),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textHeightBehavior: const TextHeightBehavior(
-                  applyHeightToFirstAscent: false,
-                  applyHeightToLastDescent: false,
-                ),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: fg,
-                  fontSize: 11,
-                  height: 1,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                  leadingDistribution: TextLeadingDistribution.even,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

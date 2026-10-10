@@ -432,7 +432,12 @@ void main() {
     // Workspace chrome stays under the overlay.
     expect(find.byTooltip(l10n.tooltipSettings), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('settings-tab-editor')));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text(l10n.settingsSectionEditor),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.text(l10n.languageTitle), findsNothing);
     expect(find.text(l10n.editorSectionFooter), findsOneWidget);
