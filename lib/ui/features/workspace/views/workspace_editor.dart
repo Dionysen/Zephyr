@@ -16,6 +16,7 @@ import '../../editor/quick_toolbar/workspace_editor_bridge.dart';
 import '../../editor/view_models/editor_preferences_view_model.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../../core/editor_background_layer.dart';
+import '../../../core/zephyr_embossed_mark.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_scope.dart';
 
@@ -862,18 +863,46 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     final themeVm = ZephyrScope.of(context).theme;
     final article = widget.model.article;
     if (article == null) {
-      final empty = Center(child: Text(context.l10n.editorEmptyState));
-      if (!widget.showBackground) {
-        return empty;
-      }
-      return ListenableBuilder(
-        listenable: themeVm,
-        builder: (context, _) => EditorBackgroundLayer(
-          config: themeVm.ui.editorBackgroundFor(
-            dark: themeVm.isEffectivelyDark,
+      Widget emptyFor(EditorPreferences prefs) {
+        final theme = Theme.of(context);
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const ZephyrEmbossedMark(size: 240),
+                const SizedBox(height: 28),
+                Text(
+                  context.l10n.editorEmptyState,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: prefs.fontSize,
+                    fontFamily: prefs.fontFamily,
+                    height: prefs.lineHeight,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
           ),
-          child: empty,
-        ),
+        );
+      }
+
+      return ListenableBuilder(
+        listenable: Listenable.merge([themeVm, widget.preferences]),
+        builder: (context, _) {
+          final empty = emptyFor(widget.preferences.preferences);
+          if (!widget.showBackground) {
+            return empty;
+          }
+          return EditorBackgroundLayer(
+            config: themeVm.ui.editorBackgroundFor(
+              dark: themeVm.isEffectivelyDark,
+            ),
+            child: empty,
+          );
+        },
       );
     }
 
