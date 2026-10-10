@@ -48,7 +48,7 @@ class BackupSettingsView extends StatelessWidget {
               ),
             );
           },
-          trailing: viewModel.busy
+          trailing: viewModel.isBackingUp
               ? const SizedBox(
                   width: 20,
                   height: 20,
@@ -68,11 +68,17 @@ class BackupSettingsView extends StatelessWidget {
           showDivider: false,
           enabled: !viewModel.busy && viewModel.backups.isNotEmpty,
           onTap: () => _pickAndRestore(context),
-          trailing: Icon(
-            Icons.restore,
-            size: 20,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+          trailing: viewModel.isRestoring
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Icon(
+                  Icons.restore,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
         ),
       ];
 

@@ -7,6 +7,8 @@ import '../../../../domain/repositories/backup_preferences_repository.dart';
 import '../../../../domain/repositories/writing_library_repository.dart';
 import '../../editor/view_models/library_view_model.dart';
 
+enum BackupBusyKind { none, backup, restore }
+
 class BackupViewModel extends ChangeNotifier {
   BackupViewModel({
     required LibraryViewModel library,
@@ -20,13 +22,15 @@ class BackupViewModel extends ChangeNotifier {
   BackupPreferences _preferences = BackupPreferences.defaults;
   List<BackupEntry> _backups = const [];
   Object? _error;
-  var _busy = false;
+  var _busyKind = BackupBusyKind.none;
   String? _statusMessage;
 
   BackupPreferences get preferences => _preferences;
   List<BackupEntry> get backups => _backups;
   Object? get error => _error;
-  bool get busy => _busy;
+  bool get busy => _busyKind != BackupBusyKind.none;
+  bool get isBackingUp => _busyKind == BackupBusyKind.backup;
+  bool get isRestoring => _busyKind == BackupBusyKind.restore;
   String? get statusMessage => _statusMessage;
   bool get autoBackupEnabled => _preferences.autoBackupEnabled;
 
@@ -56,8 +60,8 @@ class BackupViewModel extends ChangeNotifier {
   }
 
   Future<void> backupNow({BackupKind kind = BackupKind.manual}) async {
-    if (_busy) return;
-    _busy = true;
+    if (busy) return;
+    _busyKind = BackupBusyKind.backup;
     _statusMessage = null;
     _error = null;
     notifyListeners();
@@ -76,7 +80,7 @@ class BackupViewModel extends ChangeNotifier {
     } on Object catch (error) {
       _error = error;
     } finally {
-      _busy = false;
+      _busyKind = BackupBusyKind.none;
       notifyListeners();
     }
   }
@@ -85,8 +89,8 @@ class BackupViewModel extends ChangeNotifier {
     required BackupEntry entry,
     required RestoreMode mode,
   }) async {
-    if (_busy) return;
-    _busy = true;
+    if (busy) return;
+    _busyKind = BackupBusyKind.restore;
     _statusMessage = null;
     _error = null;
     notifyListeners();
@@ -100,7 +104,7 @@ class BackupViewModel extends ChangeNotifier {
     } on Object catch (error) {
       _error = error;
     } finally {
-      _busy = false;
+      _busyKind = BackupBusyKind.none;
       notifyListeners();
     }
   }
@@ -110,7 +114,7 @@ class BackupViewModel extends ChangeNotifier {
     if (!_preferences.autoBackupEnabled) return;
     if (!_library.contentDirtySinceBackup) return;
     if (_library.isReadOnly) return;
-    if (_busy) return;
+    if (busy) return;
     // Do not await from lifecycle — keeps pause animation smooth.
     unawaited(backupNow(kind: BackupKind.automatic));
   }
