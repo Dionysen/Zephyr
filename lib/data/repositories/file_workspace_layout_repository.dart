@@ -37,6 +37,7 @@ class FileWorkspaceLayoutRepository implements WorkspaceLayoutRepository {
           : null,
       expandedVolumesByBook: _stringListMap(values['expandedVolumesByBook']),
       sidebarScrollOffsetByBook: _doubleMap(values['sidebarScrollOffsetByBook']),
+      chapterSortByBook: _stringMap(values['chapterSortByBook']),
       booksSheetDualColumn: values['booksSheetDualColumn'] != false,
     );
   }
@@ -50,6 +51,7 @@ class FileWorkspaceLayoutRepository implements WorkspaceLayoutRepository {
     'selectedArticleId': layout.selectedArticleId,
     'expandedVolumesByBook': layout.expandedVolumesByBook,
     'sidebarScrollOffsetByBook': layout.sidebarScrollOffsetByBook,
+    'chapterSortByBook': layout.chapterSortByBook,
     'booksSheetDualColumn': layout.booksSheetDualColumn,
   });
 
@@ -72,6 +74,18 @@ class FileWorkspaceLayoutRepository implements WorkspaceLayoutRepository {
       final value = entry.value;
       if (value is num) {
         out[entry.key.toString()] = value.toDouble();
+      }
+    }
+    return out;
+  }
+
+  Map<String, String> _stringMap(Object? raw) {
+    if (raw is! Map) return const {};
+    final out = <String, String>{};
+    for (final entry in raw.entries) {
+      final value = entry.value;
+      if (value is String && value.isNotEmpty) {
+        out[entry.key.toString()] = value;
       }
     }
     return out;

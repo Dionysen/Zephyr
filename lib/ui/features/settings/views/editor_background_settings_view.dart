@@ -9,6 +9,7 @@ import '../../../../domain/models/theme_tokens.dart';
 import '../../../core/editor_background_layer.dart';
 import '../../../core/zephyr_bottom_sheet.dart';
 import '../../../core/zephyr_l10n.dart';
+import '../../../core/zephyr_snackbar.dart';
 import '../../../core/zephyr_theme.dart';
 import '../view_models/theme_view_model.dart';
 
@@ -432,14 +433,10 @@ class _LibraryBody extends StatelessWidget {
     final imported = await viewModel.importBackgroundImage(path);
     if (!context.mounted) return;
     if (imported == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.editorBackgroundImportFailure)),
-      );
+      ZephyrSnackBar.show(context, l10n.editorBackgroundImportFailure);
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.editorBackgroundImportSuccess)),
-    );
+    ZephyrSnackBar.show(context, l10n.editorBackgroundImportSuccess);
     Navigator.of(context).pop(imported.path);
   }
 
@@ -465,14 +462,11 @@ class _LibraryBody extends StatelessWidget {
     if (confirmed != true || !context.mounted) return;
     final ok = await viewModel.deleteBackgroundImage(image);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          ok
-              ? l10n.editorBackgroundDeleteSuccess
-              : l10n.editorBackgroundDeleteFailure,
-        ),
-      ),
+    ZephyrSnackBar.show(
+      context,
+      ok
+          ? l10n.editorBackgroundDeleteSuccess
+          : l10n.editorBackgroundDeleteFailure,
     );
   }
 

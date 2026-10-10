@@ -970,10 +970,34 @@ class AppLocalizationsZh extends AppLocalizations {
   String get tooltipExpandAll => '全部展开';
 
   @override
-  String get tooltipReorder => '排序';
+  String get tooltipReorder => '排序方式';
 
   @override
-  String get tooltipDoneReordering => '完成排序';
+  String get tooltipDoneReordering => '完成调整顺序';
+
+  @override
+  String get chapterSortManual => '手动排序';
+
+  @override
+  String get chapterSortAdjustOrder => '调整顺序';
+
+  @override
+  String get chapterSortCreatedAsc => '创建时间 · 升序';
+
+  @override
+  String get chapterSortCreatedDesc => '创建时间 · 降序';
+
+  @override
+  String get chapterSortUpdatedAsc => '修改时间 · 升序';
+
+  @override
+  String get chapterSortUpdatedDesc => '修改时间 · 降序';
+
+  @override
+  String get chapterSortTitleAsc => '名称 · A→Z';
+
+  @override
+  String get chapterSortTitleDesc => '名称 · Z→A';
 
   @override
   String get tooltipOpenLibrary => '打开书库';

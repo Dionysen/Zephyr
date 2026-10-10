@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 
+import '../../../../domain/models/chapter_sort_mode.dart';
 import '../../../../domain/models/library_backup.dart';
 import '../../../../domain/models/purewriter_models.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -67,6 +68,7 @@ class LibraryViewModel extends ChangeNotifier {
   String? _selectedArticleId;
   final Map<String, Set<String>> _expandedVolumesByBook = {};
   final Map<String, double> _sidebarScrollOffsetByBook = {};
+  final Map<String, ChapterSortMode> _chapterSortByBook = {};
   /// Snapshot of expanded volume ids while a volume drag temporarily collapses all.
   Set<String>? _volumeExpandSnapshotDuringDrag;
   SearchHighlight? _pendingSearchHighlight;
@@ -91,6 +93,14 @@ class LibraryViewModel extends ChangeNotifier {
   bool get isSidebarExpanded => _isSidebarExpanded;
   /// When true, sidebar rows show immediate-drag handles for reordering.
   bool get isReorderMode => _isReorderMode;
+
+  /// Chapter display order for the selected book (manual = DB rank).
+  ChapterSortMode get chapterSortMode {
+    final bookId = _selectedBookId;
+    if (bookId == null) return ChapterSortMode.manual;
+    return _chapterSortByBook[bookId] ?? ChapterSortMode.manual;
+  }
+
   bool get isResizingSidebar => _isResizingSidebar;
   double get sidebarWidth => _sidebarWidth;
   /// Mobile books sheet two-column grid layout (persisted in workspace layout).
@@ -152,6 +162,14 @@ class LibraryViewModel extends ChangeNotifier {
       notifyListeners();
       return;
     }
+    if (!chapterSortMode.isManual) {
+      // Drag reorder only applies while displaying the stored manual order.
+      if (!_isReorderMode) return;
+      endVolumeReorderDrag();
+      _isReorderMode = false;
+      notifyListeners();
+      return;
+    }
     if (_isReorderMode) {
       endVolumeReorderDrag();
     }
@@ -160,12 +178,33 @@ class LibraryViewModel extends ChangeNotifier {
   }
 
   void setReorderMode(bool value) {
-    final next = value && !isReadOnly && selectedBook?.isTrash != true;
+    final next = value &&
+        !isReadOnly &&
+        selectedBook?.isTrash != true &&
+        chapterSortMode.isManual;
     if (_isReorderMode == next) return;
     if (!next) {
       endVolumeReorderDrag();
     }
     _isReorderMode = next;
+    notifyListeners();
+  }
+
+  void setChapterSortMode(ChapterSortMode mode) {
+    final bookId = _selectedBookId;
+    if (bookId == null || selectedBook?.isTrash == true) return;
+    final current = _chapterSortByBook[bookId] ?? ChapterSortMode.manual;
+    if (current == mode) return;
+    if (mode.isManual) {
+      _chapterSortByBook.remove(bookId);
+    } else {
+      _chapterSortByBook[bookId] = mode;
+      if (_isReorderMode) {
+        endVolumeReorderDrag();
+        _isReorderMode = false;
+      }
+    }
+    _scheduleLayoutSave();
     notifyListeners();
   }
 
@@ -362,6 +401,7 @@ class LibraryViewModel extends ChangeNotifier {
       }
       _expandedVolumesByBook.clear();
       _sidebarScrollOffsetByBook.clear();
+      _chapterSortByBook.clear();
       _selectedBookId = null;
       _selectedArticleId = null;
       await _saveLayout();
@@ -973,6 +1013,12 @@ class LibraryViewModel extends ChangeNotifier {
       _sidebarScrollOffsetByBook
         ..clear()
         ..addAll(layout.sidebarScrollOffsetByBook);
+      _chapterSortByBook
+        ..clear()
+        ..addAll({
+          for (final entry in layout.chapterSortByBook.entries)
+            entry.key: ChapterSortMode.fromStorageId(entry.value),
+        });
     } on Object {
       // Layout preferences must not block a writing session.
     }
@@ -1004,6 +1050,10 @@ class LibraryViewModel extends ChangeNotifier {
           sidebarScrollOffsetByBook: Map<String, double>.from(
             _sidebarScrollOffsetByBook,
           ),
+          chapterSortByBook: {
+            for (final entry in _chapterSortByBook.entries)
+              if (!entry.value.isManual) entry.key: entry.value.storageId,
+          },
           booksSheetDualColumn: _booksSheetDualColumn,
         ),
       );

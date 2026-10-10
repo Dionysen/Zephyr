@@ -318,6 +318,12 @@ ThemeData zephyrTheme(
         side: hairline,
       ),
     ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      elevation: 4,
+      insetPadding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+      shape: RoundedRectangleBorder(borderRadius: borderRadius),
+    ),
     tooltipTheme: TooltipThemeData(
       decoration: BoxDecoration(color: control, borderRadius: borderRadius),
       textStyle: TextStyle(color: primaryText),

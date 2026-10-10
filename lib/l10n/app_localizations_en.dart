@@ -1017,10 +1017,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tooltipExpandAll => 'Expand all';
 
   @override
-  String get tooltipReorder => 'Reorder';
+  String get tooltipReorder => 'Sort order';
 
   @override
-  String get tooltipDoneReordering => 'Done reordering';
+  String get tooltipDoneReordering => 'Done adjusting order';
+
+  @override
+  String get chapterSortManual => 'Manual order';
+
+  @override
+  String get chapterSortAdjustOrder => 'Adjust order';
+
+  @override
+  String get chapterSortCreatedAsc => 'Created · Oldest first';
+
+  @override
+  String get chapterSortCreatedDesc => 'Created · Newest first';
+
+  @override
+  String get chapterSortUpdatedAsc => 'Modified · Oldest first';
+
+  @override
+  String get chapterSortUpdatedDesc => 'Modified · Newest first';
+
+  @override
+  String get chapterSortTitleAsc => 'Name · A→Z';
+
+  @override
+  String get chapterSortTitleDesc => 'Name · Z→A';
 
   @override
   String get tooltipOpenLibrary => 'Open library';

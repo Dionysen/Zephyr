@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/l10n/app_localizations_en.dart';
+import 'package:zephyr/domain/models/chapter_sort_mode.dart';
 import 'package:zephyr/domain/models/library_backup.dart';
 import 'package:zephyr/domain/models/purewriter_models.dart';
 import 'package:zephyr/domain/models/workspace_layout.dart';
@@ -104,6 +105,27 @@ void main() {
     model.toggleReorderMode();
     await model.selectBook(WritingFolder.trashId);
     expect(model.isReorderMode, isFalse);
+  });
+
+  test('chapter sort mode exits reorder and blocks drag until manual', () async {
+    final model = LibraryViewModel(FakeLibraryRepository());
+    await model.load();
+
+    expect(model.chapterSortMode, ChapterSortMode.manual);
+    model.toggleReorderMode();
+    expect(model.isReorderMode, isTrue);
+
+    model.setChapterSortMode(ChapterSortMode.titleAsc);
+    expect(model.chapterSortMode, ChapterSortMode.titleAsc);
+    expect(model.isReorderMode, isFalse);
+
+    model.toggleReorderMode();
+    expect(model.isReorderMode, isFalse);
+
+    model.setChapterSortMode(ChapterSortMode.manual);
+    expect(model.chapterSortMode, ChapterSortMode.manual);
+    model.toggleReorderMode();
+    expect(model.isReorderMode, isTrue);
   });
 
   test('volume drag collapses all volumes then restores expand state', () async {

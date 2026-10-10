@@ -27,6 +27,7 @@ void main() {
           'book-2': <String>[],
         },
         sidebarScrollOffsetByBook: {'book-1': 128.5, 'book-2': 0},
+        chapterSortByBook: {'book-1': 'titleAsc', 'book-2': 'updatedDesc'},
         booksSheetDualColumn: true,
       ),
     );
@@ -42,6 +43,10 @@ void main() {
       'book-2': <String>[],
     });
     expect(actual.sidebarScrollOffsetByBook, {'book-1': 128.5, 'book-2': 0});
+    expect(actual.chapterSortByBook, {
+      'book-1': 'titleAsc',
+      'book-2': 'updatedDesc',
+    });
     expect(actual.booksSheetDualColumn, isTrue);
   });
 

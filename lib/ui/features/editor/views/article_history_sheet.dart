@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/zephyr_bottom_sheet.dart';
 import '../../../core/zephyr_l10n.dart';
+import '../../../core/zephyr_snackbar.dart';
 import '../view_models/library_view_model.dart';
 
 Future<void> showArticleHistorySheet(
@@ -14,9 +15,7 @@ Future<void> showArticleHistorySheet(
   final history = await model.listHistory(articleId);
   if (!context.mounted) return;
   if (history.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.historyEmpty)),
-    );
+    ZephyrSnackBar.show(context, l10n.historyEmpty);
     return;
   }
 
@@ -88,8 +87,9 @@ Future<void> showArticleHistorySheet(
                         );
                         if (!context.mounted) return;
                         Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(l10n.historyRestoreSuccess)),
+                        ZephyrSnackBar.show(
+                          context,
+                          l10n.historyRestoreSuccess,
                         );
                       },
                     );

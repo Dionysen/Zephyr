@@ -7,6 +7,7 @@ class WorkspaceLayout {
     this.selectedArticleId,
     this.expandedVolumesByBook = const {},
     this.sidebarScrollOffsetByBook = const {},
+    this.chapterSortByBook = const {},
     this.booksSheetDualColumn = true,
   });
 
@@ -28,6 +29,9 @@ class WorkspaceLayout {
   /// Book id → sidebar chapter-list scroll offset.
   final Map<String, double> sidebarScrollOffsetByBook;
 
+  /// Book id → [ChapterSortMode.storageId]. Missing key means manual.
+  final Map<String, String> chapterSortByBook;
+
   /// Mobile books sheet two-column grid layout.
   final bool booksSheetDualColumn;
 
@@ -43,6 +47,7 @@ class WorkspaceLayout {
     String? selectedArticleId,
     Map<String, List<String>>? expandedVolumesByBook,
     Map<String, double>? sidebarScrollOffsetByBook,
+    Map<String, String>? chapterSortByBook,
     bool? booksSheetDualColumn,
     bool clearLastLibraryRoot = false,
     bool clearSelectedBookId = false,
@@ -65,6 +70,7 @@ class WorkspaceLayout {
         expandedVolumesByBook ?? this.expandedVolumesByBook,
     sidebarScrollOffsetByBook:
         sidebarScrollOffsetByBook ?? this.sidebarScrollOffsetByBook,
+    chapterSortByBook: chapterSortByBook ?? this.chapterSortByBook,
     booksSheetDualColumn: booksSheetDualColumn ?? this.booksSheetDualColumn,
   );
 }

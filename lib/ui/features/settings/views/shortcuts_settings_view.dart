@@ -5,6 +5,7 @@ import '../../../../domain/models/keyboard_shortcuts.dart';
 import '../../../../domain/use_cases/shortcut_resolver.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_settings.dart';
+import '../../../core/zephyr_snackbar.dart';
 import '../models/shortcut_labels.dart';
 import '../view_models/keyboard_shortcuts_view_model.dart';
 
@@ -99,9 +100,7 @@ class ShortcutsSettingsView extends StatelessWidget {
     if (chord == null) return;
     viewModel.assignChord(id, chord);
     if (viewModel.lastDisplaced.isNotEmpty && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.shortcutsConflictHint)),
-      );
+      ZephyrSnackBar.show(context, l10n.shortcutsConflictHint);
     }
   }
 }

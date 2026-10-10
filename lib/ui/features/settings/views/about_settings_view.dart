@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../domain/models/app_info.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_settings.dart';
+import '../../../core/zephyr_snackbar.dart';
 import '../../../core/zephyr_theme.dart';
 
 class AboutSettingsView extends StatefulWidget {
@@ -26,16 +27,12 @@ class _AboutSettingsViewState extends State<AboutSettingsView> {
     final uri = Uri.parse(AppInfo.githubUrl);
     final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!launched && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.aboutOpenLinkFailed)),
-      );
+      ZephyrSnackBar.show(context, context.l10n.aboutOpenLinkFailed);
     }
   }
 
   void _checkForUpdates() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.aboutCheckUpdatesComingSoon)),
-    );
+    ZephyrSnackBar.show(context, context.l10n.aboutCheckUpdatesComingSoon);
   }
 
   @override

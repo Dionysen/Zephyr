@@ -5,6 +5,7 @@ import '../../../../domain/models/editor_preferences.dart';
 import '../../../core/zephyr_dropdown.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_settings.dart';
+import '../../../core/zephyr_snackbar.dart';
 
 /// Font picker for editor / UI fonts.
 ///
@@ -61,12 +62,9 @@ class FontFilePickerRow extends StatelessWidget {
     if (path == null || path.isEmpty) return;
     final ok = await onImportPath(path);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          ok ? l10n.fontImportSuccess : l10n.fontImportFailure,
-        ),
-      ),
+    ZephyrSnackBar.show(
+      context,
+      ok ? l10n.fontImportSuccess : l10n.fontImportFailure,
     );
   }
 
@@ -98,10 +96,9 @@ class FontFilePickerRow extends StatelessWidget {
 
     final ok = await delete(font);
     if (!context.mounted) return ok;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(ok ? l10n.fontDeleteSuccess : l10n.fontDeleteFailure),
-      ),
+    ZephyrSnackBar.show(
+      context,
+      ok ? l10n.fontDeleteSuccess : l10n.fontDeleteFailure,
     );
     return ok;
   }

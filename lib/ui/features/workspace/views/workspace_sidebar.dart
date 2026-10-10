@@ -4,7 +4,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
+import '../../../../domain/models/chapter_sort_mode.dart';
 import '../../../../domain/models/purewriter_models.dart';
+import '../../../../domain/use_cases/chapter_sort.dart';
 import '../../../core/breakpoints.dart';
 import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_bottom_sheet.dart';
@@ -13,6 +15,7 @@ import '../../../core/zephyr_dialog.dart';
 import '../../../core/zephyr_dropdown.dart';
 import '../../../core/zephyr_icon_toolbar.dart';
 import '../../../core/zephyr_resize_handle.dart';
+import '../../../core/zephyr_snackbar.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_theme.dart';
@@ -290,10 +293,9 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                       icon: const Icon(Icons.my_location_outlined),
                       tooltip: l10n.tooltipLocateCurrentChapter,
                     ),
-                    _ReorderModeButton(
-                      enabled: _canReorder,
-                      active: model.isReorderMode,
-                      onPressed: model.toggleReorderMode,
+                    _ChapterSortMenuButton(
+                      model: model,
+                      canAdjustOrder: _canReorder,
                     ),
                   ],
                 ),
@@ -332,34 +334,85 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
 }
 
 /// Mobile drawer header: book name + chapter count on the left, tools on the right.
-class _ReorderModeButton extends StatelessWidget {
-  const _ReorderModeButton({
-    required this.enabled,
-    required this.active,
-    required this.onPressed,
+/// Sort-mode menu; “adjust order” toggles drag handles in manual mode only.
+class _ChapterSortMenuButton extends StatelessWidget {
+  const _ChapterSortMenuButton({
+    required this.model,
+    required this.canAdjustOrder,
     this.style,
   });
 
-  final bool enabled;
-  final bool active;
-  final VoidCallback onPressed;
+  final LibraryViewModel model;
+  final bool canAdjustOrder;
   final ButtonStyle? style;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return IconButton(
-      style: style,
-      onPressed: enabled ? onPressed : null,
-      isSelected: active,
-      icon: const Icon(Icons.swap_vert),
-      selectedIcon: Icon(
-        Icons.swap_vert,
-        color: theme.colorScheme.primary,
-      ),
-      tooltip: active
-          ? context.l10n.tooltipDoneReordering
-          : context.l10n.tooltipReorder,
+    final l10n = context.l10n;
+    final mode = model.chapterSortMode;
+    final adjusting = model.isReorderMode;
+    final bookOk =
+        model.selectedBook != null && model.selectedBook?.isTrash != true;
+
+    RadioMenuButton<ChapterSortMode> modeItem(ChapterSortMode value, String label) {
+      return RadioMenuButton<ChapterSortMode>(
+        value: value,
+        groupValue: mode,
+        onChanged: !bookOk
+            ? null
+            : (next) {
+                if (next == null) return;
+                model.setChapterSortMode(next);
+              },
+        child: Text(label),
+      );
+    }
+
+    return MenuAnchor(
+      builder: (context, controller, _) {
+        return IconButton(
+          style: style,
+          onPressed: !bookOk
+              ? null
+              : () {
+                  if (controller.isOpen) {
+                    controller.close();
+                  } else {
+                    controller.open();
+                  }
+                },
+          isSelected: adjusting,
+          icon: Icon(adjusting ? Icons.swap_vert : Icons.sort),
+          selectedIcon: Icon(
+            Icons.swap_vert,
+            color: theme.colorScheme.primary,
+          ),
+          tooltip: adjusting
+              ? l10n.tooltipDoneReordering
+              : l10n.tooltipReorder,
+        );
+      },
+      menuChildren: [
+        modeItem(ChapterSortMode.manual, l10n.chapterSortManual),
+        MenuItemButton(
+          leadingIcon: Icon(
+            adjusting ? Icons.check : Icons.drag_indicator,
+            color: adjusting ? theme.colorScheme.primary : null,
+          ),
+          onPressed: !bookOk || !canAdjustOrder || !mode.isManual
+              ? null
+              : model.toggleReorderMode,
+          child: Text(l10n.chapterSortAdjustOrder),
+        ),
+        const Divider(),
+        modeItem(ChapterSortMode.createdAsc, l10n.chapterSortCreatedAsc),
+        modeItem(ChapterSortMode.createdDesc, l10n.chapterSortCreatedDesc),
+        modeItem(ChapterSortMode.updatedAsc, l10n.chapterSortUpdatedAsc),
+        modeItem(ChapterSortMode.updatedDesc, l10n.chapterSortUpdatedDesc),
+        modeItem(ChapterSortMode.titleAsc, l10n.chapterSortTitleAsc),
+        modeItem(ChapterSortMode.titleDesc, l10n.chapterSortTitleDesc),
+      ],
     );
   }
 }
@@ -512,10 +565,9 @@ class _DrawerSidebarHeader extends StatelessWidget {
             icon: const Icon(Icons.my_location_outlined),
             tooltip: l10n.tooltipLocateCurrentChapter,
           ),
-          _ReorderModeButton(
-            enabled: canReorder,
-            active: model.isReorderMode,
-            onPressed: model.toggleReorderMode,
+          _ChapterSortMenuButton(
+            model: model,
+            canAdjustOrder: canReorder,
             style: toolStyle,
           ),
         ],
@@ -1245,9 +1297,7 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
     final l10n = context.l10n;
     if (!model.isBookEmpty(book.id)) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.deleteBookNotEmpty)),
-      );
+      ZephyrSnackBar.show(context, l10n.deleteBookNotEmpty);
       return;
     }
     try {
@@ -1255,9 +1305,7 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
       if (mounted) setState(() => _armedDeleteBookId = null);
     } on FolderNotEmptyException {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.deleteBookNotEmpty)),
-      );
+      ZephyrSnackBar.show(context, l10n.deleteBookNotEmpty);
     }
   }
 
@@ -1999,16 +2047,20 @@ class _ChapterTreeState extends State<_ChapterTree> {
     if (bookId == null) return null;
     final isTrash = bookId == WritingFolder.trashId;
     final rowHeight = _sampleChapterRowHeight() ?? 88.0;
+    final sortMode = widget.model.chapterSortMode;
 
     final volumeId = chapter.categoryId;
     if (volumeId != null && !isTrash) {
       final volumeSliver = _volumeSliver(volumeId);
       if (volumeSliver == null) return null;
-      final chapters = widget.library.articles
-          .where(
-            (item) => item.folderId == bookId && item.categoryId == volumeId,
-          )
-          .toList(growable: false);
+      final chapters = sortArticleSummaries(
+        widget.library.articles
+            .where(
+              (item) => item.folderId == bookId && item.categoryId == volumeId,
+            )
+            .toList(growable: false),
+        sortMode,
+      );
       final index = chapters.indexWhere((item) => item.id == chapter.id);
       if (index < 0) return null;
       final header = _headerExtentOf(volumeSliver);
@@ -2034,12 +2086,15 @@ class _ChapterTreeState extends State<_ChapterTree> {
       // Padding + label for the "unfiled" header ([SliverToBoxAdapter]).
       offset += 36;
     }
-    final loose = widget.library.articles
-        .where(
-          (item) =>
-              item.folderId == bookId && (isTrash || item.categoryId == null),
-        )
-        .toList(growable: false);
+    final loose = sortArticleSummaries(
+      widget.library.articles
+          .where(
+            (item) =>
+                item.folderId == bookId && (isTrash || item.categoryId == null),
+          )
+          .toList(growable: false),
+      sortMode,
+    );
     final index = loose.indexWhere((item) => item.id == chapter.id);
     if (index < 0) return null;
     return offset +
@@ -2184,7 +2239,9 @@ class _ChapterTreeState extends State<_ChapterTree> {
         .toList(growable: false);
     final isTrash = bookId == WritingFolder.trashId;
     final canManage = !model.isReadOnly && !isTrash;
-    final showDragHandles = canManage && model.isReorderMode;
+    final sortMode = model.chapterSortMode;
+    final showDragHandles =
+        canManage && model.isReorderMode && sortMode.isManual;
     final pinnedBackground = Theme.of(
       context,
     ).colorScheme.surfaceContainerLowest;
@@ -2195,9 +2252,12 @@ class _ChapterTreeState extends State<_ChapterTree> {
     final slivers = <Widget>[];
     for (var volumeIndex = 0; volumeIndex < volumes.length; volumeIndex++) {
       final volume = volumes[volumeIndex];
-      final volumeChapters = chapters
-          .where((item) => item.categoryId == volume.id)
-          .toList(growable: false);
+      final volumeChapters = sortArticleSummaries(
+        chapters
+            .where((item) => item.categoryId == volume.id)
+            .toList(growable: false),
+        sortMode,
+      );
       final chapterIds =
           volumeChapters.map((item) => item.id).toList(growable: false);
       final header = _VolumeRow(
@@ -2244,9 +2304,12 @@ class _ChapterTreeState extends State<_ChapterTree> {
         ),
       );
     }
-    final loose = chapters
-        .where((item) => isTrash || item.categoryId == null)
-        .toList(growable: false);
+    final loose = sortArticleSummaries(
+      chapters
+          .where((item) => isTrash || item.categoryId == null)
+          .toList(growable: false),
+      sortMode,
+    );
     if (loose.isNotEmpty) {
       if (!isTrash) {
         slivers.add(

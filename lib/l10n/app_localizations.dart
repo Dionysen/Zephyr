@@ -1948,14 +1948,62 @@ abstract class AppLocalizations {
   /// No description provided for @tooltipReorder.
   ///
   /// In en, this message translates to:
-  /// **'Reorder'**
+  /// **'Sort order'**
   String get tooltipReorder;
 
   /// No description provided for @tooltipDoneReordering.
   ///
   /// In en, this message translates to:
-  /// **'Done reordering'**
+  /// **'Done adjusting order'**
   String get tooltipDoneReordering;
+
+  /// No description provided for @chapterSortManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual order'**
+  String get chapterSortManual;
+
+  /// No description provided for @chapterSortAdjustOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust order'**
+  String get chapterSortAdjustOrder;
+
+  /// No description provided for @chapterSortCreatedAsc.
+  ///
+  /// In en, this message translates to:
+  /// **'Created · Oldest first'**
+  String get chapterSortCreatedAsc;
+
+  /// No description provided for @chapterSortCreatedDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Created · Newest first'**
+  String get chapterSortCreatedDesc;
+
+  /// No description provided for @chapterSortUpdatedAsc.
+  ///
+  /// In en, this message translates to:
+  /// **'Modified · Oldest first'**
+  String get chapterSortUpdatedAsc;
+
+  /// No description provided for @chapterSortUpdatedDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Modified · Newest first'**
+  String get chapterSortUpdatedDesc;
+
+  /// No description provided for @chapterSortTitleAsc.
+  ///
+  /// In en, this message translates to:
+  /// **'Name · A→Z'**
+  String get chapterSortTitleAsc;
+
+  /// No description provided for @chapterSortTitleDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Name · Z→A'**
+  String get chapterSortTitleDesc;
 
   /// No description provided for @tooltipOpenLibrary.
   ///

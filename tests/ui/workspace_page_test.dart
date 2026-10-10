@@ -234,17 +234,20 @@ void main() {
     final locateButton = tester.getRect(
       find.byTooltip('Locate current chapter'),
     );
-    final reorderButton = tester.getRect(find.byTooltip('Reorder'));
+    final sortButton = tester.getRect(find.byTooltip('Sort order'));
     expect(addButton.left, lessThan(searchButton.left));
     expect(searchButton.left, lessThan(expandButton.left));
     expect(expandButton.left, lessThan(locateButton.left));
-    expect(locateButton.left, lessThan(reorderButton.left));
-    expect(reorderButton.right, closeTo(sidebar.right, 8));
+    expect(locateButton.left, lessThan(sortButton.left));
+    expect(sortButton.right, closeTo(sidebar.right, 8));
     expect(find.byIcon(Icons.drag_indicator), findsNothing);
 
-    await tester.tap(find.byTooltip('Reorder'));
+    await tester.tap(find.byTooltip('Sort order'));
     await tester.pumpAndSettle();
-    expect(find.byTooltip('Done reordering'), findsOneWidget);
+    expect(find.text('Manual order'), findsOneWidget);
+    await tester.tap(find.text('Adjust order'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Done adjusting order'), findsOneWidget);
     expect(find.byIcon(Icons.drag_indicator), findsWidgets);
 
     await tester.tap(find.byTooltip('Collapse all'));

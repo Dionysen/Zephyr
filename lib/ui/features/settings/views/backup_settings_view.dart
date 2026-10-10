@@ -5,6 +5,7 @@ import '../../../../domain/models/library_backup.dart';
 import '../../../core/zephyr_bottom_sheet.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_settings.dart';
+import '../../../core/zephyr_snackbar.dart';
 import '../view_models/backup_view_model.dart';
 
 class BackupSettingsView extends StatelessWidget {
@@ -39,14 +40,11 @@ class BackupSettingsView extends StatelessWidget {
             await viewModel.backupNow();
             if (!context.mounted) return;
             final error = viewModel.error;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  error == null
-                      ? l10n.backupNowSuccess
-                      : l10n.backupFailed(error.toString()),
-                ),
-              ),
+            ZephyrSnackBar.show(
+              context,
+              error == null
+                  ? l10n.backupNowSuccess
+                  : l10n.backupFailed(error.toString()),
             );
           },
           trailing: viewModel.isBackingUp
@@ -158,14 +156,11 @@ class BackupSettingsView extends StatelessWidget {
     await viewModel.restore(entry: entry, mode: mode);
     if (!context.mounted) return;
     final error = viewModel.error;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          error == null
-              ? l10n.backupRestoreSuccess
-              : l10n.backupFailed(error.toString()),
-        ),
-      ),
+    ZephyrSnackBar.show(
+      context,
+      error == null
+          ? l10n.backupRestoreSuccess
+          : l10n.backupFailed(error.toString()),
     );
   }
 }
