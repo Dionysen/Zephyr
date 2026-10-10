@@ -475,7 +475,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get editorEmptyState => '选择或创建章节以开始写作';
 
   @override
-  String get jumpToEnd => '跳到文末';
+  String get jumpToEnd => '聚焦到文末';
 
   @override
   String get volumeInsertBelow => '下方插入卷';

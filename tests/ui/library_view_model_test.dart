@@ -4,6 +4,7 @@ import 'package:zephyr/domain/models/purewriter_models.dart';
 import 'package:zephyr/domain/models/workspace_layout.dart';
 import 'package:zephyr/domain/repositories/workspace_layout_repository.dart';
 import 'package:zephyr/domain/repositories/writing_library_repository.dart';
+import 'package:zephyr/domain/use_cases/article_preview_summary.dart';
 import 'package:zephyr/ui/features/editor/view_models/library_view_model.dart';
 
 void main() {
@@ -17,6 +18,46 @@ void main() {
     expect(repository.saved.content, 'Updated text');
     expect(repository.saved.wordCount, 'Updated text'.runes.length);
     expect(repository.saved.createdAt, DateTime.utc(2025));
+  });
+
+  test('save refreshes sidebar preview when leading text changes', () async {
+    final repository = FakeLibraryRepository();
+    final model = LibraryViewModel(repository);
+    await model.load();
+    final before = model.library!.articles.singleWhere((a) => a.id == 'article');
+    expect(before.summary, isNot(contains('Brand new opening')));
+
+    model.updateContent('Brand new opening\n\nRest of chapter');
+    await model.save();
+
+    final after = model.library!.articles.singleWhere((a) => a.id == 'article');
+    expect(after.summary, 'Brand new opening Rest of chapter');
+    expect(model.article?.summary, after.summary);
+  });
+
+  test('save does not rewrite sidebar preview when only the tail changes', () async {
+    final head = 'A' * 200;
+    final repository = FakeLibraryRepository()
+      ..saved = WritingArticle(
+        id: 'article',
+        title: 'Article',
+        content: '${head}old-tail',
+        summary: head,
+        folderId: 'Default',
+        categoryId: null,
+        createdAt: DateTime.utc(2025),
+        updatedAt: DateTime.utc(2026),
+        wordCount: head.length + 8,
+      );
+    final model = LibraryViewModel(repository);
+    await model.load();
+
+    model.updateContent('${head}new-tail-changed');
+    await model.save();
+
+    final after = model.library!.articles.singleWhere((a) => a.id == 'article');
+    expect(after.summary, head);
+    expect(after.summary, articlePreviewSummary('${head}new-tail-changed'));
   });
 
   test('switching books selects only that book chapter', () async {
@@ -328,7 +369,7 @@ class FakeLibraryRepository implements WritingLibraryRepository {
       ArticleSummary(
         id: saved.id,
         title: saved.title,
-        summary: '',
+        summary: saved.summary,
         folderId: saved.folderId,
         categoryId: saved.categoryId,
         createdAt: saved.createdAt,
@@ -338,7 +379,7 @@ class FakeLibraryRepository implements WritingLibraryRepository {
       ArticleSummary(
         id: _secondArticle.id,
         title: _secondArticle.title,
-        summary: '',
+        summary: _secondArticle.summary,
         folderId: _secondArticle.folderId,
         categoryId: _secondArticle.categoryId,
         createdAt: _secondArticle.createdAt,

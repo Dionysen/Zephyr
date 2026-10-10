@@ -509,7 +509,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editorEmptyState => 'Choose or create a chapter to begin writing.';
 
   @override
-  String get jumpToEnd => 'Jump to end';
+  String get jumpToEnd => 'Focus end';
 
   @override
   String get volumeInsertBelow => 'Insert volume below';

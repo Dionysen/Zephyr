@@ -205,7 +205,7 @@
   "librarySetupBody": "Zephyr needs a library folder that contains App/Room.db. You can also start with a temporary library and switch later.",
   "chooseLibraryDirectoryButton": "Choose library folder",
   "editorEmptyState": "Choose or create a chapter to begin writing.",
-  "jumpToEnd": "Jump to end",
+  "jumpToEnd": "Focus end",
   "volumeInsertBelow": "Insert volume below",
   "chapterInsertBelow": "Insert chapter below",
   "actionMoveToVolume": "Move to volume",

@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../domain/models/purewriter_models.dart';
 import '../../domain/repositories/writing_library_repository.dart';
+import '../../domain/use_cases/article_preview_summary.dart';
 import '../services/purewriter_database.dart';
 
 class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
@@ -185,7 +186,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
         'Article',
         {
           'content': article.content,
-          'summary': _summaryText(article.content),
+          'summary': articlePreviewSummary(article.content),
           'count': _count(article.content),
           'updateTime': now,
         },
@@ -209,13 +210,6 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
       DateTime.fromMillisecondsSinceEpoch(milliseconds);
   int _count(String content) =>
       content.runes.where((rune) => rune != 10 && rune != 13).length;
-  String _summaryText(String content) => content
-      .replaceAll(RegExp(r'[\r\n]+'), ' ')
-      .trim()
-      .runes
-      .take(200)
-      .map(String.fromCharCode)
-      .join();
 
   Future<bool> _hasHistoryTable(DatabaseExecutor database) async =>
       (await database.rawQuery(

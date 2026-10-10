@@ -585,40 +585,57 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
         final viewportH = constraints.maxHeight.isFinite
             ? constraints.maxHeight
             : MediaQuery.sizeOf(context).height;
-        // Keep the body at least one full viewport tall so short chapters
-        // still fill the screen; end padding below provides scroll room.
-        final minBodyHeight =
-            (viewportH - _headerExtent).clamp(0.0, double.infinity);
-        // Always leave ~half a screen after the last line so it can be
-        // scrolled to sit above a typical soft keyboard. This must not
-        // depend on viewInsets — those are unreliable here and previously
-        // left maxScrollExtent at 0.
-        final endScrollRoom = viewportH * 0.45;
+        // Reserve ~half a viewport below the last line so long chapters can
+        // scroll the caret above a typical soft keyboard (viewInsets alone
+        // are unreliable while the IME animates).
+        final imeReserve = viewportH * 0.45;
+        final docHeight = _engine.totalHeight;
+        final naturalColumnH = _headerExtent + docHeight;
+        // If real text still fits in the band above that reserve, do not
+        // attach trailing room — otherwise a short chapter can be scrolled
+        // until the text leaves the screen.
+        final fitsAboveImeReserve =
+            naturalColumnH <= viewportH - imeReserve + 0.5;
+        final endScrollRoom = fitsAboveImeReserve ? 0.0 : imeReserve;
+        // Short chapters: fill the viewport so taps below the last line work.
+        // Longer chapters: body is just the document height.
+        final minBodyHeight = fitsAboveImeReserve
+            ? (viewportH - _headerExtent).clamp(0.0, double.infinity)
+            : 0.0;
+        final bodyHeight =
+            docHeight < minBodyHeight ? minBodyHeight : docHeight;
 
         return ZephyrEditorScrollbar(
           controller: _scrollController,
           padding: widget.scrollbarPadding,
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            // Lock scrolling while a selection handle owns the pointer;
-            // otherwise the scroll drag wins the arena and "eats" the handle.
-            physics: _draggingHandle
-                ? const NeverScrollableScrollPhysics()
-                : null,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (widget.header != null)
-                  KeyedSubtree(key: _headerKey, child: widget.header!),
-                Focus(
-                  focusNode: _focusNode,
-                  onKeyEvent: _onKey,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minWidth: constraints.maxWidth,
-                      maxWidth: constraints.maxWidth,
-                      minHeight: minBodyHeight,
+          child: ScrollConfiguration(
+            // Same Material stretch as the workspace sidebar ListView.
+            behavior: const _MaterialStretchScrollBehavior(),
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              // Lock scrolling while a selection handle owns the pointer;
+              // otherwise the scroll drag wins the arena and "eats" the handle.
+              // Clamping + Material stretch: content stays in-bounds, edge
+              // overscroll uses the soft stretch indicator.
+              physics: _draggingHandle
+                  ? const NeverScrollableScrollPhysics()
+                  : const AlwaysScrollableScrollPhysics(
+                      parent: ClampingScrollPhysics(),
                     ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (widget.header != null)
+                    KeyedSubtree(key: _headerKey, child: widget.header!),
+                  Focus(
+                    focusNode: _focusNode,
+                    onKeyEvent: _onKey,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minWidth: constraints.maxWidth,
+                        maxWidth: constraints.maxWidth,
+                        minHeight: minBodyHeight,
+                      ),
                     child: Stack(
                       key: _documentStackKey,
                       clipBehavior: Clip.none,
@@ -699,12 +716,7 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                                 value: widget.controller.text,
                                 child: SizedBox(
                                   width: constraints.maxWidth,
-                                  height: () {
-                                    final doc = _engine.totalHeight;
-                                    return doc < minBodyHeight
-                                        ? minBodyHeight
-                                        : doc;
-                                  }(),
+                                  height: bodyHeight,
                                   child: PlainTextEditorRenderWidget(
                                     controller: widget.controller,
                                     engine: _engine,
@@ -748,16 +760,17 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                     ),
                   ),
                 ),
-                SizedBox(
-                  height: endScrollRoom,
-                  width: double.infinity,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    // onTap (not onTapDown): scroll drags must not open the IME.
-                    onTap: widget.readOnly ? null : _onEndPaddingTap,
+                  SizedBox(
+                    height: endScrollRoom,
+                    width: double.infinity,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      // onTap (not onTapDown): scroll drags must not open the IME.
+                      onTap: widget.readOnly ? null : _onEndPaddingTap,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -789,6 +802,23 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
         TextSelection(baseOffset: sel.baseOffset, extentOffset: next),
       );
     }
+  }
+}
+
+/// Material Design edge stretch (same indicator the sidebar ListView uses).
+class _MaterialStretchScrollBehavior extends ScrollBehavior {
+  const _MaterialStretchScrollBehavior();
+
+  @override
+  Widget buildOverscrollIndicator(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    return StretchingOverscrollIndicator(
+      axisDirection: details.direction,
+      child: child,
+    );
   }
 }
 

@@ -8,6 +8,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../../domain/models/workspace_layout.dart';
 import '../../../../domain/repositories/workspace_layout_repository.dart';
 import '../../../../domain/repositories/writing_library_repository.dart';
+import '../../../../domain/use_cases/article_preview_summary.dart';
 
 class LibraryViewModel extends ChangeNotifier {
   LibraryViewModel(
@@ -563,7 +564,54 @@ class LibraryViewModel extends ChangeNotifier {
   Future<void> save() async {
     _pendingSave?.cancel();
     final article = _article;
-    if (article != null) await _repository.saveArticle(article);
+    if (article == null) return;
+    await _repository.saveArticle(article);
+    _refreshSidebarPreviewIfNeeded(article);
+  }
+
+  /// When the saved content changes the leading preview text, push it into the
+  /// in-memory chapter list so the sidebar updates without a full reload.
+  void _refreshSidebarPreviewIfNeeded(WritingArticle article) {
+    final nextSummary = articlePreviewSummary(article.content);
+    final library = _library;
+    if (library == null) return;
+
+    final index = library.articles.indexWhere((item) => item.id == article.id);
+    if (index < 0) return;
+    final chapter = library.articles[index];
+    final summaryChanged = chapter.summary != nextSummary;
+    if (!summaryChanged && article.summary == nextSummary) return;
+
+    _article = WritingArticle(
+      id: article.id,
+      title: article.title,
+      content: article.content,
+      summary: nextSummary,
+      folderId: article.folderId,
+      categoryId: article.categoryId,
+      createdAt: article.createdAt,
+      updatedAt: article.updatedAt,
+      wordCount: article.wordCount,
+    );
+    if (summaryChanged) {
+      final articles = [...library.articles];
+      articles[index] = ArticleSummary(
+        id: chapter.id,
+        title: chapter.title,
+        summary: nextSummary,
+        folderId: chapter.folderId,
+        categoryId: chapter.categoryId,
+        createdAt: chapter.createdAt,
+        updatedAt: article.updatedAt,
+        wordCount: article.wordCount,
+      );
+      _library = WritingLibrary(
+        folders: library.folders,
+        categories: library.categories,
+        articles: articles,
+      );
+      notifyListeners();
+    }
   }
 
   void _restoreSelection() {

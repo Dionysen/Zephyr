@@ -995,7 +995,7 @@ abstract class AppLocalizations {
   /// No description provided for @jumpToEnd.
   ///
   /// In en, this message translates to:
-  /// **'Jump to end'**
+  /// **'Focus end'**
   String get jumpToEnd;
 
   /// No description provided for @volumeInsertBelow.

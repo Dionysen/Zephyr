@@ -397,6 +397,37 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     setState(() => _showJumpToEnd = false);
   }
 
+  /// Offer the chip when the document end is still off-screen.
+  ///
+  /// [ignoreCaret]: used on chapter open — restored/default caret is often at
+  /// EOF even when the viewport is still at the top; only hide for caret-at-end
+  /// after the user moves the selection.
+  bool _shouldOfferJumpToEnd({
+    TextSelection? selection,
+    bool ignoreCaret = false,
+  }) {
+    if (_controller.text.isEmpty) return false;
+    if (_isScrollAtEnd()) return false;
+    if (!ignoreCaret) {
+      final sel = selection ?? _controller.selection;
+      // No text after the caret / selection end.
+      if (sel.end >= _controller.text.length) return false;
+    }
+    return true;
+  }
+
+  void _syncJumpToEndVisibility({
+    TextSelection? selection,
+    bool ignoreCaret = false,
+  }) {
+    final show = _shouldOfferJumpToEnd(
+      selection: selection,
+      ignoreCaret: ignoreCaret,
+    );
+    if (show == _showJumpToEnd) return;
+    setState(() => _showJumpToEnd = show);
+  }
+
   /// Keep the chip while scrolling down; dismiss on scroll-up or reaching end.
   void _onScrollForJumpChip() {
     if (_ignoreScrollForJump || !_showJumpToEnd) return;
@@ -442,10 +473,8 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
 
   void _onSelectionChanged(TextSelection selection) {
     _maybeExitPairSessionForSelection(selection);
-    if (!_showJumpToEnd) return;
-    // Manual focus at document end dismisses the chip.
-    if (selection.extentOffset >= _controller.text.length &&
-        _isScrollAtEnd()) {
+    if (_showJumpToEnd &&
+        !_shouldOfferJumpToEnd(selection: selection)) {
       _dismissJumpToEnd();
     }
   }
@@ -519,16 +548,14 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
 
     if (switching) {
       // Decide after layout: show when the chapter opens away from the end.
+      // Ignore caret here — setText defaults / restored carets are often at EOF.
       _showJumpToEnd = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || _articleId != article.id) return;
         _restoreScroll(article.id);
         if (!_scrollController.hasClients) return;
         _lastJumpScroll = _scrollController.offset;
-        final show = !_isScrollAtEnd();
-        if (show != _showJumpToEnd) {
-          setState(() => _showJumpToEnd = show);
-        }
+        _syncJumpToEndVisibility(ignoreCaret: true);
       });
     }
   }
@@ -555,6 +582,9 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     }
     _remapPairSession();
     _maybeExitPairSessionForSelection(_controller.selection);
+    if (_showJumpToEnd && !_shouldOfferJumpToEnd()) {
+      _dismissJumpToEnd();
+    }
     if (_suppressControllerNotify || widget.model.isReadOnly) return;
     final plain = _controller.text;
     if (plain == _lastEmitted) return;

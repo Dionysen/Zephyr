@@ -170,7 +170,7 @@
   "librarySetupBody": "Zephyr 需要打开包含 App/Room.db 的书库目录，也可以先使用临时书库开始写作，稍后再切换",
   "chooseLibraryDirectoryButton": "选择书库目录",
   "editorEmptyState": "选择或创建章节以开始写作",
-  "jumpToEnd": "跳到文末",
+  "jumpToEnd": "聚焦到文末",
   "volumeInsertBelow": "下方插入卷",
   "chapterInsertBelow": "下方插入章节",
   "actionMoveToVolume": "移动到卷",
