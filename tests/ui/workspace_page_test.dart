@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/domain/models/app_theme_mode.dart';
@@ -390,7 +392,7 @@ void main() {
     );
   });
 
-  testWidgets('expanded settings open as a right overlay panel', (
+  testWidgets('expanded settings open above the sidebar library dock', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(1200, 800);
@@ -406,6 +408,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(WorkspaceSettingsPanel).hitTestable(), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(WorkspaceSidebar),
+        matching: find.byType(WorkspaceSettingsPanel),
+      ),
+      findsOneWidget,
+    );
     expect(find.text(l10n.settingsTitle), findsWidgets);
     expect(find.text(l10n.settingsSectionGeneral), findsWidgets);
     expect(find.text(l10n.languageTitle), findsOneWidget);
@@ -415,8 +424,32 @@ void main() {
     expect(find.text(l10n.settingsSectionEditor), findsOneWidget);
     expect(find.text(l10n.immersiveStatusBarTitle), findsNothing);
     expect(find.text(l10n.hideStatusBarIconsTitle), findsNothing);
-    // Workspace chrome stays under the overlay.
+    // Dock settings control stays available to toggle the panel.
     expect(find.byTooltip(l10n.tooltipSettings), findsOneWidget);
+
+    final sidebarBox = tester.getRect(find.byType(WorkspaceSidebar));
+    final panelBox = tester.getRect(find.byType(WorkspaceSettingsPanel));
+    // Left-aligned with the library dock inset.
+    expect(panelBox.left, closeTo(sidebarBox.left + 10, 0.5));
+    // At least the pre-dock preferred width; may extend past the sidebar.
+    expect(
+      panelBox.width,
+      greaterThanOrEqualTo(WorkspaceSettingsPanel.preferredWidth - 0.5),
+    );
+    expect(
+      panelBox.width,
+      closeTo(
+        math.max(
+          WorkspaceSettingsPanel.preferredWidth,
+          sidebarBox.width - 20,
+        ),
+        0.5,
+      ),
+    );
+    // Panel uses 2/3 of the chapter-tree stack (sidebar minus top chrome).
+    expect(panelBox.height / sidebarBox.height, greaterThan(0.45));
+    expect(panelBox.height / sidebarBox.height, lessThan(0.72));
+    expect(panelBox.bottom, lessThan(sidebarBox.bottom - 52));
 
     await tester.tap(
       find.descendant(

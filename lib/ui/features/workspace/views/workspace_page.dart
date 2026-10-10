@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -254,10 +255,22 @@ class _WorkspacePageState extends State<WorkspacePage>
               );
             }
 
-            final panelWidth = WorkspaceSettingsPanel.preferredWidth.clamp(
-              280.0,
-              constraints.maxWidth * 0.4,
+            // Settings panel is left-aligned with the dock and at least
+            // [WorkspaceSettingsPanel.preferredWidth]; widen the sidebar slot
+            // so the overhang paints and hit-tests over the editor.
+            const settingsInset = 10.0;
+            final settingsPanelWidth = math.max(
+              WorkspaceSettingsPanel.preferredWidth,
+              model.sidebarWidth - 2 * settingsInset,
             );
+            final sidebarSlotWidth = !model.isSidebarExpanded
+                ? 0.0
+                : _settingsOpen
+                ? math.max(
+                    model.sidebarWidth,
+                    settingsInset + settingsPanelWidth,
+                  )
+                : model.sidebarWidth;
             final workspace = Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -266,17 +279,22 @@ class _WorkspacePageState extends State<WorkspacePage>
                       ? Duration.zero
                       : const Duration(milliseconds: 180),
                   curve: Curves.easeOutCubic,
-                  width: model.isSidebarExpanded ? model.sidebarWidth : 0,
+                  width: sidebarSlotWidth,
                   child: ClipRect(
                     child: OverflowBox(
                       alignment: Alignment.topLeft,
-                      minWidth: model.sidebarWidth,
-                      maxWidth: model.sidebarWidth,
+                      // Widen with the slot when settings overhangs so the
+                      // panel remains hit-testable past the chrome edge.
+                      minWidth: sidebarSlotWidth,
+                      maxWidth: sidebarSlotWidth,
                       child: WorkspaceSidebar(
                         model: model,
                         mode: SidebarMode.docked,
                         openLibrary: _openLibrary,
                         openSettings: _openSettings,
+                        settingsOpen: _settingsOpen,
+                        onCloseSettings: _closeSettings,
+                        chromeWidth: model.sidebarWidth,
                       ),
                     ),
                   ),
@@ -318,26 +336,7 @@ class _WorkspacePageState extends State<WorkspacePage>
                       }
                       return KeyEventResult.ignored;
                     },
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        workspace,
-                        GestureDetector(
-                          onTap: _closeSettings,
-                          behavior: HitTestBehavior.opaque,
-                          child: const ColoredBox(color: Colors.transparent),
-                        ),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: _WorkspaceSettingsSlideIn(
-                            child: WorkspaceSettingsPanel(
-                              width: panelWidth,
-                              onClose: _closeSettings,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: workspace,
                   )
                 : workspace;
             return ZephyrStatusBar(
@@ -1009,38 +1008,3 @@ String _mobileThemePackTitle(AppLocalizations l10n, ThemeColorPack pack) {
   };
 }
 
-/// Slides [child] in from the right once when mounted.
-class _WorkspaceSettingsSlideIn extends StatefulWidget {
-  const _WorkspaceSettingsSlideIn({required this.child});
-
-  final Widget child;
-
-  @override
-  State<_WorkspaceSettingsSlideIn> createState() =>
-      _WorkspaceSettingsSlideInState();
-}
-
-class _WorkspaceSettingsSlideInState extends State<_WorkspaceSettingsSlideIn>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: WorkspaceSettingsPanel.animationDuration,
-  )..forward();
-
-  late final Animation<Offset> _offset = Tween<Offset>(
-    begin: const Offset(1, 0),
-    end: Offset.zero,
-  ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => SlideTransition(
-    position: _offset,
-    child: widget.child,
-  );
-}

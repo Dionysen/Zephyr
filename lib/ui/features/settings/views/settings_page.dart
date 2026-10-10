@@ -19,7 +19,7 @@ import 'theme_settings_view.dart';
 
 /// Compact full-page settings route (mobile / narrow layouts).
 ///
-/// Wide desktop layouts open [WorkspaceSettingsPanel] instead.
+/// Wide desktop layouts open [WorkspaceSettingsPanel] above the sidebar dock.
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 

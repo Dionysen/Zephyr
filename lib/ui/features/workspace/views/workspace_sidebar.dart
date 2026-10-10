@@ -24,6 +24,7 @@ import '../../../core/zephyr_theme.dart';
 import '../../editor/view_models/library_view_model.dart';
 import 'library_search_sheet.dart';
 import 'library_switcher_menu.dart';
+import 'workspace_settings_panel.dart';
 import 'workspace_sidebar_library_actions.dart';
 
 enum SidebarMode { docked, drawer }
@@ -89,12 +90,23 @@ class WorkspaceSidebar extends StatefulWidget {
     required this.mode,
     required this.openLibrary,
     required this.openSettings,
+    this.settingsOpen = false,
+    this.onCloseSettings,
+    this.chromeWidth,
   });
 
   final LibraryViewModel model;
   final SidebarMode mode;
   final Future<void> Function() openLibrary;
   final VoidCallback openSettings;
+
+  /// Desktop docked sidebar: settings panel above the library dock.
+  final bool settingsOpen;
+  final VoidCallback? onCloseSettings;
+
+  /// Visual chrome width when the parent slot is wider so the settings panel
+  /// can overhang (defaults to the incoming max width).
+  final double? chromeWidth;
 
   @override
   State<WorkspaceSidebar> createState() => _WorkspaceSidebarState();
@@ -112,107 +124,176 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final drawer = widget.mode == SidebarMode.drawer;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border(right: BorderSide(color: Theme.of(context).dividerColor)),
-      ),
-      child: Material(
-        color: Theme.of(context).colorScheme.surfaceContainerLowest,
-        child: Column(
-          children: [
-            if (drawer)
-              _DrawerSidebarHeader(
-                model: model,
-                onToggleAllVolumes: model.hasVolumes
-                    ? () => _chapterTreeKey.currentState?.toggleAllVolumes()
-                    : null,
-                onLocateCurrent: model.article == null
-                    ? null
-                    : () => _chapterTreeKey.currentState
-                        ?.scrollToCurrentArticle(),
-                canReorder: _canReorder,
-              )
-            else ...[
-              SizedBox(
-                height: WorkspaceHeader.height,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+    final theme = Theme.of(context);
+    final divider = theme.dividerColor;
+    final surface = theme.colorScheme.surfaceContainerLowest;
+    return Material(
+      type: MaterialType.transparency,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final chromeWidth = widget.chromeWidth ?? constraints.maxWidth;
+          final settingsOpen = !drawer &&
+              widget.settingsOpen &&
+              widget.onCloseSettings != null;
+          final topChrome = drawer
+              ? 0.0
+              : WorkspaceHeader.height + WorkspaceBookPicker.blockHeight;
+          final stackHeight =
+              math.max(0.0, constraints.maxHeight - topChrome);
+          final panelHeight = stackHeight * 2 / 3;
+          final panelBottom = _LibraryDock.chromeTopInsetFromBottom(context) +
+              _LibraryDock.settingsGap;
+          final dockInnerWidth =
+              chromeWidth - 2 * _LibraryDock.horizontalInset;
+          final panelWidth = math.max(
+            WorkspaceSettingsPanel.preferredWidth,
+            dockInnerWidth,
+          );
+          final dockExtent = _LibraryDock.overlayExtentFor(context);
+          final treeBottomInset =
+              settingsOpen ? panelBottom + panelHeight : dockExtent;
+
+          final chromeColumn = Column(
+            children: [
+              if (drawer)
+                _DrawerSidebarHeader(
+                  model: model,
+                  onToggleAllVolumes: model.hasVolumes
+                      ? () => _chapterTreeKey.currentState?.toggleAllVolumes()
+                      : null,
+                  onLocateCurrent: model.article == null
+                      ? null
+                      : () => _chapterTreeKey.currentState
+                          ?.scrollToCurrentArticle(),
+                  canReorder: _canReorder,
+                )
+              else ...[
+                SizedBox(
+                  height: WorkspaceHeader.height,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      if (WindowChrome.leadingChromeInset > 0)
+                        SizedBox(width: WindowChrome.leadingChromeInset),
+                      IconButton(
+                        onPressed: model.toggleSidebar,
+                        icon: const Icon(Icons.menu_open),
+                        tooltip: l10n.tooltipHideSidebar,
+                      ),
+                      const Expanded(
+                        child: WindowDragArea(child: SizedBox.expand()),
+                      ),
+                      _SidebarAddMenuButton(
+                        enabled: _canCreateVolume,
+                        model: model,
+                      ),
+                      IconButton(
+                        onPressed: () => unawaited(
+                          showLibrarySearchSheet(context, model: model),
+                        ),
+                        icon: const Icon(Icons.search),
+                        tooltip: l10n.tooltipSearchChapters,
+                      ),
+                      IconButton(
+                        onPressed: model.hasVolumes
+                            ? () => _chapterTreeKey.currentState
+                                ?.toggleAllVolumes()
+                            : null,
+                        icon: Icon(
+                          model.areAllVolumesExpanded
+                              ? Icons.unfold_less
+                              : Icons.unfold_more,
+                        ),
+                        tooltip: model.areAllVolumesExpanded
+                            ? l10n.tooltipCollapseAll
+                            : l10n.tooltipExpandAll,
+                      ),
+                      IconButton(
+                        onPressed: model.article == null
+                            ? null
+                            : () => _chapterTreeKey.currentState
+                                ?.scrollToCurrentArticle(),
+                        icon: const Icon(Icons.my_location_outlined),
+                        tooltip: l10n.tooltipLocateCurrentChapter,
+                      ),
+                      _ChapterSortMenuButton(
+                        model: model,
+                        canAdjustOrder: _canReorder,
+                      ),
+                    ],
+                  ),
+                ),
+                WorkspaceBookPicker(model: model, library: model.library!),
+              ],
+              Expanded(
+                child: Stack(
                   children: [
-                    if (WindowChrome.leadingChromeInset > 0)
-                      SizedBox(width: WindowChrome.leadingChromeInset),
-                    IconButton(
-                      onPressed: model.toggleSidebar,
-                      icon: const Icon(Icons.menu_open),
-                      tooltip: l10n.tooltipHideSidebar,
-                    ),
-                    const Expanded(
-                      child: WindowDragArea(child: SizedBox.expand()),
-                    ),
-                    _SidebarAddMenuButton(enabled: _canCreateVolume, model: model),
-                    IconButton(
-                      onPressed: () => unawaited(
-                        showLibrarySearchSheet(context, model: model),
+                    Positioned.fill(
+                      child: _ChapterTree(
+                        key: _chapterTreeKey,
+                        model: model,
+                        library: model.library!,
+                        bottomInset: treeBottomInset,
                       ),
-                      icon: const Icon(Icons.search),
-                      tooltip: l10n.tooltipSearchChapters,
                     ),
-                    IconButton(
-                      onPressed: model.hasVolumes
-                          ? () =>
-                                _chapterTreeKey.currentState?.toggleAllVolumes()
-                          : null,
-                      icon: Icon(
-                        model.areAllVolumesExpanded
-                            ? Icons.unfold_less
-                            : Icons.unfold_more,
+                    if (settingsOpen)
+                      Positioned.fill(
+                        child: GestureDetector(
+                          onTap: widget.onCloseSettings,
+                          behavior: HitTestBehavior.opaque,
+                          child: const ColoredBox(color: Colors.transparent),
+                        ),
                       ),
-                      tooltip: model.areAllVolumesExpanded
-                          ? l10n.tooltipCollapseAll
-                          : l10n.tooltipExpandAll,
-                    ),
-                    IconButton(
-                      onPressed: model.article == null
-                          ? null
-                          : () => _chapterTreeKey.currentState
-                              ?.scrollToCurrentArticle(),
-                      icon: const Icon(Icons.my_location_outlined),
-                      tooltip: l10n.tooltipLocateCurrentChapter,
-                    ),
-                    _ChapterSortMenuButton(
-                      model: model,
-                      canAdjustOrder: _canReorder,
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: _LibraryDock(
+                        model: model,
+                        openLibrary: widget.openLibrary,
+                        openSettings: widget.openSettings,
+                      ),
                     ),
                   ],
                 ),
               ),
-              WorkspaceBookPicker(model: model, library: model.library!),
             ],
-            Expanded(
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: _ChapterTree(
-                      key: _chapterTreeKey,
-                      model: model,
-                      library: model.library!,
-                      bottomInset: _LibraryDock.overlayExtentFor(context),
-                    ),
+          );
+
+          return Stack(
+            // Panel may extend past [chromeWidth] toward the editor.
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: chromeWidth,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    border: Border(right: BorderSide(color: divider)),
                   ),
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: _LibraryDock(
-                      model: model,
-                      openLibrary: widget.openLibrary,
-                      openSettings: widget.openSettings,
-                    ),
+                  child: Material(
+                    color: surface,
+                    child: chromeColumn,
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
-        ),
+              if (settingsOpen)
+                Positioned(
+                  left: _LibraryDock.horizontalInset,
+                  bottom: panelBottom,
+                  width: panelWidth,
+                  height: panelHeight,
+                  child: _SidebarSettingsSlideIn(
+                    child: WorkspaceSettingsPanel(
+                      onClose: widget.onCloseSettings!,
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -1528,6 +1609,10 @@ class WorkspaceBookPicker extends StatelessWidget {
     this.dense = false,
   });
 
+  /// Vertical space used by the non-dense floating book picker block.
+  static const blockHeight =
+      8 + ZephyrControls.fieldHeight + 10; // padding + field
+
   final LibraryViewModel model;
   final WritingLibrary library;
   final bool dense;
@@ -1590,17 +1675,19 @@ class WorkspaceBookPicker extends StatelessWidget {
                 ),
                 if (meta != null) ...[
                   const SizedBox(width: 8),
-                  // Intrinsic width, flush to the chevron (not sharing flex
-                  // with the title — that left the count floating mid-row).
-                  Text(
-                    meta,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: isTrash
-                          ? theme.colorScheme.error
-                          : theme.colorScheme.onSurfaceVariant,
+                  // Flexible so long English meta can ellipsis; right-align
+                  // keeps the count flush to the chevron.
+                  Flexible(
+                    child: Text(
+                      meta,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: isTrash
+                            ? theme.colorScheme.error
+                            : theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 ],
@@ -2966,6 +3053,8 @@ class _LibraryDock extends StatelessWidget {
   });
 
   static const dockHeight = 52.0;
+  static const horizontalInset = 10.0;
+  static const settingsGap = 8.0;
   static const _padTop = 10.0;
   static const _padBottom = 12.0;
   static const overlayExtent = _padTop + dockHeight + _padBottom;
@@ -2973,6 +3062,10 @@ class _LibraryDock extends StatelessWidget {
   /// Dock height plus optional system gesture / home-indicator inset.
   static double overlayExtentFor(BuildContext context) =>
       overlayExtent + MediaQuery.viewPaddingOf(context).bottom;
+
+  /// Distance from the stack bottom to the top edge of the dock chrome.
+  static double chromeTopInsetFromBottom(BuildContext context) =>
+      dockHeight + _padBottom + MediaQuery.viewPaddingOf(context).bottom;
 
   final LibraryViewModel model;
   final Future<void> Function() openLibrary;
@@ -2984,7 +3077,12 @@ class _LibraryDock extends StatelessWidget {
     final radius = context.zephyrBarBorderRadius;
     final bottomSafe = MediaQuery.viewPaddingOf(context).bottom;
     return Padding(
-      padding: EdgeInsets.fromLTRB(10, 10, 10, 12 + bottomSafe),
+      padding: EdgeInsets.fromLTRB(
+        horizontalInset,
+        _padTop,
+        horizontalInset,
+        _padBottom + bottomSafe,
+      ),
       child: LibrarySwitcherMenu(
         model: model,
         onAddLibrary: openLibrary,
@@ -3043,4 +3141,40 @@ class SidebarResizeHandle extends StatelessWidget {
     onDragEnd: () => model.setSidebarResizing(false),
     onDragCancel: () => model.setSidebarResizing(false),
   );
+}
+
+/// Slides the settings panel up once when mounted.
+class _SidebarSettingsSlideIn extends StatefulWidget {
+  const _SidebarSettingsSlideIn({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_SidebarSettingsSlideIn> createState() =>
+      _SidebarSettingsSlideInState();
+}
+
+class _SidebarSettingsSlideInState extends State<_SidebarSettingsSlideIn>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: WorkspaceSettingsPanel.animationDuration,
+  )..forward();
+
+  late final Animation<Offset> _offset = Tween<Offset>(
+    begin: const Offset(0, 0.08),
+    end: Offset.zero,
+  ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => SlideTransition(
+        position: _offset,
+        child: widget.child,
+      );
 }

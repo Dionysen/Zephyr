@@ -3,43 +3,39 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/nested_back_navigator.dart';
+import '../../../core/zephyr_floating_chrome.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_scope.dart';
+import '../../../core/zephyr_theme.dart';
 import '../../settings/views/settings_page.dart';
 
-/// Fixed-width settings strip used as a desktop right overlay.
+/// Settings panel hosted above the sidebar library dock (desktop).
 class WorkspaceSettingsPanel extends StatelessWidget {
   const WorkspaceSettingsPanel({
     super.key,
-    required this.width,
     required this.onClose,
   });
 
+  /// Minimum panel width (pre–sidebar-dock layout). Grows with a wider dock;
+  /// may extend past the sidebar’s right edge.
   static const double preferredWidth = 360;
+
   static const Duration animationDuration = Duration(milliseconds: 180);
 
-  final double width;
   final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final surface = theme.colorScheme.surface;
-    return Material(
-      elevation: 8,
-      shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.28),
-      color: surface,
-      child: SizedBox(
-        width: width,
-        child: NestedBackNavigator(
-          onExit: onClose,
-          onGenerateRoute: (settings) {
-            return MaterialPageRoute<void>(
-              settings: settings,
-              builder: (_) => _PanelSettingsHome(onClose: onClose),
-            );
-          },
-        ),
+    return ZephyrFloatingChrome(
+      borderRadius: context.zephyrBarBorderRadius,
+      child: NestedBackNavigator(
+        onExit: onClose,
+        onGenerateRoute: (settings) {
+          return MaterialPageRoute<void>(
+            settings: settings,
+            builder: (_) => _PanelSettingsHome(onClose: onClose),
+          );
+        },
       ),
     );
   }
@@ -48,6 +44,8 @@ class WorkspaceSettingsPanel extends StatelessWidget {
 class _PanelSettingsHome extends StatelessWidget {
   const _PanelSettingsHome({required this.onClose});
 
+  static const _headerHeight = 52.0;
+
   final VoidCallback onClose;
 
   @override
@@ -55,28 +53,55 @@ class _PanelSettingsHome extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = context.l10n;
     final surface = theme.colorScheme.surface;
+    final topRight = context.zephyrBarBorderRadius.topRight;
+    final closeTooltip =
+        MaterialLocalizations.of(context).closeButtonTooltip;
     return ColoredBox(
       color: surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
-            height: 52,
-            child: NavigationToolbar(
-              middle: Text(
-                l10n.settingsTitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+            height: _headerHeight,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Padding(
+                    // Match the close square so the title stays visually centered.
+                    padding: const EdgeInsets.only(left: _headerHeight),
+                    child: Text(
+                      l10n.settingsTitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              centerMiddle: true,
-              trailing: IconButton(
-                onPressed: onClose,
-                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                icon: const Icon(Icons.close),
-              ),
+                Tooltip(
+                  message: closeTooltip,
+                  child: SizedBox(
+                    width: _headerHeight,
+                    height: _headerHeight,
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: InkWell(
+                        onTap: onClose,
+                        customBorder: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.only(topRight: topRight),
+                        ),
+                        child: Icon(
+                          Icons.close,
+                          size: 20,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           Divider(
