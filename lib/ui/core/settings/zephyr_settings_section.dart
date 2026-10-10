@@ -20,7 +20,13 @@ class ZephyrSettingsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final radius = context.zephyrCornerRadius;
+    final dark = theme.brightness == Brightness.dark;
+    // Opaque control surface: white card on light page gray; raised panel in dark.
+    final fill = scheme.surfaceContainerHigh;
+    // Same geometry for both modes; dark uses lower alpha so it doesn't read heavier.
+    final shadowColor = scheme.shadow.withValues(alpha: dark ? 0.10 : 0.12);
 
     return Padding(
       padding: margin,
@@ -33,18 +39,34 @@ class ZephyrSettingsSection extends StatelessWidget {
               child: Text(
                 title!,
                 style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: scheme.onSurfaceVariant,
                 ),
               ),
             ),
           ],
-          Material(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(
-              alpha: 0.35,
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: fill,
+              borderRadius: BorderRadius.circular(radius),
+              boxShadow: [
+                BoxShadow(
+                  color: shadowColor,
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
+                  spreadRadius: -1,
+                ),
+              ],
             ),
-            borderRadius: BorderRadius.circular(radius),
-            clipBehavior: Clip.antiAlias,
-            child: Column(children: children),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(radius),
+              child: Material(
+                type: MaterialType.transparency,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Column(children: children),
+                ),
+              ),
+            ),
           ),
           if (footer != null) ...[
             const SizedBox(height: 8),
@@ -53,7 +75,7 @@ class ZephyrSettingsSection extends StatelessWidget {
               child: Text(
                 footer!,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: scheme.onSurfaceVariant,
                 ),
               ),
             ),
