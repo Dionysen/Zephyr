@@ -13,7 +13,7 @@ abstract final class ZephyrControls {
   static const double mobileIconSize = 22;
 
   /// Fallback when a [BuildContext] theme extension is unavailable.
-  static const double defaultCornerRadius = 8;
+  static const double defaultCornerRadius = 4;
 
   static bool isCircularRadius(double radius) => radius >= buttonSize / 2;
 

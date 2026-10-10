@@ -12,10 +12,10 @@ import 'zephyr_status_bar.dart';
 class ZephyrShapeTheme extends ThemeExtension<ZephyrShapeTheme> {
   const ZephyrShapeTheme({
     required this.cornerRadius,
-    this.barCornerRadius = 8,
-    this.showBorders = true,
+    this.barCornerRadius = 4,
+    this.showBorders = false,
     this.sidebarItemInset = 0,
-    this.sidebarVolumeGap = 6,
+    this.sidebarVolumeGap = 1,
   });
 
   final double cornerRadius;
