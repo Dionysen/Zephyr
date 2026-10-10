@@ -161,7 +161,7 @@ abstract class AppLocalizations {
   /// No description provided for @platformDefaultFont.
   ///
   /// In en, this message translates to:
-  /// **'Platform default'**
+  /// **'LXGW WenKai (default)'**
   String get platformDefaultFont;
 
   /// No description provided for @searchHint.

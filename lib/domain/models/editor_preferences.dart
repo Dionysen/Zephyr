@@ -1,3 +1,5 @@
+import 'zephyr_bundled_fonts.dart';
+
 class EditorPreferences {
   const EditorPreferences({
     required this.fontFamily,
@@ -13,7 +15,7 @@ class EditorPreferences {
   });
 
   static const defaults = EditorPreferences(
-    fontFamily: null,
+    fontFamily: ZephyrBundledFonts.wenkaiLite,
     fontPath: null,
     fontSize: 15,
     lineHeight: 1.75,
@@ -71,7 +73,9 @@ class EditorPreferences {
     double? titleFontSize,
     bool? titleCentered,
   }) => EditorPreferences(
-    fontFamily: clearFontFamily ? null : fontFamily ?? this.fontFamily,
+    fontFamily: clearFontFamily
+        ? ZephyrBundledFonts.wenkaiLite
+        : fontFamily ?? this.fontFamily,
     fontPath: clearFontFamily ? null : fontPath ?? this.fontPath,
     fontSize: fontSize ?? this.fontSize,
     lineHeight: lineHeight ?? this.lineHeight,

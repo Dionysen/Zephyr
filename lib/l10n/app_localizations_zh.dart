@@ -40,7 +40,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get temporaryLibraryName => '临时书库';
 
   @override
-  String get platformDefaultFont => '系统默认';
+  String get platformDefaultFont => '霞鹜文楷（默认）';
 
   @override
   String get searchHint => '搜索';

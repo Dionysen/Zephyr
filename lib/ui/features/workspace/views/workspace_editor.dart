@@ -1063,7 +1063,12 @@ class _EditorWordCountChipState extends State<EditorWordCountChip> {
   }
 
   void _onChange() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    // Controller may notify while an ancestor is still building (e.g. sync
+    // from model in initState); defer so we never setState mid-build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   String get _label {

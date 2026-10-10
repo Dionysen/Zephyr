@@ -40,7 +40,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get temporaryLibraryName => 'Temporary library';
 
   @override
-  String get platformDefaultFont => 'Platform default';
+  String get platformDefaultFont => 'LXGW WenKai (default)';
 
   @override
   String get searchHint => 'Search';

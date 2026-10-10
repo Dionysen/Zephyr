@@ -165,7 +165,7 @@ void main() {
       UiPreferences.defaults.hideQuickToolbar,
     );
     expect(appearance.ui.localePreference, UiPreferences.defaults.localePreference);
-    expect(appearance.ui.fontFamily, isNull);
+    expect(appearance.ui.fontFamily, UiPreferences.defaults.fontFamily);
     expect(appearance.ui.fontPath, isNull);
     expect(appearance.darkTokens.cursor, ThemeTokens.defaults.cursor);
     expect(appearance.darkTokens.divider, ThemeTokens.defaults.divider);

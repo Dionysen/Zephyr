@@ -157,9 +157,17 @@ ThemeData zephyrTheme(
     colorScheme: ColorScheme.fromSeed(seedColor: accent, brightness: brightness)
         .copyWith(
           primary: accent,
+          onPrimary: Colors.white,
           secondary: accent,
+          onSecondary: Colors.white,
           secondaryContainer: selected,
           onSecondaryContainer: primaryText,
+          // Keep tonal containers from the seed from darkening switches / chips.
+          primaryContainer: Color.alphaBlend(
+            accent.withValues(alpha: brightness == Brightness.dark ? .28 : .18),
+            editor,
+          ),
+          onPrimaryContainer: primaryText,
           surface: editor,
           onSurface: primaryText,
           surfaceContainerLowest: sidebar,
@@ -181,6 +189,32 @@ ThemeData zephyrTheme(
           outlineVariant: divider,
           error: const Color(0xFFFFB4AB),
         ),
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return Colors.white;
+        }
+        return null;
+      }),
+      trackColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return accent;
+        }
+        return null;
+      }),
+      trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return Colors.transparent;
+        }
+        return null;
+      }),
+      overlayColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return accent.withValues(alpha: .12);
+        }
+        return mutedText.withValues(alpha: .08);
+      }),
+    ),
     scaffoldBackgroundColor: editor,
     dividerTheme: DividerThemeData(
       color: divider,

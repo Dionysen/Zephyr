@@ -28,34 +28,91 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
 
     final customPacks = _readCustomPacks(values);
     final legacy = _readTokens(values, prefix: '');
-    final light =
+    var light =
         _readTokens(values, prefix: 'light') ??
         (legacy != null && legacy.isLight
             ? legacy
             : ThemeTokens.presets[ThemePreset.light]!);
-    final dark =
+    var dark =
         _readTokens(values, prefix: 'dark') ??
         (legacy != null && !legacy.isLight ? legacy : ThemeTokens.defaults);
+
+    final lightPackId = _readPackId(
+      values['lightPackId'] as String?,
+      tokens: light,
+      customPacks: customPacks,
+      fallback: ThemeColorPack.builtInId(ThemePreset.light),
+    );
+    final darkPackId = _readPackId(
+      values['darkPackId'] as String?,
+      tokens: dark,
+      customPacks: customPacks,
+      fallback: ThemeColorPack.builtInId(ThemePreset.darkModern),
+    );
+    light = _migrateBuiltInTokens(light, lightPackId);
+    dark = _migrateBuiltInTokens(dark, darkPackId);
 
     return ThemeAppearance(
       mode: AppThemeMode.fromStorage(values['themeMode'] as String?),
       lightTokens: light,
       darkTokens: dark,
-      lightPackId: _readPackId(
-        values['lightPackId'] as String?,
-        tokens: light,
-        customPacks: customPacks,
-        fallback: ThemeColorPack.builtInId(ThemePreset.light),
-      ),
-      darkPackId: _readPackId(
-        values['darkPackId'] as String?,
-        tokens: dark,
-        customPacks: customPacks,
-        fallback: ThemeColorPack.builtInId(ThemePreset.darkModern),
-      ),
+      lightPackId: lightPackId,
+      darkPackId: darkPackId,
       customPacks: customPacks,
       ui: _readUi(values),
     );
+  }
+
+  /// Soft blue used by all built-ins before Dark Modern polish.
+  static const _legacyLightAccent = 0xFF6B9BE8;
+
+  /// First Dark Modern accent (#0078D4) before matching the Sync button blue.
+  static const _previousDarkModernAccent = 0xFF0078D4;
+
+  /// Pre-VS Code Dark Modern default dark pack (surfaces + soft accent).
+  static const _legacyDarkModern = ThemeTokens(
+    editorSurface: 0xFF1E1E1E,
+    sidebarSurface: 0xFF171717,
+    controlSurface: 0xFF242424,
+    border: 0xFF343434,
+    divider: 0xFF222222,
+    primaryText: 0xFFE8E8E8,
+    mutedText: 0xFF858585,
+    accent: _legacyLightAccent,
+    cursor: 0xFFFFFFFF,
+  );
+
+  /// Dark Modern surfaces with the previous #0078D4 accent.
+  static const _previousDarkModern = ThemeTokens(
+    editorSurface: 0xFF1F1F1F,
+    sidebarSurface: 0xFF181818,
+    controlSurface: 0xFF313131,
+    border: 0xFF2B2B2B,
+    divider: 0xFF2B2B2B,
+    primaryText: 0xFFCCCCCC,
+    mutedText: 0xFF9D9D9D,
+    accent: _previousDarkModernAccent,
+    cursor: 0xFFFFFFFF,
+  );
+
+  /// Refresh unmodified built-in packs after palette updates ship.
+  ThemeTokens _migrateBuiltInTokens(ThemeTokens tokens, String packId) {
+    final preset = ThemePreset.values
+        .where((item) => ThemeColorPack.builtInId(item) == packId)
+        .firstOrNull;
+    if (preset == null) return tokens;
+    final current = ThemeTokens.presets[preset]!;
+    if (preset == ThemePreset.darkModern &&
+        (tokens == _legacyDarkModern || tokens == _previousDarkModern)) {
+      return current;
+    }
+    // Prior stock accents on an otherwise unmodified built-in pack.
+    if ((tokens.accent == _legacyLightAccent ||
+            tokens.accent == _previousDarkModernAccent) &&
+        tokens.copyWith(accent: current.accent) == current) {
+      return current;
+    }
+    return tokens;
   }
 
   @override
@@ -196,9 +253,13 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
       'uiSidebarVolumeGap',
       UiPreferences.defaults.sidebarVolumeGap,
     );
+    final uiFontPath = values['uiFontPath'] as String?;
+    final uiFontFamily = values['uiFontFamily'] as String?;
     return UiPreferences(
-      fontFamily: values['uiFontFamily'] as String?,
-      fontPath: values['uiFontPath'] as String?,
+      // Null family with no custom path → bundled default (霞鹜文楷).
+      fontFamily: uiFontFamily ??
+          (uiFontPath == null ? UiPreferences.defaults.fontFamily : null),
+      fontPath: uiFontPath,
       fontSize: _double(values, 'uiFontSize', UiPreferences.defaults.fontSize),
       cornerRadius: radius
           .clamp(UiPreferences.minCornerRadius, UiPreferences.maxCornerRadius)

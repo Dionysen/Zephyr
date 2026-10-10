@@ -41,18 +41,22 @@ class ThemeTokens {
     required this.cursor,
   });
 
-  /// Shared accent for every preset — soft, lighter “premium” blue.
-  static const lightAccent = 0xFF6B9BE8;
+  /// Accent for light presets — clear blue that reads well on pale chrome.
+  static const lightAccent = 0xFF3376CE;
 
+  /// Cursor / VS Code “Sync Changes” button blue (lighter than #0078D4).
+  static const darkModernAccent = 0xFF3376CE;
+
+  /// Default dark pack (Dark Modern): surfaces + accent aligned with VS Code.
   static const defaults = ThemeTokens(
-    editorSurface: 0xFF1E1E1E,
-    sidebarSurface: 0xFF171717,
-    controlSurface: 0xFF242424,
-    border: 0xFF343434,
-    divider: 0xFF222222,
-    primaryText: 0xFFE8E8E8,
-    mutedText: 0xFF858585,
-    accent: lightAccent,
+    editorSurface: 0xFF1F1F1F,
+    sidebarSurface: 0xFF181818,
+    controlSurface: 0xFF313131,
+    border: 0xFF2B2B2B,
+    divider: 0xFF2B2B2B,
+    primaryText: 0xFFCCCCCC,
+    mutedText: 0xFF9D9D9D,
+    accent: darkModernAccent,
     cursor: 0xFFFFFFFF,
   );
 
@@ -142,7 +146,7 @@ class ThemeTokens {
       divider: 0xFF1C2230,
       primaryText: 0xFFE4E8F0,
       mutedText: 0xFF8B95A7,
-      accent: lightAccent,
+      accent: darkModernAccent,
       cursor: 0xFFFFFFFF,
     ),
     ThemePreset.darkModern: defaults,

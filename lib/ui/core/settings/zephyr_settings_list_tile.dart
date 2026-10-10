@@ -34,7 +34,7 @@ class ZephyrSettingsListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final iconColor = enabled
-        ? theme.colorScheme.onSurfaceVariant
+        ? theme.colorScheme.onSurface
         : theme.disabledColor;
     final titleStyle = theme.textTheme.titleSmall?.copyWith(
       color: enabled ? null : theme.disabledColor,

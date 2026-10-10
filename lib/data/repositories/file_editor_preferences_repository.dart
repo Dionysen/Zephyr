@@ -12,9 +12,13 @@ class FileEditorPreferencesRepository implements EditorPreferencesRepository {
     if (values == null) return EditorPreferences.defaults;
     final defaults = EditorPreferences.defaults;
     final fontSize = _double(values, 'fontSize');
+    final fontPath = values['fontPath'] as String?;
+    final fontFamily = values['fontFamily'] as String?;
     return EditorPreferences(
-      fontFamily: values['fontFamily'] as String?,
-      fontPath: values['fontPath'] as String?,
+      // Null family with no custom path → bundled default (霞鹜文楷).
+      fontFamily: fontFamily ??
+          (fontPath == null ? defaults.fontFamily : null),
+      fontPath: fontPath,
       fontSize: fontSize,
       lineHeight: _double(values, 'lineHeight'),
       paragraphSpacing: _paragraphSpacingMultiplier(

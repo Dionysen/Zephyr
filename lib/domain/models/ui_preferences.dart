@@ -1,4 +1,5 @@
 import 'editor_background.dart';
+import 'zephyr_bundled_fonts.dart';
 
 /// Interface language preference stored with other UI chrome settings.
 enum AppLocalePreference {
@@ -41,7 +42,7 @@ class UiPreferences {
   /// [fontSize] maps to [TextTheme.titleSmall]; other styles scale from
   /// [referenceFontSize].
   static const defaults = UiPreferences(
-    fontFamily: null,
+    fontFamily: ZephyrBundledFonts.wenkaiLite,
     fontPath: null,
     fontSize: 16,
     cornerRadius: 4,
@@ -129,7 +130,9 @@ class UiPreferences {
     EditorBackgroundConfig? lightEditorBackground,
     EditorBackgroundConfig? darkEditorBackground,
   }) => UiPreferences(
-    fontFamily: clearFontFamily ? null : fontFamily ?? this.fontFamily,
+    fontFamily: clearFontFamily
+        ? ZephyrBundledFonts.wenkaiLite
+        : fontFamily ?? this.fontFamily,
     fontPath: clearFontFamily ? null : fontPath ?? this.fontPath,
     fontSize: fontSize ?? this.fontSize,
     cornerRadius: cornerRadius ?? this.cornerRadius,

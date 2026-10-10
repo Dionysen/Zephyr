@@ -42,7 +42,12 @@ class WorkspaceEditorBridge extends ChangeNotifier {
     _insertPhrase = insertPhrase;
     _bodyFocused = bodyFocused;
     _canUndo = canUndo;
-    if (changed) notifyListeners();
+    if (changed) {
+      // [bind] often runs from editor init/sync during build; defer notify.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+    }
   }
 
   void notifyCanUndo() {
