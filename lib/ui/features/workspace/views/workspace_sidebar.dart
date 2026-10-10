@@ -1675,9 +1675,12 @@ class WorkspaceBookPicker extends StatelessWidget {
                 ),
                 if (meta != null) ...[
                   const SizedBox(width: 8),
-                  // Flexible so long English meta can ellipsis; right-align
-                  // keeps the count flush to the chevron.
-                  Flexible(
+                  // Non-flex trailing: sits flush before the chevron. Cap width
+                  // so long English meta ellipsizes instead of overflowing.
+                  // (Flexible + textAlign does not right-align — the Text
+                  // shrink-wraps and stays at the start of the flex slot.)
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 140),
                     child: Text(
                       meta,
                       maxLines: 1,
@@ -1746,15 +1749,18 @@ class WorkspaceBookPicker extends StatelessWidget {
                           ),
                           if (subtitle != null && subtitle.isNotEmpty) ...[
                             const SizedBox(width: 8),
-                            Text(
-                              subtitle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.right,
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: isTrash
-                                    ? trashColor
-                                    : theme.colorScheme.onSurfaceVariant,
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 140),
+                              child: Text(
+                                subtitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.right,
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: isTrash
+                                      ? trashColor
+                                      : theme.colorScheme.onSurfaceVariant,
+                                ),
                               ),
                             ),
                             const SizedBox(width: 6),

@@ -71,7 +71,9 @@ class WorkspaceLayout {
     this.booksSheetDualColumn = true,
   });
 
-  static const minSidebarWidth = 220.0;
+  /// Fits the docked sidebar tool row on macOS: traffic-light inset (~80) +
+  /// six 28px icon buttons + a small drag sliver, with a little slack.
+  static const minSidebarWidth = 280.0;
   static const maxSidebarWidth = 520.0;
   static const defaultSidebarWidth = 334.0;
   static const defaults = WorkspaceLayout(sidebarWidth: defaultSidebarWidth);
