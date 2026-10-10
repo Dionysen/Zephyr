@@ -266,6 +266,20 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                       tooltip: l10n.tooltipSearchChapters,
                     ),
                     IconButton(
+                      onPressed: model.hasVolumes
+                          ? () =>
+                                _chapterTreeKey.currentState?.toggleAllVolumes()
+                          : null,
+                      icon: Icon(
+                        model.areAllVolumesExpanded
+                            ? Icons.unfold_less
+                            : Icons.unfold_more,
+                      ),
+                      tooltip: model.areAllVolumesExpanded
+                          ? l10n.tooltipCollapseAll
+                          : l10n.tooltipExpandAll,
+                    ),
+                    IconButton(
                       onPressed: model.article == null
                           ? null
                           : () => _chapterTreeKey.currentState
@@ -282,28 +296,6 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                 ),
               ),
               WorkspaceBookPicker(model: model, library: model.library!),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      onPressed: model.hasVolumes
-                          ? () =>
-                                _chapterTreeKey.currentState?.toggleAllVolumes()
-                          : null,
-                      icon: Icon(
-                        model.areAllVolumesExpanded
-                            ? Icons.unfold_less
-                            : Icons.unfold_more,
-                      ),
-                      tooltip: model.areAllVolumesExpanded
-                          ? l10n.tooltipCollapseAll
-                          : l10n.tooltipExpandAll,
-                    ),
-                  ],
-                ),
-              ),
             ],
             Expanded(
               child: Stack(
@@ -484,6 +476,17 @@ class _DrawerSidebarHeader extends StatelessWidget {
               ],
             ),
           ),
+          _SidebarAddMenuButton(
+            enabled: canReorder,
+            model: model,
+            style: toolStyle,
+          ),
+          IconButton(
+            style: toolStyle,
+            onPressed: null,
+            icon: const Icon(Icons.search),
+            tooltip: l10n.tooltipSearchChapters,
+          ),
           IconButton(
             style: toolStyle,
             onPressed: onToggleAllVolumes,
@@ -495,17 +498,6 @@ class _DrawerSidebarHeader extends StatelessWidget {
             tooltip: model.areAllVolumesExpanded
                 ? l10n.tooltipCollapseAll
                 : l10n.tooltipExpandAll,
-          ),
-          _SidebarAddMenuButton(
-            enabled: canReorder,
-            model: model,
-            style: toolStyle,
-          ),
-          IconButton(
-            style: toolStyle,
-            onPressed: null,
-            icon: const Icon(Icons.search),
-            tooltip: l10n.tooltipSearchChapters,
           ),
           IconButton(
             style: toolStyle,

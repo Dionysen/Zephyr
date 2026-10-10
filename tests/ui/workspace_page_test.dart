@@ -164,29 +164,7 @@ void main() {
     );
     expect(find.byIcon(Icons.delete_outline), findsOneWidget);
     expect(
-      tester
-          .widget<IconButton>(
-            find
-                .ancestor(
-                  of: find.byIcon(Icons.note_add_outlined),
-                  matching: find.byType(IconButton),
-                )
-                .first,
-          )
-          .onPressed,
-      isNull,
-    );
-    expect(
-      tester
-          .widget<IconButton>(
-            find
-                .ancestor(
-                  of: find.byIcon(Icons.create_new_folder_outlined),
-                  matching: find.byType(IconButton),
-                )
-                .first,
-          )
-          .onPressed,
+      tester.widget<IconButton>(find.byTooltip('Add')).onPressed,
       isNull,
     );
   });
@@ -243,24 +221,17 @@ void main() {
     await tester.pumpAndSettle();
 
     final sidebar = tester.getRect(find.byType(WorkspaceSidebar));
-    final expandButton = tester.getRect(
-      find.ancestor(
-        of: find.byIcon(Icons.unfold_less),
-        matching: find.byType(IconButton),
-      ),
-    );
-    final newChapterButton = tester.getRect(
-      find.ancestor(
-        of: find.byIcon(Icons.note_add_outlined),
-        matching: find.byType(IconButton),
-      ),
-    );
-    expect(newChapterButton.left - expandButton.right, 4);
-    expect(
-      (expandButton.center.dx + newChapterButton.center.dx) / 2,
-      closeTo(sidebar.center.dx, 0.01),
+    final addButton = tester.getRect(find.byTooltip('Add'));
+    final searchButton = tester.getRect(find.byTooltip('Search'));
+    final expandButton = tester.getRect(find.byTooltip('Collapse all'));
+    final locateButton = tester.getRect(
+      find.byTooltip('Locate current chapter'),
     );
     final reorderButton = tester.getRect(find.byTooltip('Reorder'));
+    expect(addButton.left, lessThan(searchButton.left));
+    expect(searchButton.left, lessThan(expandButton.left));
+    expect(expandButton.left, lessThan(locateButton.left));
+    expect(locateButton.left, lessThan(reorderButton.left));
     expect(reorderButton.right, closeTo(sidebar.right, 8));
     expect(find.byIcon(Icons.drag_indicator), findsNothing);
 
