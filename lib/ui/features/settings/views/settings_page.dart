@@ -149,6 +149,10 @@ class CompactSettingsList extends StatelessWidget {
               removeTop: true,
               child: NavigationBar(
                 height: 78,
+                backgroundColor: ZephyrSettingsAppBar.backgroundColor(context),
+                elevation: 0,
+                shadowColor: Colors.transparent,
+                surfaceTintColor: Colors.transparent,
                 selectedIndex: tab.index,
                 onDestinationSelected: (index) {
                   settings.selectTab(SettingsTab.values[index]);

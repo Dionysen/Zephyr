@@ -4,8 +4,17 @@ import '../../../../domain/models/quick_toolbar_config.dart';
 import '../../../core/zephyr_l10n.dart';
 import 'quick_tool_button.dart';
 
-const quickToolbarBackground = Color(0xFF000000);
 const quickToolbarHeight = QuickToolButton.height;
+
+/// Light themes: white strip; dark themes: solid black (IME accessory chrome).
+Color quickToolbarBackgroundOf(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.light
+        ? Colors.white
+        : const Color(0xFF000000);
+
+/// Light themes: black glyphs; dark themes use the host [fallback] (usually onSurface).
+Color quickToolbarForegroundOf(BuildContext context, Color fallback) =>
+    Theme.of(context).brightness == Brightness.light ? Colors.black : fallback;
 
 /// Dual-zone IME accessory: fixed (non-scroll) | custom (horizontal scroll).
 class QuickToolbarBar extends StatelessWidget {
@@ -33,17 +42,18 @@ class QuickToolbarBar extends StatelessWidget {
     final l10n = context.l10n;
     final pinned = config.pinnedTools;
     final custom = config.customTools;
+    final chrome = quickToolbarForegroundOf(context, foreground);
     // Shared Material: ink spreads across sibling buttons horizontally and
     // is clipped to this strip vertically (does not spill outside the bar).
     return Material(
-      color: quickToolbarBackground,
+      color: quickToolbarBackgroundOf(context),
       child: SizedBox(
         height: quickToolbarHeight,
         child: Row(
           children: [
             QuickToolButton(
               tool: QuickTool.tools,
-              foreground: foreground,
+              foreground: chrome,
               panelOpen: toolsDrawerOpen,
               tooltip: l10n.quickToolbarToolsTooltip,
               bodyFontFamily: bodyFontFamily,
@@ -52,14 +62,14 @@ class QuickToolbarBar extends StatelessWidget {
             for (final tool in pinned)
               QuickToolButton(
                 tool: tool,
-                foreground: foreground,
+                foreground: chrome,
                 enabled: tool.kind != QuickToolKind.undo || canUndo,
                 tooltip: _tooltip(l10n, tool),
                 bodyFontFamily: bodyFontFamily,
                 onPressed: () => onToolPressed(tool),
               ),
             if (custom.isNotEmpty) ...[
-              _ShortDivider(color: foreground),
+              _ShortDivider(color: chrome),
               Expanded(
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
@@ -69,7 +79,7 @@ class QuickToolbarBar extends StatelessWidget {
                     final tool = custom[index];
                     return QuickToolButton(
                       tool: tool,
-                      foreground: foreground,
+                      foreground: chrome,
                       enabled: tool.kind != QuickToolKind.undo || canUndo,
                       tooltip: _tooltip(l10n, tool),
                       bodyFontFamily: bodyFontFamily,

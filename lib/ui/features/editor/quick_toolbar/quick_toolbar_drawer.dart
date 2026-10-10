@@ -18,8 +18,9 @@ class QuickToolbarDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final chrome = quickToolbarForegroundOf(context, foreground);
     return Material(
-      color: quickToolbarBackground,
+      color: quickToolbarBackgroundOf(context),
       child: SizedBox(
         height: height,
         width: double.infinity,
@@ -30,13 +31,13 @@ class QuickToolbarDrawer extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
                 onPressed: onEditToolbar,
-                icon: Icon(Icons.edit_outlined, size: 18, color: foreground),
+                icon: Icon(Icons.edit_outlined, size: 18, color: chrome),
                 label: Text(
                   context.l10n.quickToolbarEdit,
-                  style: TextStyle(color: foreground),
+                  style: TextStyle(color: chrome),
                 ),
                 style: TextButton.styleFrom(
-                  foregroundColor: foreground,
+                  foregroundColor: chrome,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                 ),
               ),
@@ -46,7 +47,7 @@ class QuickToolbarDrawer extends StatelessWidget {
                 child: Text(
                   context.l10n.quickToolbarDrawerEmpty,
                   style: TextStyle(
-                    color: foreground.withValues(alpha: 0.45),
+                    color: chrome.withValues(alpha: 0.45),
                     fontSize: 13,
                   ),
                 ),

@@ -197,9 +197,10 @@ class _ToolbarInk extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Black bar: theme splash is often dark and nearly invisible — use a
-    // light ink so the ripple reads clearly on every chip.
-    final ink = Colors.white;
+    // Contrast against the bar: light ink on black, dark ink on white.
+    final ink = Theme.of(context).brightness == Brightness.light
+        ? Colors.black
+        : Colors.white;
     return SizedBox(
       width: width,
       height: QuickToolButton.height,

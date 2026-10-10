@@ -16,14 +16,9 @@ class ZephyrSettingsAppBar extends StatelessWidget
   final VoidCallback onBack;
   final double height;
 
-  /// Shared chrome color for the settings app bar.
-  static Color backgroundColor(BuildContext context) {
-    final theme = Theme.of(context);
-    return Color.alphaBlend(
-      theme.colorScheme.onSurface.withValues(alpha: 0.12),
-      theme.colorScheme.surfaceContainerLowest,
-    );
-  }
+  /// Shared chrome color for settings top/bottom bars (sidebar surface).
+  static Color backgroundColor(BuildContext context) =>
+      Theme.of(context).colorScheme.surfaceContainerLowest;
 
   @override
   Size get preferredSize => Size.fromHeight(height);
