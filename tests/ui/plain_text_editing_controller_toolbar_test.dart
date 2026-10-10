@@ -16,6 +16,30 @@ void main() {
     expect(controller.text, 'Hello');
   });
 
+  test('undo after backspace restores text without selecting it', () {
+    final controller = PlainTextEditingController(text: 'Hello');
+    controller.setSelection(const TextSelection.collapsed(offset: 5));
+    controller.deleteBackward();
+    expect(controller.text, 'Hell');
+    controller.undo();
+    expect(controller.text, 'Hello');
+    expect(controller.selection.isCollapsed, isTrue);
+    expect(controller.selection.extentOffset, 5);
+  });
+
+  test('undo after deleting a selection restores text without selecting it', () {
+    final controller = PlainTextEditingController(text: 'Hello');
+    controller.setSelection(
+      const TextSelection(baseOffset: 1, extentOffset: 4),
+    );
+    controller.replaceSelection('', coalesce: false);
+    expect(controller.text, 'Ho');
+    controller.undo();
+    expect(controller.text, 'Hello');
+    expect(controller.selection.isCollapsed, isTrue);
+    expect(controller.selection.extentOffset, 4);
+  });
+
   test('indent inserts configured ideographic spaces', () {
     final controller = PlainTextEditingController(text: '');
     controller.firstLineIndent = 2;

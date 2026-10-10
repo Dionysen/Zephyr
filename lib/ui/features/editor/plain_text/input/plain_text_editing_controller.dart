@@ -81,8 +81,14 @@ class PlainTextEditingController extends ChangeNotifier {
     if (_selection.extentOffset == 0) return;
     final end = _selection.extentOffset;
     final start = end - 1;
-    _selection = TextSelection(baseOffset: start, extentOffset: end);
-    replaceSelection('');
+    // Delete the prior code unit without expanding selection first — that
+    // would snapshot a range and make undo re-select the restored character.
+    _pushUndo(coalesce: false);
+    _document = _document.replaceRange(start, end, '');
+    _selection = TextSelection.collapsed(offset: start);
+    _composing = TextRange.empty;
+    _redo.clear();
+    notifyListeners();
   }
 
   void deleteForward() {
@@ -92,8 +98,13 @@ class PlainTextEditingController extends ChangeNotifier {
     }
     if (_selection.extentOffset >= _document.length) return;
     final start = _selection.extentOffset;
-    _selection = TextSelection(baseOffset: start, extentOffset: start + 1);
-    replaceSelection('');
+    final end = start + 1;
+    _pushUndo(coalesce: false);
+    _document = _document.replaceRange(start, end, '');
+    _selection = TextSelection.collapsed(offset: start);
+    _composing = TextRange.empty;
+    _redo.clear();
+    notifyListeners();
   }
 
   /// Inserts a newline and inherits leading ideographic indent from the
@@ -135,9 +146,7 @@ class PlainTextEditingController extends ChangeNotifier {
     if (_undo.isEmpty) return;
     _redo.add(_Snapshot(text: text, selection: _selection));
     final snap = _undo.removeLast();
-    _document = PlainTextDocument(snap.text);
-    _selection = snap.selection.clampedTo(snap.text.length);
-    _composing = TextRange.empty;
+    _restoreSnapshot(snap);
     _lastCoalesceAt = null;
     notifyListeners();
   }
@@ -146,10 +155,16 @@ class PlainTextEditingController extends ChangeNotifier {
     if (_redo.isEmpty) return;
     _undo.add(_Snapshot(text: text, selection: _selection));
     final snap = _redo.removeLast();
-    _document = PlainTextDocument(snap.text);
-    _selection = snap.selection.clampedTo(snap.text.length);
-    _composing = TextRange.empty;
+    _restoreSnapshot(snap);
     notifyListeners();
+  }
+
+  /// Restores text with a collapsed caret — never re-selects a prior range.
+  void _restoreSnapshot(_Snapshot snap) {
+    _document = PlainTextDocument(snap.text);
+    final caret = snap.selection.extentOffset.clamp(0, snap.text.length);
+    _selection = TextSelection.collapsed(offset: caret);
+    _composing = TextRange.empty;
   }
 
   void _pushUndo({bool coalesce = false}) {
