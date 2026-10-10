@@ -7,7 +7,7 @@ class SettingsNavigation {
   static const maxSidebarWidth = 420.0;
   static const defaultSidebarWidth = 250.0;
   static const defaults = SettingsNavigation(
-    section: SettingsSection.theme,
+    section: SettingsSection.general,
     sidebarWidth: defaultSidebarWidth,
   );
 

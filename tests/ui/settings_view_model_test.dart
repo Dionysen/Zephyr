@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/domain/models/settings_navigation.dart';
 import 'package:zephyr/domain/models/settings_section.dart';
 import 'package:zephyr/domain/repositories/settings_navigation_repository.dart';
+import 'package:zephyr/ui/features/settings/models/settings_tab.dart';
 import 'package:zephyr/ui/features/settings/view_models/settings_view_model.dart';
 
 void main() {
@@ -18,6 +19,7 @@ void main() {
     await model.load();
 
     expect(model.section, SettingsSection.editor);
+    expect(model.tab, SettingsTab.editor);
     expect(model.sidebarWidth, 312);
   });
 
@@ -34,6 +36,24 @@ void main() {
       repository.navigation.sidebarWidth,
       SettingsNavigation.defaultSidebarWidth,
     );
+  });
+
+  test('selectTab maps legacy subsections onto the four top tabs', () async {
+    final repository = _SettingsRepository(
+      const SettingsNavigation(
+        section: SettingsSection.cloud,
+        sidebarWidth: SettingsNavigation.defaultSidebarWidth,
+      ),
+    );
+    final model = SettingsViewModel(repository);
+    await model.load();
+    expect(model.tab, SettingsTab.general);
+
+    model.selectTab(SettingsTab.appearance);
+    await Future<void>.delayed(Duration.zero);
+    expect(model.section, SettingsSection.theme);
+    expect(model.tab, SettingsTab.appearance);
+    expect(repository.navigation.section, SettingsSection.theme);
   });
 
   test('resizing the sidebar persists the width after the drag ends', () async {

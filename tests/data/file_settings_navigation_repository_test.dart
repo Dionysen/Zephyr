@@ -28,7 +28,7 @@ void main() {
     expect(actual.sidebarWidth, 312);
   });
 
-  test('falls back to theme when the stored group is unknown', () async {
+  test('falls back to general when the stored group is unknown', () async {
     final directory = await Directory.systemTemp.createTemp(
       'zephyr-settings-nav-test-',
     );
@@ -39,7 +39,7 @@ void main() {
     await storage.write({'section': 'missing'});
     final actual = await FileSettingsNavigationRepository(storage).load();
 
-    expect(actual.section, SettingsSection.theme);
+    expect(actual.section, SettingsSection.general);
     expect(actual.sidebarWidth, SettingsNavigation.defaultSidebarWidth);
   });
 

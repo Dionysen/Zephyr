@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../../../../domain/models/settings_navigation.dart';
 import '../../../../domain/models/settings_section.dart';
 import '../../../../domain/repositories/settings_navigation_repository.dart';
+import '../models/settings_tab.dart';
 
 class SettingsViewModel extends ChangeNotifier {
   SettingsViewModel(this._repository);
@@ -16,6 +17,7 @@ class SettingsViewModel extends ChangeNotifier {
   Timer? _pendingSave;
 
   SettingsSection get section => _section;
+  SettingsTab get tab => SettingsTabLabels.fromSection(_section);
   double get sidebarWidth => _sidebarWidth;
   bool get isResizingSidebar => _isResizingSidebar;
 
@@ -39,6 +41,8 @@ class SettingsViewModel extends ChangeNotifier {
     notifyListeners();
     unawaited(_save());
   }
+
+  void selectTab(SettingsTab tab) => select(tab.storageSection);
 
   void resizeSidebar(double width) {
     final next = SettingsNavigation.clamped(

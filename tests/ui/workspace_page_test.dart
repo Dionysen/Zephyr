@@ -422,14 +422,31 @@ void main() {
 
     expect(find.byType(WorkspaceSettingsPanel).hitTestable(), findsOneWidget);
     expect(find.text(l10n.settingsTitle), findsWidgets);
-    expect(find.text(l10n.settingsSectionGeneral), findsOneWidget);
+    expect(find.text(l10n.settingsSectionGeneral), findsWidgets);
     expect(find.text(l10n.languageTitle), findsOneWidget);
     expect(find.text(l10n.hideQuickToolbarTitle), findsOneWidget);
+    expect(find.text(l10n.settingsSectionCloud), findsOneWidget);
     expect(find.text(l10n.settingsSectionEditor), findsOneWidget);
     expect(find.text(l10n.immersiveStatusBarTitle), findsNothing);
     expect(find.text(l10n.hideStatusBarIconsTitle), findsNothing);
     // Workspace chrome stays under the overlay.
     expect(find.byTooltip(l10n.tooltipSettings), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('settings-tab-editor')));
+    await tester.pumpAndSettle();
+    expect(find.text(l10n.languageTitle), findsNothing);
+    expect(find.text(l10n.editorSectionFooter), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text(l10n.shortcutsManageTitle),
+      300,
+      scrollable: find
+          .descendant(
+            of: find.byType(WorkspaceSettingsPanel),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    expect(find.text(l10n.shortcutsManageTitle), findsOneWidget);
   });
 
   testWidgets('expanded settings panel closes and reopens in place', (

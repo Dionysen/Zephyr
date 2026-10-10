@@ -21,7 +21,7 @@ class FileSettingsNavigationRepository implements SettingsNavigationRepository {
           SettingsSection.values
               .where((section) => section.name == name)
               .firstOrNull ??
-          SettingsSection.theme,
+          SettingsSection.general,
       sidebarWidth: width is num
           ? width.toDouble()
           : SettingsNavigation.defaultSidebarWidth,
