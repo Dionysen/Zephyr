@@ -608,6 +608,147 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   }
 
   @override
+  Future<WritingFolder> createFolder({
+    required String name,
+    String description = '',
+    String tags = '',
+  }) async {
+    _store.ensureWritable();
+    final db = _store.database;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final id = _uuid.v4().replaceAll('-', '').substring(0, 24);
+    final trimmed = name.trim().isEmpty ? 'Untitled' : name.trim();
+    final maxRows = await db.rawQuery(
+      'SELECT COALESCE(MAX(rank), -1) AS value FROM Folder '
+      'WHERE deleted = 0 AND id != ?',
+      [WritingFolder.trashId],
+    );
+    final rank = (maxRows.single['value']! as int) + 1;
+    await db.transaction((txn) async {
+      await txn.rawUpdate(
+        'UPDATE Folder SET rank = ?, rankUpdateTime = ?, updateTime = ? '
+        'WHERE id = ? AND deleted = 0 AND rank <= ?',
+        [rank + 1, now, now, WritingFolder.trashId, rank],
+      );
+      await txn.insert('Folder', {
+        'id': id,
+        'name': trimmed,
+        'createdTime': now,
+        'description': description,
+        'rank': rank,
+        'deleted': 0,
+        'deletedTime': 0,
+        'updateTime': now,
+        'rankUpdateTime': now,
+        'autoChapter': 0,
+        'autoChapterUpdateTime': 0,
+        'autoChapterResetForCategory': 0,
+        'autoChapterResetForCategoryUpdateTime': 0,
+        'autoChapterReplaceBadPrefix': 0,
+        'autoChapterReplaceBadPrefixUpdateTime': 0,
+        'tags': tags,
+        'tagsUpdateTime': now,
+        'rankModeUpdateTime': 0,
+      });
+    });
+    return WritingFolder(
+      id: id,
+      name: trimmed,
+      rank: rank,
+      description: description,
+      tags: tags,
+    );
+  }
+
+  @override
+  Future<void> deleteFolder(String folderId) async {
+    if (folderId == WritingFolder.trashId) {
+      throw StateError('Cannot delete the trash folder.');
+    }
+    _store.ensureWritable();
+    final db = _store.database;
+    final articles = await db.query(
+      'Article',
+      columns: ['id'],
+      where: 'folderId = ? AND deleted = 0',
+      whereArgs: [folderId],
+      limit: 1,
+    );
+    if (articles.isNotEmpty) {
+      throw FolderNotEmptyException(folderId);
+    }
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await db.transaction((txn) async {
+      await txn.update(
+        'Category',
+        {
+          'deleted': 1,
+          'deletedTime': now,
+          'updateTime': now,
+        },
+        where: 'folderId = ? AND deleted = 0',
+        whereArgs: [folderId],
+      );
+      final updated = await txn.update(
+        'Folder',
+        {
+          'deleted': 1,
+          'deletedTime': now,
+          'updateTime': now,
+        },
+        where: 'id = ? AND deleted = 0',
+        whereArgs: [folderId],
+      );
+      if (updated == 0) {
+        throw StateError('PureWriter folder not found: $folderId');
+      }
+    });
+  }
+
+  @override
+  Future<void> reorderFolders({required List<String> orderedIds}) async {
+    _store.ensureWritable();
+    final db = _store.database;
+    final existing = await db.query(
+      'Folder',
+      columns: ['id'],
+      where: 'deleted = 0 AND id != ?',
+      whereArgs: [WritingFolder.trashId],
+      orderBy: 'rank ASC, createdTime ASC',
+    );
+    final existingIds = existing.map((row) => row['id']! as String).toList();
+    if (existingIds.length != orderedIds.length ||
+        !existingIds.toSet().containsAll(orderedIds)) {
+      throw ArgumentError('orderedIds must match non-trash Folder rows');
+    }
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await db.transaction((txn) async {
+      for (var i = 0; i < orderedIds.length; i++) {
+        await txn.update(
+          'Folder',
+          {
+            'rank': i,
+            'rankUpdateTime': now,
+            'updateTime': now,
+          },
+          where: 'id = ?',
+          whereArgs: [orderedIds[i]],
+        );
+      }
+      await txn.update(
+        'Folder',
+        {
+          'rank': orderedIds.length,
+          'rankUpdateTime': now,
+          'updateTime': now,
+        },
+        where: 'id = ? AND deleted = 0',
+        whereArgs: [WritingFolder.trashId],
+      );
+    });
+  }
+
+  @override
   Future<void> trashArticle(String articleId) async {
     _store.ensureWritable();
     final now = DateTime.now().millisecondsSinceEpoch;

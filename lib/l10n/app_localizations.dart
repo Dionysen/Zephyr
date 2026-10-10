@@ -1927,6 +1927,24 @@ abstract class AppLocalizations {
   /// **'Select a book'**
   String get selectBook;
 
+  /// No description provided for @booksSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Books'**
+  String get booksSheetTitle;
+
+  /// No description provided for @booksSheetTagAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get booksSheetTagAll;
+
+  /// No description provided for @newBookTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New book'**
+  String get newBookTitle;
+
   /// No description provided for @moreSheetTitle.
   ///
   /// In en, this message translates to:
@@ -1962,6 +1980,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please enter a book title'**
   String get bookNameRequired;
+
+  /// No description provided for @tooltipNewBook.
+  ///
+  /// In en, this message translates to:
+  /// **'New book'**
+  String get tooltipNewBook;
+
+  /// No description provided for @tooltipBookGridLayout.
+  ///
+  /// In en, this message translates to:
+  /// **'Two-column layout'**
+  String get tooltipBookGridLayout;
+
+  /// No description provided for @tooltipBookListLayout.
+  ///
+  /// In en, this message translates to:
+  /// **'Single-column list'**
+  String get tooltipBookListLayout;
+
+  /// No description provided for @tooltipDeleteBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete book'**
+  String get tooltipDeleteBook;
+
+  /// No description provided for @deleteBookNotEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all chapters in this book before deleting it.'**
+  String get deleteBookNotEmpty;
 
   /// No description provided for @bookTagsLabel.
   ///

@@ -49,7 +49,8 @@ Future<void> showArticleHistorySheet(
                 child: ListView.separated(
                   controller: scrollController,
                   itemCount: history.length,
-                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  separatorBuilder: (context, _) =>
+                      ZephyrBottomSheet.rowDivider(context),
                   itemBuilder: (context, index) {
                     final item = history[index];
                     final preview = item.content.trim().isEmpty

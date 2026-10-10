@@ -11,6 +11,7 @@ import '../../../core/zephyr_bottom_sheet.dart';
 import '../../../core/zephyr_controls.dart';
 import '../../../core/zephyr_dialog.dart';
 import '../../../core/zephyr_dropdown.dart';
+import '../../../core/zephyr_icon_toolbar.dart';
 import '../../../core/zephyr_resize_handle.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
 import '../../../core/zephyr_l10n.dart';
@@ -391,21 +392,7 @@ class _DrawerSidebarHeader extends StatelessWidget {
         ? theme.colorScheme.error
         : theme.colorScheme.onSurfaceVariant;
 
-    final toolStyle = IconButton.styleFrom(
-      iconSize: ZephyrControls.mobileIconSize,
-      padding: EdgeInsets.zero,
-      minimumSize: const Size(
-        ZephyrControls.mobileButtonSize,
-        ZephyrControls.mobileButtonSize,
-      ),
-      fixedSize: const Size(
-        ZephyrControls.mobileButtonSize,
-        ZephyrControls.mobileButtonSize,
-      ),
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      visualDensity: VisualDensity.standard,
-      shape: const CircleBorder(),
-    );
+    final toolStyle = ZephyrIconToolbar.style(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 10, 4, 12),
@@ -633,10 +620,17 @@ class WorkspaceMobileBookBar extends StatelessWidget {
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
-      builder: (sheetContext) => _MobileBookSheet(
-        hostContext: context,
-        model: model,
-        library: library,
+      builder: (sheetContext) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.5,
+        minChildSize: 0.35,
+        maxChildSize: 0.92,
+        builder: (_, scrollController) => _MobileBookSheet(
+          hostContext: context,
+          model: model,
+          library: library,
+          scrollController: scrollController,
+        ),
       ),
     );
   }
@@ -663,115 +657,516 @@ Future<void> showWorkspaceMobileToolsSheet(
   );
 }
 
-class _MobileBookSheet extends StatelessWidget {
+class _MobileBookSheet extends StatefulWidget {
   const _MobileBookSheet({
     required this.hostContext,
     required this.model,
     required this.library,
+    required this.scrollController,
   });
 
   final BuildContext hostContext;
   final LibraryViewModel model;
   final WritingLibrary library;
+  final ScrollController scrollController;
+
+  @override
+  State<_MobileBookSheet> createState() => _MobileBookSheetState();
+}
+
+class _MobileBookSheetState extends State<_MobileBookSheet> {
+  static final _tagSplit = RegExp(r'[,;，；]');
+
+  var _dualColumn = false;
+  var _reorderMode = false;
+  String? _armedDeleteBookId;
+  final Set<String> _activeTags = {};
+
+  LibraryViewModel get model => widget.model;
+  ScrollController get _scrollController => widget.scrollController;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = context.l10n;
-    final books = library.folders;
-    final maxHeight = MediaQuery.sizeOf(context).height * 0.7;
+    return ListenableBuilder(
+      listenable: model,
+      builder: (context, _) {
+        final theme = Theme.of(context);
+        final l10n = context.l10n;
+        final library = model.library ?? widget.library;
+        final allBooks = library.folders;
+        final filterTags = _collectFilterTags(allBooks);
+        final activeTags = _activeTags.intersection(filterTags.toSet());
+        final books = _filteredBooks(allBooks, activeTags);
+        final toolStyle = ZephyrIconToolbar.style(context);
+        final showGrid = _dualColumn && !_reorderMode;
 
-    return SafeArea(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: maxHeight),
-        child: ZephyrBottomSheet.listTheme(
+        return ZephyrBottomSheet.listTheme(
           context: context,
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: ZephyrBottomSheet.titlePadding,
-                child: Text(
-                  l10n.selectBook,
-                  style: ZephyrBottomSheet.titleStyle(theme),
+                padding: const EdgeInsets.fromLTRB(20, 4, 4, 8),
+                child: Row(
+                  children: [
+                    Text(
+                      l10n.booksSheetTitle,
+                      style: ZephyrBottomSheet.titleStyle(theme),
+                    ),
+                    if (filterTags.isNotEmpty) ...[
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _buildTagFilters(context, filterTags),
+                      ),
+                    ] else
+                      const Spacer(),
+                    IconButton(
+                      style: toolStyle,
+                      onPressed: model.isReadOnly
+                          ? null
+                          : () => _onAddBook(context),
+                      icon: const Icon(Icons.library_add_outlined),
+                      tooltip: l10n.tooltipNewBook,
+                    ),
+                    IconButton(
+                      style: toolStyle,
+                      onPressed: () {
+                        setState(() {
+                          _dualColumn = !_dualColumn;
+                          if (_dualColumn) _reorderMode = false;
+                        });
+                      },
+                      isSelected: _dualColumn,
+                      icon: Icon(
+                        _dualColumn
+                            ? Icons.view_agenda_outlined
+                            : Icons.grid_view_rounded,
+                      ),
+                      selectedIcon: Icon(
+                        Icons.grid_view_rounded,
+                        color: theme.colorScheme.primary,
+                      ),
+                      tooltip: _dualColumn
+                          ? l10n.tooltipBookListLayout
+                          : l10n.tooltipBookGridLayout,
+                    ),
+                    IconButton(
+                      style: toolStyle,
+                      onPressed: model.isReadOnly
+                          ? null
+                          : () {
+                              setState(() {
+                                _reorderMode = !_reorderMode;
+                                if (_reorderMode) {
+                                  _dualColumn = false;
+                                  _armedDeleteBookId = null;
+                                }
+                              });
+                            },
+                      isSelected: _reorderMode,
+                      icon: const Icon(Icons.swap_vert),
+                      selectedIcon: Icon(
+                        Icons.swap_vert,
+                        color: theme.colorScheme.primary,
+                      ),
+                      tooltip: _reorderMode
+                          ? l10n.tooltipDoneReordering
+                          : l10n.tooltipReorder,
+                    ),
+                  ],
                 ),
               ),
-              Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: books.length,
-                  itemBuilder: (context, index) {
-                    final book = books[index];
-                    final selected = book.id == model.selectedBook?.id;
-                    final isTrash = book.isTrash;
-                    final stats = model.bookStats(book.id);
-                    final subtitle = _mobileBookSubtitle(book) ??
-                        l10n.bookStatsMeta(stats.volumes, stats.chapters);
-                    final accent = isTrash ? theme.colorScheme.error : null;
-
-                    return ListTile(
-                      selected: selected,
-                      leading: Icon(
-                        isTrash ? Icons.delete_outline : Icons.book_outlined,
-                        color: accent,
-                        size: ZephyrBottomSheet.rowIconSize,
-                      ),
-                      title: Text(
-                        book.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: ZephyrBottomSheet.rowTitleStyle(
-                          theme,
-                          color: accent,
-                        ),
-                      ),
-                      subtitle: Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: ZephyrBottomSheet.rowSubtitleStyle(
-                          theme,
-                          color: accent?.withValues(alpha: 0.8),
-                        ),
-                      ),
-                      trailing: isTrash
-                          ? null
-                          : IconButton(
-                              tooltip: l10n.tooltipEditBook,
-                              onPressed: model.isReadOnly
-                                  ? null
-                                  : () async {
-                                      Navigator.of(context).pop();
-                                      if (!hostContext.mounted) return;
-                                      await _editBook(
-                                        hostContext,
-                                        model: model,
-                                        book: book,
-                                      );
-                                    },
-                              icon: const Icon(Icons.edit_outlined),
-                            ),
-                      onTap: () async {
-                        Navigator.of(context).pop();
-                        await model.selectBook(book.id);
-                      },
-                    );
-                  },
-                ),
+              Expanded(
+                child: showGrid
+                    ? _buildGrid(context, books)
+                    : _buildList(context, books),
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTagFilters(BuildContext context, List<String> tags) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final shape = theme.extension<ZephyrShapeTheme>()?.labeledButtonShape ??
+        ZephyrControls.labeledButtonShape;
+    final selectedBg = theme.colorScheme.primary.withValues(alpha: 0.18);
+    final idleBg = theme.colorScheme.onSurface.withValues(alpha: 0.06);
+    final idleFg = theme.colorScheme.onSurface.withValues(alpha: 0.72);
+    final allSelected = _activeTags.isEmpty;
+
+    Widget chip({
+      required String label,
+      required bool selected,
+      required VoidCallback onPressed,
+    }) {
+      const chipHeight = 28.0;
+      return Center(
+        child: Material(
+          color: selected ? selectedBg : idleBg,
+          shape: shape,
+          child: InkWell(
+            customBorder: shape,
+            onTap: onPressed,
+            child: Container(
+              height: chipHeight,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              alignment: Alignment.center,
+              child: Text(
+                label,
+                textHeightBehavior: const TextHeightBehavior(
+                  applyHeightToFirstAscent: false,
+                  applyHeightToLastDescent: false,
+                ),
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontSize: 12,
+                  height: 1,
+                  leadingDistribution: TextLeadingDistribution.even,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  color: selected ? theme.colorScheme.primary : idleFg,
+                ),
+              ),
+            ),
+          ),
         ),
+      );
+    }
+
+    // +1 for the leading "All" chip. Horizontal ListView needs a bounded height.
+    return SizedBox(
+      height: ZephyrControls.mobileButtonSize,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: tags.length + 1,
+        separatorBuilder: (_, _) => const SizedBox(width: 4),
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return chip(
+              label: l10n.booksSheetTagAll,
+              selected: allSelected,
+              onPressed: () {
+                setState(() {
+                  if (_activeTags.isEmpty) {
+                    _activeTags.addAll(tags);
+                  } else {
+                    _activeTags.clear();
+                  }
+                });
+              },
+            );
+          }
+          final tag = tags[index - 1];
+          final selected = _activeTags.contains(tag);
+          return chip(
+            label: tag,
+            selected: selected,
+            onPressed: () {
+              setState(() {
+                if (selected) {
+                  _activeTags.remove(tag);
+                } else {
+                  _activeTags.add(tag);
+                }
+              });
+            },
+          );
+        },
       ),
     );
   }
 
-  String? _mobileBookSubtitle(WritingFolder book) {
-    final tags = book.tags.trim();
-    if (tags.isNotEmpty) {
-      return tags.split(RegExp(r'[,;，；]')).first.trim();
+  List<String> _collectFilterTags(List<WritingFolder> books) {
+    final seen = <String>{};
+    final ordered = <String>[];
+    for (final book in books) {
+      if (book.isTrash) continue;
+      for (final tag in _tagsOf(book)) {
+        if (seen.add(tag)) ordered.add(tag);
+      }
     }
+    return ordered;
+  }
+
+  List<WritingFolder> _filteredBooks(
+    List<WritingFolder> books,
+    Set<String> activeTags,
+  ) {
+    if (activeTags.isEmpty) return books;
+    return books
+        .where((book) => _tagsOf(book).any(activeTags.contains))
+        .toList(growable: false);
+  }
+
+  List<String> _tagsOf(WritingFolder book) {
+    final raw = book.tags.trim();
+    if (raw.isEmpty) return const [];
+    return raw
+        .split(_tagSplit)
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  Widget _buildList(BuildContext context, List<WritingFolder> books) {
+    if (_reorderMode) {
+      final items = books.where((b) => !b.isTrash).toList();
+      return ReorderableListView.builder(
+        key: const ValueKey('book-sheet-reorder'),
+        scrollController: _scrollController,
+        buildDefaultDragHandles: false,
+        itemCount: items.length,
+        onReorderItem: (oldIndex, newIndex) {
+          final next = List<WritingFolder>.from(items);
+          final item = next.removeAt(oldIndex);
+          next.insert(newIndex.clamp(0, next.length), item);
+          unawaited(model.reorderBooks(next.map((b) => b.id).toList()));
+        },
+        itemBuilder: (context, index) {
+          final book = items[index];
+          return KeyedSubtree(
+            key: ValueKey(book.id),
+            child: _bookTile(
+              context,
+              book,
+              reorderIndex: index,
+              showDivider: index < items.length - 1,
+            ),
+          );
+        },
+      );
+    }
+    return ListView.builder(
+      key: const ValueKey('book-sheet-list'),
+      controller: _scrollController,
+      itemCount: books.length,
+      itemBuilder: (context, index) => _bookTile(
+        context,
+        books[index],
+        reorderIndex: null,
+        showDivider: index < books.length - 1,
+      ),
+    );
+  }
+
+  Widget _buildGrid(BuildContext context, List<WritingFolder> books) {
+    final theme = Theme.of(context);
+    final line = BorderSide(
+      color: theme.dividerColor.withValues(alpha: 0.5),
+      width: ZephyrControls.borderWidth,
+    );
+    final rowCount = (books.length + 1) ~/ 2;
+
+    Widget cell(
+      Widget child, {
+      required bool right,
+      required bool bottom,
+    }) {
+      // Paint borders in the foreground so ListTile's Material does not cover
+      // the hairlines.
+      return Container(
+        foregroundDecoration: BoxDecoration(
+          border: Border(
+            right: right ? line : BorderSide.none,
+            bottom: bottom ? line : BorderSide.none,
+          ),
+        ),
+        child: child,
+      );
+    }
+
+    return ListView.builder(
+      key: const ValueKey('book-sheet-grid'),
+      controller: _scrollController,
+      padding: const EdgeInsets.only(bottom: 8),
+      itemCount: rowCount,
+      itemBuilder: (context, rowIndex) {
+        final leftIndex = rowIndex * 2;
+        final rightIndex = leftIndex + 1;
+        final bottom = rowIndex < rowCount - 1;
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: cell(
+                  _bookTile(
+                    context,
+                    books[leftIndex],
+                    reorderIndex: null,
+                    showDivider: false,
+                  ),
+                  right: true,
+                  bottom: bottom,
+                ),
+              ),
+              Expanded(
+                child: cell(
+                  rightIndex < books.length
+                      ? _bookTile(
+                          context,
+                          books[rightIndex],
+                          reorderIndex: null,
+                          showDivider: false,
+                        )
+                      : const SizedBox.expand(),
+                  right: false,
+                  bottom: bottom,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _bookTile(
+    BuildContext context,
+    WritingFolder book, {
+    required int? reorderIndex,
+    bool showDivider = true,
+  }) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final selected = book.id == model.selectedBook?.id;
+    final isTrash = book.isTrash;
+    final stats = model.bookStats(book.id);
+    final subtitle = _mobileBookSubtitle(book) ??
+        l10n.bookStatsMeta(stats.volumes, stats.chapters);
+    final accent = isTrash ? theme.colorScheme.error : null;
+    final showDelete = !isTrash &&
+        !_reorderMode &&
+        _armedDeleteBookId == book.id &&
+        !model.isReadOnly;
+
+    final trailing = <Widget>[
+      if (showDelete)
+        IconButton(
+          tooltip: l10n.tooltipDeleteBook,
+          onPressed: () => _onDeleteBook(context, book),
+          icon: Icon(
+            Icons.delete_outline,
+            color: theme.colorScheme.error,
+          ),
+        ),
+      if (!isTrash && !_reorderMode)
+        IconButton(
+          tooltip: l10n.tooltipEditBook,
+          onPressed: model.isReadOnly
+              ? null
+              : () async {
+                  Navigator.of(context).pop();
+                  if (!widget.hostContext.mounted) return;
+                  await _editBook(
+                    widget.hostContext,
+                    model: model,
+                    book: book,
+                  );
+                },
+          icon: const Icon(Icons.edit_outlined),
+        ),
+      if (reorderIndex != null)
+        ReorderableDragStartListener(
+          index: reorderIndex,
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8),
+            child: Icon(Icons.drag_handle),
+          ),
+        ),
+    ];
+
+    return ZephyrBottomSheet.withRowDivider(
+      context: context,
+      showDivider: showDivider,
+      child: ListTile(
+        selected: selected,
+        leading: Icon(
+          isTrash ? Icons.delete_outline : Icons.book_outlined,
+          color: accent,
+          size: ZephyrBottomSheet.rowIconSize,
+        ),
+        title: Text(
+          book.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: ZephyrBottomSheet.rowTitleStyle(theme, color: accent),
+        ),
+        subtitle: Text(
+          subtitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: ZephyrBottomSheet.rowSubtitleStyle(
+            theme,
+            color: accent?.withValues(alpha: 0.8),
+          ),
+        ),
+        trailing: trailing.isEmpty
+            ? null
+            : Row(mainAxisSize: MainAxisSize.min, children: trailing),
+        onLongPress: isTrash || model.isReadOnly || _reorderMode
+            ? null
+            : () {
+                setState(() {
+                  _armedDeleteBookId =
+                      _armedDeleteBookId == book.id ? null : book.id;
+                });
+              },
+        onTap: () async {
+          if (_armedDeleteBookId != null) {
+            setState(() => _armedDeleteBookId = null);
+            return;
+          }
+          if (_reorderMode) return;
+          Navigator.of(context).pop();
+          await model.selectBook(book.id);
+        },
+      ),
+    );
+  }
+
+  Future<void> _onAddBook(BuildContext context) async {
+    final result = await showDialog<_BookEditResult>(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => _EditBookDialog(
+        book: const WritingFolder(id: '', name: '', rank: 0),
+        dialogTitle: context.l10n.newBookTitle,
+      ),
+    );
+    if (result == null || !mounted) return;
+    await model.createBook(
+      name: result.name,
+      description: result.description,
+      tags: result.tags,
+    );
+  }
+
+  Future<void> _onDeleteBook(BuildContext context, WritingFolder book) async {
+    final l10n = context.l10n;
+    if (!model.isBookEmpty(book.id)) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.deleteBookNotEmpty)),
+      );
+      return;
+    }
+    try {
+      await model.deleteBook(book.id);
+      if (mounted) setState(() => _armedDeleteBookId = null);
+    } on FolderNotEmptyException {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.deleteBookNotEmpty)),
+      );
+    }
+  }
+
+  String? _mobileBookSubtitle(WritingFolder book) {
+    final tags = _tagsOf(book);
+    if (tags.isNotEmpty) return tags.first;
     final description = book.description.trim();
     if (description.isEmpty) return null;
     return description;
@@ -810,19 +1205,26 @@ class _MobileToolsSheet extends StatelessWidget {
                 ),
               )
             else
-              for (final tool in tools)
-                ListTile(
-                  enabled: tool.enabled,
-                  leading: tool.icon == null
-                      ? null
-                      : Icon(tool.icon, size: ZephyrBottomSheet.rowIconSize),
-                  title: Text(tool.label),
-                  onTap: !tool.enabled
-                      ? null
-                      : () {
-                          Navigator.of(context).pop();
-                          tool.onTap();
-                        },
+              for (var i = 0; i < tools.length; i++)
+                ZephyrBottomSheet.withRowDivider(
+                  context: context,
+                  showDivider: i < tools.length - 1,
+                  child: ListTile(
+                    enabled: tools[i].enabled,
+                    leading: tools[i].icon == null
+                        ? null
+                        : Icon(
+                            tools[i].icon,
+                            size: ZephyrBottomSheet.rowIconSize,
+                          ),
+                    title: Text(tools[i].label),
+                    onTap: !tools[i].enabled
+                        ? null
+                        : () {
+                            Navigator.of(context).pop();
+                            tools[i].onTap();
+                          },
+                  ),
                 ),
           ],
         ),
@@ -1149,9 +1551,10 @@ class _BookEditResult {
 }
 
 class _EditBookDialog extends StatefulWidget {
-  const _EditBookDialog({required this.book});
+  const _EditBookDialog({required this.book, this.dialogTitle});
 
   final WritingFolder book;
+  final String? dialogTitle;
 
   @override
   State<_EditBookDialog> createState() => _EditBookDialogState();
@@ -1197,7 +1600,10 @@ class _EditBookDialogState extends State<_EditBookDialog> {
     final theme = Theme.of(context);
     final l10n = context.l10n;
     return AlertDialog(
-      title: Text(l10n.editBookTitle, style: theme.textTheme.titleLarge),
+      title: Text(
+        widget.dialogTitle ?? l10n.editBookTitle,
+        style: theme.textTheme.titleLarge,
+      ),
       content: zephyrDialogScrollableContent(
         context: context,
         width: 380,

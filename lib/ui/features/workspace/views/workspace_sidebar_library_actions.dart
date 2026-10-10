@@ -39,17 +39,18 @@ Future<String?> showSidebarLibraryMenu(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              for (final action in actions)
+              for (var i = 0; i < actions.length; i++)
                 _CompactSheetTile(
-                  icon: action.icon,
-                  label: action.label,
-                  iconColor: action.isDestructive
+                  icon: actions[i].icon,
+                  label: actions[i].label,
+                  iconColor: actions[i].isDestructive
                       ? theme.colorScheme.error
                       : null,
-                  labelColor: action.isDestructive
+                  labelColor: actions[i].isDestructive
                       ? theme.colorScheme.error
                       : null,
-                  onTap: () => Navigator.of(sheetContext).pop(action.id),
+                  showDivider: i < actions.length - 1,
+                  onTap: () => Navigator.of(sheetContext).pop(actions[i].id),
                 ),
               const SizedBox(height: 8),
             ],
@@ -355,14 +356,16 @@ Future<String?> showMoveChapterSheet(
               icon: Icons.inbox_outlined,
               label: l10n.unfiledVolume,
               selected: currentCategoryId == null,
+              showDivider: volumes.isNotEmpty,
               onTap: () => Navigator.of(sheetContext).pop(''),
             ),
-            for (final volume in volumes)
+            for (var i = 0; i < volumes.length; i++)
               _CompactSheetTile(
                 icon: Icons.folder_outlined,
-                label: volume.name,
-                selected: volume.id == currentCategoryId,
-                onTap: () => Navigator.of(sheetContext).pop(volume.id),
+                label: volumes[i].name,
+                selected: volumes[i].id == currentCategoryId,
+                showDivider: i < volumes.length - 1,
+                onTap: () => Navigator.of(sheetContext).pop(volumes[i].id),
               ),
             const SizedBox(height: 8),
           ],
@@ -381,6 +384,7 @@ class _CompactSheetTile extends StatelessWidget {
     this.iconColor,
     this.labelColor,
     this.selected = false,
+    this.showDivider = true,
   });
 
   final IconData icon;
@@ -389,41 +393,46 @@ class _CompactSheetTile extends StatelessWidget {
   final Color? iconColor;
   final Color? labelColor;
   final bool selected;
+  final bool showDivider;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final foreground = selected ? theme.colorScheme.primary : null;
-    return SizedBox(
-      height: ZephyrBottomSheet.rowHeight,
-      child: Material(
-        color: selected
-            ? theme.colorScheme.primary.withValues(alpha: 0.08)
-            : Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: ZephyrBottomSheet.rowPadding,
-            child: Row(
-              children: [
-                Icon(
-                  icon,
-                  size: ZephyrBottomSheet.rowIconSize,
-                  color: iconColor ?? foreground,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: ZephyrBottomSheet.rowTitleStyle(
-                      theme,
-                      color: labelColor ?? foreground,
+    return ZephyrBottomSheet.withRowDivider(
+      context: context,
+      showDivider: showDivider,
+      child: SizedBox(
+        height: ZephyrBottomSheet.rowHeight,
+        child: Material(
+          color: selected
+              ? theme.colorScheme.primary.withValues(alpha: 0.08)
+              : Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: ZephyrBottomSheet.rowPadding,
+              child: Row(
+                children: [
+                  Icon(
+                    icon,
+                    size: ZephyrBottomSheet.rowIconSize,
+                    color: iconColor ?? foreground,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: ZephyrBottomSheet.rowTitleStyle(
+                        theme,
+                        color: labelColor ?? foreground,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

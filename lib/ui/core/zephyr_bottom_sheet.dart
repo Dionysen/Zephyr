@@ -69,4 +69,31 @@ abstract final class ZephyrBottomSheet {
       child: child,
     );
   }
+
+  /// Hairline between sheet rows (matches settings list density).
+  static Widget rowDivider(BuildContext context) {
+    final theme = Theme.of(context);
+    return Divider(
+      height: 1,
+      indent: listTilePadding.left,
+      endIndent: listTilePadding.right,
+      color: theme.dividerColor.withValues(alpha: 0.5),
+    );
+  }
+
+  /// [child] plus an optional trailing divider.
+  static Widget withRowDivider({
+    required BuildContext context,
+    required Widget child,
+    bool showDivider = true,
+  }) {
+    if (!showDivider) return child;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        child,
+        rowDivider(context),
+      ],
+    );
+  }
 }

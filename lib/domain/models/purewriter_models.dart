@@ -5,6 +5,13 @@ class LibraryInUseException implements Exception {
   final String libraryPath;
 }
 
+/// Raised when deleting a book that still has chapters.
+class FolderNotEmptyException implements Exception {
+  const FolderNotEmptyException(this.folderId);
+
+  final String folderId;
+}
+
 class WritingFolder {
   static const trashId = 'PW_Trash';
 

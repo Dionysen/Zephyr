@@ -525,11 +525,11 @@ void main() {
       find.descendant(of: bookBar, matching: find.text('Book A')),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Select a book'), findsOneWidget);
+    expect(find.text('Books'), findsOneWidget);
 
     await tester.tap(find.text('Book B').last);
     await tester.pumpAndSettle();
-    expect(find.text('Select a book'), findsNothing);
+    expect(find.text('Books'), findsNothing);
     expect(
       find.descendant(of: bookBar, matching: find.text('Book B')),
       findsOneWidget,
@@ -789,6 +789,26 @@ class _LibraryRepository implements WritingLibraryRepository {
     String? description,
     String? tags,
   }) async {}
+
+  @override
+  Future<WritingFolder> createFolder({
+    required String name,
+    String description = '',
+    String tags = '',
+  }) async =>
+      WritingFolder(
+        id: 'new-book',
+        name: name,
+        rank: 99,
+        description: description,
+        tags: tags,
+      );
+
+  @override
+  Future<void> deleteFolder(String folderId) async {}
+
+  @override
+  Future<void> reorderFolders({required List<String> orderedIds}) async {}
 
   @override
   Future<void> trashArticle(String articleId) async {}

@@ -961,6 +961,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get selectBook => '选择书籍';
 
   @override
+  String get booksSheetTitle => '书籍';
+
+  @override
+  String get booksSheetTagAll => '全部';
+
+  @override
+  String get newBookTitle => '新建书籍';
+
+  @override
   String get moreSheetTitle => '更多';
 
   @override
@@ -977,6 +986,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get bookNameRequired => '请输入书名';
+
+  @override
+  String get tooltipNewBook => '新增书籍';
+
+  @override
+  String get tooltipBookGridLayout => '双列列表';
+
+  @override
+  String get tooltipBookListLayout => '单列列表';
+
+  @override
+  String get tooltipDeleteBook => '删除书籍';
+
+  @override
+  String get deleteBookNotEmpty => '请先清空该书中的章节后再删除';
 
   @override
   String get bookTagsLabel => '标签';

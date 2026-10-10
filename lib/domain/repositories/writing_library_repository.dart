@@ -51,6 +51,22 @@ abstract interface class WritingLibraryRepository {
     String? description,
     String? tags,
   });
+
+  /// Creates a book (folder). [name] is trimmed; empty becomes `Untitled`.
+  Future<WritingFolder> createFolder({
+    required String name,
+    String description = '',
+    String tags = '',
+  });
+
+  /// Soft-deletes a book. Fails if it still has non-deleted articles, or if
+  /// [folderId] is the trash folder.
+  Future<void> deleteFolder(String folderId);
+
+  /// Rewrites [rank] for every non-trash book to match [orderedIds].
+  /// Trash is always kept after the listed books.
+  Future<void> reorderFolders({required List<String> orderedIds});
+
   Future<void> trashArticle(String articleId);
   Future<void> restoreArticle(String articleId, {required String folderId});
   Future<List<ArticleHistory>> listHistory(String articleId);

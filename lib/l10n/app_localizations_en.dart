@@ -1008,6 +1008,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectBook => 'Select a book';
 
   @override
+  String get booksSheetTitle => 'Books';
+
+  @override
+  String get booksSheetTagAll => 'All';
+
+  @override
+  String get newBookTitle => 'New book';
+
+  @override
   String get moreSheetTitle => 'More';
 
   @override
@@ -1024,6 +1033,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bookNameRequired => 'Please enter a book title';
+
+  @override
+  String get tooltipNewBook => 'New book';
+
+  @override
+  String get tooltipBookGridLayout => 'Two-column layout';
+
+  @override
+  String get tooltipBookListLayout => 'Single-column list';
+
+  @override
+  String get tooltipDeleteBook => 'Delete book';
+
+  @override
+  String get deleteBookNotEmpty =>
+      'Clear all chapters in this book before deleting it.';
 
   @override
   String get bookTagsLabel => 'Tags';

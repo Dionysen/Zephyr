@@ -171,29 +171,33 @@ class _ZephyrSettingsChoiceSheetState<T>
                     final isSelected = choice.value == widget.selected;
                     final showDelete =
                         choice.deletable && widget.onDelete != null;
-                    return ListTile(
-                      title: Text(choice.label),
-                      subtitle: choice.subtitle == null
-                          ? null
-                          : Text(choice.subtitle!),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (isSelected)
-                            Icon(
-                              Icons.check,
-                              color: theme.colorScheme.primary,
-                            ),
-                          if (showDelete)
-                            IconButton(
-                              tooltip: widget.deleteConfirmAction,
-                              icon: const Icon(Icons.delete_outline, size: 20),
-                              onPressed: () => _delete(choice),
-                            ),
-                        ],
+                    return ZephyrBottomSheet.withRowDivider(
+                      context: context,
+                      showDivider: index < _choices.length - 1,
+                      child: ListTile(
+                        title: Text(choice.label),
+                        subtitle: choice.subtitle == null
+                            ? null
+                            : Text(choice.subtitle!),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (isSelected)
+                              Icon(
+                                Icons.check,
+                                color: theme.colorScheme.primary,
+                              ),
+                            if (showDelete)
+                              IconButton(
+                                tooltip: widget.deleteConfirmAction,
+                                icon: const Icon(Icons.delete_outline, size: 20),
+                                onPressed: () => _delete(choice),
+                              ),
+                          ],
+                        ),
+                        selected: isSelected,
+                        onTap: () => Navigator.of(context).pop(choice.value),
                       ),
-                      selected: isSelected,
-                      onTap: () => Navigator.of(context).pop(choice.value),
                     );
                   },
                 ),

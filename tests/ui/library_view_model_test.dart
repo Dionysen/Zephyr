@@ -577,6 +577,27 @@ class FakeLibraryRepository implements WritingLibraryRepository {
     String? description,
     String? tags,
   }) async {}
+
+  @override
+  Future<WritingFolder> createFolder({
+    required String name,
+    String description = '',
+    String tags = '',
+  }) async =>
+      WritingFolder(
+        id: 'new-book',
+        name: name,
+        rank: 99,
+        description: description,
+        tags: tags,
+      );
+
+  @override
+  Future<void> deleteFolder(String folderId) async {}
+
+  @override
+  Future<void> reorderFolders({required List<String> orderedIds}) async {}
+
   @override
   Future<void> trashArticle(String articleId) async {
     trashedArticleIds.add(articleId);

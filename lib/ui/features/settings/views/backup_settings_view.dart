@@ -209,12 +209,16 @@ class _BackupListSheet extends StatelessWidget {
                         ? l10n.backupKindAuto
                         : l10n.backupKindManual;
                     final sizeKb = (entry.sizeBytes / 1024).round();
-                    return ListTile(
-                      title: Text(entry.fileName),
-                      subtitle: Text(
-                        '$kindLabel · ${format.format(entry.modified)} · $sizeKb KB',
+                    return ZephyrBottomSheet.withRowDivider(
+                      context: context,
+                      showDivider: index < backups.length - 1,
+                      child: ListTile(
+                        title: Text(entry.fileName),
+                        subtitle: Text(
+                          '$kindLabel · ${format.format(entry.modified)} · $sizeKb KB',
+                        ),
+                        onTap: () => Navigator.pop(context, entry),
                       ),
-                      onTap: () => Navigator.pop(context, entry),
                     );
                   },
                 ),

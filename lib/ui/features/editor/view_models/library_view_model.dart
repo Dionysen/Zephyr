@@ -253,6 +253,44 @@ class LibraryViewModel extends ChangeNotifier {
     await load();
   }
 
+  Future<WritingFolder?> createBook({
+    required String name,
+    String description = '',
+    String tags = '',
+  }) async {
+    if (isReadOnly) return null;
+    final folder = await _repository.createFolder(
+      name: name,
+      description: description,
+      tags: tags,
+    );
+    await load();
+    await selectBook(folder.id);
+    return folder;
+  }
+
+  /// Returns `true` when deleted. Throws [FolderNotEmptyException] when the
+  /// book still has chapters.
+  Future<bool> deleteBook(String folderId) async {
+    if (isReadOnly || folderId == WritingFolder.trashId) return false;
+    await _repository.deleteFolder(folderId);
+    if (_selectedBookId == folderId) {
+      _selectedBookId = null;
+      _selectedArticleId = null;
+      _article = null;
+    }
+    await load();
+    return true;
+  }
+
+  Future<void> reorderBooks(List<String> orderedIds) async {
+    if (isReadOnly) return;
+    await _repository.reorderFolders(orderedIds: orderedIds);
+    await load();
+  }
+
+  bool isBookEmpty(String bookId) => bookStats(bookId).chapters == 0;
+
   ({int volumes, int chapters}) bookStats(String bookId) {
     final library = _library;
     if (library == null) {
