@@ -1,3 +1,5 @@
+import 'editor_background.dart';
+
 /// Interface language preference stored with other UI chrome settings.
 enum AppLocalePreference {
   system,
@@ -32,6 +34,8 @@ class UiPreferences {
     required this.hideStatusBarIcons,
     required this.hideQuickToolbar,
     required this.localePreference,
+    this.lightEditorBackground = EditorBackgroundConfig.defaults,
+    this.darkEditorBackground = EditorBackgroundConfig.defaults,
   });
 
   /// [fontSize] maps to [TextTheme.titleSmall]; other styles scale from
@@ -97,7 +101,16 @@ class UiPreferences {
   /// App UI language: system, Simplified Chinese, or English.
   final AppLocalePreference localePreference;
 
+  /// Writing-column background image for light appearance.
+  final EditorBackgroundConfig lightEditorBackground;
+
+  /// Writing-column background image for dark appearance.
+  final EditorBackgroundConfig darkEditorBackground;
+
   double get scale => fontSize / referenceFontSize;
+
+  EditorBackgroundConfig editorBackgroundFor({required bool dark}) =>
+      dark ? darkEditorBackground : lightEditorBackground;
 
   UiPreferences copyWith({
     String? fontFamily,
@@ -113,6 +126,8 @@ class UiPreferences {
     bool? hideStatusBarIcons,
     bool? hideQuickToolbar,
     AppLocalePreference? localePreference,
+    EditorBackgroundConfig? lightEditorBackground,
+    EditorBackgroundConfig? darkEditorBackground,
   }) => UiPreferences(
     fontFamily: clearFontFamily ? null : fontFamily ?? this.fontFamily,
     fontPath: clearFontFamily ? null : fontPath ?? this.fontPath,
@@ -126,5 +141,8 @@ class UiPreferences {
     hideStatusBarIcons: hideStatusBarIcons ?? this.hideStatusBarIcons,
     hideQuickToolbar: hideQuickToolbar ?? this.hideQuickToolbar,
     localePreference: localePreference ?? this.localePreference,
+    lightEditorBackground:
+        lightEditorBackground ?? this.lightEditorBackground,
+    darkEditorBackground: darkEditorBackground ?? this.darkEditorBackground,
   );
 }

@@ -771,6 +771,107 @@ class AppLocalizationsEn extends AppLocalizations {
       'Remove it from the app font library to free space?';
 
   @override
+  String get editorBackgroundSectionTitle => 'Editor background';
+
+  @override
+  String get editorBackgroundLightTitle => 'Light background';
+
+  @override
+  String get editorBackgroundDarkTitle => 'Dark background';
+
+  @override
+  String get editorBackgroundNone => 'None';
+
+  @override
+  String get editorBackgroundCurrentBadge => 'Current';
+
+  @override
+  String get editorBackgroundChoose => 'Choose';
+
+  @override
+  String get editorBackgroundClear => 'Clear';
+
+  @override
+  String get editorBackgroundSelectTitle => 'Choose background';
+
+  @override
+  String get editorBackgroundAddFromFile => 'Add from file…';
+
+  @override
+  String get editorBackgroundEmptyLibrary =>
+      'No images yet. Tap above to add one.';
+
+  @override
+  String get editorBackgroundNoImagePreview => 'No background image';
+
+  @override
+  String get editorBackgroundPreviewSample =>
+      'The quick brown fox jumps over the lazy dog.\nWriting stays sharp above a soft backdrop.';
+
+  @override
+  String get editorBackgroundFitTitle => 'Image fit';
+
+  @override
+  String get editorBackgroundFitCover => 'Cover';
+
+  @override
+  String get editorBackgroundFitContain => 'Contain';
+
+  @override
+  String get editorBackgroundFitFill => 'Stretch';
+
+  @override
+  String get editorBackgroundFitTile => 'Tile';
+
+  @override
+  String get editorBackgroundFitCenter => 'Center';
+
+  @override
+  String get editorBackgroundOpacityTitle => 'Background opacity';
+
+  @override
+  String get editorBackgroundBlurTitle => 'Background blur';
+
+  @override
+  String get editorBackgroundBlurDescription =>
+      'Gaussian blur on the image only; text stays sharp.';
+
+  @override
+  String get editorBackgroundImportSuccess => 'Image added to the app library.';
+
+  @override
+  String get editorBackgroundImportFailure => 'Could not import that image.';
+
+  @override
+  String get editorBackgroundDeleteSuccess => 'Removed from the app library.';
+
+  @override
+  String get editorBackgroundDeleteFailure => 'Could not delete that image.';
+
+  @override
+  String get editorBackgroundDeleteTitle => 'Delete image?';
+
+  @override
+  String editorBackgroundDeleteBody(String name) {
+    return 'Delete “$name”? Modes using it will reset to no background.';
+  }
+
+  @override
+  String editorBackgroundSummary(String name, String fit, int opacity) {
+    return '$name · $fit · $opacity%';
+  }
+
+  @override
+  String editorBackgroundSummaryWithBlur(
+    String name,
+    String fit,
+    int opacity,
+    int blur,
+  ) {
+    return '$name · $fit · $opacity% · blur $blur';
+  }
+
+  @override
   String get choiceDeleteTitle => 'Delete?';
 
   @override

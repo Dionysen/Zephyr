@@ -1,9 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/domain/models/app_theme_mode.dart';
+import 'package:zephyr/domain/models/editor_background.dart';
 import 'package:zephyr/domain/models/theme_color_pack.dart';
 import 'package:zephyr/domain/models/theme_tokens.dart';
 import 'package:zephyr/domain/models/ui_preferences.dart';
+import 'package:zephyr/domain/repositories/background_image_repository.dart';
 import 'package:zephyr/domain/repositories/theme_preferences_repository.dart';
+import 'package:zephyr/ui/features/settings/view_models/background_image_library.dart';
 import 'package:zephyr/ui/features/settings/view_models/theme_view_model.dart';
 
 void main() {
@@ -223,6 +226,92 @@ void main() {
     expect(model.ui.hideQuickToolbar, isFalse);
     expect(model.lightTokens, ThemeTokens.presets[ThemePreset.light]);
   });
+
+  test('editor background defaults are full opacity and no blur', () {
+    expect(EditorBackgroundConfig.defaultOpacity, 1.0);
+    expect(EditorBackgroundConfig.defaults.opacity, 1.0);
+    expect(EditorBackgroundConfig.defaults.blurSigma, 0);
+  });
+
+  test('light and dark editor backgrounds update independently', () {
+    final model = ThemeViewModel(_ThemeRepository());
+    const light = EditorBackgroundConfig(
+      imagePath: '/tmp/light.jpg',
+      fit: EditorBackgroundFit.cover,
+      opacity: 0.3,
+      blurSigma: 6,
+    );
+    const dark = EditorBackgroundConfig(
+      imagePath: '/tmp/dark.jpg',
+      fit: EditorBackgroundFit.tile,
+      opacity: 0.2,
+      blurSigma: 0,
+    );
+
+    model.updateEditorBackground(dark: false, config: light);
+    model.updateEditorBackground(dark: true, config: dark);
+
+    expect(model.ui.lightEditorBackground, light);
+    expect(model.ui.darkEditorBackground, dark);
+
+    model.clearEditorBackground(dark: false);
+    expect(model.ui.lightEditorBackground, EditorBackgroundConfig.defaults);
+    expect(model.ui.darkEditorBackground, dark);
+  });
+
+  test('deleting a background image clears modes that reference it', () async {
+    final backgrounds = BackgroundImageLibrary(_MemoryBackgroundRepository());
+    final model = ThemeViewModel(
+      _ThemeRepository(),
+      backgroundImages: backgrounds,
+    );
+    final imported = await backgrounds.importImage('/ignored/path.jpg');
+    expect(imported, isNotNull);
+
+    model.updateEditorBackground(
+      dark: false,
+      config: EditorBackgroundConfig(imagePath: imported!.path),
+    );
+    model.updateEditorBackground(
+      dark: true,
+      config: EditorBackgroundConfig(
+        imagePath: imported.path,
+        opacity: 0.4,
+        blurSigma: 4,
+      ),
+    );
+
+    final ok = await model.deleteBackgroundImage(imported);
+    expect(ok, isTrue);
+    expect(model.ui.lightEditorBackground, EditorBackgroundConfig.defaults);
+    expect(model.ui.darkEditorBackground, EditorBackgroundConfig.defaults);
+  });
+}
+
+class _MemoryBackgroundRepository implements BackgroundImageRepository {
+  final List<BackgroundImage> _images = [];
+  var _seq = 0;
+
+  @override
+  Future<List<BackgroundImage>> listImages() async => List.of(_images);
+
+  @override
+  Future<BackgroundImage?> importImage(String sourcePath) async {
+    _seq += 1;
+    final image = BackgroundImage(
+      name: 'img_$_seq.jpg',
+      path: '/memory/img_$_seq.jpg',
+    );
+    _images.add(image);
+    return image;
+  }
+
+  @override
+  Future<bool> deleteImage(BackgroundImage image) async {
+    final before = _images.length;
+    _images.removeWhere((item) => item.path == image.path);
+    return _images.length < before;
+  }
 }
 
 class _ThemeRepository implements ThemePreferencesRepository {

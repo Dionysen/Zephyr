@@ -1,4 +1,5 @@
 import '../../domain/models/app_theme_mode.dart';
+import '../../domain/models/editor_background.dart';
 import '../../domain/models/theme_color_pack.dart';
 import '../../domain/models/theme_tokens.dart';
 import '../../domain/models/ui_preferences.dart';
@@ -239,6 +240,8 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
       localePreference: AppLocalePreference.fromStorage(
         values['uiLocale'] as String?,
       ),
+      lightEditorBackground: _readEditorBackground(values, 'light'),
+      darkEditorBackground: _readEditorBackground(values, 'dark'),
     );
   }
 
@@ -255,6 +258,53 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'uiHideStatusBarIcons': ui.hideStatusBarIcons,
     'uiHideQuickToolbar': ui.hideQuickToolbar,
     'uiLocale': ui.localePreference.storageValue,
+    ..._writeEditorBackground(ui.lightEditorBackground, 'light'),
+    ..._writeEditorBackground(ui.darkEditorBackground, 'dark'),
+  };
+
+  EditorBackgroundConfig _readEditorBackground(
+    Map<String, Object?> values,
+    String mode,
+  ) {
+    final path = values['ui${_cap(mode)}BgPath'] as String?;
+    final opacity = _double(
+      values,
+      'ui${_cap(mode)}BgOpacity',
+      EditorBackgroundConfig.defaultOpacity,
+    );
+    final blur = _double(
+      values,
+      'ui${_cap(mode)}BgBlur',
+      EditorBackgroundConfig.defaults.blurSigma,
+    );
+    return EditorBackgroundConfig(
+      imagePath: path == null || path.isEmpty ? null : path,
+      fit: EditorBackgroundFit.fromStorage(
+        values['ui${_cap(mode)}BgFit'] as String?,
+      ),
+      opacity: opacity
+          .clamp(
+            EditorBackgroundConfig.minOpacity,
+            EditorBackgroundConfig.maxOpacity,
+          )
+          .toDouble(),
+      blurSigma: blur
+          .clamp(
+            EditorBackgroundConfig.minBlurSigma,
+            EditorBackgroundConfig.maxBlurSigma,
+          )
+          .toDouble(),
+    );
+  }
+
+  Map<String, Object?> _writeEditorBackground(
+    EditorBackgroundConfig config,
+    String mode,
+  ) => {
+    'ui${_cap(mode)}BgPath': config.imagePath,
+    'ui${_cap(mode)}BgFit': config.fit.storageValue,
+    'ui${_cap(mode)}BgOpacity': config.opacity,
+    'ui${_cap(mode)}BgBlur': config.blurSigma,
   };
 
   String _cap(String name) =>

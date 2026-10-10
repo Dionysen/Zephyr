@@ -275,6 +275,57 @@
   "fontDeleteDialogTitle": "删除字体？",
   "fontDeleteDialogBody": "从应用字体库中移除“{family}”以释放空间？",
   "fontDeleteDialogBodyCompact": "从应用字体库中移除以释放空间？",
+  "editorBackgroundSectionTitle": "编辑器背景图",
+  "editorBackgroundLightTitle": "亮色背景",
+  "editorBackgroundDarkTitle": "暗色背景",
+  "editorBackgroundNone": "未设置",
+  "editorBackgroundCurrentBadge": "当前",
+  "editorBackgroundChoose": "选择",
+  "editorBackgroundClear": "清除",
+  "editorBackgroundSelectTitle": "选择背景图",
+  "editorBackgroundAddFromFile": "从文件添加…",
+  "editorBackgroundEmptyLibrary": "还没有图片，点上方添加",
+  "editorBackgroundNoImagePreview": "无背景图",
+  "editorBackgroundPreviewSample": "轻舟已过万重山。\n人不可有傲气，但不可无傲骨。",
+  "editorBackgroundFitTitle": "铺放方式",
+  "editorBackgroundFitCover": "覆盖",
+  "editorBackgroundFitContain": "包含",
+  "editorBackgroundFitFill": "拉伸",
+  "editorBackgroundFitTile": "平铺",
+  "editorBackgroundFitCenter": "居中",
+  "editorBackgroundOpacityTitle": "背景不透明度",
+  "editorBackgroundBlurTitle": "背景模糊",
+  "editorBackgroundBlurDescription": "对背景图做高斯模糊，不影响文字",
+  "editorBackgroundImportSuccess": "已添加到应用图库",
+  "editorBackgroundImportFailure": "无法导入该图片",
+  "editorBackgroundDeleteSuccess": "已从应用图库删除",
+  "editorBackgroundDeleteFailure": "无法删除该图片",
+  "editorBackgroundDeleteTitle": "删除图片？",
+  "editorBackgroundDeleteBody": "删除「{name}」？正在使用的模式将恢复为无背景。",
+  "@editorBackgroundDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "editorBackgroundSummary": "{name} · {fit} · {opacity}%",
+  "@editorBackgroundSummary": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "fit": { "type": "String" },
+      "opacity": { "type": "int" }
+    }
+  },
+  "editorBackgroundSummaryWithBlur": "{name} · {fit} · {opacity}% · 模糊 {blur}",
+  "@editorBackgroundSummaryWithBlur": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "fit": { "type": "String" },
+      "opacity": { "type": "int" },
+      "blur": { "type": "int" }
+    }
+  },
   "choiceDeleteTitle": "删除？",
   "choiceDeleteBody": "移除此项？",
   "numberPickerDefaultLabel": "默认 {value}",

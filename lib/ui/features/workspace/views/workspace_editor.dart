@@ -14,6 +14,7 @@ import '../../editor/quick_toolbar/quick_toolbar_host.dart';
 import '../../editor/quick_toolbar/workspace_editor_bridge.dart';
 import '../../editor/view_models/editor_preferences_view_model.dart';
 import '../../editor/view_models/library_view_model.dart';
+import '../../../core/editor_background_layer.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_scope.dart';
 
@@ -715,9 +716,18 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final themeVm = ZephyrScope.of(context).theme;
     final article = widget.model.article;
     if (article == null) {
-      return Center(child: Text(context.l10n.editorEmptyState));
+      return ListenableBuilder(
+        listenable: themeVm,
+        builder: (context, _) => EditorBackgroundLayer(
+          config: themeVm.ui.editorBackgroundFor(
+            dark: themeVm.isEffectivelyDark,
+          ),
+          child: Center(child: Text(context.l10n.editorEmptyState)),
+        ),
+      );
     }
 
     final preferences = widget.preferences.preferences;
@@ -739,27 +749,38 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     return Stack(
       children: [
         Positioned.fill(
-          child: RepaintBoundary(
-            child: ZephyrPlainTextEditor(
-              key: _editorKey,
-              controller: _controller,
-              typography: typography,
-              scrollController: _scrollController,
-              focusNode: _focusNode,
-              readOnly: widget.model.isReadOnly,
-              cursorColor: cursorColor,
-              selectionColor: selectionColor,
-              decorations: _pairDecorations(context),
-              header: _titleHeader(context, preferences),
-              scrollbarPadding: EdgeInsets.symmetric(
-                vertical: widget.contentTopInset,
-              ),
-              bottomObstruction: quickToolbarBottomObstructionOf(context),
-              consumeNewline: _consumePairNewline,
-              shortcuts: ZephyrScope.of(context).keyboardShortcuts,
-              onTextChanged: (_) {},
-              onSelectionChanged: _onSelectionChanged,
-            ),
+          child: ListenableBuilder(
+            listenable: themeVm,
+            builder: (context, _) {
+              final liveBackground = themeVm.ui.editorBackgroundFor(
+                dark: themeVm.isEffectivelyDark,
+              );
+              return EditorBackgroundLayer(
+                config: liveBackground,
+                child: RepaintBoundary(
+                  child: ZephyrPlainTextEditor(
+                    key: _editorKey,
+                    controller: _controller,
+                    typography: typography,
+                    scrollController: _scrollController,
+                    focusNode: _focusNode,
+                    readOnly: widget.model.isReadOnly,
+                    cursorColor: cursorColor,
+                    selectionColor: selectionColor,
+                    decorations: _pairDecorations(context),
+                    header: _titleHeader(context, preferences),
+                    scrollbarPadding: EdgeInsets.symmetric(
+                      vertical: widget.contentTopInset,
+                    ),
+                    bottomObstruction: quickToolbarBottomObstructionOf(context),
+                    consumeNewline: _consumePairNewline,
+                    shortcuts: ZephyrScope.of(context).keyboardShortcuts,
+                    onTextChanged: (_) {},
+                    onSelectionChanged: _onSelectionChanged,
+                  ),
+                ),
+              );
+            },
           ),
         ),
         if (widget.showWordCount)

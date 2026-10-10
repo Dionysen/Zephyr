@@ -728,6 +728,104 @@ class AppLocalizationsZh extends AppLocalizations {
   String get fontDeleteDialogBodyCompact => '从应用字体库中移除以释放空间？';
 
   @override
+  String get editorBackgroundSectionTitle => '编辑器背景图';
+
+  @override
+  String get editorBackgroundLightTitle => '亮色背景';
+
+  @override
+  String get editorBackgroundDarkTitle => '暗色背景';
+
+  @override
+  String get editorBackgroundNone => '未设置';
+
+  @override
+  String get editorBackgroundCurrentBadge => '当前';
+
+  @override
+  String get editorBackgroundChoose => '选择';
+
+  @override
+  String get editorBackgroundClear => '清除';
+
+  @override
+  String get editorBackgroundSelectTitle => '选择背景图';
+
+  @override
+  String get editorBackgroundAddFromFile => '从文件添加…';
+
+  @override
+  String get editorBackgroundEmptyLibrary => '还没有图片，点上方添加';
+
+  @override
+  String get editorBackgroundNoImagePreview => '无背景图';
+
+  @override
+  String get editorBackgroundPreviewSample => '轻舟已过万重山。\n人不可有傲气，但不可无傲骨。';
+
+  @override
+  String get editorBackgroundFitTitle => '铺放方式';
+
+  @override
+  String get editorBackgroundFitCover => '覆盖';
+
+  @override
+  String get editorBackgroundFitContain => '包含';
+
+  @override
+  String get editorBackgroundFitFill => '拉伸';
+
+  @override
+  String get editorBackgroundFitTile => '平铺';
+
+  @override
+  String get editorBackgroundFitCenter => '居中';
+
+  @override
+  String get editorBackgroundOpacityTitle => '背景不透明度';
+
+  @override
+  String get editorBackgroundBlurTitle => '背景模糊';
+
+  @override
+  String get editorBackgroundBlurDescription => '对背景图做高斯模糊，不影响文字';
+
+  @override
+  String get editorBackgroundImportSuccess => '已添加到应用图库';
+
+  @override
+  String get editorBackgroundImportFailure => '无法导入该图片';
+
+  @override
+  String get editorBackgroundDeleteSuccess => '已从应用图库删除';
+
+  @override
+  String get editorBackgroundDeleteFailure => '无法删除该图片';
+
+  @override
+  String get editorBackgroundDeleteTitle => '删除图片？';
+
+  @override
+  String editorBackgroundDeleteBody(String name) {
+    return '删除「$name」？正在使用的模式将恢复为无背景。';
+  }
+
+  @override
+  String editorBackgroundSummary(String name, String fit, int opacity) {
+    return '$name · $fit · $opacity%';
+  }
+
+  @override
+  String editorBackgroundSummaryWithBlur(
+    String name,
+    String fit,
+    int opacity,
+    int blur,
+  ) {
+    return '$name · $fit · $opacity% · 模糊 $blur';
+  }
+
+  @override
   String get choiceDeleteTitle => '删除？';
 
   @override

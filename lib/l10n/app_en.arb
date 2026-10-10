@@ -296,6 +296,57 @@
     }
   },
   "fontDeleteDialogBodyCompact": "Remove it from the app font library to free space?",
+  "editorBackgroundSectionTitle": "Editor background",
+  "editorBackgroundLightTitle": "Light background",
+  "editorBackgroundDarkTitle": "Dark background",
+  "editorBackgroundNone": "None",
+  "editorBackgroundCurrentBadge": "Current",
+  "editorBackgroundChoose": "Choose",
+  "editorBackgroundClear": "Clear",
+  "editorBackgroundSelectTitle": "Choose background",
+  "editorBackgroundAddFromFile": "Add from file…",
+  "editorBackgroundEmptyLibrary": "No images yet. Tap above to add one.",
+  "editorBackgroundNoImagePreview": "No background image",
+  "editorBackgroundPreviewSample": "The quick brown fox jumps over the lazy dog.\nWriting stays sharp above a soft backdrop.",
+  "editorBackgroundFitTitle": "Image fit",
+  "editorBackgroundFitCover": "Cover",
+  "editorBackgroundFitContain": "Contain",
+  "editorBackgroundFitFill": "Stretch",
+  "editorBackgroundFitTile": "Tile",
+  "editorBackgroundFitCenter": "Center",
+  "editorBackgroundOpacityTitle": "Background opacity",
+  "editorBackgroundBlurTitle": "Background blur",
+  "editorBackgroundBlurDescription": "Gaussian blur on the image only; text stays sharp.",
+  "editorBackgroundImportSuccess": "Image added to the app library.",
+  "editorBackgroundImportFailure": "Could not import that image.",
+  "editorBackgroundDeleteSuccess": "Removed from the app library.",
+  "editorBackgroundDeleteFailure": "Could not delete that image.",
+  "editorBackgroundDeleteTitle": "Delete image?",
+  "editorBackgroundDeleteBody": "Delete “{name}”? Modes using it will reset to no background.",
+  "@editorBackgroundDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "editorBackgroundSummary": "{name} · {fit} · {opacity}%",
+  "@editorBackgroundSummary": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "fit": { "type": "String" },
+      "opacity": { "type": "int" }
+    }
+  },
+  "editorBackgroundSummaryWithBlur": "{name} · {fit} · {opacity}% · blur {blur}",
+  "@editorBackgroundSummaryWithBlur": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "fit": { "type": "String" },
+      "opacity": { "type": "int" },
+      "blur": { "type": "int" }
+    }
+  },
   "choiceDeleteTitle": "Delete?",
   "choiceDeleteBody": "Remove this item?",
   "numberPickerDefaultLabel": "Default {value}",

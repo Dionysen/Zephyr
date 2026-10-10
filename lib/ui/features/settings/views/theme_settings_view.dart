@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../domain/models/app_theme_mode.dart';
+import '../../../../domain/models/editor_background.dart';
 import '../../../../domain/models/theme_color_pack.dart';
 import '../../../../domain/models/theme_tokens.dart';
 import '../../../../domain/models/ui_preferences.dart';
@@ -9,7 +10,21 @@ import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_settings.dart';
 import '../../../core/zephyr_theme.dart';
 import '../view_models/theme_view_model.dart';
+import 'editor_background_settings_page.dart';
+import 'editor_background_settings_view.dart';
 import 'font_file_picker.dart';
+
+Future<void> _openBackgroundPage(
+  BuildContext context, {
+  required ThemeViewModel viewModel,
+  required bool dark,
+}) async {
+  await viewModel.loadBackgroundImages();
+  if (!context.mounted) return;
+  await Navigator.of(context).push(
+    EditorBackgroundSettingsPage.route(dark: dark),
+  );
+}
 
 class ThemeCatalog extends StatefulWidget {
   const ThemeCatalog({
@@ -258,6 +273,33 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
               ],
             ),
             ZephyrSettingsSection(
+              title: l10n.editorBackgroundSectionTitle,
+              children: [
+                _EditorBackgroundTile(
+                  title: l10n.editorBackgroundLightTitle,
+                  config: viewModel.ui.lightEditorBackground,
+                  isCurrent: !viewModel.isEffectivelyDark,
+                  showDivider: true,
+                  onTap: () => _openBackgroundPage(
+                    context,
+                    viewModel: viewModel,
+                    dark: false,
+                  ),
+                ),
+                _EditorBackgroundTile(
+                  title: l10n.editorBackgroundDarkTitle,
+                  config: viewModel.ui.darkEditorBackground,
+                  isCurrent: viewModel.isEffectivelyDark,
+                  showDivider: false,
+                  onTap: () => _openBackgroundPage(
+                    context,
+                    viewModel: viewModel,
+                    dark: true,
+                  ),
+                ),
+              ],
+            ),
+            ZephyrSettingsSection(
               children: [
                 FontFilePickerRow(
                   label: l10n.uiFontLabel,
@@ -414,6 +456,34 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
           if (_customColorsExpanded)
             _expandedBlock(_customColorItems(l10n, compact: false)),
           const SizedBox(height: 16),
+          Text(
+            l10n.editorBackgroundSectionTitle,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          _EditorBackgroundTile(
+            title: l10n.editorBackgroundLightTitle,
+            config: viewModel.ui.lightEditorBackground,
+            isCurrent: !viewModel.isEffectivelyDark,
+            showDivider: true,
+            onTap: () => _openBackgroundPage(
+              context,
+              viewModel: viewModel,
+              dark: false,
+            ),
+          ),
+          _EditorBackgroundTile(
+            title: l10n.editorBackgroundDarkTitle,
+            config: viewModel.ui.darkEditorBackground,
+            isCurrent: viewModel.isEffectivelyDark,
+            showDivider: true,
+            onTap: () => _openBackgroundPage(
+              context,
+              viewModel: viewModel,
+              dark: true,
+            ),
+          ),
+          const SizedBox(height: 8),
           FontFilePickerRow(
             label: l10n.uiFontLabel,
             description: l10n.uiFontDescription,
@@ -909,3 +979,37 @@ String _tokenDescription(AppLocalizations l10n, ThemeToken token) =>
 
 String _hex(int value) =>
     '#${(value & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+
+class _EditorBackgroundTile extends StatelessWidget {
+  const _EditorBackgroundTile({
+    required this.title,
+    required this.config,
+    required this.isCurrent,
+    required this.showDivider,
+    required this.onTap,
+  });
+
+  final String title;
+  final EditorBackgroundConfig config;
+  final bool isCurrent;
+  final bool showDivider;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final subtitle = editorBackgroundSummary(l10n, config);
+    return ZephyrSettingsListTile(
+      title: title,
+      subtitle: isCurrent
+          ? '${l10n.editorBackgroundCurrentBadge} · $subtitle'
+          : subtitle,
+      showDivider: showDivider,
+      trailing: Icon(
+        Icons.chevron_right,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
+      onTap: onTap,
+    );
+  }
+}

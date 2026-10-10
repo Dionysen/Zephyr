@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/data/repositories/file_theme_preferences_repository.dart';
 import 'package:zephyr/data/services/theme_file_storage.dart';
 import 'package:zephyr/domain/models/app_theme_mode.dart';
+import 'package:zephyr/domain/models/editor_background.dart';
 import 'package:zephyr/domain/models/theme_color_pack.dart';
 import 'package:zephyr/domain/models/theme_tokens.dart';
 import 'package:zephyr/domain/models/ui_preferences.dart';
@@ -65,6 +66,18 @@ void main() {
           hideStatusBarIcons: false,
           hideQuickToolbar: true,
           localePreference: AppLocalePreference.system,
+          lightEditorBackground: EditorBackgroundConfig(
+            imagePath: r'C:\App\backgrounds\paper.jpg',
+            fit: EditorBackgroundFit.cover,
+            opacity: 0.3,
+            blurSigma: 8,
+          ),
+          darkEditorBackground: EditorBackgroundConfig(
+            imagePath: r'C:\App\backgrounds\night.webp',
+            fit: EditorBackgroundFit.tile,
+            opacity: 0.2,
+            blurSigma: 0,
+          ),
         ),
       );
 
@@ -97,6 +110,14 @@ void main() {
       expect(actual.ui.hideStatusBarIcons, expected.ui.hideStatusBarIcons);
       expect(actual.ui.hideQuickToolbar, expected.ui.hideQuickToolbar);
       expect(actual.ui.localePreference, expected.ui.localePreference);
+      expect(
+        actual.ui.lightEditorBackground,
+        expected.ui.lightEditorBackground,
+      );
+      expect(
+        actual.ui.darkEditorBackground,
+        expected.ui.darkEditorBackground,
+      );
     },
   );
 

@@ -1496,6 +1496,185 @@ abstract class AppLocalizations {
   /// **'Remove it from the app font library to free space?'**
   String get fontDeleteDialogBodyCompact;
 
+  /// No description provided for @editorBackgroundSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Editor background'**
+  String get editorBackgroundSectionTitle;
+
+  /// No description provided for @editorBackgroundLightTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Light background'**
+  String get editorBackgroundLightTitle;
+
+  /// No description provided for @editorBackgroundDarkTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark background'**
+  String get editorBackgroundDarkTitle;
+
+  /// No description provided for @editorBackgroundNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get editorBackgroundNone;
+
+  /// No description provided for @editorBackgroundCurrentBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get editorBackgroundCurrentBadge;
+
+  /// No description provided for @editorBackgroundChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose'**
+  String get editorBackgroundChoose;
+
+  /// No description provided for @editorBackgroundClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get editorBackgroundClear;
+
+  /// No description provided for @editorBackgroundSelectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose background'**
+  String get editorBackgroundSelectTitle;
+
+  /// No description provided for @editorBackgroundAddFromFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Add from file…'**
+  String get editorBackgroundAddFromFile;
+
+  /// No description provided for @editorBackgroundEmptyLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'No images yet. Tap above to add one.'**
+  String get editorBackgroundEmptyLibrary;
+
+  /// No description provided for @editorBackgroundNoImagePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'No background image'**
+  String get editorBackgroundNoImagePreview;
+
+  /// No description provided for @editorBackgroundPreviewSample.
+  ///
+  /// In en, this message translates to:
+  /// **'The quick brown fox jumps over the lazy dog.\nWriting stays sharp above a soft backdrop.'**
+  String get editorBackgroundPreviewSample;
+
+  /// No description provided for @editorBackgroundFitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Image fit'**
+  String get editorBackgroundFitTitle;
+
+  /// No description provided for @editorBackgroundFitCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover'**
+  String get editorBackgroundFitCover;
+
+  /// No description provided for @editorBackgroundFitContain.
+  ///
+  /// In en, this message translates to:
+  /// **'Contain'**
+  String get editorBackgroundFitContain;
+
+  /// No description provided for @editorBackgroundFitFill.
+  ///
+  /// In en, this message translates to:
+  /// **'Stretch'**
+  String get editorBackgroundFitFill;
+
+  /// No description provided for @editorBackgroundFitTile.
+  ///
+  /// In en, this message translates to:
+  /// **'Tile'**
+  String get editorBackgroundFitTile;
+
+  /// No description provided for @editorBackgroundFitCenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Center'**
+  String get editorBackgroundFitCenter;
+
+  /// No description provided for @editorBackgroundOpacityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Background opacity'**
+  String get editorBackgroundOpacityTitle;
+
+  /// No description provided for @editorBackgroundBlurTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Background blur'**
+  String get editorBackgroundBlurTitle;
+
+  /// No description provided for @editorBackgroundBlurDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Gaussian blur on the image only; text stays sharp.'**
+  String get editorBackgroundBlurDescription;
+
+  /// No description provided for @editorBackgroundImportSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Image added to the app library.'**
+  String get editorBackgroundImportSuccess;
+
+  /// No description provided for @editorBackgroundImportFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not import that image.'**
+  String get editorBackgroundImportFailure;
+
+  /// No description provided for @editorBackgroundDeleteSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from the app library.'**
+  String get editorBackgroundDeleteSuccess;
+
+  /// No description provided for @editorBackgroundDeleteFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete that image.'**
+  String get editorBackgroundDeleteFailure;
+
+  /// No description provided for @editorBackgroundDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete image?'**
+  String get editorBackgroundDeleteTitle;
+
+  /// No description provided for @editorBackgroundDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete “{name}”? Modes using it will reset to no background.'**
+  String editorBackgroundDeleteBody(String name);
+
+  /// No description provided for @editorBackgroundSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} · {fit} · {opacity}%'**
+  String editorBackgroundSummary(String name, String fit, int opacity);
+
+  /// No description provided for @editorBackgroundSummaryWithBlur.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} · {fit} · {opacity}% · blur {blur}'**
+  String editorBackgroundSummaryWithBlur(
+    String name,
+    String fit,
+    int opacity,
+    int blur,
+  );
+
   /// No description provided for @choiceDeleteTitle.
   ///
   /// In en, this message translates to:

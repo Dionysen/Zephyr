@@ -5,25 +5,31 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../../../../domain/models/app_theme_mode.dart';
+import '../../../../domain/models/editor_background.dart';
 import '../../../../domain/models/editor_preferences.dart';
 import '../../../../domain/models/theme_color_pack.dart';
 import '../../../../domain/models/theme_tokens.dart';
 import '../../../../domain/models/ui_preferences.dart';
 import '../../../../domain/repositories/theme_preferences_repository.dart';
+import 'background_image_library.dart';
 import 'font_library.dart';
 
 class ThemeViewModel extends ChangeNotifier {
   ThemeViewModel(
     this._repository, {
     FontLibrary? fontLibrary,
+    BackgroundImageLibrary? backgroundImages,
     Future<void> Function()? onPersisted,
   }) : _fonts = fontLibrary,
+       _backgrounds = backgroundImages,
        _onPersisted = onPersisted == null ? null : (() => onPersisted()) {
     _fonts?.addListener(_onFontLibraryChanged);
+    _backgrounds?.addListener(_onBackgroundLibraryChanged);
   }
 
   final ThemePreferencesRepository _repository;
   final FontLibrary? _fonts;
+  final BackgroundImageLibrary? _backgrounds;
   final Future<void> Function()? _onPersisted;
   ThemeTokens _lightTokens = ThemeTokens.presets[ThemePreset.light]!;
   ThemeTokens _darkTokens = ThemeTokens.defaults;
@@ -65,6 +71,13 @@ class ThemeViewModel extends ChangeNotifier {
   UiPreferences get ui => _ui;
   List<SystemFont> get systemFonts => _fonts?.fonts ?? const [];
   bool get isLoadingSystemFonts => _fonts?.isLoading ?? false;
+  List<BackgroundImage> get backgroundImages =>
+      _backgrounds?.images ?? const [];
+  bool get isLoadingBackgroundImages => _backgrounds?.isLoading ?? false;
+  bool get hasLoadedBackgroundImages => _backgrounds?.hasLoaded ?? false;
+
+  Future<void> loadBackgroundImages({bool force = false}) =>
+      _backgrounds?.ensureLoaded(force: force) ?? Future<void>.value();
 
   bool get _useDark => switch (_mode) {
     AppThemeMode.dark => true,
@@ -109,6 +122,7 @@ class ThemeViewModel extends ChangeNotifier {
       _nextCustomSeq = _deriveNextCustomSeq(_customPacks);
       _ui = appearance.ui;
       if (loadSavedFont) await _loadSavedFont();
+      await _clearStaleBackgroundSelections();
       notifyListeners();
     } on Object {
       // Appearance must never prevent opening a user's writing library.
@@ -343,6 +357,55 @@ class ThemeViewModel extends ChangeNotifier {
   void updateLocalePreference(AppLocalePreference value) =>
       _updateUi(_ui.copyWith(localePreference: value));
 
+  EditorBackgroundConfig editorBackground({required bool dark}) =>
+      _ui.editorBackgroundFor(dark: dark);
+
+  void updateEditorBackground({
+    required bool dark,
+    required EditorBackgroundConfig config,
+  }) {
+    if (dark) {
+      _updateUi(_ui.copyWith(darkEditorBackground: config));
+    } else {
+      _updateUi(_ui.copyWith(lightEditorBackground: config));
+    }
+  }
+
+  void clearEditorBackground({required bool dark}) {
+    updateEditorBackground(dark: dark, config: EditorBackgroundConfig.defaults);
+  }
+
+  Future<BackgroundImage?> importBackgroundImage(String sourcePath) async {
+    final library = _backgrounds;
+    if (library == null) return null;
+    return library.importImage(sourcePath);
+  }
+
+  Future<bool> deleteBackgroundImage(BackgroundImage image) async {
+    final library = _backgrounds;
+    if (library == null) return false;
+    final ok = await library.deleteImage(image);
+    if (!ok) {
+      return false;
+    }
+    var ui = _ui;
+    var changed = false;
+    if (ui.lightEditorBackground.imagePath == image.path) {
+      ui = ui.copyWith(
+        lightEditorBackground: EditorBackgroundConfig.defaults,
+      );
+      changed = true;
+    }
+    if (ui.darkEditorBackground.imagePath == image.path) {
+      ui = ui.copyWith(darkEditorBackground: EditorBackgroundConfig.defaults);
+      changed = true;
+    }
+    if (changed) {
+      _updateUi(ui);
+    }
+    return true;
+  }
+
   void _updateUi(UiPreferences value) {
     _ui = value;
     _scheduleSave();
@@ -407,6 +470,33 @@ class ThemeViewModel extends ChangeNotifier {
     }
   }
 
+  void _onBackgroundLibraryChanged() {
+    unawaited(_clearStaleBackgroundSelections());
+    notifyListeners();
+  }
+
+  Future<void> _clearStaleBackgroundSelections() async {
+    final library = _backgrounds;
+    if (library == null) return;
+    var ui = _ui;
+    var changed = false;
+    final lightPath = ui.lightEditorBackground.imagePath;
+    if (lightPath != null && await library.imageFileMissing(lightPath)) {
+      ui = ui.copyWith(
+        lightEditorBackground: EditorBackgroundConfig.defaults,
+      );
+      changed = true;
+    }
+    final darkPath = ui.darkEditorBackground.imagePath;
+    if (darkPath != null && await library.imageFileMissing(darkPath)) {
+      ui = ui.copyWith(darkEditorBackground: EditorBackgroundConfig.defaults);
+      changed = true;
+    }
+    if (changed) {
+      _updateUi(ui);
+    }
+  }
+
   int _deriveNextCustomSeq(List<ThemeColorPack> packs) {
     var max = 0;
     final pattern = RegExp(r'^custom_(\d+)$');
@@ -422,6 +512,7 @@ class ThemeViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _fonts?.removeListener(_onFontLibraryChanged);
+    _backgrounds?.removeListener(_onBackgroundLibraryChanged);
     _pendingSave?.cancel();
     super.dispose();
   }

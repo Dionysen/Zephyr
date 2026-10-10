@@ -8,6 +8,7 @@ import '../data/repositories/file_editor_preferences_repository.dart';
 import '../data/repositories/file_keyboard_shortcuts_repository.dart';
 import '../data/repositories/file_quick_toolbar_preferences_repository.dart';
 import '../data/repositories/file_settings_navigation_repository.dart';
+import '../data/repositories/file_system_background_image_repository.dart';
 import '../data/repositories/file_system_font_repository.dart';
 import '../data/repositories/file_theme_preferences_repository.dart';
 import '../data/repositories/file_window_frame_repository.dart';
@@ -35,6 +36,7 @@ import '../ui/features/editor/view_models/editor_preferences_view_model.dart';
 import '../ui/features/editor/view_models/library_view_model.dart';
 import '../ui/features/editor/view_models/quick_toolbar_view_model.dart';
 import '../ui/features/settings/view_models/backup_view_model.dart';
+import '../ui/features/settings/view_models/background_image_library.dart';
 import '../ui/features/settings/view_models/font_library.dart';
 import '../ui/features/settings/view_models/keyboard_shortcuts_view_model.dart';
 import '../ui/features/settings/view_models/settings_view_model.dart';
@@ -50,6 +52,9 @@ void runZephyr(
       layoutRepository ??
       FileWorkspaceLayoutRepository(WorkspaceLayoutFileStorage());
   final fonts = FontLibrary(FileSystemFontRepository());
+  final backgrounds = BackgroundImageLibrary(
+    FileSystemBackgroundImageRepository(),
+  );
   final library = LibraryViewModel(
     PureWriterWritingLibraryRepository(database),
     initialError: startupError,
@@ -61,6 +66,7 @@ void runZephyr(
       theme: ThemeViewModel(
         FileThemePreferencesRepository(ThemeFileStorage()),
         fontLibrary: fonts,
+        backgroundImages: backgrounds,
       )..load(),
       editorPreferences: EditorPreferencesViewModel(
         FileEditorPreferencesRepository(EditorPreferencesFileStorage()),
