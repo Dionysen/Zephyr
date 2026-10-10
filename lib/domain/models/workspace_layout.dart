@@ -7,6 +7,7 @@ class WorkspaceLayout {
     this.selectedArticleId,
     this.expandedVolumesByBook = const {},
     this.sidebarScrollOffsetByBook = const {},
+    this.booksSheetDualColumn = true,
   });
 
   static const minSidebarWidth = 220.0;
@@ -27,6 +28,9 @@ class WorkspaceLayout {
   /// Book id → sidebar chapter-list scroll offset.
   final Map<String, double> sidebarScrollOffsetByBook;
 
+  /// Mobile books sheet two-column grid layout.
+  final bool booksSheetDualColumn;
+
   factory WorkspaceLayout.clamped(double width) => WorkspaceLayout(
     sidebarWidth: width.clamp(minSidebarWidth, maxSidebarWidth).toDouble(),
   );
@@ -39,6 +43,7 @@ class WorkspaceLayout {
     String? selectedArticleId,
     Map<String, List<String>>? expandedVolumesByBook,
     Map<String, double>? sidebarScrollOffsetByBook,
+    bool? booksSheetDualColumn,
     bool clearLastLibraryRoot = false,
     bool clearSelectedBookId = false,
     bool clearSelectedArticleId = false,
@@ -60,5 +65,6 @@ class WorkspaceLayout {
         expandedVolumesByBook ?? this.expandedVolumesByBook,
     sidebarScrollOffsetByBook:
         sidebarScrollOffsetByBook ?? this.sidebarScrollOffsetByBook,
+    booksSheetDualColumn: booksSheetDualColumn ?? this.booksSheetDualColumn,
   );
 }

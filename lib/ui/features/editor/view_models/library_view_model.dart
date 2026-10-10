@@ -39,6 +39,8 @@ class LibraryViewModel extends ChangeNotifier {
   bool _isReorderMode = false;
   bool _isResizingSidebar = false;
   double _sidebarWidth = WorkspaceLayout.defaults.sidebarWidth;
+  bool _booksSheetDualColumn = true;
+  bool _booksSheetDualColumnHydrated = false;
   String? _lastLibraryRoot;
   String? _lastLibraryBookmark;
   String? _selectedBookId;
@@ -66,6 +68,8 @@ class LibraryViewModel extends ChangeNotifier {
   bool get isReorderMode => _isReorderMode;
   bool get isResizingSidebar => _isResizingSidebar;
   double get sidebarWidth => _sidebarWidth;
+  /// Mobile books sheet two-column grid layout (persisted in workspace layout).
+  bool get booksSheetDualColumn => _booksSheetDualColumn;
   bool get hasVolumes => _volumesForSelectedBook.isNotEmpty;
   bool get areAllVolumesExpanded =>
       hasVolumes &&
@@ -204,6 +208,14 @@ class LibraryViewModel extends ChangeNotifier {
     if (!_isResizingSidebar) {
       _scheduleLayoutSave();
     }
+    notifyListeners();
+  }
+
+  void setBooksSheetDualColumn(bool value) {
+    if (_booksSheetDualColumn == value) return;
+    _booksSheetDualColumn = value;
+    _booksSheetDualColumnHydrated = true;
+    _scheduleLayoutSave();
     notifyListeners();
   }
 
@@ -809,6 +821,7 @@ class LibraryViewModel extends ChangeNotifier {
     if (library == null) return;
     final books = library.folders;
     final bookIds = books.map((book) => book.id).toSet();
+    final previousBookId = _selectedBookId;
     if (_selectedBookId == null || !bookIds.contains(_selectedBookId)) {
       _selectedBookId =
           books.where((book) => !book.isTrash).firstOrNull?.id ??
@@ -817,6 +830,9 @@ class LibraryViewModel extends ChangeNotifier {
     // Drop expand/scroll entries for books that no longer exist.
     _expandedVolumesByBook.removeWhere((id, _) => !bookIds.contains(id));
     _sidebarScrollOffsetByBook.removeWhere((id, _) => !bookIds.contains(id));
+    if (_selectedBookId != previousBookId) {
+      _scheduleLayoutSave();
+    }
   }
 
   Future<void> _restoreArticle() async {
@@ -852,8 +868,15 @@ class LibraryViewModel extends ChangeNotifier {
       _sidebarWidth = layout.sidebarWidth;
       _lastLibraryRoot = layout.lastLibraryRoot;
       _lastLibraryBookmark = layout.lastLibraryBookmark;
-      _selectedBookId = layout.selectedBookId;
-      _selectedArticleId = layout.selectedArticleId;
+      // Keep an in-session selection across library refreshes (e.g. reorder).
+      // Disk may still be null/stale when selection was only restored in memory.
+      _selectedBookId ??= layout.selectedBookId;
+      _selectedArticleId ??= layout.selectedArticleId;
+      // Dual-column is toggled in-session; don't clobber before disk save lands.
+      if (!_booksSheetDualColumnHydrated) {
+        _booksSheetDualColumn = layout.booksSheetDualColumn;
+        _booksSheetDualColumnHydrated = true;
+      }
       _expandedVolumesByBook
         ..clear()
         ..addAll(
@@ -895,6 +918,7 @@ class LibraryViewModel extends ChangeNotifier {
           sidebarScrollOffsetByBook: Map<String, double>.from(
             _sidebarScrollOffsetByBook,
           ),
+          booksSheetDualColumn: _booksSheetDualColumn,
         ),
       );
     } on Object {

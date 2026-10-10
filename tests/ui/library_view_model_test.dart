@@ -326,6 +326,64 @@ void main() {
     expect(layout.layout.selectedArticleId, 'article-b');
     expect(layout.layout.sidebarScrollOffsetByBook['book-b'], 96);
   });
+
+  test('reorderBooks keeps the currently selected book', () async {
+    final repository = FakeLibraryRepository();
+    final model = LibraryViewModel(
+      repository,
+      layoutRepository: FakeLayoutRepository(WorkspaceLayout.defaults),
+    );
+    await model.load();
+    expect(model.selectedBook?.id, 'Default');
+
+    await model.selectBook('book-b');
+    await model.reorderBooks(['book-b', 'Default']);
+
+    expect(model.selectedBook?.id, 'book-b');
+    expect(model.article?.id, 'article-b');
+    expect(
+      model.library!.folders.map((book) => book.id).toList(),
+      ['book-b', 'Default'],
+    );
+  });
+
+  test('reorderBooks keeps auto-selected first book after it moves', () async {
+    final repository = FakeLibraryRepository();
+    final model = LibraryViewModel(
+      repository,
+      layoutRepository: FakeLayoutRepository(WorkspaceLayout.defaults),
+    );
+    await model.load();
+    expect(model.selectedBook?.id, 'Default');
+
+    // Layout on disk still has null selection; refresh must not jump to the
+    // new first book after reorder.
+    await model.reorderBooks(['book-b', 'Default']);
+
+    expect(model.selectedBook?.id, 'Default');
+    expect(model.article?.id, 'article');
+  });
+
+  test('books sheet dual-column preference persists across load', () async {
+    final layout = FakeLayoutRepository(WorkspaceLayout.defaults);
+    final model = LibraryViewModel(
+      FakeLibraryRepository(),
+      layoutRepository: layout,
+    );
+    await model.load();
+    expect(model.booksSheetDualColumn, isTrue);
+
+    model.setBooksSheetDualColumn(false);
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    expect(layout.layout.booksSheetDualColumn, isFalse);
+
+    final restored = LibraryViewModel(
+      FakeLibraryRepository(),
+      layoutRepository: layout,
+    );
+    await restored.load();
+    expect(restored.booksSheetDualColumn, isFalse);
+  });
 }
 
 class FakeLibraryRepository implements WritingLibraryRepository {
@@ -369,12 +427,13 @@ class FakeLibraryRepository implements WritingLibraryRepository {
     updatedAt: DateTime.utc(2026),
     wordCount: 0,
   );
+  List<WritingFolder> folders = [
+    const WritingFolder(id: 'Default', name: 'Book A', rank: 0),
+    const WritingFolder(id: 'book-b', name: 'Book B', rank: 1),
+  ];
   @override
   Future<WritingLibrary> loadLibrary() async => WritingLibrary(
-    folders: const [
-      WritingFolder(id: 'Default', name: 'Book A', rank: 0),
-      WritingFolder(id: 'book-b', name: 'Book B', rank: 1),
-    ],
+    folders: List<WritingFolder>.from(folders),
     categories: List<WritingCategory>.from(categories),
     articles: [
       ArticleSummary(
@@ -596,7 +655,19 @@ class FakeLibraryRepository implements WritingLibraryRepository {
   Future<void> deleteFolder(String folderId) async {}
 
   @override
-  Future<void> reorderFolders({required List<String> orderedIds}) async {}
+  Future<void> reorderFolders({required List<String> orderedIds}) async {
+    final byId = {for (final folder in folders) folder.id: folder};
+    folders = [
+      for (var i = 0; i < orderedIds.length; i++)
+        WritingFolder(
+          id: orderedIds[i],
+          name: byId[orderedIds[i]]!.name,
+          rank: i,
+          description: byId[orderedIds[i]]!.description,
+          tags: byId[orderedIds[i]]!.tags,
+        ),
+    ];
+  }
 
   @override
   Future<void> trashArticle(String articleId) async {

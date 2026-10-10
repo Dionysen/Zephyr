@@ -27,6 +27,7 @@ void main() {
           'book-2': <String>[],
         },
         sidebarScrollOffsetByBook: {'book-1': 128.5, 'book-2': 0},
+        booksSheetDualColumn: true,
       ),
     );
     final actual = await repository.load();
@@ -41,6 +42,7 @@ void main() {
       'book-2': <String>[],
     });
     expect(actual.sidebarScrollOffsetByBook, {'book-1': 128.5, 'book-2': 0});
+    expect(actual.booksSheetDualColumn, isTrue);
   });
 
   test('clamps an out-of-range stored width', () async {

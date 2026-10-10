@@ -677,7 +677,6 @@ class _MobileBookSheet extends StatefulWidget {
 class _MobileBookSheetState extends State<_MobileBookSheet> {
   static final _tagSplit = RegExp(r'[,;，；]');
 
-  var _dualColumn = false;
   var _reorderMode = false;
   String? _armedDeleteBookId;
   final Set<String> _activeTags = {};
@@ -698,7 +697,7 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
         final activeTags = _activeTags.intersection(filterTags.toSet());
         final books = _filteredBooks(allBooks, activeTags);
         final toolStyle = ZephyrIconToolbar.style(context);
-        final showGrid = _dualColumn && !_reorderMode;
+        final dualColumn = model.booksSheetDualColumn;
 
         return ZephyrBottomSheet.listTheme(
           context: context,
@@ -731,14 +730,11 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
                     IconButton(
                       style: toolStyle,
                       onPressed: () {
-                        setState(() {
-                          _dualColumn = !_dualColumn;
-                          if (_dualColumn) _reorderMode = false;
-                        });
+                        model.setBooksSheetDualColumn(!dualColumn);
                       },
-                      isSelected: _dualColumn,
+                      isSelected: dualColumn,
                       icon: Icon(
-                        _dualColumn
+                        dualColumn
                             ? Icons.view_agenda_outlined
                             : Icons.grid_view_rounded,
                       ),
@@ -746,7 +742,7 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
                         Icons.grid_view_rounded,
                         color: theme.colorScheme.primary,
                       ),
-                      tooltip: _dualColumn
+                      tooltip: dualColumn
                           ? l10n.tooltipBookListLayout
                           : l10n.tooltipBookGridLayout,
                     ),
@@ -758,7 +754,6 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
                               setState(() {
                                 _reorderMode = !_reorderMode;
                                 if (_reorderMode) {
-                                  _dualColumn = false;
                                   _armedDeleteBookId = null;
                                 }
                               });
@@ -777,7 +772,7 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
                 ),
               ),
               Expanded(
-                child: showGrid
+                child: dualColumn
                     ? _buildGrid(context, books)
                     : _buildList(context, books),
               ),
@@ -910,6 +905,22 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
         .toList(growable: false);
   }
 
+  void _persistBookOrder(
+    List<WritingFolder> items, {
+    required String draggedId,
+    required String targetId,
+    required bool insertAfter,
+  }) {
+    final ids = _reorderSiblingIds(
+      siblingIds: items.map((b) => b.id).toList(growable: false),
+      draggedId: draggedId,
+      targetId: targetId,
+      insertAfter: insertAfter,
+    );
+    if (ids == null) return;
+    unawaited(model.reorderBooks(ids));
+  }
+
   Widget _buildList(BuildContext context, List<WritingFolder> books) {
     if (_reorderMode) {
       final items = books.where((b) => !b.isTrash).toList();
@@ -945,7 +956,6 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
       itemBuilder: (context, index) => _bookTile(
         context,
         books[index],
-        reorderIndex: null,
         showDivider: index < books.length - 1,
       ),
     );
@@ -957,7 +967,10 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
       color: theme.dividerColor.withValues(alpha: 0.5),
       width: ZephyrControls.borderWidth,
     );
-    final rowCount = (books.length + 1) ~/ 2;
+    final items = _reorderMode
+        ? books.where((b) => !b.isTrash).toList(growable: false)
+        : books;
+    final rowCount = (items.length + 1) ~/ 2;
 
     Widget cell(
       Widget child, {
@@ -977,8 +990,39 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
       );
     }
 
+    Widget bookCell(WritingFolder book) {
+      final tile = _bookTile(
+        context,
+        book,
+        showDivider: false,
+        reorderHandle: _reorderMode
+            ? _SidebarDragHandle<_BookDragData>(
+                data: _BookDragData(book.id),
+                feedbackLabel: book.name,
+              )
+            : null,
+      );
+      if (!_reorderMode) return tile;
+      return _BookGridReorderTarget(
+        bookId: book.id,
+        onAcceptBefore: (draggedId) => _persistBookOrder(
+          items,
+          draggedId: draggedId,
+          targetId: book.id,
+          insertAfter: false,
+        ),
+        onAcceptAfter: (draggedId) => _persistBookOrder(
+          items,
+          draggedId: draggedId,
+          targetId: book.id,
+          insertAfter: true,
+        ),
+        child: tile,
+      );
+    }
+
     return ListView.builder(
-      key: const ValueKey('book-sheet-grid'),
+      key: ValueKey(_reorderMode ? 'book-sheet-grid-reorder' : 'book-sheet-grid'),
       controller: _scrollController,
       padding: const EdgeInsets.only(bottom: 8),
       itemCount: rowCount,
@@ -992,25 +1036,15 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
             children: [
               Expanded(
                 child: cell(
-                  _bookTile(
-                    context,
-                    books[leftIndex],
-                    reorderIndex: null,
-                    showDivider: false,
-                  ),
+                  bookCell(items[leftIndex]),
                   right: true,
                   bottom: bottom,
                 ),
               ),
               Expanded(
                 child: cell(
-                  rightIndex < books.length
-                      ? _bookTile(
-                          context,
-                          books[rightIndex],
-                          reorderIndex: null,
-                          showDivider: false,
-                        )
+                  rightIndex < items.length
+                      ? bookCell(items[rightIndex])
                       : const SizedBox.expand(),
                   right: false,
                   bottom: bottom,
@@ -1026,7 +1060,8 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
   Widget _bookTile(
     BuildContext context,
     WritingFolder book, {
-    required int? reorderIndex,
+    int? reorderIndex,
+    Widget? reorderHandle,
     bool showDivider = true,
   }) {
     final theme = Theme.of(context);
@@ -1068,7 +1103,12 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
                 },
           icon: const Icon(Icons.edit_outlined),
         ),
-      if (reorderIndex != null)
+      if (reorderHandle != null)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: reorderHandle,
+        )
+      else if (reorderIndex != null)
         ReorderableDragStartListener(
           index: reorderIndex,
           child: const Padding(
@@ -1936,6 +1976,81 @@ class _ChapterDragData {
   const _ChapterDragData({required this.articleId, required this.categoryId});
   final String articleId;
   final String? categoryId;
+}
+
+class _BookDragData {
+  const _BookDragData(this.bookId);
+  final String bookId;
+}
+
+/// Drop overlay for the books sheet grid; insert before/after from pointer X.
+class _BookGridReorderTarget extends StatefulWidget {
+  const _BookGridReorderTarget({
+    required this.bookId,
+    required this.onAcceptBefore,
+    required this.onAcceptAfter,
+    required this.child,
+  });
+
+  final String bookId;
+  final void Function(String draggedId) onAcceptBefore;
+  final void Function(String draggedId) onAcceptAfter;
+  final Widget child;
+
+  @override
+  State<_BookGridReorderTarget> createState() => _BookGridReorderTargetState();
+}
+
+class _BookGridReorderTargetState extends State<_BookGridReorderTarget> {
+  bool _insertAfter = false;
+
+  bool _isAfter(Offset global) {
+    final box = context.findRenderObject();
+    if (box is! RenderBox || !box.hasSize) return _insertAfter;
+    return box.globalToLocal(global).dx > box.size.width / 2;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DragTarget<_BookDragData>(
+      onWillAcceptWithDetails: (details) => details.data.bookId != widget.bookId,
+      onMove: (details) {
+        final after = _isAfter(details.offset);
+        if (after != _insertAfter) setState(() => _insertAfter = after);
+      },
+      onLeave: (_) {
+        if (_insertAfter) setState(() => _insertAfter = false);
+      },
+      onAcceptWithDetails: (details) {
+        final after = _isAfter(details.offset);
+        setState(() => _insertAfter = false);
+        if (after) {
+          widget.onAcceptAfter(details.data.bookId);
+        } else {
+          widget.onAcceptBefore(details.data.bookId);
+        }
+      },
+      builder: (context, candidate, _) {
+        final highlight = candidate.isNotEmpty;
+        return Stack(
+          children: [
+            widget.child,
+            if (highlight)
+              Positioned(
+                left: _insertAfter ? null : 0,
+                right: _insertAfter ? 0 : null,
+                top: 0,
+                bottom: 0,
+                child: ColoredBox(
+                  color: Theme.of(context).colorScheme.primary,
+                  child: const SizedBox(width: 2),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
 }
 
 /// Moves [draggedId] before/after [targetId] within a sibling id list.

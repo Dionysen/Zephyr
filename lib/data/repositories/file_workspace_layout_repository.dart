@@ -37,6 +37,7 @@ class FileWorkspaceLayoutRepository implements WorkspaceLayoutRepository {
           : null,
       expandedVolumesByBook: _stringListMap(values['expandedVolumesByBook']),
       sidebarScrollOffsetByBook: _doubleMap(values['sidebarScrollOffsetByBook']),
+      booksSheetDualColumn: values['booksSheetDualColumn'] != false,
     );
   }
 
@@ -49,6 +50,7 @@ class FileWorkspaceLayoutRepository implements WorkspaceLayoutRepository {
     'selectedArticleId': layout.selectedArticleId,
     'expandedVolumesByBook': layout.expandedVolumesByBook,
     'sidebarScrollOffsetByBook': layout.sidebarScrollOffsetByBook,
+    'booksSheetDualColumn': layout.booksSheetDualColumn,
   });
 
   Map<String, List<String>> _stringListMap(Object? raw) {
