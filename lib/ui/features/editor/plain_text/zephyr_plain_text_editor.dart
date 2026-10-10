@@ -30,6 +30,7 @@ class ZephyrPlainTextEditor extends StatefulWidget {
     this.header,
     this.scrollbarPadding = EdgeInsets.zero,
     this.bottomObstruction = 0,
+    this.consumeNewline,
   });
 
   final PlainTextEditingController controller;
@@ -52,6 +53,9 @@ class ZephyrPlainTextEditor extends StatefulWidget {
   /// Extra bottom chrome (quick toolbar + tools drawer) above the soft keyboard
   /// or replacing it. Used for caret visibility.
   final double bottomObstruction;
+
+  /// When this returns true, Enter / IME newline is swallowed.
+  final bool Function()? consumeNewline;
 
   @override
   State<ZephyrPlainTextEditor> createState() => ZephyrPlainTextEditorState();
@@ -119,11 +123,14 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
       controller: widget.controller,
       engine: _engine,
       onRemoteEdit: _onControllerTick,
+      consumeNewline: _consumeNewline,
     );
     if (_focusNode.hasPrimaryFocus) {
       _attachIme();
     }
   }
+
+  bool _consumeNewline() => widget.consumeNewline?.call() ?? false;
 
   @override
   void didUpdateWidget(ZephyrPlainTextEditor oldWidget) {
@@ -142,8 +149,11 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
         controller: widget.controller,
         engine: _engine,
         onRemoteEdit: _onControllerTick,
+        consumeNewline: _consumeNewline,
       );
       if (_focusNode.hasPrimaryFocus) _attachIme();
+    } else {
+      _inputClient?.consumeNewline = _consumeNewline;
     }
     widget.controller.firstLineIndent = widget.typography.firstLineIndent;
     if ((oldWidget.bottomObstruction - widget.bottomObstruction).abs() > 0.5) {
@@ -213,6 +223,21 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
       _keyboardBottomInset(context) + widget.bottomObstruction;
 
   void hideIme() => _inputClient?.hideIme();
+
+  /// Briefly resist IME selection echoes after a paired-punctuation insert.
+  void lockPairCaret({
+    required int openIndex,
+    required int caret,
+    required int highlightEnd,
+  }) {
+    _inputClient?.lockPairCaret(
+      openIndex: openIndex,
+      caret: caret,
+      highlightEnd: highlightEnd,
+    );
+    _inputClient?.markImeDirty();
+    _inputClient?.syncImeIfNeeded();
+  }
 
   void showIme() {
     if (widget.readOnly) return;
@@ -387,6 +412,9 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     }
     if (key == LogicalKeyboardKey.enter ||
         key == LogicalKeyboardKey.numpadEnter) {
+      if (_consumeNewline()) {
+        return KeyEventResult.handled;
+      }
       // IME also sends newline; desktop key path inserts here.
       if (defaultTargetPlatform == TargetPlatform.macOS ||
           defaultTargetPlatform == TargetPlatform.windows ||

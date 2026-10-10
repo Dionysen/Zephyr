@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 
 import '../../../../domain/models/editor_margins.dart';
 import '../../../../domain/models/editor_preferences.dart';
+import '../../../../domain/use_cases/paired_punctuation.dart';
 import '../../../../domain/use_cases/paragraph_indentation.dart';
+import '../../editor/plain_text/decoration/text_decoration_model.dart';
 import '../../editor/plain_text/input/plain_text_editing_controller.dart';
 import '../../editor/plain_text/layout/editor_typography.dart';
 import '../../editor/plain_text/zephyr_plain_text_editor.dart';
@@ -57,6 +59,9 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   String? _articleId;
   int? _indent;
   String _lastEmitted = '';
+  String _pairTrackText = '';
+  PairedPunctuationSession? _pairSession;
+  var _suppressAutoPair = false;
   var _suppressControllerNotify = false;
   var _suppressTitleNotify = false;
   var _showJumpToEnd = false;
@@ -117,7 +122,240 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
       focusNode: _focusNode,
       bodyFocused: _focusNode.hasPrimaryFocus,
       firstLineIndent: widget.preferences.preferences.firstLineIndent,
+      insertPhrase: _insertPhraseOrPair,
     );
+  }
+
+  void _insertPhraseOrPair(String text) {
+    final pair = resolvePairedPunctuationInsert(text);
+    if (pair == null) {
+      _controller.insertText(text, coalesce: false);
+      return;
+    }
+    _beginPairSession(
+      pair: pair,
+      openIndex: _controller.selection.start,
+      insertFullPair: true,
+    );
+  }
+
+  void _beginPairSession({
+    required PairedPunctuationInsert pair,
+    required int openIndex,
+    required bool insertFullPair,
+  }) {
+    _suppressAutoPair = true;
+    try {
+      final openEnd = openIndex + pair.open.length;
+      if (insertFullPair) {
+        _controller.replaceSelection(pair.text, coalesce: false);
+      } else {
+        // Opener already present from typing; append closer after it.
+        _controller.setSelection(TextSelection.collapsed(offset: openEnd));
+        _controller.insertText(pair.close, coalesce: false);
+      }
+      // Pin caret between glyphs after the text is final.
+      _controller.setSelection(TextSelection.collapsed(offset: openEnd));
+      _pairTrackText = _controller.text;
+      _pairSession = PairedPunctuationSession(
+        openIndex: openIndex,
+        closeIndex: openEnd,
+        openChar: pair.open,
+        closeChar: pair.close,
+      );
+      _armPairSelectionSnap();
+      _editorKey.currentState?.lockPairCaret(
+        openIndex: openIndex,
+        caret: openEnd,
+        highlightEnd: openEnd + pair.close.length,
+      );
+      setState(() {});
+    } finally {
+      _suppressAutoPair = false;
+    }
+  }
+
+  /// Keyboard / IME typed an opener (or a full pair) — same wrap as toolbar.
+  ///
+  /// The IME client expands a lone opener to a full pair in the same edit;
+  /// here we only activate the one-shot highlight session (synchronously).
+  bool _maybeAutoPairTypedOpener() {
+    if (_suppressAutoPair || _pairSession != null) return false;
+    final before = _pairTrackText;
+    final after = _controller.text;
+    final typed = detectTypedPairedPunctuation(before: before, after: after);
+    if (typed == null) return false;
+
+    final pair = typed.pair;
+    final openIndex = typed.openIndex;
+    if (typed.needsCloser) {
+      // Fallback when a non-IME path inserted only the opener.
+      _beginPairSession(
+        pair: pair,
+        openIndex: openIndex,
+        insertFullPair: false,
+      );
+      return true;
+    }
+
+    final openEnd = openIndex + pair.open.length;
+    _suppressAutoPair = true;
+    try {
+      if (_controller.selection.extentOffset != openEnd ||
+          !_controller.selection.isCollapsed) {
+        _controller.setSelection(TextSelection.collapsed(offset: openEnd));
+      }
+      _pairTrackText = _controller.text;
+      _pairSession = PairedPunctuationSession(
+        openIndex: openIndex,
+        closeIndex: openEnd,
+        openChar: pair.open,
+        closeChar: pair.close,
+      );
+      _armPairSelectionSnap();
+      _editorKey.currentState?.lockPairCaret(
+        openIndex: openIndex,
+        caret: openEnd,
+        highlightEnd: openEnd + pair.close.length,
+      );
+      setState(() {});
+    } finally {
+      _suppressAutoPair = false;
+    }
+    return true;
+  }
+
+  /// While set, IME selection echoes onto the pair glyphs snap back instead
+  /// of ending the wrap session. Cleared after a short window / real exit.
+  int _pairSnapUntilMs = 0;
+
+  void _armPairSelectionSnap() {
+    _pairSnapUntilMs = DateTime.now().millisecondsSinceEpoch + 600;
+  }
+
+  void _maybeExitPairSessionForSelection(TextSelection selection) {
+    if (_suppressAutoPair) return;
+    final session = _pairSession;
+    if (session == null) return;
+    if (!session.matches(_controller.text)) {
+      _clearPairSession();
+      return;
+    }
+    if (session.containsSelection(selection)) return;
+    // Right after insert, Chinese IMEs often yank the caret onto the opener;
+    // snap back for a brief window, then treat any leave as a real exit.
+    final snapping =
+        DateTime.now().millisecondsSinceEpoch <= _pairSnapUntilMs;
+    if (snapping &&
+        selection.isCollapsed &&
+        selection.extentOffset >= session.openIndex &&
+        selection.extentOffset <= session.highlightEnd) {
+      _suppressAutoPair = true;
+      try {
+        _controller.setSelection(
+          TextSelection.collapsed(offset: session.interiorStart),
+        );
+      } finally {
+        _suppressAutoPair = false;
+      }
+      return;
+    }
+    _pairSnapUntilMs = 0;
+    _clearPairSession();
+  }
+
+  bool _consumePairNewline() {
+    final session = _pairSession;
+    if (session == null || !session.matches(_controller.text)) {
+      _clearPairSession();
+      return false;
+    }
+    _controller.setSelection(
+      TextSelection.collapsed(offset: session.highlightEnd),
+    );
+    _clearPairSession();
+    return true;
+  }
+
+  void _clearPairSession() {
+    if (_pairSession == null) return;
+    setState(() => _pairSession = null);
+  }
+
+  void _remapPairSession() {
+    final text = _controller.text;
+    if (_suppressAutoPair) {
+      _pairTrackText = text;
+      return;
+    }
+    final session = _pairSession;
+    if (session == null) {
+      _pairTrackText = text;
+      return;
+    }
+    if (text == _pairTrackText) return;
+    final before = _pairTrackText;
+    final next = remapPairedPunctuationSession(session, before, text);
+    if (next == null) {
+      final orphan = orphanCloserRangeAfterEmptyOpenDeleted(
+        session: session,
+        before: before,
+        after: text,
+      );
+      _pairSession = null;
+      _pairTrackText = text;
+      setState(() {});
+      if (orphan != null) {
+        // Defer: cannot mutate the controller during its notify cycle.
+        final start = orphan.start;
+        final end = orphan.end;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || _pairSession != null) return;
+          final current = _controller.text;
+          if (end > current.length ||
+              current.substring(start, end) != session.closeChar) {
+            return;
+          }
+          _controller.setSelection(
+            TextSelection(baseOffset: start, extentOffset: end),
+          );
+          _controller.replaceSelection('', coalesce: false);
+          _pairTrackText = _controller.text;
+        });
+      }
+      return;
+    }
+    _pairTrackText = text;
+    if (next.openIndex != session.openIndex ||
+        next.closeIndex != session.closeIndex) {
+      setState(() => _pairSession = next);
+    } else {
+      _pairSession = next;
+    }
+  }
+
+  List<TextSpanDecoration> _pairDecorations(BuildContext context) {
+    final session = _pairSession;
+    if (session == null || !session.matches(_controller.text)) {
+      return const [];
+    }
+    final accent = Theme.of(context).colorScheme.primary;
+    final fontSize = widget.preferences.preferences.fontSize;
+    // Frame only the interior text; keep a caret-sized slot when empty.
+    return [
+      TextSpanDecoration(
+        start: session.interiorStart,
+        end: session.interiorEnd,
+        background: accent.withValues(alpha: 0.22),
+        borderColor: accent.withValues(alpha: 0.40),
+        borderWidth: 1.5,
+        borderRadius: 8,
+        edgeInflate: const EdgeInsets.fromLTRB(2, 3, 2, 3),
+        minEmptyWidth: (fontSize * 0.12).clamp(2.0, 4.0),
+        emptyAnchorStart: session.openIndex,
+        emptyAnchorEnd: session.highlightEnd,
+      ),
+    ];
   }
 
   void _onPreferences() {
@@ -203,6 +441,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   }
 
   void _onSelectionChanged(TextSelection selection) {
+    _maybeExitPairSessionForSelection(selection);
     if (!_showJumpToEnd) return;
     // Manual focus at document end dismisses the chip.
     if (selection.extentOffset >= _controller.text.length &&
@@ -216,6 +455,8 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     if (article == null) {
       _persistEditorPosition();
       _articleId = null;
+      _pairSession = null;
+      _pairTrackText = '';
       _suppressControllerNotify = true;
       _controller.setText('');
       _suppressControllerNotify = false;
@@ -257,6 +498,10 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     if (switching && _articleId != null) {
       _persistEditorPosition();
     }
+    if (switching) {
+      _pairSession = null;
+      _pairTrackText = '';
+    }
 
     final keepSelection = switching
         ? _carets[article.id]
@@ -266,6 +511,11 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     _suppressControllerNotify = true;
     _controller.setText(content, selection: keepSelection);
     _suppressControllerNotify = false;
+    if (!switching) {
+      _pairTrackText = _controller.text;
+    } else {
+      _pairTrackText = content;
+    }
 
     if (switching) {
       // Decide after layout: show when the chapter opens away from the end.
@@ -300,6 +550,11 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   }
 
   void _onControllerChanged() {
+    if (!_suppressAutoPair) {
+      _maybeAutoPairTypedOpener();
+    }
+    _remapPairSession();
+    _maybeExitPairSessionForSelection(_controller.selection);
     if (_suppressControllerNotify || widget.model.isReadOnly) return;
     final plain = _controller.text;
     if (plain == _lastEmitted) return;
@@ -450,11 +705,13 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
               readOnly: widget.model.isReadOnly,
               cursorColor: cursorColor,
               selectionColor: selectionColor,
+              decorations: _pairDecorations(context),
               header: _titleHeader(context, preferences),
               scrollbarPadding: EdgeInsets.symmetric(
                 vertical: widget.contentTopInset,
               ),
               bottomObstruction: quickToolbarBottomObstructionOf(context),
+              consumeNewline: _consumePairNewline,
               onTextChanged: (_) {},
               onSelectionChanged: _onSelectionChanged,
             ),

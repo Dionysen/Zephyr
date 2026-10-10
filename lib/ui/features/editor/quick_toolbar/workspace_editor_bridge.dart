@@ -13,6 +13,7 @@ class WorkspaceEditorBridge extends ChangeNotifier {
   PlainTextEditingController? _controller;
   ZephyrPlainTextEditorState? _editor;
   FocusNode? _focusNode;
+  void Function(String text)? _insertPhrase;
 
   bool get bodyFocused => _bodyFocused;
   bool get canUndo => _canUndo;
@@ -23,11 +24,13 @@ class WorkspaceEditorBridge extends ChangeNotifier {
     required FocusNode focusNode,
     required bool bodyFocused,
     required int firstLineIndent,
+    void Function(String text)? insertPhrase,
   }) {
     _controller = controller;
     _editor = editor;
     _focusNode = focusNode;
     _firstLineIndent = firstLineIndent;
+    _insertPhrase = insertPhrase;
     final canUndo = controller.canUndo;
     final changed =
         _bodyFocused != bodyFocused || _canUndo != canUndo;
@@ -90,7 +93,12 @@ class WorkspaceEditorBridge extends ChangeNotifier {
 
   void insertPhrase(String text) {
     if (text.isEmpty) return;
-    _controller?.insertText(text, coalesce: false);
+    final custom = _insertPhrase;
+    if (custom != null) {
+      custom(text);
+    } else {
+      _controller?.insertText(text, coalesce: false);
+    }
     notifyCanUndo();
   }
 }
