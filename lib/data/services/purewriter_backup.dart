@@ -16,7 +16,7 @@ import 'purewriter_database.dart';
 class PureWriterBackup {
   PureWriterBackup();
 
-  static const autoKeepCount = 25;
+  static const autoKeepCount = 50;
   static const _dbEntryName = 'PureWriterBackup.db';
 
   /// Newest `.pwb` under `{root}/Backups` (including `Backups/Auto`).

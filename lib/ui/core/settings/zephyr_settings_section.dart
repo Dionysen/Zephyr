@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 
 import '../zephyr_theme.dart';
+import 'zephyr_settings_category_header.dart';
 
-/// Grouped block of settings tiles with an optional header.
+/// Grouped block of settings tiles with an optional icon + title header.
 class ZephyrSettingsSection extends StatelessWidget {
   const ZephyrSettingsSection({
     super.key,
     required this.children,
     this.title,
+    this.icon,
     this.footer,
     this.margin = const EdgeInsets.only(bottom: 20),
   });
 
   final String? title;
+  final IconData? icon;
   final String? footer;
   final List<Widget> children;
   final EdgeInsetsGeometry margin;
@@ -34,15 +37,22 @@ class ZephyrSettingsSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (title != null) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Text(
-                title!,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: scheme.onSurfaceVariant,
+            if (icon != null)
+              ZephyrSettingsCategoryHeader(
+                icon: icon!,
+                title: title!,
+                padding: const EdgeInsets.fromLTRB(4, 4, 4, 10),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Text(
+                  title!,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
               ),
-            ),
           ],
           DecoratedBox(
             decoration: BoxDecoration(

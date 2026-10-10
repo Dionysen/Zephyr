@@ -175,7 +175,6 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ZephyrSettingsSection(
-              footer: l10n.editorSectionFooter,
               children: [fontPicker, ...numbers],
             ),
           ],

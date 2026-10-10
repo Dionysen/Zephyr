@@ -208,6 +208,8 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ZephyrSettingsSection(
+              icon: Icons.palette_outlined,
+              title: l10n.themeColorsSectionTitle,
               children: [
                 ZephyrSettingsChoiceTile<AppThemeMode>(
                   icon: Icons.brightness_6_outlined,
@@ -277,6 +279,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
               ],
             ),
             ZephyrSettingsSection(
+              icon: Icons.image_outlined,
               title: l10n.editorBackgroundSectionTitle,
               children: [
                 _EditorBackgroundTile(
@@ -304,6 +307,8 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
               ],
             ),
             ZephyrSettingsSection(
+              icon: Icons.tune,
+              title: l10n.appearanceSectionTitle,
               children: [
                 FontFilePickerRow(
                   label: l10n.uiFontLabel,

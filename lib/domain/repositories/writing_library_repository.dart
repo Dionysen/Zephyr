@@ -125,5 +125,5 @@ abstract interface class WritingLibraryRepository {
     required BackupEntry entry,
     required RestoreMode mode,
   });
-  Future<void> pruneAutomaticBackups({int keep = 25});
+  Future<void> pruneAutomaticBackups({int keep = 50});
 }

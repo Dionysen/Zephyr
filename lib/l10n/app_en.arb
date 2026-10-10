@@ -30,7 +30,7 @@
   "settingsSectionGeneral": "General",
   "settingsSectionCloud": "Backup",
   "backupAutoTitle": "Automatic backup",
-  "backupAutoSubtitle": "After edits, back up to Backups/Auto when leaving the app. Keeps the newest 25.",
+  "backupAutoSubtitle": "After edits, back up to Backups/Auto when leaving the app. Keeps the newest 50.",
   "backupNowTitle": "Back up now",
   "backupNowSubtitle": "Write a manual .pwb under Backups (not auto-pruned).",
   "backupNowSuccess": "Backup completed.",
@@ -296,7 +296,8 @@
     }
   },
   "fontDeleteDialogBodyCompact": "Remove it from the app font library to free space?",
-  "editorBackgroundSectionTitle": "Editor background",
+  "editorBackgroundSectionTitle": "Editor background image",
+  "themeColorsSectionTitle": "Theme colors",
   "editorBackgroundLightTitle": "Light background",
   "editorBackgroundDarkTitle": "Dark background",
   "editorBackgroundNone": "None",

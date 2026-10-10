@@ -281,7 +281,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupAutoSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'After edits, back up to Backups/Auto when leaving the app. Keeps the newest 25.'**
+  /// **'After edits, back up to Backups/Auto when leaving the app. Keeps the newest 50.'**
   String get backupAutoSubtitle;
 
   /// No description provided for @backupNowTitle.
@@ -1499,8 +1499,14 @@ abstract class AppLocalizations {
   /// No description provided for @editorBackgroundSectionTitle.
   ///
   /// In en, this message translates to:
-  /// **'Editor background'**
+  /// **'Editor background image'**
   String get editorBackgroundSectionTitle;
+
+  /// No description provided for @themeColorsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme colors'**
+  String get themeColorsSectionTitle;
 
   /// No description provided for @editorBackgroundLightTitle.
   ///

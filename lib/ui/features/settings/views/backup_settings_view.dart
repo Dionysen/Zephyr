@@ -80,10 +80,7 @@ class BackupSettingsView extends StatelessWidget {
         ),
       ];
 
-      final section = ZephyrSettingsSection(
-        footer: l10n.backupFooter,
-        children: children,
-      );
+      final section = ZephyrSettingsSection(children: children);
 
       if (compact) return section;
 

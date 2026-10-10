@@ -233,10 +233,6 @@ class CompactSettingsList extends StatelessWidget {
         ),
       ],
       SettingsTab.appearance => [
-        ZephyrSettingsCategoryHeader(
-          icon: SettingsSection.theme.icon,
-          title: SettingsSection.theme.title(l10n),
-        ),
         ThemeCatalog(
           viewModel: scope.theme,
           compact: true,

@@ -1292,7 +1292,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   }
 
   @override
-  Future<void> pruneAutomaticBackups({int keep = 25}) async {
+  Future<void> pruneAutomaticBackups({int keep = 50}) async {
     await _store.backups.pruneAutomaticBackups(_libraryRoot, keep: keep);
   }
 

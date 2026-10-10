@@ -103,7 +103,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupAutoSubtitle =>
-      'After edits, back up to Backups/Auto when leaving the app. Keeps the newest 25.';
+      'After edits, back up to Backups/Auto when leaving the app. Keeps the newest 50.';
 
   @override
   String get backupNowTitle => 'Back up now';
@@ -771,7 +771,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Remove it from the app font library to free space?';
 
   @override
-  String get editorBackgroundSectionTitle => 'Editor background';
+  String get editorBackgroundSectionTitle => 'Editor background image';
+
+  @override
+  String get themeColorsSectionTitle => 'Theme colors';
 
   @override
   String get editorBackgroundLightTitle => 'Light background';

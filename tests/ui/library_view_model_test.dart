@@ -940,7 +940,7 @@ class FakeLibraryRepository implements WritingLibraryRepository {
     required RestoreMode mode,
   }) async {}
   @override
-  Future<void> pruneAutomaticBackups({int keep = 25}) async {}
+  Future<void> pruneAutomaticBackups({int keep = 50}) async {}
 }
 
 class FakeLayoutRepository implements WorkspaceLayoutRepository {

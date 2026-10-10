@@ -100,7 +100,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupAutoTitle => '自动备份';
 
   @override
-  String get backupAutoSubtitle => '内容有变更且离开应用时写入 Backups/Auto，保留最近 25 份';
+  String get backupAutoSubtitle => '内容有变更且离开应用时写入 Backups/Auto，保留最近 50 份';
 
   @override
   String get backupNowTitle => '立即备份';
@@ -728,7 +728,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get fontDeleteDialogBodyCompact => '从应用字体库中移除以释放空间？';
 
   @override
-  String get editorBackgroundSectionTitle => '编辑器背景图';
+  String get editorBackgroundSectionTitle => '编辑器背景图片';
+
+  @override
+  String get themeColorsSectionTitle => '主题颜色';
 
   @override
   String get editorBackgroundLightTitle => '亮色背景';
