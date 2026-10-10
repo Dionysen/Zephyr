@@ -1,9 +1,15 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../../domain/models/quick_toolbar_config.dart';
 import '../../../core/zephyr_controls.dart';
 
 /// Icon or phrase chip for the IME quick toolbar.
+///
+/// Ink paints on the parent [QuickToolbarBar] [Material] so the splash can
+/// spread onto neighboring buttons horizontally, while the bar clips it
+/// vertically. Hit targets stay the chip size.
 class QuickToolButton extends StatelessWidget {
   const QuickToolButton({
     super.key,
@@ -12,6 +18,7 @@ class QuickToolButton extends StatelessWidget {
     required this.onPressed,
     this.enabled = true,
     this.selected = false,
+    this.panelOpen = false,
     this.tooltip,
     this.bodyFontFamily,
   });
@@ -21,6 +28,9 @@ class QuickToolButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool enabled;
   final bool selected;
+
+  /// Tools panel open state — drives a +45° icon spin (no selected fill).
+  final bool panelOpen;
   final String? tooltip;
 
   /// Article body font; used for non-symbol phrase chips.
@@ -31,6 +41,9 @@ class QuickToolButton extends StatelessWidget {
   static const double iconSize = 18;
   static const double phraseFontSize = 12;
   static const double symbolFontSize = 15;
+
+  /// Circular ink diameter is [1.5 * height]; bar Material clips top/bottom.
+  static const double splashRadius = height * 0.75;
 
   @override
   Widget build(BuildContext context) {
@@ -45,27 +58,21 @@ class QuickToolButton extends StatelessWidget {
         onPressed: enabled ? onPressed : null,
         fontFamily: bodyFontFamily,
       ),
-      _ => SizedBox(
+      QuickToolKind.tools => _ToolsPanelButton(
+        open: panelOpen,
+        foreground: color,
+        onPressed: enabled ? onPressed : null,
+      ),
+      _ => _ToolbarInk(
+        onTap: enabled ? onPressed : null,
+        selected: selected,
+        selectedColor: foreground.withValues(alpha: 0.12),
         width: iconExtent,
-        height: height,
-        child: IconButton(
-          onPressed: enabled ? onPressed : null,
-          tooltip: tooltip,
-          style: IconButton.styleFrom(
-            foregroundColor: color,
-            disabledForegroundColor: color,
-            backgroundColor: selected
-                ? foreground.withValues(alpha: 0.12)
-                : Colors.transparent,
-            shape: ZephyrControls.iconButtonShape,
-            padding: EdgeInsets.zero,
-          ),
-          icon: Icon(_iconFor(tool.kind), size: iconSize),
-        ),
+        child: Icon(_iconFor(tool.kind), size: iconSize, color: color),
       ),
     };
     if (tooltip == null || tool.kind == QuickToolKind.phrase) return child;
-    return child;
+    return Tooltip(message: tooltip!, child: child);
   }
 
   static IconData _iconFor(QuickToolKind kind) => switch (kind) {
@@ -76,6 +83,153 @@ class QuickToolButton extends StatelessWidget {
     QuickToolKind.format => Icons.auto_fix_high_rounded,
     QuickToolKind.phrase => Icons.short_text_rounded,
   };
+}
+
+/// Tools button: each open/close adds +45° (same direction). The apps glyph
+/// is 90°-symmetric, so close lands looking like the resting icon again.
+///
+/// Ink stays on this outer shell so panel open/close rebuilds do not cancel
+/// the splash; only the icon child animates.
+class _ToolsPanelButton extends StatelessWidget {
+  const _ToolsPanelButton({
+    required this.open,
+    required this.foreground,
+    required this.onPressed,
+  });
+
+  final bool open;
+  final Color foreground;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return _ToolbarInk(
+      onTap: onPressed,
+      width: QuickToolButton.iconExtent,
+      child: _ToolsIconSpin(open: open, foreground: foreground),
+    );
+  }
+}
+
+class _ToolsIconSpin extends StatefulWidget {
+  const _ToolsIconSpin({required this.open, required this.foreground});
+
+  final bool open;
+  final Color foreground;
+
+  @override
+  State<_ToolsIconSpin> createState() => _ToolsIconSpinState();
+}
+
+class _ToolsIconSpinState extends State<_ToolsIconSpin>
+    with SingleTickerProviderStateMixin {
+  static const _stepTurns = 0.125; // 45°
+  static const _duration = Duration(milliseconds: 340);
+
+  late final AnimationController _controller;
+  late Animation<double> _turns;
+  double _angleTurns = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _angleTurns = widget.open ? _stepTurns : 0;
+    _controller = AnimationController(vsync: this, duration: _duration);
+    _turns = AlwaysStoppedAnimation(_angleTurns);
+  }
+
+  @override
+  void didUpdateWidget(covariant _ToolsIconSpin oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.open == widget.open) return;
+    final begin = _angleTurns;
+    _angleTurns += _stepTurns;
+    _turns = Tween<double>(begin: begin, end: _angleTurns).animate(
+      CurvedAnimation(
+        parent: _controller,
+        // Overshoot then settle — reads as a quick, lively nudge.
+        curve: const Cubic(0.22, 1.4, 0.36, 1),
+      ),
+    );
+    _controller.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Transform.rotate(
+          angle: _turns.value * 2 * math.pi,
+          child: child,
+        );
+      },
+      child: Icon(
+        Icons.apps_rounded,
+        size: QuickToolButton.iconSize,
+        color: widget.foreground,
+      ),
+    );
+  }
+}
+
+/// InkResponse without its own [Material] — uses the toolbar bar Material.
+class _ToolbarInk extends StatelessWidget {
+  const _ToolbarInk({
+    required this.onTap,
+    required this.child,
+    this.selected = false,
+    this.selectedColor,
+    this.width,
+    this.padding = EdgeInsets.zero,
+  });
+
+  final VoidCallback? onTap;
+  final Widget child;
+  final bool selected;
+  final Color? selectedColor;
+  final double? width;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    // Black bar: theme splash is often dark and nearly invisible — use a
+    // light ink so the ripple reads clearly on every chip.
+    final ink = Colors.white;
+    return SizedBox(
+      width: width,
+      height: QuickToolButton.height,
+      child: InkResponse(
+        onTap: onTap,
+        // Splash draws on the ancestor Material (the bar), not clipped to
+        // this chip — so it can cover neighbors; the bar clips vertically.
+        containedInkWell: false,
+        highlightShape: BoxShape.circle,
+        radius: QuickToolButton.splashRadius,
+        splashFactory: InkRipple.splashFactory,
+        splashColor: ink.withValues(alpha: 0.28),
+        highlightColor: ink.withValues(alpha: 0.12),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: selected ? selectedColor : null,
+            borderRadius: BorderRadius.circular(
+              ZephyrControls.defaultCornerRadius,
+            ),
+          ),
+          child: Padding(
+            padding: padding,
+            child: Center(child: child),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Short punctuation / symbol labels (quotes, dashes, brackets, …).
@@ -143,36 +297,20 @@ class _PhraseChip extends StatelessWidget {
     );
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: symbol ? 0 : 2),
-      child: TextButton(
-        onPressed: onPressed,
-        style: TextButton.styleFrom(
-          foregroundColor: foreground,
-          disabledForegroundColor: foreground,
-          backgroundColor: selected
-              ? foreground.withValues(alpha: 0.12)
-              : Colors.transparent,
-          minimumSize: Size(
-            symbol ? QuickToolButton.iconExtent : 0,
-            QuickToolButton.height,
-          ),
-          maximumSize: symbol
-              ? const Size(QuickToolButton.iconExtent, QuickToolButton.height)
-              : null,
-          padding: EdgeInsets.symmetric(horizontal: symbol ? 0 : 10),
-          shape: ZephyrControls.labeledButtonShape,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
-        child: Align(
-          alignment: Alignment.center,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              display,
-              maxLines: 1,
-              overflow: TextOverflow.visible,
-              textAlign: TextAlign.center,
-              style: style,
-            ),
+      child: _ToolbarInk(
+        onTap: onPressed,
+        selected: selected,
+        selectedColor: foreground.withValues(alpha: 0.12),
+        width: symbol ? QuickToolButton.iconExtent : null,
+        padding: EdgeInsets.symmetric(horizontal: symbol ? 0 : 10),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            display,
+            maxLines: 1,
+            overflow: TextOverflow.visible,
+            textAlign: TextAlign.center,
+            style: style,
           ),
         ),
       ),

@@ -19,9 +19,19 @@ Zephyr is a Flutter local-first plain-text editor. The document library is a **P
 | Library UI state | `lib/ui/features/editor/view_models/library_view_model.dart` |
 | Adaptive workspace shell | `lib/ui/features/workspace/views/workspace_page.dart` |
 | Sidebar + mobile top bar | `lib/ui/features/workspace/views/workspace_sidebar.dart` |
-| Editor + scroll padding | `lib/ui/features/workspace/views/workspace_editor.dart` |
+| Editor + scroll / jump-to-end / pair session | `lib/ui/features/workspace/views/workspace_editor.dart` |
+| Plain-text editor shell | `lib/ui/features/editor/plain_text/zephyr_plain_text_editor.dart` |
+| IME client + pair expand / caret lock | `lib/ui/features/editor/plain_text/input/plain_text_input_client.dart` |
+| Editing controller (undo/redo) | `lib/ui/features/editor/plain_text/input/plain_text_editing_controller.dart` |
+| Span decorations (pair frame paint) | `lib/ui/features/editor/plain_text/decoration/` |
+| Paired punctuation domain | `lib/domain/use_cases/paired_punctuation.dart` |
+| Sidebar preview summary text | `lib/domain/use_cases/article_preview_summary.dart` |
+| Quick toolbar (IME bar + tools drawer) | `lib/ui/features/editor/quick_toolbar/` |
+| Quick toolbar config / persist | `lib/domain/models/quick_toolbar_config.dart`, data repos under `lib/data/` |
+| Status / nav bar (edge-to-edge) | `lib/ui/core/zephyr_status_bar.dart`, Android `MainActivity.kt` + `res/values*/styles.xml` |
 | Swipe drawer (IME dismiss) | `lib/ui/core/zephyr_swipe_drawer.dart` |
 | Shared control sizes / theme | `lib/ui/core/zephyr_controls.dart`, `lib/ui/core/zephyr_theme.dart` |
+| UI prefs (immersive status bar, etc.) | `lib/domain/models/ui_preferences.dart`, settings under `lib/ui/features/settings/` |
 
 ## Startup & temporary library
 
@@ -36,6 +46,37 @@ Zephyr is a Flutter local-first plain-text editor. The document library is a **P
 - Book button → bottom sheet select/edit; More → `WorkspaceMobileTool` / `showWorkspaceMobileToolsSheet` (reserved API).
 - Scroll hide/show: `_MobileEditorChrome` in `workspace_page.dart` — slop threshold then **independent** show/hide animation (no scroll-linked drag, no overshoot).
 - Opening the swipe drawer dismisses the IME (`FocusManager.unfocus` in `zephyr_swipe_drawer.dart`).
+- IME quick toolbar sits above the keyboard (`quick_toolbar/`); tools button hides IME and expands a fixed-height drawer; focusing the article auto-collapses the drawer.
+
+## Paired punctuation wrap
+
+- Domain: resolve/detect/remap/orphan in `paired_punctuation.dart`; tests in `tests/domain/paired_punctuation_test.dart`.
+- Typing: IME client expands opener → full pair and pins caret between; short caret lock resists IME yanking to glyphs; redundant closer inserts skipped.
+- Toolbar / editor: `_beginPairSession` in `workspace_editor.dart`; one-shot interior highlight via `TextSpanDecoration` (empty slot centered between opener/closer anchors).
+- Exit when selection leaves the interior (after brief post-insert snap window); Enter exits after the closer; empty-open delete removes orphan closer.
+
+## Jump-to-end chip
+
+- Logic + chip UI in `workspace_editor.dart` (`_shouldOfferJumpToEnd`, l10n key `jumpToEnd` →「聚焦到文末」).
+- Show on chapter open when end is off-screen (`ignoreCaret: true` — restored caret is often at EOF).
+- Hide when scroll reaches end, or later when the user moves the caret to EOF / no text after selection.
+
+## Sidebar chapter preview
+
+- Sidebar reads `ArticleSummary.summary` (`workspace_sidebar.dart` chapter tile).
+- Summary = first ~200 runes after newline normalize (`article_preview_summary.dart`); DB write in `saveArticle`.
+- After debounced `LibraryViewModel.save()`, `_refreshSidebarPreviewIfNeeded` updates in-memory library summary when the leading preview text changed (no full `load()`).
+
+## Undo selection
+
+- `PlainTextEditingController.undo`/`redo` restore text with a **collapsed** caret (never re-select a prior range).
+- `deleteBackward`/`deleteForward` must not expand selection before pushing undo (that used to snapshot a range).
+
+## System bars (Android)
+
+- Always edge-to-edge; nav/gesture bar **visible** with transparent background (app paints underneath).
+- Do **not** use `SystemUiMode.immersiveSticky` (it hides the gesture bar). Hide-status-icons uses `SystemUiMode.manual` with only `SystemUiOverlay.bottom`.
+- Native: `WindowCompat.setDecorFitsSystemWindows(false)`, `isNavigationBarContrastEnforced = false` in `MainActivity.kt`; theme styles set transparent status/nav + `enforceNavigationBarContrast` false (API 29+).
 
 ## Database pitfalls (Android)
 
@@ -48,7 +89,11 @@ Zephyr is a Flutter local-first plain-text editor. The document library is a **P
 - DB: `tests/data/purewriter_database_test.dart`
 - Startup: `tests/data/startup_library_test.dart`
 - Workspace / mobile bar: `tests/ui/workspace_page_test.dart`, `tests/ui/library_view_model_test.dart`
+- Paired punct: `tests/domain/paired_punctuation_test.dart`
+- Controller undo / toolbar: `tests/ui/plain_text_editing_controller_toolbar_test.dart`
 
 ## Wireless debug note
 
 Wireless `adb` + Flutter VM Service port-forward is flaky (`127.0.0.1` connection refused). Prefer USB for hot reload; wireless is fine for smoke UI only.
+
+`adb` lives at `%LOCALAPPDATA%\Android\Sdk\platform-tools`. Cursor terminals inherit PATH from when Cursor launched — fully restart Cursor after PATH changes, or rely on the PowerShell profile prepend for `platform-tools`.

@@ -33,6 +33,8 @@ class QuickToolbarBar extends StatelessWidget {
     final l10n = context.l10n;
     final pinned = config.pinnedTools;
     final custom = config.customTools;
+    // Shared Material: ink spreads across sibling buttons horizontally and
+    // is clipped to this strip vertically (does not spill outside the bar).
     return Material(
       color: quickToolbarBackground,
       child: SizedBox(
@@ -42,7 +44,7 @@ class QuickToolbarBar extends StatelessWidget {
             QuickToolButton(
               tool: QuickTool.tools,
               foreground: foreground,
-              selected: toolsDrawerOpen,
+              panelOpen: toolsDrawerOpen,
               tooltip: l10n.quickToolbarToolsTooltip,
               bodyFontFamily: bodyFontFamily,
               onPressed: () => onToolPressed(QuickTool.tools),

@@ -137,16 +137,22 @@ class QuickToolbarHost extends StatelessWidget {
   void _onTool(BuildContext context, QuickTool tool) {
     switch (tool.kind) {
       case QuickToolKind.tools:
-        if (toolbar.toolsDrawerOpen) {
-          // Show IME first while the panel slot is still held, then drop the
-          // drawer chrome — avoids a blank frame at bottom:0.
-          toolbar.restoreImeFromTools();
-          bridge.focusBodyAndShowIme();
-        } else {
-          final keyboard = MediaQuery.viewInsetsOf(context).bottom;
-          toolbar.openToolsDrawer(keyboardHeight: keyboard);
-          bridge.hideIme();
-        }
+        // Defer panel/IME changes so the shared-Material splash can play;
+        // an immediate rebuild cancels the ink mid-ripple.
+        final opening = !toolbar.toolsDrawerOpen;
+        final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+        Future<void>.delayed(const Duration(milliseconds: 140), () {
+          if (!context.mounted) return;
+          if (opening) {
+            toolbar.openToolsDrawer(keyboardHeight: keyboard);
+            bridge.hideIme();
+          } else {
+            // Show IME first while the panel slot is still held, then drop
+            // the drawer chrome — avoids a blank frame at bottom:0.
+            toolbar.restoreImeFromTools();
+            bridge.focusBodyAndShowIme();
+          }
+        });
       case QuickToolKind.undo:
         bridge.undo();
       case QuickToolKind.paste:
