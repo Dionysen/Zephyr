@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../../../domain/use_cases/plain_text_format.dart';
 import '../plain_text/input/plain_text_editing_controller.dart';
@@ -11,6 +12,7 @@ class WorkspaceEditorBridge extends ChangeNotifier {
   int _firstLineIndent = 2;
   PlainTextEditingController? _controller;
   ZephyrPlainTextEditorState? _editor;
+  FocusNode? _focusNode;
 
   bool get bodyFocused => _bodyFocused;
   bool get canUndo => _canUndo;
@@ -18,11 +20,13 @@ class WorkspaceEditorBridge extends ChangeNotifier {
   void bind({
     required PlainTextEditingController controller,
     required ZephyrPlainTextEditorState? editor,
+    required FocusNode focusNode,
     required bool bodyFocused,
     required int firstLineIndent,
   }) {
     _controller = controller;
     _editor = editor;
+    _focusNode = focusNode;
     _firstLineIndent = firstLineIndent;
     final canUndo = controller.canUndo;
     final changed =
@@ -48,6 +52,15 @@ class WorkspaceEditorBridge extends ChangeNotifier {
   void hideIme() => _editor?.hideIme();
 
   void showIme() => _editor?.showIme();
+
+  /// Keep / restore body focus and show the soft keyboard (caret unchanged).
+  void focusBodyAndShowIme() {
+    final focus = _focusNode;
+    if (focus != null && !focus.hasPrimaryFocus) {
+      focus.requestFocus();
+    }
+    _editor?.showIme();
+  }
 
   void undo() {
     final controller = _controller;

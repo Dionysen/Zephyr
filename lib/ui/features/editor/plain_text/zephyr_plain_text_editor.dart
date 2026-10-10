@@ -185,7 +185,11 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   void _maybeEnsureCaretForBottomInset() {
     if (!_focusNode.hasPrimaryFocus) return;
     final effective = _effectiveBottomInset(context);
-    if ((effective - _lastEffectiveBottomInset).abs() < 0.5) return;
+    // Ignore sub-pixel / animation jitter from IME + toolbar compensation.
+    if ((effective - _lastEffectiveBottomInset).abs() < 2.0) {
+      _lastEffectiveBottomInset = effective;
+      return;
+    }
     _lastEffectiveBottomInset = effective;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _focusNode.hasPrimaryFocus) {
@@ -211,8 +215,14 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   void hideIme() => _inputClient?.hideIme();
 
   void showIme() {
-    if (widget.readOnly || !_focusNode.hasPrimaryFocus) return;
+    if (widget.readOnly) return;
     _suppressImeAttach = false;
+    if (!_focusNode.hasPrimaryFocus) {
+      // Focus callback will [attach]; still mark dirty for the next sync.
+      _focusNode.requestFocus();
+      return;
+    }
+    // Same path as a short tap on the caret: re-show without re-focus churn.
     _inputClient?.attach();
   }
 

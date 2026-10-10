@@ -18,11 +18,18 @@ class QuickToolbarViewModel extends ChangeNotifier {
   QuickToolbarConfig _config = QuickToolbarConfig.defaults;
   Timer? _pendingSave;
   var _toolsDrawerOpen = false;
+  /// Keep the latched panel slot until the soft keyboard fills it again.
+  var _holdingPanelForIme = false;
   double _latchedKeyboardHeight = 0;
+  double _lastKeyboardInset = 0;
 
   QuickToolbarConfig get config => _config;
   bool get toolsDrawerOpen => _toolsDrawerOpen;
+  bool get holdingPanelForIme => _holdingPanelForIme;
   double get latchedKeyboardHeight => _latchedKeyboardHeight;
+
+  /// Panel chrome is active (tools drawer, or empty hold while IME rises).
+  bool get usesFixedPanel => _toolsDrawerOpen || _holdingPanelForIme;
 
   Future<void> load() async {
     try {
@@ -33,10 +40,33 @@ class QuickToolbarViewModel extends ChangeNotifier {
     }
   }
 
+  /// Tracks live IME inset. Rising inset while the tools drawer is open means
+  /// the user focused the body again — dismiss the drawer (keep the panel slot).
+  void reportKeyboardInset(double height) {
+    final prev = _lastKeyboardInset;
+    _lastKeyboardInset = height;
+    if (_toolsDrawerOpen && height > prev + 8 && height > 40) {
+      restoreImeFromTools();
+      return;
+    }
+    rememberKeyboardHeight(height);
+  }
+
   void rememberKeyboardHeight(double height) {
     // Freeze while the tools panel is open so the bar does not drift as the
     // soft keyboard animates away.
     if (_toolsDrawerOpen) return;
+    if (_holdingPanelForIme) {
+      // Release only when the IME has essentially filled the latched slot.
+      // Early release (e.g. at 92%) drops effective bottom cover and bounces.
+      final target = toolsPanelHeight;
+      if (height + 0.5 >= target) {
+        _holdingPanelForIme = false;
+        _latchedKeyboardHeight = height;
+        notifyListeners();
+      }
+      return;
+    }
     if (height < 80) return;
     if ((height - _latchedKeyboardHeight).abs() < 0.5) return;
     _latchedKeyboardHeight = height;
@@ -46,16 +76,27 @@ class QuickToolbarViewModel extends ChangeNotifier {
   /// Opens the tools panel, freezing [panelHeight] for the session.
   void openToolsDrawer({required double keyboardHeight}) {
     if (_toolsDrawerOpen) return;
+    _holdingPanelForIme = false;
     if (keyboardHeight >= 80) {
       _latchedKeyboardHeight = keyboardHeight;
+      _lastKeyboardInset = keyboardHeight;
     }
     _toolsDrawerOpen = true;
+    notifyListeners();
+  }
+
+  /// Closes the tools drawer but keeps the panel slot until the IME rises.
+  void restoreImeFromTools() {
+    if (!_toolsDrawerOpen && !_holdingPanelForIme) return;
+    _toolsDrawerOpen = false;
+    _holdingPanelForIme = true;
     notifyListeners();
   }
 
   void setToolsDrawerOpen(bool open) {
     if (_toolsDrawerOpen == open) return;
     _toolsDrawerOpen = open;
+    if (open) _holdingPanelForIme = false;
     notifyListeners();
   }
 
@@ -66,7 +107,10 @@ class QuickToolbarViewModel extends ChangeNotifier {
 
   void toggleToolsDrawer() => setToolsDrawerOpen(!_toolsDrawerOpen);
 
-  void closeToolsDrawer() => setToolsDrawerOpen(false);
+  void closeToolsDrawer() {
+    _holdingPanelForIme = false;
+    setToolsDrawerOpen(false);
+  }
 
   /// [newIndex] is the destination after removal (as from [onReorderItem]).
   void reorderPinned(int oldIndex, int newIndex) {

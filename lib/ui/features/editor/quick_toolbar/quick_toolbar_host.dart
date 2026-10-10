@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../../domain/models/quick_toolbar_config.dart';
@@ -51,26 +53,28 @@ class QuickToolbarHost extends StatelessWidget {
         final keyboard = MediaQuery.viewInsetsOf(context).bottom;
         final bodyFocused = bridge.bodyFocused;
         final drawerOpen = toolbar.toolsDrawerOpen;
-        // Frozen for the whole tools session — does not track IME animation.
-        final panelHeight = drawerOpen
-            ? toolbar.toolsPanelHeight
-            : keyboard;
-        final visible = bodyFocused && (drawerOpen || keyboard > 0.5);
+        final fixedPanel = toolbar.usesFixedPanel;
+        final latched = toolbar.toolsPanelHeight;
+        // While the panel slot is owned (drawer or IME restore), pin the bar to
+        // the latched height — but never below the live keyboard (overshoot).
+        final panelHeight =
+            fixedPanel ? math.max(latched, keyboard) : keyboard;
+        final visible =
+            bodyFocused && (fixedPanel || keyboard > 0.5);
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!drawerOpen && keyboard > 0.5) {
-            toolbar.rememberKeyboardHeight(keyboard);
-          }
-          if (!bodyFocused && toolbar.toolsDrawerOpen) {
+          toolbar.reportKeyboardInset(keyboard);
+          if (!bodyFocused &&
+              (toolbar.toolsDrawerOpen || toolbar.holdingPanelForIme)) {
             toolbar.closeToolsDrawer();
           }
         });
 
         final obstruction = bottomObstruction(
           visible: visible,
-          drawerOpen: drawerOpen,
+          drawerOpen: fixedPanel,
           keyboardInset: keyboard,
-          panelHeight: drawerOpen ? toolbar.toolsPanelHeight : 0,
+          panelHeight: fixedPanel ? panelHeight : 0,
         );
 
         return Stack(
@@ -81,33 +85,44 @@ class QuickToolbarHost extends StatelessWidget {
                 child: child,
               ),
             ),
-            if (visible) ...[
-              if (drawerOpen)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: QuickToolbarDrawer(
-                    height: panelHeight,
-                    foreground: foreground,
-                    onEditToolbar: () {
-                      showQuickToolbarEditSheet(context, toolbar: toolbar);
-                    },
-                  ),
-                ),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: panelHeight,
-                child: QuickToolbarBar(
-                  config: toolbar.config,
-                  foreground: foreground,
-                  toolsDrawerOpen: drawerOpen,
-                  canUndo: bridge.canUndo,
-                  onToolPressed: (tool) => _onTool(context, tool),
+            if (visible)
+              // Toolbar / drawer must never steal focus from the body caret.
+              ExcludeFocus(
+                child: Stack(
+                  children: [
+                    if (drawerOpen)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: QuickToolbarDrawer(
+                          height: panelHeight,
+                          foreground: foreground,
+                          onEditToolbar: () {
+                            showQuickToolbarEditSheet(
+                              context,
+                              toolbar: toolbar,
+                            );
+                          },
+                        ),
+                      ),
+                    // While holding for IME: leave the slot empty so the system
+                    // keyboard paints in without a Flutter flash frame.
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: panelHeight,
+                      child: QuickToolbarBar(
+                        config: toolbar.config,
+                        foreground: foreground,
+                        toolsDrawerOpen: drawerOpen,
+                        canUndo: bridge.canUndo,
+                        onToolPressed: (tool) => _onTool(context, tool),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
           ],
         );
       },
@@ -118,8 +133,10 @@ class QuickToolbarHost extends StatelessWidget {
     switch (tool.kind) {
       case QuickToolKind.tools:
         if (toolbar.toolsDrawerOpen) {
-          toolbar.closeToolsDrawer();
-          bridge.showIme();
+          // Show IME first while the panel slot is still held, then drop the
+          // drawer chrome — avoids a blank frame at bottom:0.
+          toolbar.restoreImeFromTools();
+          bridge.focusBodyAndShowIme();
         } else {
           final keyboard = MediaQuery.viewInsetsOf(context).bottom;
           toolbar.openToolsDrawer(keyboardHeight: keyboard);

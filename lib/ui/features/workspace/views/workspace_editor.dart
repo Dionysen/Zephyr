@@ -114,6 +114,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     bridge.bind(
       controller: _controller,
       editor: _editorKey.currentState,
+      focusNode: _focusNode,
       bodyFocused: _focusNode.hasPrimaryFocus,
       firstLineIndent: widget.preferences.preferences.firstLineIndent,
     );

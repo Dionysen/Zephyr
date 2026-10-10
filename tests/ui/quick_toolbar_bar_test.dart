@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/domain/models/quick_toolbar_config.dart';
 import 'package:zephyr/l10n/app_localizations.dart';
+import 'package:zephyr/ui/features/editor/quick_toolbar/quick_tool_button.dart';
 import 'package:zephyr/ui/features/editor/quick_toolbar/quick_toolbar_bar.dart';
 import 'package:zephyr/ui/features/editor/quick_toolbar/quick_toolbar_host.dart';
 import 'package:zephyr/ui/features/editor/quick_toolbar/workspace_editor_bridge.dart';
@@ -86,7 +87,10 @@ void main() {
     await tester.pump();
 
     expect(find.byType(QuickToolbarBar), findsOneWidget);
-    expect(tester.getSize(find.byType(QuickToolbarBar)).height, 36);
+    expect(
+      tester.getSize(find.byType(QuickToolbarBar)).height,
+      QuickToolButton.height,
+    );
     expect(find.text('Edit toolbar'), findsOneWidget);
     expect(find.text('Tool panel content coming soon'), findsOneWidget);
 
@@ -98,8 +102,34 @@ void main() {
         keyboardInset: 120,
         panelHeight: 300,
       ),
-      36 + 300 - 120,
+      QuickToolButton.height + 300 - 120,
     );
+
+    toolbar.restoreImeFromTools();
+    expect(toolbar.toolsDrawerOpen, isFalse);
+    expect(toolbar.holdingPanelForIme, isTrue);
+    expect(toolbar.usesFixedPanel, isTrue);
+
+    // Hold must not release early — that drops effective cover and bounces.
+    toolbar.rememberKeyboardHeight(300 * 0.95);
+    expect(toolbar.holdingPanelForIme, isTrue);
+    toolbar.rememberKeyboardHeight(300);
+    expect(toolbar.holdingPanelForIme, isFalse);
+  });
+
+  test('body IME rising while drawer open dismisses the drawer', () {
+    final toolbar = QuickToolbarViewModel(_Repo());
+    toolbar.openToolsDrawer(keyboardHeight: 300);
+    // Keyboard animating away after hide — must not dismiss the drawer.
+    toolbar.reportKeyboardInset(200);
+    toolbar.reportKeyboardInset(50);
+    toolbar.reportKeyboardInset(0);
+    expect(toolbar.toolsDrawerOpen, isTrue);
+
+    // User taps the article; IME rises again.
+    toolbar.reportKeyboardInset(80);
+    expect(toolbar.toolsDrawerOpen, isFalse);
+    expect(toolbar.holdingPanelForIme, isTrue);
   });
 }
 
