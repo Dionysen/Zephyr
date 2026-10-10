@@ -461,6 +461,33 @@ class FakeLibraryRepository implements WritingLibraryRepository {
   @override
   Future<WritingArticle> getArticle(String id) async =>
       id == saved.id ? saved : _secondArticle;
+
+  @override
+  Future<List<WritingArticle>> loadArticlesForSearch({
+    String? folderId,
+    String? categoryId,
+    String? articleId,
+    bool unfiledOnly = false,
+    bool includeTrash = false,
+  }) async {
+    final all = [saved, _secondArticle];
+    return [
+      for (final article in all)
+        if (articleId != null
+            ? article.id == articleId
+            : folderId != null && categoryId != null
+                ? article.folderId == folderId &&
+                    article.categoryId == categoryId
+                : folderId != null && unfiledOnly
+                    ? article.folderId == folderId &&
+                        article.categoryId == null
+                    : folderId != null
+                        ? article.folderId == folderId
+                        : includeTrash ||
+                            article.folderId != WritingFolder.trashId)
+          article,
+    ];
+  }
   @override
   Future<WritingArticle> createArticle({
     required String folderId,

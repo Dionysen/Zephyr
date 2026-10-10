@@ -1879,6 +1879,54 @@ abstract class AppLocalizations {
   /// **'Search'**
   String get tooltipSearchChapters;
 
+  /// No description provided for @searchSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get searchSheetTitle;
+
+  /// No description provided for @searchSheetHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search titles and content'**
+  String get searchSheetHint;
+
+  /// No description provided for @searchSheetEmptyQuery.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a keyword to search.'**
+  String get searchSheetEmptyQuery;
+
+  /// No description provided for @searchSheetNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching results.'**
+  String get searchSheetNoResults;
+
+  /// No description provided for @searchScopeArticle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter'**
+  String get searchScopeArticle;
+
+  /// No description provided for @searchScopeVolume.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume'**
+  String get searchScopeVolume;
+
+  /// No description provided for @searchScopeBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Book'**
+  String get searchScopeBook;
+
+  /// No description provided for @searchScopeAllBooks.
+  ///
+  /// In en, this message translates to:
+  /// **'All books'**
+  String get searchScopeAllBooks;
+
   /// No description provided for @tooltipLocateCurrentChapter.
   ///
   /// In en, this message translates to:

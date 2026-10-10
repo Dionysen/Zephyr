@@ -937,6 +937,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String get tooltipSearchChapters => '搜索';
 
   @override
+  String get searchSheetTitle => '搜索';
+
+  @override
+  String get searchSheetHint => '搜索标题与正文';
+
+  @override
+  String get searchSheetEmptyQuery => '输入关键词开始搜索。';
+
+  @override
+  String get searchSheetNoResults => '没有匹配结果。';
+
+  @override
+  String get searchScopeArticle => '本章';
+
+  @override
+  String get searchScopeVolume => '本卷';
+
+  @override
+  String get searchScopeBook => '本书';
+
+  @override
+  String get searchScopeAllBooks => '全部书';
+
+  @override
   String get tooltipLocateCurrentChapter => '定位到当前章节';
 
   @override

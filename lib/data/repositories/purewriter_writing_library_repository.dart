@@ -100,6 +100,55 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   }
 
   @override
+  Future<List<WritingArticle>> loadArticlesForSearch({
+    String? folderId,
+    String? categoryId,
+    String? articleId,
+    bool unfiledOnly = false,
+    bool includeTrash = false,
+  }) async {
+    final db = _store.database;
+    final where = StringBuffer('deleted = 0');
+    final args = <Object?>[];
+    if (articleId != null) {
+      where.write(' AND id = ?');
+      args.add(articleId);
+    } else if (folderId != null && categoryId != null) {
+      where.write(' AND folderId = ? AND categoryId = ?');
+      args.addAll([folderId, categoryId]);
+    } else if (folderId != null && unfiledOnly) {
+      where.write(' AND folderId = ? AND categoryId IS NULL');
+      args.add(folderId);
+    } else if (folderId != null) {
+      where.write(' AND folderId = ?');
+      args.add(folderId);
+    } else if (!includeTrash) {
+      where.write(' AND folderId != ?');
+      args.add(WritingFolder.trashId);
+    }
+    final rows = await db.query(
+      'Article',
+      where: where.toString(),
+      whereArgs: args,
+      orderBy: 'orderKey ASC, rank ASC, updateTime DESC',
+    );
+    return [
+      for (final row in rows)
+        WritingArticle(
+          id: row['id']! as String,
+          title: row['title']! as String,
+          content: row['content']! as String,
+          summary: row['summary'] as String? ?? '',
+          folderId: row['folderId']! as String,
+          categoryId: row['categoryId'] as String?,
+          createdAt: _date(row['createTime']! as int),
+          updatedAt: _date(row['updateTime']! as int),
+          wordCount: row['count'] as int? ?? 0,
+        ),
+    ];
+  }
+
+  @override
   Future<WritingArticle> createArticle({
     required String folderId,
     String? categoryId,

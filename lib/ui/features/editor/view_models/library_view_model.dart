@@ -11,6 +11,26 @@ import '../../../../domain/repositories/workspace_layout_repository.dart';
 import '../../../../domain/repositories/writing_library_repository.dart';
 import '../../../../domain/use_cases/article_preview_summary.dart';
 
+/// Editor highlight requested after picking a library search match.
+class SearchHighlight {
+  const SearchHighlight({
+    required this.articleId,
+    required this.query,
+    this.start,
+    this.end,
+  });
+
+  final String articleId;
+  final String query;
+
+  /// UTF-16 range in stored content; null = title-only (open chapter, no hl).
+  final int? start;
+  final int? end;
+
+  bool get hasContentRange =>
+      start != null && end != null && start! >= 0 && end! >= start!;
+}
+
 class LibraryViewModel extends ChangeNotifier {
   LibraryViewModel(
     this._repository, {
@@ -49,6 +69,7 @@ class LibraryViewModel extends ChangeNotifier {
   final Map<String, double> _sidebarScrollOffsetByBook = {};
   /// Snapshot of expanded volume ids while a volume drag temporarily collapses all.
   Set<String>? _volumeExpandSnapshotDuringDrag;
+  SearchHighlight? _pendingSearchHighlight;
   static const minSidebarWidth = WorkspaceLayout.minSidebarWidth;
   static const maxSidebarWidth = WorkspaceLayout.maxSidebarWidth;
   static const defaultSidebarWidth = WorkspaceLayout.defaultSidebarWidth;
@@ -61,6 +82,10 @@ class LibraryViewModel extends ChangeNotifier {
   List<ArticleDraft> get recoverableDrafts => _recoverableDrafts;
   bool get contentDirtySinceBackup => _contentDirtySinceBackup;
   WritingLibraryRepository get repository => _repository;
+
+  /// Set by [requestSearchJump]; consumed by the workspace editor.
+  SearchHighlight? get pendingSearchHighlight => _pendingSearchHighlight;
+
   /// True until the user has chosen a PureWriter library folder.
   bool get needsLibrarySetup => _needsLibrarySetup;
   bool get isSidebarExpanded => _isSidebarExpanded;
@@ -110,6 +135,12 @@ class LibraryViewModel extends ChangeNotifier {
 
   void toggleSidebar() {
     _isSidebarExpanded = !_isSidebarExpanded;
+    notifyListeners();
+  }
+
+  void collapseSidebar() {
+    if (!_isSidebarExpanded) return;
+    _isSidebarExpanded = false;
     notifyListeners();
   }
 
@@ -373,6 +404,55 @@ class LibraryViewModel extends ChangeNotifier {
       _selectedBookId = _article!.folderId;
     }
     _scheduleLayoutSave();
+    notifyListeners();
+  }
+
+  /// Loads article bodies for search, overlaying the open dirty chapter.
+  Future<List<WritingArticle>> loadArticlesForSearch({
+    String? folderId,
+    String? categoryId,
+    String? articleId,
+    bool unfiledOnly = false,
+    bool includeTrash = false,
+  }) async {
+    final articles = await _repository.loadArticlesForSearch(
+      folderId: folderId,
+      categoryId: categoryId,
+      articleId: articleId,
+      unfiledOnly: unfiledOnly,
+      includeTrash: includeTrash,
+    );
+    final open = _article;
+    if (open == null) return articles;
+    return [
+      for (final article in articles)
+        if (article.id == open.id) open else article,
+    ];
+  }
+
+  /// Opens [articleId] and asks the editor to highlight the match.
+  Future<void> requestSearchJump({
+    required String articleId,
+    required String query,
+    int? contentStart,
+    int? contentEnd,
+  }) async {
+    _pendingSearchHighlight = SearchHighlight(
+      articleId: articleId,
+      query: query,
+      start: contentStart,
+      end: contentEnd,
+    );
+    if (_article?.id != articleId) {
+      await selectArticle(articleId);
+    } else {
+      notifyListeners();
+    }
+  }
+
+  void clearSearchHighlight() {
+    if (_pendingSearchHighlight == null) return;
+    _pendingSearchHighlight = null;
     notifyListeners();
   }
 

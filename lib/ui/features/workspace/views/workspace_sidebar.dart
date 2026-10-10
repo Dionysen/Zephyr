@@ -17,6 +17,7 @@ import '../../../core/zephyr_swipe_drawer.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_theme.dart';
 import '../../editor/view_models/library_view_model.dart';
+import 'library_search_sheet.dart';
 import 'workspace_sidebar_library_actions.dart';
 
 enum SidebarMode { docked, drawer }
@@ -261,7 +262,9 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                     ),
                     _SidebarAddMenuButton(enabled: _canCreateVolume, model: model),
                     IconButton(
-                      onPressed: null,
+                      onPressed: () => unawaited(
+                        showLibrarySearchSheet(context, model: model),
+                      ),
                       icon: const Icon(Icons.search),
                       tooltip: l10n.tooltipSearchChapters,
                     ),
@@ -483,7 +486,9 @@ class _DrawerSidebarHeader extends StatelessWidget {
           ),
           IconButton(
             style: toolStyle,
-            onPressed: null,
+            onPressed: () => unawaited(
+              showLibrarySearchSheet(context, model: model),
+            ),
             icon: const Icon(Icons.search),
             tooltip: l10n.tooltipSearchChapters,
           ),

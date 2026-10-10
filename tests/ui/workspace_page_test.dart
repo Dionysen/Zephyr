@@ -164,7 +164,14 @@ void main() {
     );
     expect(find.byIcon(Icons.delete_outline), findsOneWidget);
     expect(
-      tester.widget<IconButton>(find.byTooltip('Add')).onPressed,
+      tester
+          .widget<IconButton>(
+            find.ancestor(
+              of: find.byIcon(Icons.add),
+              matching: find.byType(IconButton),
+            ),
+          )
+          .onPressed,
       isNull,
     );
   });
@@ -293,7 +300,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Book A'), findsWidgets);
     expect(find.byTooltip('Collapse all'), findsOneWidget);
-    expect(find.byTooltip('New volume'), findsOneWidget);
+    expect(find.byTooltip('Add'), findsOneWidget);
+    expect(find.byTooltip('Search'), findsOneWidget);
   });
 
   testWidgets('volume context menu opens delete dialog with two choices', (
@@ -673,6 +681,35 @@ class _LibraryRepository implements WritingLibraryRepository {
       updatedAt: summary.updatedAt,
       wordCount: summary.wordCount,
     );
+  }
+
+  @override
+  Future<List<WritingArticle>> loadArticlesForSearch({
+    String? folderId,
+    String? categoryId,
+    String? articleId,
+    bool unfiledOnly = false,
+    bool includeTrash = false,
+  }) async {
+    final library = await loadLibrary();
+    final articles = <WritingArticle>[];
+    for (final summary in library.articles) {
+      final match = articleId != null
+          ? summary.id == articleId
+          : folderId != null && categoryId != null
+              ? summary.folderId == folderId &&
+                  summary.categoryId == categoryId
+              : folderId != null && unfiledOnly
+                  ? summary.folderId == folderId &&
+                      summary.categoryId == null
+                  : folderId != null
+                      ? summary.folderId == folderId
+                      : includeTrash ||
+                          summary.folderId != WritingFolder.trashId;
+      if (!match) continue;
+      articles.add(await getArticle(summary.id));
+    }
+    return articles;
   }
 
   @override

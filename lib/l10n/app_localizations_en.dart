@@ -984,6 +984,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tooltipSearchChapters => 'Search';
 
   @override
+  String get searchSheetTitle => 'Search';
+
+  @override
+  String get searchSheetHint => 'Search titles and content';
+
+  @override
+  String get searchSheetEmptyQuery => 'Enter a keyword to search.';
+
+  @override
+  String get searchSheetNoResults => 'No matching results.';
+
+  @override
+  String get searchScopeArticle => 'Chapter';
+
+  @override
+  String get searchScopeVolume => 'Volume';
+
+  @override
+  String get searchScopeBook => 'Book';
+
+  @override
+  String get searchScopeAllBooks => 'All books';
+
+  @override
   String get tooltipLocateCurrentChapter => 'Locate current chapter';
 
   @override

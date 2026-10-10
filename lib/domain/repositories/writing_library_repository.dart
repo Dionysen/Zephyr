@@ -12,6 +12,22 @@ abstract interface class WritingLibraryRepository {
   LibraryLocation? get location;
   Future<WritingLibrary> loadLibrary();
   Future<WritingArticle> getArticle(String id);
+
+  /// Loads full article bodies for library search.
+  ///
+  /// Scope (first match wins):
+  /// - [articleId] → that chapter
+  /// - [folderId] + [categoryId] → volume
+  /// - [folderId] + [unfiledOnly] → chapters with null category in the book
+  /// - [folderId] → whole book
+  /// - none → all non-deleted articles; trash excluded unless [includeTrash]
+  Future<List<WritingArticle>> loadArticlesForSearch({
+    String? folderId,
+    String? categoryId,
+    String? articleId,
+    bool unfiledOnly = false,
+    bool includeTrash = false,
+  });
   Future<WritingArticle> createArticle({
     required String folderId,
     String? categoryId,

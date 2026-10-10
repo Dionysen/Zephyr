@@ -74,19 +74,26 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   var _showJumpToEnd = false;
   var _ignoreScrollForJump = false;
   var _lastJumpScroll = 0.0;
+  int? _searchHighlightStart;
+  int? _searchHighlightEnd;
+  var _applyingSearchHighlight = false;
 
   @override
   void initState() {
     super.initState();
     widget.preferences.addListener(_onPreferences);
+    widget.model.addListener(_onModelChanged);
     _controller.addListener(_onControllerChanged);
     _controller.addListener(_syncBridge);
     _titleController.addListener(_onTitleChanged);
     _titleFocusNode.addListener(_onTitleFocusChanged);
-    _focusNode.addListener(_syncBridge);
+    _focusNode.addListener(_onBodyFocusChanged);
     _scrollController.addListener(_onScrollForJumpChip);
     _syncFromModel();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _syncBridge());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncBridge();
+      _applyPendingSearchHighlight();
+    });
   }
 
   @override
@@ -95,6 +102,10 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     if (oldWidget.preferences != widget.preferences) {
       oldWidget.preferences.removeListener(_onPreferences);
       widget.preferences.addListener(_onPreferences);
+    }
+    if (oldWidget.model != widget.model) {
+      oldWidget.model.removeListener(_onModelChanged);
+      widget.model.addListener(_onModelChanged);
     }
     if (oldWidget.bridge != widget.bridge) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _syncBridge());
@@ -106,11 +117,12 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   void dispose() {
     _persistEditorPosition();
     widget.preferences.removeListener(_onPreferences);
+    widget.model.removeListener(_onModelChanged);
     _controller.removeListener(_onControllerChanged);
     _controller.removeListener(_syncBridge);
     _titleController.removeListener(_onTitleChanged);
     _titleFocusNode.removeListener(_onTitleFocusChanged);
-    _focusNode.removeListener(_syncBridge);
+    _focusNode.removeListener(_onBodyFocusChanged);
     _scrollController.removeListener(_onScrollForJumpChip);
     _controller.dispose();
     _titleController.dispose();
@@ -118,6 +130,87 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     _focusNode.dispose();
     _titleFocusNode.dispose();
     super.dispose();
+  }
+
+  void _onModelChanged() {
+    if (widget.model.pendingSearchHighlight == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _applyPendingSearchHighlight();
+    });
+  }
+
+  void _onBodyFocusChanged() {
+    _syncBridge();
+    if (_applyingSearchHighlight) return;
+    if (!_focusNode.hasPrimaryFocus && _searchHighlightStart != null) {
+      _clearSearchHighlight();
+    }
+  }
+
+  void _clearSearchHighlight({bool notifyModel = true}) {
+    final hadLocal =
+        _searchHighlightStart != null || _searchHighlightEnd != null;
+    _searchHighlightStart = null;
+    _searchHighlightEnd = null;
+    if (notifyModel && widget.model.pendingSearchHighlight != null) {
+      widget.model.clearSearchHighlight();
+    }
+    if (hadLocal && mounted) setState(() {});
+  }
+
+  /// Resolves a UTF-16 range for [query] in the live editor text.
+  (int, int)? _resolveSearchRange(SearchHighlight highlight) {
+    if (!highlight.hasContentRange) return null;
+    final text = _controller.text;
+    final start = highlight.start!;
+    final end = highlight.end!;
+    final query = highlight.query;
+    if (start >= 0 &&
+        end <= text.length &&
+        end >= start &&
+        text.substring(start, end).toLowerCase() == query.toLowerCase()) {
+      return (start, end);
+    }
+    final lower = text.toLowerCase();
+    final needle = query.toLowerCase();
+    final index = lower.indexOf(needle, start.clamp(0, text.length));
+    if (index >= 0) return (index, index + needle.length);
+    final fallback = lower.indexOf(needle);
+    if (fallback >= 0) return (fallback, fallback + needle.length);
+    return null;
+  }
+
+  void _applyPendingSearchHighlight() {
+    final pending = widget.model.pendingSearchHighlight;
+    if (pending == null) return;
+    final article = widget.model.article;
+    if (article == null || article.id != pending.articleId) return;
+    if (_articleId != pending.articleId) return;
+
+    if (!pending.hasContentRange) {
+      widget.model.clearSearchHighlight();
+      _focusNode.requestFocus();
+      return;
+    }
+
+    final range = _resolveSearchRange(pending);
+    if (range == null) {
+      widget.model.clearSearchHighlight();
+      return;
+    }
+
+    _applyingSearchHighlight = true;
+    _searchHighlightStart = range.$1;
+    _searchHighlightEnd = range.$2;
+    _controller.setSelection(
+      TextSelection(baseOffset: range.$1, extentOffset: range.$2),
+    );
+    _focusNode.requestFocus();
+    widget.model.clearSearchHighlight();
+    if (mounted) setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _applyingSearchHighlight = false;
+    });
   }
 
   void _syncBridge() {
@@ -341,6 +434,32 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     }
   }
 
+  List<TextSpanDecoration> _editorDecorations(BuildContext context) => [
+        ..._pairDecorations(context),
+        ..._searchDecorations(context),
+      ];
+
+  List<TextSpanDecoration> _searchDecorations(BuildContext context) {
+    final start = _searchHighlightStart;
+    final end = _searchHighlightEnd;
+    if (start == null || end == null) return const [];
+    if (start < 0 || end > _controller.text.length || end < start) {
+      return const [];
+    }
+    final accent = Theme.of(context).colorScheme.tertiary;
+    return [
+      TextSpanDecoration(
+        start: start,
+        end: end,
+        background: accent.withValues(alpha: 0.35),
+        borderColor: accent.withValues(alpha: 0.55),
+        borderWidth: 1,
+        borderRadius: 4,
+        edgeInflate: const EdgeInsets.fromLTRB(1, 2, 1, 2),
+      ),
+    ];
+  }
+
   List<TextSpanDecoration> _pairDecorations(BuildContext context) {
     final session = _pairSession;
     if (session == null || !session.matches(_controller.text)) {
@@ -543,6 +662,8 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     if (switching) {
       _pairSession = null;
       _pairTrackText = '';
+      _searchHighlightStart = null;
+      _searchHighlightEnd = null;
     }
 
     final keepSelection = switching
@@ -565,10 +686,21 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
       _showJumpToEnd = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || _articleId != article.id) return;
+        final pending = widget.model.pendingSearchHighlight;
+        if (pending != null &&
+            pending.articleId == article.id &&
+            pending.hasContentRange) {
+          _applyPendingSearchHighlight();
+          return;
+        }
         _restoreScroll(article.id);
         if (!_scrollController.hasClients) return;
         _lastJumpScroll = _scrollController.offset;
         _syncJumpToEndVisibility(ignoreCaret: true);
+      });
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _applyPendingSearchHighlight();
       });
     }
   }
@@ -601,6 +733,11 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     if (_suppressControllerNotify || widget.model.isReadOnly) return;
     final plain = _controller.text;
     if (plain == _lastEmitted) return;
+    if (!_applyingSearchHighlight &&
+        (_searchHighlightStart != null ||
+            widget.model.pendingSearchHighlight != null)) {
+      _clearSearchHighlight();
+    }
     _lastEmitted = plain;
     widget.model.updateContent(plain);
   }
@@ -771,7 +908,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
                   readOnly: widget.model.isReadOnly,
                   cursorColor: cursorColor,
                   selectionColor: selectionColor,
-                  decorations: _pairDecorations(context),
+                  decorations: _editorDecorations(context),
                   header: _titleHeader(context, preferences),
                   scrollbarPadding: EdgeInsets.symmetric(
                     vertical: widget.contentTopInset,
