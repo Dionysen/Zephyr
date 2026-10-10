@@ -9,6 +9,7 @@ class ZephyrSettingsAdaptiveNumber extends StatelessWidget {
   const ZephyrSettingsAdaptiveNumber({
     super.key,
     required this.compact,
+    required this.icon,
     required this.title,
     required this.value,
     required this.min,
@@ -23,6 +24,7 @@ class ZephyrSettingsAdaptiveNumber extends StatelessWidget {
   });
 
   final bool compact;
+  final IconData icon;
   final String title;
   final String? description;
   final double value;
@@ -39,6 +41,7 @@ class ZephyrSettingsAdaptiveNumber extends StatelessWidget {
   Widget build(BuildContext context) {
     if (compact) {
       return ZephyrSettingsNumberTile(
+        icon: icon,
         title: title,
         subtitle: description,
         value: value,

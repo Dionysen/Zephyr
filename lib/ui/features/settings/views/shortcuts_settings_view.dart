@@ -48,6 +48,7 @@ class ShortcutsSettingsView extends StatelessWidget {
             children: [
               for (final (i, id) in actionsInGroup(group).indexed)
                 ZephyrSettingsListTile(
+                  icon: Icons.touch_app_outlined,
                   title: l10n.shortcutActionTitle(id),
                   subtitle: viewModel.chordsFor(id).isEmpty
                       ? l10n.shortcutsUnbound

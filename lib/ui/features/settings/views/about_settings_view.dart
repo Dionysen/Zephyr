@@ -60,6 +60,7 @@ class _AboutSettingsViewState extends State<AboutSettingsView> {
         ZephyrSettingsSection(
           children: [
             ZephyrSettingsListTile(
+              icon: Icons.code,
               title: l10n.aboutGitHubTitle,
               subtitle: AppInfo.githubDisplayHost,
               onTap: _openGitHub,
@@ -70,6 +71,7 @@ class _AboutSettingsViewState extends State<AboutSettingsView> {
               ),
             ),
             ZephyrSettingsListTile(
+              icon: Icons.system_update_alt,
               title: l10n.aboutCheckUpdatesTitle,
               subtitle: l10n.aboutCheckUpdatesSubtitle,
               showDivider: false,

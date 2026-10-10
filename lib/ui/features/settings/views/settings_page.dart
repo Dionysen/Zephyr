@@ -213,6 +213,7 @@ class CompactSettingsList extends StatelessWidget {
         ZephyrSettingsSection(
           children: [
             ZephyrSettingsListTile(
+              icon: Icons.keyboard_alt_outlined,
               title: l10n.shortcutsManageTitle,
               subtitle: l10n.shortcutsManageSubtitle,
               showDivider: false,

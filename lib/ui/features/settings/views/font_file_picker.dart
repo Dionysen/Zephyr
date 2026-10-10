@@ -21,11 +21,13 @@ class FontFilePickerRow extends StatelessWidget {
     required this.isLoading,
     required this.onSelected,
     required this.onImportPath,
+    this.icon = Icons.text_fields,
     this.onDeleteFont,
     this.compact = false,
     this.showDivider = true,
   });
 
+  final IconData icon;
   final String label;
   final String description;
   final List<SystemFont> fonts;
@@ -109,6 +111,7 @@ class FontFilePickerRow extends StatelessWidget {
     if (isLoading) {
       if (compact) {
         return ZephyrSettingsListTile(
+          icon: icon,
           title: label,
           subtitle: description,
           showDivider: showDivider,
@@ -138,6 +141,7 @@ class FontFilePickerRow extends StatelessWidget {
           ),
       ];
       return ZephyrSettingsChoiceTile<String>(
+        icon: icon,
         title: label,
         subtitle: description,
         choices: choices,

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
-/// Horizontal settings row: title on the left, optional trailing on the right.
+/// Horizontal settings row: leading icon, title, optional trailing.
 ///
 /// Mobile-style list item used as the base for switches, value disclosures,
 /// and navigation rows.
 class ZephyrSettingsListTile extends StatelessWidget {
   const ZephyrSettingsListTile({
     super.key,
+    required this.icon,
     required this.title,
     this.subtitle,
     this.trailing,
@@ -16,6 +17,11 @@ class ZephyrSettingsListTile extends StatelessWidget {
     this.enabled = true,
   });
 
+  static const double iconSize = 22;
+  static const double _iconGap = 14;
+  static const double _horizontalPadding = 16;
+
+  final IconData icon;
   final String title;
   final String? subtitle;
   final Widget? trailing;
@@ -27,6 +33,9 @@ class ZephyrSettingsListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final iconColor = enabled
+        ? theme.colorScheme.onSurfaceVariant
+        : theme.disabledColor;
     final titleStyle = theme.textTheme.titleSmall?.copyWith(
       color: enabled ? null : theme.disabledColor,
     );
@@ -46,9 +55,14 @@ class ZephyrSettingsListTile extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: 52),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(
+                horizontal: _horizontalPadding,
+                vertical: 10,
+              ),
               child: Row(
                 children: [
+                  Icon(icon, size: iconSize, color: iconColor),
+                  const SizedBox(width: _iconGap),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,8 +97,8 @@ class ZephyrSettingsListTile extends StatelessWidget {
         if (showDivider)
           Divider(
             height: 1,
-            indent: 16,
-            endIndent: 16,
+            indent: _horizontalPadding,
+            endIndent: _horizontalPadding,
             color: theme.dividerColor.withValues(alpha: 0.5),
           ),
       ],

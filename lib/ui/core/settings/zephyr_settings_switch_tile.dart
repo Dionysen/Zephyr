@@ -7,6 +7,7 @@ import 'zephyr_settings_list_tile.dart';
 class ZephyrSettingsSwitchTile extends StatelessWidget {
   const ZephyrSettingsSwitchTile({
     super.key,
+    required this.icon,
     required this.title,
     required this.value,
     required this.onChanged,
@@ -14,6 +15,7 @@ class ZephyrSettingsSwitchTile extends StatelessWidget {
     this.showDivider = true,
   });
 
+  final IconData icon;
   final String title;
   final String? subtitle;
   final bool value;
@@ -23,6 +25,7 @@ class ZephyrSettingsSwitchTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ZephyrSettingsListTile(
+      icon: icon,
       title: title,
       subtitle: subtitle,
       showDivider: showDivider,

@@ -214,6 +214,7 @@ class _ZephyrSettingsChoiceSheetState<T>
 class ZephyrSettingsChoiceTile<T> extends StatelessWidget {
   const ZephyrSettingsChoiceTile({
     super.key,
+    required this.icon,
     required this.title,
     required this.choices,
     required this.selected,
@@ -231,6 +232,7 @@ class ZephyrSettingsChoiceTile<T> extends StatelessWidget {
     this.enabled = true,
   });
 
+  final IconData icon;
   final String title;
   final String? subtitle;
   final List<ZephyrSettingsChoice<T>> choices;
@@ -263,6 +265,7 @@ class ZephyrSettingsChoiceTile<T> extends StatelessWidget {
     final confirmAction = deleteConfirmAction ?? l10n.actionDelete;
     final cancelAction = deleteCancelAction ?? l10n.actionCancel;
     return ZephyrSettingsValueTile(
+      icon: icon,
       title: title,
       subtitle: subtitle,
       valueText: _display,

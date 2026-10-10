@@ -55,6 +55,7 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
       final numbers = <Widget>[
         ZephyrSettingsAdaptiveNumber(
           compact: compact,
+          icon: Icons.format_size,
           title: l10n.editorFontSizeTitle,
           description: l10n.editorFontSizeDescription,
           value: preferences.fontSize,
@@ -67,6 +68,7 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
         ),
         ZephyrSettingsAdaptiveNumber(
           compact: compact,
+          icon: Icons.title,
           title: l10n.editorTitleSizeTitle,
           description: l10n.editorTitleSizeDescription,
           value: preferences.titleFontSize,
@@ -81,6 +83,7 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
         ),
         if (compact)
           ZephyrSettingsSwitchTile(
+            icon: Icons.format_align_center,
             title: l10n.editorTitleCenteredTitle,
             subtitle: l10n.editorTitleCenteredSubtitle,
             value: preferences.titleCentered,
@@ -102,6 +105,7 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
           ),
         ZephyrSettingsAdaptiveNumber(
           compact: compact,
+          icon: Icons.format_line_spacing,
           title: l10n.editorLineHeightTitle,
           description: l10n.editorLineHeightDescription,
           value: preferences.lineHeight,
@@ -113,6 +117,7 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
         ),
         ZephyrSettingsAdaptiveNumber(
           compact: compact,
+          icon: Icons.vertical_distribute,
           title: l10n.editorParagraphSpacingTitle,
           description: l10n.editorParagraphSpacingDescription,
           value: preferences.paragraphSpacing,
@@ -124,6 +129,7 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
         ),
         ZephyrSettingsAdaptiveNumber(
           compact: compact,
+          icon: Icons.format_indent_increase,
           title: l10n.editorFirstLineIndentTitle,
           description: l10n.editorFirstLineIndentDescription,
           value: preferences.firstLineIndent.toDouble(),
@@ -136,6 +142,7 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
         ),
         ZephyrSettingsAdaptiveNumber(
           compact: compact,
+          icon: Icons.align_horizontal_left,
           title: l10n.editorMarginLeftTitle,
           description: l10n.editorMarginLeftDescription,
           value: preferences.marginLeft,
@@ -148,6 +155,7 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
         ),
         ZephyrSettingsAdaptiveNumber(
           compact: compact,
+          icon: Icons.align_horizontal_right,
           title: l10n.editorMarginRightTitle,
           description: l10n.editorMarginRightDescription,
           value: preferences.marginRight,

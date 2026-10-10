@@ -141,6 +141,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
     return [
       for (var i = 0; i < packs.length; i++)
         ZephyrSettingsListTile(
+          icon: Icons.style_outlined,
           title: _packTitle(l10n, packs[i]),
           showDivider: i != packs.length - 1,
           trailing: _packTrailing(
@@ -209,6 +210,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
             ZephyrSettingsSection(
               children: [
                 ZephyrSettingsChoiceTile<AppThemeMode>(
+                  icon: Icons.brightness_6_outlined,
                   title: l10n.themeModeTitle,
                   subtitle: l10n.themeModeSubtitle,
                   selected: viewModel.themeMode,
@@ -230,6 +232,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
                   onSelected: viewModel.setThemeMode,
                 ),
                 ZephyrSettingsListTile(
+                  icon: Icons.palette_outlined,
                   title: l10n.themePresetsSectionTitle,
                   subtitle: currentThemeLabel,
                   showDivider: true,
@@ -255,6 +258,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
                     ),
                   ),
                 ZephyrSettingsListTile(
+                  icon: Icons.color_lens_outlined,
                   title: l10n.customColorsTitle,
                   subtitle: l10n.customColorsSubtitle,
                   showDivider: _customColorsExpanded,
@@ -314,6 +318,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
                 ),
                 ZephyrSettingsAdaptiveNumber(
                   compact: true,
+                  icon: Icons.format_size,
                   title: l10n.uiFontSizeTitle,
                   description: l10n.uiFontSizeDescription,
                   value: viewModel.ui.fontSize,
@@ -326,6 +331,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
                 ),
                 ZephyrSettingsAdaptiveNumber(
                   compact: true,
+                  icon: Icons.rounded_corner,
                   title: l10n.cornerRadiusTitle,
                   description: l10n.cornerRadiusDescription,
                   value: viewModel.ui.cornerRadius,
@@ -338,6 +344,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
                 ),
                 ZephyrSettingsAdaptiveNumber(
                   compact: true,
+                  icon: Icons.crop_landscape,
                   title: l10n.barCornerRadiusTitle,
                   description: l10n.barCornerRadiusDescription,
                   value: viewModel.ui.barCornerRadius,
@@ -349,6 +356,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
                   onChanged: viewModel.updateBarCornerRadius,
                 ),
                 ZephyrSettingsSwitchTile(
+                  icon: Icons.border_style,
                   title: l10n.showBordersTitle,
                   subtitle: l10n.showBordersSubtitle,
                   value: viewModel.ui.showBorders,
@@ -356,6 +364,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
                 ),
                 ZephyrSettingsAdaptiveNumber(
                   compact: true,
+                  icon: Icons.view_sidebar_outlined,
                   title: l10n.sidebarItemInsetTitle,
                   description: l10n.sidebarItemInsetDescription,
                   value: viewModel.ui.sidebarItemInset,
@@ -368,6 +377,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
                 ),
                 ZephyrSettingsAdaptiveNumber(
                   compact: true,
+                  icon: Icons.space_bar,
                   title: l10n.sidebarVolumeGapTitle,
                   description: l10n.sidebarVolumeGapDescription,
                   value: viewModel.ui.sidebarVolumeGap,
@@ -419,6 +429,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
           ),
           const SizedBox(height: 8),
           ZephyrSettingsListTile(
+            icon: Icons.palette_outlined,
             title: l10n.themePresetsSectionTitle,
             subtitle: activeMatches
                 ? l10n.themeCurrentPresetLong(_packTitle(l10n, activePack))
@@ -442,6 +453,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
               ),
             ),
           ZephyrSettingsListTile(
+            icon: Icons.color_lens_outlined,
             title: l10n.customColorsTitle,
             subtitle: l10n.customColorsSubtitle,
             showDivider: _customColorsExpanded,
@@ -496,6 +508,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
           ),
           ZephyrSettingsAdaptiveNumber(
             compact: false,
+            icon: Icons.format_size,
             title: l10n.uiFontSizeTitle,
             description: l10n.uiFontSizeDescription,
             value: viewModel.ui.fontSize,
@@ -508,6 +521,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
           ),
           ZephyrSettingsAdaptiveNumber(
             compact: false,
+            icon: Icons.rounded_corner,
             title: l10n.cornerRadiusTitle,
             description: l10n.cornerRadiusDescription,
             value: viewModel.ui.cornerRadius,
@@ -520,6 +534,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
           ),
           ZephyrSettingsAdaptiveNumber(
             compact: false,
+            icon: Icons.crop_landscape,
             title: l10n.barCornerRadiusTitle,
             description: l10n.barCornerRadiusDescription,
             value: viewModel.ui.barCornerRadius,
@@ -531,6 +546,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
             onChanged: viewModel.updateBarCornerRadius,
           ),
           ZephyrSettingsSwitchTile(
+            icon: Icons.border_style,
             title: l10n.showBordersTitle,
             subtitle: l10n.showBordersSubtitle,
             value: viewModel.ui.showBorders,
@@ -538,6 +554,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
           ),
           ZephyrSettingsAdaptiveNumber(
             compact: false,
+            icon: Icons.view_sidebar_outlined,
             title: l10n.sidebarItemInsetTitle,
             description: l10n.sidebarItemInsetDescription,
             value: viewModel.ui.sidebarItemInset,
@@ -550,6 +567,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
           ),
           ZephyrSettingsAdaptiveNumber(
             compact: false,
+            icon: Icons.space_bar,
             title: l10n.sidebarVolumeGapTitle,
             description: l10n.sidebarVolumeGapDescription,
             value: viewModel.ui.sidebarVolumeGap,
@@ -845,6 +863,7 @@ class _ThemeColorTile extends StatelessWidget {
 
     if (compact) {
       return ZephyrSettingsListTile(
+        icon: Icons.palette_outlined,
         title: title,
         subtitle: subtitle,
         showDivider: showDivider,
@@ -1000,6 +1019,7 @@ class _EditorBackgroundTile extends StatelessWidget {
     final l10n = context.l10n;
     final subtitle = editorBackgroundSummary(l10n, config);
     return ZephyrSettingsListTile(
+      icon: Icons.wallpaper_outlined,
       title: title,
       subtitle: isCurrent
           ? '${l10n.editorBackgroundCurrentBadge} · $subtitle'

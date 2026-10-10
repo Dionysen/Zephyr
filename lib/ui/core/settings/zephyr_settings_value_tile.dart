@@ -6,6 +6,7 @@ import 'zephyr_settings_list_tile.dart';
 class ZephyrSettingsValueTile extends StatelessWidget {
   const ZephyrSettingsValueTile({
     super.key,
+    required this.icon,
     required this.title,
     required this.valueText,
     required this.onTap,
@@ -14,6 +15,7 @@ class ZephyrSettingsValueTile extends StatelessWidget {
     this.enabled = true,
   });
 
+  final IconData icon;
   final String title;
   final String? subtitle;
   final String valueText;
@@ -25,6 +27,7 @@ class ZephyrSettingsValueTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return ZephyrSettingsListTile(
+      icon: icon,
       title: title,
       subtitle: subtitle,
       showDivider: showDivider,

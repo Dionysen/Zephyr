@@ -191,6 +191,7 @@ class _ZephyrSettingsNumberPickerDialogState
 class ZephyrSettingsNumberTile extends StatelessWidget {
   const ZephyrSettingsNumberTile({
     super.key,
+    required this.icon,
     required this.title,
     required this.value,
     required this.min,
@@ -204,6 +205,7 @@ class ZephyrSettingsNumberTile extends StatelessWidget {
     this.formatValue,
   });
 
+  final IconData icon;
   final String title;
   final String? subtitle;
   final double value;
@@ -243,6 +245,7 @@ class ZephyrSettingsNumberTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ZephyrSettingsValueTile(
+      icon: icon,
       title: title,
       subtitle: subtitle,
       valueText: _format(value),

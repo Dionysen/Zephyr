@@ -25,6 +25,7 @@ class BackupSettingsView extends StatelessWidget {
       final l10n = context.l10n;
       final children = <Widget>[
         ZephyrSettingsSwitchTile(
+          icon: Icons.schedule_outlined,
           title: l10n.backupAutoTitle,
           subtitle: l10n.backupAutoSubtitle,
           value: viewModel.autoBackupEnabled,
@@ -33,6 +34,7 @@ class BackupSettingsView extends StatelessWidget {
               : (value) => viewModel.setAutoBackupEnabled(value),
         ),
         ZephyrSettingsListTile(
+          icon: Icons.backup_outlined,
           title: l10n.backupNowTitle,
           subtitle: l10n.backupNowSubtitle,
           enabled: !viewModel.busy,
@@ -53,13 +55,10 @@ class BackupSettingsView extends StatelessWidget {
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : Icon(
-                  Icons.backup_outlined,
-                  size: 20,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              : null,
         ),
         ZephyrSettingsListTile(
+          icon: Icons.restore,
           title: l10n.backupRestoreTitle,
           subtitle: viewModel.backups.isEmpty
               ? l10n.backupRestoreEmpty
@@ -74,7 +73,7 @@ class BackupSettingsView extends StatelessWidget {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : Icon(
-                  Icons.restore,
+                  Icons.chevron_right,
                   size: 20,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),

@@ -28,6 +28,7 @@ class GeneralSettingsView extends StatelessWidget {
       final locale = viewModel.ui.localePreference;
       final children = <Widget>[
         ZephyrSettingsChoiceTile<AppLocalePreference>(
+          icon: Icons.language,
           title: l10n.languageTitle,
           subtitle: l10n.languageSubtitle,
           selected: locale,
@@ -49,6 +50,7 @@ class GeneralSettingsView extends StatelessWidget {
           onSelected: viewModel.updateLocalePreference,
         ),
         ZephyrSettingsSwitchTile(
+          icon: Icons.keyboard_hide_outlined,
           title: l10n.hideQuickToolbarTitle,
           subtitle: l10n.hideQuickToolbarSubtitle,
           value: viewModel.ui.hideQuickToolbar,
@@ -57,12 +59,14 @@ class GeneralSettingsView extends StatelessWidget {
         ),
         if (showStatusBarSettings) ...[
           ZephyrSettingsSwitchTile(
+            icon: Icons.fullscreen,
             title: l10n.immersiveStatusBarTitle,
             subtitle: l10n.immersiveStatusBarSubtitle,
             value: immersive,
             onChanged: viewModel.updateImmersiveStatusBar,
           ),
           ZephyrSettingsSwitchTile(
+            icon: Icons.visibility_off_outlined,
             title: l10n.hideStatusBarIconsTitle,
             subtitle: l10n.hideStatusBarIconsSubtitle,
             value: viewModel.ui.hideStatusBarIcons,
