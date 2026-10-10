@@ -1077,6 +1077,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get moreSheetTitle => '快捷工具';
 
   @override
+  String get mobileToolThemeMode => '主题模式';
+
+  @override
+  String get mobileToolSwitchTheme => '切换主题';
+
+  @override
   String get noMobileTools => '暂无可用工具';
 
   @override

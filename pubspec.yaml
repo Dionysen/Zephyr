@@ -76,6 +76,7 @@ flutter:
   assets:
     - branding/app_icon.png
     - branding/app_mark.svg
+    - branding/library_building.svg
 
   fonts:
     - family: LXGWWenKaiLite

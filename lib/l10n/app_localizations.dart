@@ -2155,6 +2155,18 @@ abstract class AppLocalizations {
   /// **'Quick tools'**
   String get moreSheetTitle;
 
+  /// No description provided for @mobileToolThemeMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme mode'**
+  String get mobileToolThemeMode;
+
+  /// No description provided for @mobileToolSwitchTheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch theme'**
+  String get mobileToolSwitchTheme;
+
   /// No description provided for @noMobileTools.
   ///
   /// In en, this message translates to:

@@ -6,21 +6,26 @@ import 'package:flutter/material.dart';
 
 import '../../../../data/services/android_storage_access.dart';
 import '../../../../data/services/folder_bookmark.dart';
+import '../../../../domain/models/app_theme_mode.dart';
+import '../../../../domain/models/keyboard_shortcuts.dart';
 import '../../../../domain/models/library_backup.dart';
+import '../../../../domain/models/theme_color_pack.dart';
+import '../../../../domain/models/theme_tokens.dart';
 
 import '../../../core/breakpoints.dart';
 import '../../../core/editor_background_layer.dart';
 import '../../../core/window_chrome.dart';
+import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_scope.dart';
+import '../../../core/zephyr_settings.dart';
 import '../../../core/zephyr_status_bar.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
-import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_theme.dart';
 import '../../editor/quick_toolbar/quick_toolbar_host.dart';
 import '../../editor/quick_toolbar/workspace_editor_bridge.dart';
 import '../../editor/view_models/editor_preferences_view_model.dart';
 import '../../editor/view_models/library_view_model.dart';
-import '../../../../domain/models/keyboard_shortcuts.dart';
+import '../../settings/view_models/theme_view_model.dart';
 import '../../settings/views/settings_page.dart';
 import 'library_search_sheet.dart';
 import 'workspace_editor.dart';
@@ -685,6 +690,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                     transparentBackground: widget.transparentTopBar,
                     toolsBuilder: (barContext) {
                       final l10n = barContext.l10n;
+                      final themeVm = ZephyrScope.of(barContext).theme;
                       return [
                         WorkspaceMobileTool(
                           icon: Icons.search,
@@ -694,6 +700,20 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                               barContext,
                               model: widget.model,
                             ),
+                          ),
+                        ),
+                        WorkspaceMobileTool(
+                          icon: Icons.brightness_6_outlined,
+                          label: l10n.mobileToolThemeMode,
+                          onTap: () => unawaited(
+                            _pickMobileThemeMode(barContext, themeVm),
+                          ),
+                        ),
+                        WorkspaceMobileTool(
+                          icon: Icons.palette_outlined,
+                          label: l10n.mobileToolSwitchTheme,
+                          onTap: () => unawaited(
+                            _pickMobileThemePack(barContext, themeVm),
                           ),
                         ),
                         WorkspaceMobileTool(
@@ -882,6 +902,71 @@ class _LibrarySetupPage extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<void> _pickMobileThemeMode(
+  BuildContext context,
+  ThemeViewModel themeVm,
+) async {
+  final l10n = context.l10n;
+  final next = await showZephyrSettingsChoicePicker<AppThemeMode>(
+    context,
+    title: l10n.themeModeTitle,
+    selected: themeVm.themeMode,
+    choices: [
+      ZephyrSettingsChoice(
+        value: AppThemeMode.system,
+        label: l10n.themeModeSystem,
+      ),
+      ZephyrSettingsChoice(
+        value: AppThemeMode.light,
+        label: l10n.themeModeLight,
+      ),
+      ZephyrSettingsChoice(
+        value: AppThemeMode.dark,
+        label: l10n.themeModeDark,
+      ),
+    ],
+  );
+  if (next == null) return;
+  themeVm.setThemeMode(next);
+}
+
+Future<void> _pickMobileThemePack(
+  BuildContext context,
+  ThemeViewModel themeVm,
+) async {
+  final l10n = context.l10n;
+  final next = await showZephyrSettingsChoicePicker<String>(
+    context,
+    title: l10n.themePresetsSectionTitle,
+    selected: themeVm.activePackId,
+    choices: [
+      for (final pack in themeVm.colorPacks)
+        ZephyrSettingsChoice(
+          value: pack.id,
+          label: _mobileThemePackTitle(l10n, pack),
+        ),
+    ],
+  );
+  if (next == null) return;
+  themeVm.applyPack(next);
+}
+
+String _mobileThemePackTitle(AppLocalizations l10n, ThemeColorPack pack) {
+  final preset = pack.builtInPreset;
+  if (preset == null) return pack.name;
+  return switch (preset) {
+    ThemePreset.light => l10n.themePresetLight,
+    ThemePreset.grey => l10n.themePresetGrey,
+    ThemePreset.slate => l10n.themePresetSlate,
+    ThemePreset.claude => l10n.themePresetClaude,
+    ThemePreset.mint => l10n.themePresetMint,
+    ThemePreset.purple => l10n.themePresetPurple,
+    ThemePreset.hermes => l10n.themePresetHermes,
+    ThemePreset.ocean => l10n.themePresetOcean,
+    ThemePreset.darkModern => l10n.themePresetDarkModern,
+  };
 }
 
 /// Slides [child] in from the right once when mounted.

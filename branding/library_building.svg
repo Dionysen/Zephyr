@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+  <!-- Three upright books + one leaning (Markdown-style stack). -->
+  <rect x="2.25" y="5.25" width="2.9" height="13.5" rx="0.7"/>
+  <rect x="6.15" y="4" width="2.9" height="14.75" rx="0.7"/>
+  <rect x="10.05" y="5.75" width="2.9" height="13" rx="0.7"/>
+  <g transform="rotate(24 17.5 12)">
+    <rect x="15.1" y="4.25" width="2.9" height="14.5" rx="0.7"/>
+  </g>
+</svg>

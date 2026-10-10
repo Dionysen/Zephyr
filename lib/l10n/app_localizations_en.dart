@@ -1124,6 +1124,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get moreSheetTitle => 'Quick tools';
 
   @override
+  String get mobileToolThemeMode => 'Theme mode';
+
+  @override
+  String get mobileToolSwitchTheme => 'Switch theme';
+
+  @override
   String get noMobileTools => 'No tools available';
 
   @override

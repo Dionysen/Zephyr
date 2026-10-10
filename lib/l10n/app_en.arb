@@ -460,6 +460,8 @@
   "booksSheetTagAll": "All",
   "newBookTitle": "New book",
   "moreSheetTitle": "Quick tools",
+  "mobileToolThemeMode": "Theme mode",
+  "mobileToolSwitchTheme": "Switch theme",
   "noMobileTools": "No tools available",
   "editBookTitle": "Edit book",
   "bookNameLabel": "Book title",

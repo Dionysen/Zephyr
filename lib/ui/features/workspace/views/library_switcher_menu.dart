@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../domain/models/workspace_layout.dart';
 import '../../../core/zephyr_l10n.dart';
@@ -420,6 +421,27 @@ class _LibraryRowAction extends StatelessWidget {
   }
 }
 
+/// Book-stack mark for the dock: upright volumes + one leaning.
+class _LibraryBuildingIcon extends StatelessWidget {
+  const _LibraryBuildingIcon({this.size = 24});
+
+  static const _asset = 'branding/library_building.svg';
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = IconTheme.of(context).color ??
+        Theme.of(context).colorScheme.onSurface;
+    return SvgPicture.asset(
+      _asset,
+      width: size,
+      height: size,
+      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+    );
+  }
+}
+
 /// Library name control inside the dock; toggles [LibrarySwitcherMenu].
 class LibrarySwitcherButton extends StatelessWidget {
   const LibrarySwitcherButton({
@@ -445,7 +467,7 @@ class LibrarySwitcherButton extends StatelessWidget {
             padding: padding,
             child: Row(
               children: [
-                const Icon(Icons.menu_book_outlined),
+                const _LibraryBuildingIcon(),
                 const SizedBox(width: 9),
                 Expanded(
                   child: Text(
