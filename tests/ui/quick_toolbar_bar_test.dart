@@ -49,8 +49,6 @@ void main() {
     expect(find.byIcon(Icons.undo_rounded), findsOneWidget);
     expect(find.byIcon(Icons.content_paste_rounded), findsOneWidget);
     expect(find.byIcon(Icons.format_indent_increase_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.backup_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.restore_rounded), findsOneWidget);
 
     final scrollable = find.descendant(
       of: find.byType(QuickToolbarBar),
@@ -63,13 +61,6 @@ void main() {
       find.descendant(
         of: scrollable,
         matching: find.byIcon(Icons.format_indent_increase_rounded),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(
-        of: scrollable,
-        matching: find.byIcon(Icons.backup_outlined),
       ),
       findsOneWidget,
     );
@@ -89,8 +80,7 @@ void main() {
   testWidgets('long-press drag reorders custom-zone tools', (tester) async {
     var customIds = <String>[
       QuickTool.indentId,
-      QuickTool.backupId,
-      QuickTool.restoreId,
+      QuickTool.formatId,
     ];
     await tester.pumpWidget(
       MaterialApp(
@@ -125,12 +115,15 @@ void main() {
     );
 
     final indent = find.byIcon(Icons.format_indent_increase_rounded);
-    final backup = find.byIcon(Icons.backup_outlined);
-    expect(tester.getTopLeft(indent).dx, lessThan(tester.getTopLeft(backup).dx));
+    final format = find.byIcon(Icons.auto_fix_high_rounded);
+    expect(
+      tester.getTopLeft(indent).dx,
+      lessThan(tester.getTopLeft(format).dx),
+    );
 
     final gesture = await tester.startGesture(tester.getCenter(indent));
     await tester.pump(kLongPressTimeout + kPressTimeout);
-    await gesture.moveTo(tester.getCenter(backup) + const Offset(40, 0));
+    await gesture.moveTo(tester.getCenter(format) + const Offset(40, 0));
     await tester.pump();
     await gesture.up();
     await tester.pumpAndSettle();

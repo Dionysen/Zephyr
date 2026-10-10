@@ -27,8 +27,6 @@ class QuickToolbarBar extends StatelessWidget {
     required this.toolsDrawerOpen,
     required this.canUndo,
     required this.onToolPressed,
-    this.canBackup = true,
-    this.canRestore = true,
     this.onReorderPinned,
     this.onReorderCustom,
     this.bodyFontFamily,
@@ -38,8 +36,6 @@ class QuickToolbarBar extends StatelessWidget {
   final Color foreground;
   final bool toolsDrawerOpen;
   final bool canUndo;
-  final bool canBackup;
-  final bool canRestore;
   final ValueChanged<QuickTool> onToolPressed;
 
   /// Destination index is post-removal (same as [ReorderableListView.onReorderItem]).
@@ -76,8 +72,6 @@ class QuickToolbarBar extends StatelessWidget {
                 tools: pinned,
                 foreground: chrome,
                 canUndo: canUndo,
-                canBackup: canBackup,
-                canRestore: canRestore,
                 bodyFontFamily: bodyFontFamily,
                 scrollable: false,
                 onToolPressed: onToolPressed,
@@ -91,8 +85,6 @@ class QuickToolbarBar extends StatelessWidget {
                   tools: custom,
                   foreground: chrome,
                   canUndo: canUndo,
-                  canBackup: canBackup,
-                  canRestore: canRestore,
                   bodyFontFamily: bodyFontFamily,
                   scrollable: true,
                   onToolPressed: onToolPressed,
@@ -113,8 +105,6 @@ class QuickToolbarBar extends StatelessWidget {
     QuickToolKind.paste => l10n.quickToolbarPasteTooltip,
     QuickToolKind.indent => l10n.quickToolbarIndentTooltip,
     QuickToolKind.format => l10n.quickToolbarFormatTooltip,
-    QuickToolKind.backup => l10n.quickToolbarBackupTooltip,
-    QuickToolKind.restore => l10n.quickToolbarRestoreTooltip,
     QuickToolKind.phrase => tool.label,
     QuickToolKind.tools => l10n.quickToolbarToolsTooltip,
   };
@@ -125,8 +115,6 @@ class _ReorderableToolRow extends StatelessWidget {
     required this.tools,
     required this.foreground,
     required this.canUndo,
-    required this.canBackup,
-    required this.canRestore,
     required this.scrollable,
     required this.onToolPressed,
     required this.tooltipFor,
@@ -137,20 +125,11 @@ class _ReorderableToolRow extends StatelessWidget {
   final List<QuickTool> tools;
   final Color foreground;
   final bool canUndo;
-  final bool canBackup;
-  final bool canRestore;
   final bool scrollable;
   final String? bodyFontFamily;
   final ValueChanged<QuickTool> onToolPressed;
   final void Function(int oldIndex, int newIndex)? onReorder;
   final String? Function(QuickTool tool) tooltipFor;
-
-  bool _enabled(QuickTool tool) => switch (tool.kind) {
-    QuickToolKind.undo => canUndo,
-    QuickToolKind.backup => canBackup,
-    QuickToolKind.restore => canRestore,
-    _ => true,
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -160,7 +139,7 @@ class _ReorderableToolRow extends StatelessWidget {
           QuickToolButton(
             tool: tool,
             foreground: foreground,
-            enabled: _enabled(tool),
+            enabled: tool.kind != QuickToolKind.undo || canUndo,
             tooltip: tooltipFor(tool),
             bodyFontFamily: bodyFontFamily,
             onPressed: () => onToolPressed(tool),
@@ -210,7 +189,7 @@ class _ReorderableToolRow extends StatelessWidget {
           child: QuickToolButton(
             tool: tool,
             foreground: foreground,
-            enabled: _enabled(tool),
+            enabled: tool.kind != QuickToolKind.undo || canUndo,
             bodyFontFamily: bodyFontFamily,
             onPressed: () => onToolPressed(tool),
           ),
