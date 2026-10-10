@@ -343,14 +343,16 @@ ThemeData zephyrTheme(
   );
 }
 
-/// Forces circular icon buttons and stadium (pill) labeled buttons on mobile.
+/// Circular icon buttons; labeled buttons use the settings corner radius.
 ThemeData withMobileRoundControls(ThemeData theme) {
   const circle = CircleBorder();
-  const stadium = StadiumBorder();
+  final shape = theme.extension<ZephyrShapeTheme>();
+  final labeled =
+      shape?.labeledButtonShape ?? ZephyrControls.labeledButtonShape;
   final onSurface = theme.colorScheme.onSurface;
   final accent = theme.colorScheme.primary;
   final outline = theme.colorScheme.outline;
-  final hairline = theme.extension<ZephyrShapeTheme>()?.outlineSide(outline) ??
+  final hairline = shape?.outlineSide(outline) ??
       BorderSide(color: outline, width: ZephyrControls.borderWidth);
 
   return theme.copyWith(
@@ -377,7 +379,7 @@ ThemeData withMobileRoundControls(ThemeData theme) {
       style: TextButton.styleFrom(
         foregroundColor: onSurface,
         iconSize: ZephyrControls.mobileIconSize,
-        shape: stadium,
+        shape: labeled,
         visualDensity: VisualDensity.compact,
       ),
     ),
@@ -386,7 +388,7 @@ ThemeData withMobileRoundControls(ThemeData theme) {
         foregroundColor: onSurface,
         backgroundColor: accent.withValues(alpha: .24),
         iconSize: ZephyrControls.mobileIconSize,
-        shape: stadium,
+        shape: labeled,
         visualDensity: VisualDensity.compact,
       ),
     ),
@@ -394,7 +396,7 @@ ThemeData withMobileRoundControls(ThemeData theme) {
       style: OutlinedButton.styleFrom(
         foregroundColor: onSurface,
         iconSize: ZephyrControls.mobileIconSize,
-        shape: stadium.copyWith(side: hairline),
+        shape: labeled.copyWith(side: hairline),
         side: hairline,
         visualDensity: VisualDensity.compact,
       ),

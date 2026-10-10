@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart';
 import '../../../../domain/models/purewriter_models.dart';
 import '../../../core/breakpoints.dart';
 import '../../../core/window_chrome.dart';
+import '../../../core/zephyr_bottom_sheet.dart';
 import '../../../core/zephyr_controls.dart';
 import '../../../core/zephyr_dropdown.dart';
 import '../../../core/zephyr_resize_handle.dart';
@@ -607,73 +608,84 @@ class _MobileBookSheet extends StatelessWidget {
     return SafeArea(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-              child: Text(l10n.selectBook, style: theme.textTheme.titleMedium),
-            ),
-            Flexible(
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: books.length,
-                itemBuilder: (context, index) {
-                  final book = books[index];
-                  final selected = book.id == model.selectedBook?.id;
-                  final isTrash = book.isTrash;
-                  final stats = model.bookStats(book.id);
-                  final subtitle = _mobileBookSubtitle(book) ??
-                      l10n.bookStatsMeta(stats.volumes, stats.chapters);
-                  final accent = isTrash ? theme.colorScheme.error : null;
-
-                  return ListTile(
-                    selected: selected,
-                    leading: Icon(
-                      isTrash ? Icons.delete_outline : Icons.book_outlined,
-                      color: accent,
-                    ),
-                    title: Text(
-                      book.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: accent),
-                    ),
-                    subtitle: Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: accent == null
-                          ? null
-                          : TextStyle(color: accent.withValues(alpha: 0.8)),
-                    ),
-                    trailing: isTrash
-                        ? null
-                        : IconButton(
-                            tooltip: l10n.tooltipEditBook,
-                            onPressed: model.isReadOnly
-                                ? null
-                                : () async {
-                                    Navigator.of(context).pop();
-                                    if (!hostContext.mounted) return;
-                                    await _editBook(
-                                      hostContext,
-                                      model: model,
-                                      book: book,
-                                    );
-                                  },
-                            icon: const Icon(Icons.edit_outlined),
-                          ),
-                    onTap: () async {
-                      Navigator.of(context).pop();
-                      await model.selectBook(book.id);
-                    },
-                  );
-                },
+        child: ZephyrBottomSheet.listTheme(
+          context: context,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: ZephyrBottomSheet.titlePadding,
+                child: Text(
+                  l10n.selectBook,
+                  style: ZephyrBottomSheet.titleStyle(theme),
+                ),
               ),
-            ),
-          ],
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: books.length,
+                  itemBuilder: (context, index) {
+                    final book = books[index];
+                    final selected = book.id == model.selectedBook?.id;
+                    final isTrash = book.isTrash;
+                    final stats = model.bookStats(book.id);
+                    final subtitle = _mobileBookSubtitle(book) ??
+                        l10n.bookStatsMeta(stats.volumes, stats.chapters);
+                    final accent = isTrash ? theme.colorScheme.error : null;
+
+                    return ListTile(
+                      selected: selected,
+                      leading: Icon(
+                        isTrash ? Icons.delete_outline : Icons.book_outlined,
+                        color: accent,
+                        size: ZephyrBottomSheet.rowIconSize,
+                      ),
+                      title: Text(
+                        book.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: ZephyrBottomSheet.rowTitleStyle(
+                          theme,
+                          color: accent,
+                        ),
+                      ),
+                      subtitle: Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: ZephyrBottomSheet.rowSubtitleStyle(
+                          theme,
+                          color: accent?.withValues(alpha: 0.8),
+                        ),
+                      ),
+                      trailing: isTrash
+                          ? null
+                          : IconButton(
+                              tooltip: l10n.tooltipEditBook,
+                              onPressed: model.isReadOnly
+                                  ? null
+                                  : () async {
+                                      Navigator.of(context).pop();
+                                      if (!hostContext.mounted) return;
+                                      await _editBook(
+                                        hostContext,
+                                        model: model,
+                                        book: book,
+                                      );
+                                    },
+                              icon: const Icon(Icons.edit_outlined),
+                            ),
+                      onTap: () async {
+                        Navigator.of(context).pop();
+                        await model.selectBook(book.id);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -700,38 +712,44 @@ class _MobileToolsSheet extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = context.l10n;
     return SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-            child: Text(l10n.moreSheetTitle, style: theme.textTheme.titleMedium),
-          ),
-          if (tools.isEmpty)
+      child: ZephyrBottomSheet.listTheme(
+        context: context,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+              padding: ZephyrBottomSheet.titlePadding,
               child: Text(
-                l10n.noMobileTools,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                l10n.moreSheetTitle,
+                style: ZephyrBottomSheet.titleStyle(theme),
+              ),
+            ),
+            if (tools.isEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+                child: Text(
+                  l10n.noMobileTools,
+                  style: ZephyrBottomSheet.bodyStyle(theme),
                 ),
-              ),
-            )
-          else
-            for (final tool in tools)
-              ListTile(
-                enabled: tool.enabled,
-                leading: tool.icon == null ? null : Icon(tool.icon),
-                title: Text(tool.label),
-                onTap: !tool.enabled
-                    ? null
-                    : () {
-                        Navigator.of(context).pop();
-                        tool.onTap();
-                      },
-              ),
-        ],
+              )
+            else
+              for (final tool in tools)
+                ListTile(
+                  enabled: tool.enabled,
+                  leading: tool.icon == null
+                      ? null
+                      : Icon(tool.icon, size: ZephyrBottomSheet.rowIconSize),
+                  title: Text(tool.label),
+                  onTap: !tool.enabled
+                      ? null
+                      : () {
+                          Navigator.of(context).pop();
+                          tool.onTap();
+                        },
+                ),
+          ],
+        ),
       ),
     );
   }

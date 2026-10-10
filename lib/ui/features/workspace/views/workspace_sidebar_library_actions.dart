@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../domain/models/purewriter_models.dart';
 import '../../../core/breakpoints.dart';
+import '../../../core/zephyr_bottom_sheet.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../editor/views/article_history_sheet.dart';
@@ -343,10 +344,10 @@ Future<String?> showMoveChapterSheet(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+              padding: ZephyrBottomSheet.titlePadding,
               child: Text(
                 l10n.moveToVolumeSheetTitle,
-                style: Theme.of(sheetContext).textTheme.titleMedium,
+                style: ZephyrBottomSheet.titleStyle(Theme.of(sheetContext)),
               ),
             ),
             _CompactSheetTile(
@@ -381,10 +382,6 @@ class _CompactSheetTile extends StatelessWidget {
     this.selected = false,
   });
 
-  static const double _height = 44;
-  static const double _iconSize = 20;
-  static const EdgeInsets _padding = EdgeInsets.symmetric(horizontal: 20);
-
   final IconData icon;
   final String label;
   final VoidCallback onTap;
@@ -397,7 +394,7 @@ class _CompactSheetTile extends StatelessWidget {
     final theme = Theme.of(context);
     final foreground = selected ? theme.colorScheme.primary : null;
     return SizedBox(
-      height: _height,
+      height: ZephyrBottomSheet.rowHeight,
       child: Material(
         color: selected
             ? theme.colorScheme.primary.withValues(alpha: 0.08)
@@ -405,21 +402,22 @@ class _CompactSheetTile extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: Padding(
-            padding: _padding,
+            padding: ZephyrBottomSheet.rowPadding,
             child: Row(
               children: [
                 Icon(
                   icon,
-                  size: _iconSize,
+                  size: ZephyrBottomSheet.rowIconSize,
                   color: iconColor ?? foreground,
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyLarge?.copyWith(
+                    style: ZephyrBottomSheet.rowTitleStyle(
+                      theme,
                       color: labelColor ?? foreground,
                     ),
                   ),

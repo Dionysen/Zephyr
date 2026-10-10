@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../domain/models/library_backup.dart';
+import '../../../core/zephyr_bottom_sheet.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_settings.dart';
 import '../view_models/backup_view_model.dart';
@@ -177,45 +178,49 @@ class _BackupListSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final theme = Theme.of(context);
     final format = DateFormat.yMMMd().add_Hm();
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 12, 8, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Text(
-                l10n.backupRestoreTitle,
-                style: Theme.of(context).textTheme.titleMedium,
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
+        child: ZephyrBottomSheet.listTheme(
+          context: context,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: ZephyrBottomSheet.titlePadding,
+                child: Text(
+                  l10n.backupRestoreTitle,
+                  style: ZephyrBottomSheet.titleStyle(theme),
+                ),
               ),
-            ),
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.sizeOf(context).height * 0.55,
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(context).height * 0.55,
+                ),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: backups.length,
+                  itemBuilder: (context, index) {
+                    final entry = backups[index];
+                    final kindLabel = entry.kind == BackupKind.automatic
+                        ? l10n.backupKindAuto
+                        : l10n.backupKindManual;
+                    final sizeKb = (entry.sizeBytes / 1024).round();
+                    return ListTile(
+                      title: Text(entry.fileName),
+                      subtitle: Text(
+                        '$kindLabel · ${format.format(entry.modified)} · $sizeKb KB',
+                      ),
+                      onTap: () => Navigator.pop(context, entry),
+                    );
+                  },
+                ),
               ),
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: backups.length,
-                itemBuilder: (context, index) {
-                  final entry = backups[index];
-                  final kindLabel = entry.kind == BackupKind.automatic
-                      ? l10n.backupKindAuto
-                      : l10n.backupKindManual;
-                  final sizeKb = (entry.sizeBytes / 1024).round();
-                  return ListTile(
-                    title: Text(entry.fileName),
-                    subtitle: Text(
-                      '$kindLabel · ${format.format(entry.modified)} · $sizeKb KB',
-                    ),
-                    onTap: () => Navigator.pop(context, entry),
-                  );
-                },
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../domain/models/quick_toolbar_config.dart';
+import '../../../core/zephyr_bottom_sheet.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../view_models/quick_toolbar_view_model.dart';
 
@@ -42,117 +43,123 @@ class _QuickToolbarEditBody extends StatelessWidget {
     final l10n = context.l10n;
     final config = toolbar.config;
     final theme = Theme.of(context);
+    final sectionStyle = theme.textTheme.labelLarge?.copyWith(
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      height: 1.2,
+    );
+    final emptyStyle = ZephyrBottomSheet.bodyStyle(theme);
     return Material(
       color: theme.colorScheme.surface,
-      child: ListView(
-        controller: scrollController,
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-        children: [
-          Text(
-            l10n.quickToolbarEdit,
-            style: theme.textTheme.titleMedium,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            l10n.quickToolbarEditHint,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+      child: ZephyrBottomSheet.listTheme(
+        context: context,
+        child: ListView(
+          controller: scrollController,
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          children: [
+            Text(
+              l10n.quickToolbarEdit,
+              style: ZephyrBottomSheet.titleStyle(theme),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(l10n.quickToolbarPinnedSection, style: theme.textTheme.labelLarge),
-          const SizedBox(height: 8),
-          ReorderableListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            buildDefaultDragHandles: false,
-            itemCount: config.pinnedIds.length,
-            onReorderItem: toolbar.reorderPinned,
-            itemBuilder: (context, index) {
-              final id = config.pinnedIds[index];
-              final tool = config.toolById(id);
-              if (tool == null) return SizedBox(key: ValueKey(id));
-              return _ToolEditTile(
-                key: ValueKey(id),
-                index: index,
-                title: _title(l10n, tool),
-                subtitle: tool.kind == QuickToolKind.phrase ? tool.payload : null,
-                onMoveToCustom: () => toolbar.moveToCustom(id),
-                onRemove: () => toolbar.removeTool(id),
-                onEditPhrase: tool.kind == QuickToolKind.phrase
-                    ? () => _editPhrase(context, toolbar, tool)
-                    : null,
-              );
-            },
-          ),
-          if (config.pinnedIds.isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                l10n.quickToolbarSectionEmpty,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+            const SizedBox(height: 4),
+            Text(
+              l10n.quickToolbarEditHint,
+              style: emptyStyle,
+            ),
+            const SizedBox(height: 12),
+            Text(l10n.quickToolbarPinnedSection, style: sectionStyle),
+            const SizedBox(height: 4),
+            ReorderableListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              buildDefaultDragHandles: false,
+              itemCount: config.pinnedIds.length,
+              onReorderItem: toolbar.reorderPinned,
+              itemBuilder: (context, index) {
+                final id = config.pinnedIds[index];
+                final tool = config.toolById(id);
+                if (tool == null) return SizedBox(key: ValueKey(id));
+                return _ToolEditTile(
+                  key: ValueKey(id),
+                  index: index,
+                  title: _title(l10n, tool),
+                  subtitle:
+                      tool.kind == QuickToolKind.phrase ? tool.payload : null,
+                  onMoveToCustom: () => toolbar.moveToCustom(id),
+                  onRemove: () => toolbar.removeTool(id),
+                  onEditPhrase: tool.kind == QuickToolKind.phrase
+                      ? () => _editPhrase(context, toolbar, tool)
+                      : null,
+                );
+              },
+            ),
+            if (config.pinnedIds.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  l10n.quickToolbarSectionEmpty,
+                  style: emptyStyle,
                 ),
               ),
+            const SizedBox(height: 12),
+            Text(l10n.quickToolbarCustomSection, style: sectionStyle),
+            const SizedBox(height: 4),
+            ReorderableListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              buildDefaultDragHandles: false,
+              itemCount: config.customIds.length,
+              onReorderItem: toolbar.reorderCustom,
+              itemBuilder: (context, index) {
+                final id = config.customIds[index];
+                final tool = config.toolById(id);
+                if (tool == null) return SizedBox(key: ValueKey(id));
+                return _ToolEditTile(
+                  key: ValueKey(id),
+                  index: index,
+                  title: _title(l10n, tool),
+                  subtitle:
+                      tool.kind == QuickToolKind.phrase ? tool.payload : null,
+                  onMoveToPinned:
+                      config.pinnedIds.length < QuickToolbarConfig.maxPinned
+                          ? () => toolbar.moveToPinned(id)
+                          : null,
+                  onRemove: () => toolbar.removeTool(id),
+                  onEditPhrase: tool.kind == QuickToolKind.phrase
+                      ? () => _editPhrase(context, toolbar, tool)
+                      : null,
+                );
+              },
             ),
-          const SizedBox(height: 16),
-          Text(l10n.quickToolbarCustomSection, style: theme.textTheme.labelLarge),
-          const SizedBox(height: 8),
-          ReorderableListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            buildDefaultDragHandles: false,
-            itemCount: config.customIds.length,
-            onReorderItem: toolbar.reorderCustom,
-            itemBuilder: (context, index) {
-              final id = config.customIds[index];
-              final tool = config.toolById(id);
-              if (tool == null) return SizedBox(key: ValueKey(id));
-              return _ToolEditTile(
-                key: ValueKey(id),
-                index: index,
-                title: _title(l10n, tool),
-                subtitle: tool.kind == QuickToolKind.phrase ? tool.payload : null,
-                onMoveToPinned: config.pinnedIds.length < QuickToolbarConfig.maxPinned
-                    ? () => toolbar.moveToPinned(id)
-                    : null,
-                onRemove: () => toolbar.removeTool(id),
-                onEditPhrase: tool.kind == QuickToolKind.phrase
-                    ? () => _editPhrase(context, toolbar, tool)
-                    : null,
-              );
-            },
-          ),
-          if (config.customIds.isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                l10n.quickToolbarSectionEmpty,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+            if (config.customIds.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  l10n.quickToolbarSectionEmpty,
+                  style: emptyStyle,
                 ),
               ),
-            ),
-          const SizedBox(height: 16),
-          Text(l10n.quickToolbarAddSection, style: theme.textTheme.labelLarge),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final tool in config.availableBuiltins)
+            const SizedBox(height: 12),
+            Text(l10n.quickToolbarAddSection, style: sectionStyle),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final tool in config.availableBuiltins)
+                  ActionChip(
+                    label: Text(_title(l10n, tool)),
+                    onPressed: () => toolbar.addBuiltin(tool),
+                  ),
                 ActionChip(
-                  label: Text(_title(l10n, tool)),
-                  onPressed: () => toolbar.addBuiltin(tool),
+                  avatar: const Icon(Icons.add, size: 18),
+                  label: Text(l10n.quickToolbarAddPhrase),
+                  onPressed: () => _addPhrase(context, toolbar),
                 ),
-              ActionChip(
-                avatar: const Icon(Icons.add, size: 18),
-                label: Text(l10n.quickToolbarAddPhrase),
-                onPressed: () => _addPhrase(context, toolbar),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
