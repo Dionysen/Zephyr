@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'zephyr_controls.dart';
+import 'zephyr_floating_chrome.dart';
 import 'zephyr_l10n.dart';
 import 'zephyr_theme.dart';
 
@@ -49,6 +50,10 @@ class ZephyrDropdown<T> extends StatefulWidget {
     this.hint,
     this.triggerBuilder,
     this.itemBuilder,
+    this.color,
+    this.shape,
+    this.showOutline = true,
+    this.floatingMenu = false,
   });
 
   final T? value;
@@ -57,6 +62,19 @@ class ZephyrDropdown<T> extends StatefulWidget {
   final String? hint;
   final ZephyrDropdownTriggerBuilder<T>? triggerBuilder;
   final ZephyrDropdownItemBuilder<T>? itemBuilder;
+
+  /// Trigger fill. Defaults to [ColorScheme.surfaceContainerHigh].
+  /// Pass [Colors.transparent] when a parent paints the chrome (e.g. floating bar).
+  final Color? color;
+
+  /// Trigger shape. Defaults to the themed labeled-button shape.
+  final OutlinedBorder? shape;
+
+  /// Whether to draw the themed hairline outline on the trigger.
+  final bool showOutline;
+
+  /// When true, the overlay panel uses [ZephyrFloatingChrome] + bar radius.
+  final bool floatingMenu;
 
   @override
   State<ZephyrDropdown<T>> createState() => _ZephyrDropdownState<T>();
@@ -111,6 +129,7 @@ class _ZephyrDropdownState<T> extends State<ZephyrDropdown<T>> {
         items: widget.items,
         value: widget.value,
         itemBuilder: widget.itemBuilder,
+        floatingMenu: widget.floatingMenu,
         onSelected: (item) {
           widget.onChanged(item);
           _close();
@@ -153,13 +172,16 @@ class _ZephyrDropdownState<T> extends State<ZephyrDropdown<T>> {
           ),
           label: selected?.label ?? widget.hint ?? context.l10n.dropdownHintSelect,
         );
-    final shape = context.zephyrShape.labeledButtonShape;
+    final shape = widget.shape ?? context.zephyrShape.labeledButtonShape;
+    final side = widget.showOutline
+        ? context.zephyrOutlineSide()
+        : BorderSide.none;
     return CompositedTransformTarget(
       link: _link,
       child: Material(
         key: _triggerKey,
-        color: theme.colorScheme.surfaceContainerHigh,
-        shape: shape.copyWith(side: context.zephyrOutlineSide()),
+        color: widget.color ?? theme.colorScheme.surfaceContainerHigh,
+        shape: shape.copyWith(side: side),
         child: InkWell(
           customBorder: shape,
           onTap: _toggle,
@@ -180,6 +202,7 @@ class _DropdownOverlay<T> extends StatefulWidget {
     required this.onSelected,
     required this.onDismiss,
     this.itemBuilder,
+    this.floatingMenu = false,
   });
 
   final LayerLink link;
@@ -190,6 +213,7 @@ class _DropdownOverlay<T> extends StatefulWidget {
   final ValueChanged<T> onSelected;
   final VoidCallback onDismiss;
   final ZephyrDropdownItemBuilder<T>? itemBuilder;
+  final bool floatingMenu;
 
   @override
   State<_DropdownOverlay<T>> createState() => _DropdownOverlayState<T>();
@@ -316,15 +340,8 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
           link: widget.link,
           showWhenUnlinked: false,
           offset: Offset(0, widget.triggerHeight + ZephyrControls.menuInsets),
-          child: Material(
-            color: theme.colorScheme.surfaceContainerHigh,
-            elevation: 6,
-            shadowColor: Colors.black.withValues(alpha: .32),
-            surfaceTintColor: Colors.transparent,
-            shape: context.zephyrShape.menuShape.copyWith(
-              side: context.zephyrOutlineSide(),
-            ),
-            clipBehavior: Clip.antiAlias,
+          child: _menuShell(
+            context,
             child: SizedBox(
               width: widget.width,
               child: MediaQuery.removePadding(
@@ -413,6 +430,27 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _menuShell(BuildContext context, {required Widget child}) {
+    if (widget.floatingMenu) {
+      return ZephyrFloatingChrome(
+        borderRadius: context.zephyrBarBorderRadius,
+        child: child,
+      );
+    }
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.surfaceContainerHigh,
+      elevation: 6,
+      shadowColor: Colors.black.withValues(alpha: .32),
+      surfaceTintColor: Colors.transparent,
+      shape: context.zephyrShape.menuShape.copyWith(
+        side: context.zephyrOutlineSide(),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: child,
     );
   }
 }

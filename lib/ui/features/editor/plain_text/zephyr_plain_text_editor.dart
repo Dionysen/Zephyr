@@ -679,37 +679,36 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
         final bodyHeight =
             docHeight < minBodyHeight ? minBodyHeight : docHeight;
 
-        return ZephyrEditorScrollbar(
-          controller: _scrollController,
-          padding: widget.scrollbarPadding,
-          child: ScrollConfiguration(
-            // Same Material stretch as the workspace sidebar ListView.
-            behavior: const _MaterialStretchScrollBehavior(),
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              // Lock scrolling while a selection handle owns the pointer;
-              // otherwise the scroll drag wins the arena and "eats" the handle.
-              // Clamping + Material stretch: content stays in-bounds, edge
-              // overscroll uses the soft stretch indicator.
-              physics: _draggingHandle
-                  ? const NeverScrollableScrollPhysics()
-                  : const AlwaysScrollableScrollPhysics(
-                      parent: ClampingScrollPhysics(),
+        final scrollView = ScrollConfiguration(
+          // Same Material stretch as the workspace sidebar ListView.
+          // Scrollbars are applied outside so mobile can use the circular
+          // thumb without stacking a desktop RawScrollbar underneath.
+          behavior: const _MaterialStretchScrollBehavior(),
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            // Lock scrolling while a selection handle owns the pointer;
+            // otherwise the scroll drag wins the arena and "eats" the handle.
+            // Clamping + Material stretch: content stays in-bounds, edge
+            // overscroll uses the soft stretch indicator.
+            physics: _draggingHandle
+                ? const NeverScrollableScrollPhysics()
+                : const AlwaysScrollableScrollPhysics(
+                    parent: ClampingScrollPhysics(),
+                  ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (widget.header != null)
+                  KeyedSubtree(key: _headerKey, child: widget.header!),
+                Focus(
+                  focusNode: _focusNode,
+                  onKeyEvent: _onKey,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minWidth: constraints.maxWidth,
+                      maxWidth: constraints.maxWidth,
+                      minHeight: minBodyHeight,
                     ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (widget.header != null)
-                    KeyedSubtree(key: _headerKey, child: widget.header!),
-                  Focus(
-                    focusNode: _focusNode,
-                    onKeyEvent: _onKey,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minWidth: constraints.maxWidth,
-                        maxWidth: constraints.maxWidth,
-                        minHeight: minBodyHeight,
-                      ),
                     child: Stack(
                       key: _documentStackKey,
                       clipBehavior: Clip.none,
@@ -846,7 +845,22 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                 ],
               ),
             ),
-          ),
+          );
+
+        // Circular thumb is mobile-only; desktop keeps the Material scrollbar.
+        final useCircularScrollbar =
+            defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS;
+        if (useCircularScrollbar) {
+          return ZephyrEditorScrollbar(
+            controller: _scrollController,
+            padding: widget.scrollbarPadding,
+            child: scrollView,
+          );
+        }
+        return Scrollbar(
+          controller: _scrollController,
+          child: scrollView,
         );
       },
     );
@@ -882,6 +896,16 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
 /// Material Design edge stretch (same indicator the sidebar ListView uses).
 class _MaterialStretchScrollBehavior extends ScrollBehavior {
   const _MaterialStretchScrollBehavior();
+
+  @override
+  Widget buildScrollbar(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    // Parent wraps with ZephyrEditorScrollbar (mobile) or Scrollbar (desktop).
+    return child;
+  }
 
   @override
   Widget buildOverscrollIndicator(

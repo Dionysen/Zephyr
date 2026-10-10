@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../domain/models/workspace_layout.dart';
+import '../../../core/zephyr_floating_chrome.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_snackbar.dart';
 import '../../../core/zephyr_theme.dart';
@@ -76,7 +77,7 @@ class _LibrarySwitcherMenuState extends State<LibrarySwitcherMenu> {
         final maxPanelHeight = math.min(420.0, media.size.height * 0.55);
         final theme = Theme.of(overlayContext);
         final l10n = overlayContext.l10n;
-        final radius = overlayContext.zephyrBorderRadius;
+        final radius = overlayContext.zephyrBarBorderRadius;
         final model = widget.model;
         // Panel bottom edge sits [gap] above the dock top.
         final bottom = overlayBox.size.height - dockTopLeft.dy + gap;
@@ -93,15 +94,8 @@ class _LibrarySwitcherMenuState extends State<LibrarySwitcherMenu> {
               left: dockTopLeft.dx,
               width: dockSize.width,
               bottom: bottom,
-              child: Material(
-                elevation: 6,
-                color: theme.colorScheme.surfaceContainerHigh,
-                shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.35),
-                shape: RoundedRectangleBorder(
-                  borderRadius: radius,
-                  side: overlayContext.zephyrOutlineSide(),
-                ),
-                clipBehavior: Clip.antiAlias,
+              child: ZephyrFloatingChrome(
+                borderRadius: radius,
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
                     maxHeight: maxPanelHeight,

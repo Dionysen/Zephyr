@@ -13,6 +13,7 @@ import '../../../core/zephyr_bottom_sheet.dart';
 import '../../../core/zephyr_controls.dart';
 import '../../../core/zephyr_dialog.dart';
 import '../../../core/zephyr_dropdown.dart';
+import '../../../core/zephyr_floating_chrome.dart';
 import '../../../core/zephyr_icon_toolbar.dart';
 import '../../../core/zephyr_resize_handle.dart';
 import '../../../core/zephyr_snackbar.dart';
@@ -81,124 +82,6 @@ class _BookButtonBorder extends ShapeBorder {
 }
 
 /// Shared shell for the editor top bar and sidebar library dock.
-class _FloatingChrome extends StatelessWidget {
-  const _FloatingChrome({
-    required this.borderRadius,
-    required this.child,
-    this.fillColor,
-  });
-
-  final BorderRadius borderRadius;
-  final Widget child;
-
-  /// When null, uses [ColorScheme.surface]. Pass [Colors.transparent] so an
-  /// editor background can show through while [boxShadow] still draws.
-  final Color? fillColor;
-
-  static List<BoxShadow> shadowsFor(ColorScheme scheme) {
-    final shadow = scheme.shadow;
-    final dark = scheme.brightness == Brightness.dark;
-    return [
-      BoxShadow(
-        color: shadow.withValues(alpha: dark ? 0.30 : 0.10),
-        blurRadius: 14,
-        offset: const Offset(0, 1.5),
-      ),
-      BoxShadow(
-        color: shadow.withValues(alpha: dark ? 0.16 : 0.06),
-        blurRadius: 5,
-        offset: const Offset(0, 0.5),
-      ),
-      BoxShadow(
-        color: shadow.withValues(alpha: dark ? 0.10 : 0.04),
-        blurRadius: 2,
-      ),
-    ];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final fill = fillColor ?? theme.colorScheme.surface;
-    final shadows = shadowsFor(theme.colorScheme);
-    final content = Material(
-      elevation: 0,
-      color: fill,
-      shape: RoundedRectangleBorder(borderRadius: borderRadius),
-      clipBehavior: Clip.antiAlias,
-      child: child,
-    );
-    // Transparent fill: punch the bar out of soft shadows so only the outer
-    // halo remains and the editor background stays clear under the chrome.
-    if (fill.a == 0) {
-      return Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(
-            child: CustomPaint(
-              painter: _OuterBoxShadowPainter(
-                borderRadius: borderRadius,
-                shadows: shadows,
-              ),
-            ),
-          ),
-          content,
-        ],
-      );
-    }
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: borderRadius,
-        boxShadow: shadows,
-      ),
-      child: content,
-    );
-  }
-}
-
-/// Soft shadows that only appear outside [borderRadius] (interior punched out).
-class _OuterBoxShadowPainter extends CustomPainter {
-  const _OuterBoxShadowPainter({
-    required this.borderRadius,
-    required this.shadows,
-  });
-
-  final BorderRadius borderRadius;
-  final List<BoxShadow> shadows;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final bounds = Offset.zero & size;
-    final hole = borderRadius.toRRect(bounds);
-    for (final shadow in shadows) {
-      final blurSigma = shadow.blurRadius * 0.57735 + 0.5;
-      final pad = shadow.blurRadius * 2 +
-          shadow.spreadRadius.abs() +
-          shadow.offset.distance;
-      final layerRect = bounds.inflate(pad).shift(shadow.offset);
-      canvas.saveLayer(layerRect, Paint());
-      final shape = hole
-          .shift(shadow.offset)
-          .inflate(shadow.spreadRadius);
-      canvas.drawRRect(
-        shape,
-        Paint()
-          ..color = shadow.color
-          ..maskFilter = blurSigma > 0
-              ? MaskFilter.blur(BlurStyle.normal, blurSigma)
-              : null,
-      );
-      canvas.drawRRect(hole, Paint()..blendMode = BlendMode.dstOut);
-      canvas.restore();
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _OuterBoxShadowPainter oldDelegate) =>
-      oldDelegate.borderRadius != borderRadius ||
-      oldDelegate.shadows != shadows;
-}
-
 class WorkspaceSidebar extends StatefulWidget {
   const WorkspaceSidebar({
     super.key,
@@ -667,7 +550,7 @@ class WorkspaceMobileBookBar extends StatelessWidget {
     final l10n = context.l10n;
     final bookName = book?.name ?? l10n.selectBook;
 
-    return _FloatingChrome(
+    return ZephyrFloatingChrome(
       borderRadius: radius,
       fillColor: transparentBackground ? Colors.transparent : null,
       child: SizedBox(
@@ -1655,23 +1538,27 @@ class WorkspaceBookPicker extends StatelessWidget {
     final hostContext = context;
     final books = library.folders;
     final bookById = {for (final book in books) book.id: book};
-    return Padding(
-      padding: dense
-          ? const EdgeInsets.fromLTRB(0, 0, 8, 0)
-          : const EdgeInsets.fromLTRB(10, 8, 10, 4),
-      child: ZephyrDropdown<String>(
-        value: model.selectedBook?.id,
-        hint: l10n.selectBook,
-        items: [
-          for (final book in books)
-            ZephyrDropdownItem(
-              value: book.id,
-              label: book.name,
-              subtitle: _bookSubtitle(book),
-            ),
-        ],
-        onChanged: model.selectBook,
-        triggerBuilder: (context, {required selected, required isOpen}) {
+    final barRadius = context.zephyrBarBorderRadius;
+    final dropdown = ZephyrDropdown<String>(
+      value: model.selectedBook?.id,
+      hint: l10n.selectBook,
+      // Non-dense: parent [ZephyrFloatingChrome] owns fill / shadow / radius.
+      color: dense ? null : Colors.transparent,
+      shape: dense
+          ? null
+          : RoundedRectangleBorder(borderRadius: barRadius),
+      showOutline: dense,
+      floatingMenu: !dense,
+      items: [
+        for (final book in books)
+          ZephyrDropdownItem(
+            value: book.id,
+            label: book.name,
+            subtitle: _bookSubtitle(book),
+          ),
+      ],
+      onChanged: model.selectBook,
+      triggerBuilder: (context, {required selected, required isOpen}) {
           final book = selected == null ? null : bookById[selected.value];
           final stats = book == null ? null : model.bookStats(book.id);
           final meta = stats == null
@@ -1703,16 +1590,17 @@ class WorkspaceBookPicker extends StatelessWidget {
                 ),
                 if (meta != null) ...[
                   const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      meta,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: isTrash
-                            ? theme.colorScheme.error
-                            : theme.colorScheme.onSurfaceVariant,
-                      ),
+                  // Intrinsic width, flush to the chevron (not sharing flex
+                  // with the title — that left the count floating mid-row).
+                  Text(
+                    meta,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: isTrash
+                          ? theme.colorScheme.error
+                          : theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -1771,18 +1659,15 @@ class WorkspaceBookPicker extends StatelessWidget {
                           ),
                           if (subtitle != null && subtitle.isNotEmpty) ...[
                             const SizedBox(width: 8),
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 96),
-                              child: Text(
-                                subtitle,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.right,
-                                style: theme.textTheme.labelMedium?.copyWith(
-                                  color: isTrash
-                                      ? trashColor
-                                      : theme.colorScheme.onSurfaceVariant,
-                                ),
+                            Text(
+                              subtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.right,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: isTrash
+                                    ? trashColor
+                                    : theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
                             const SizedBox(width: 6),
@@ -1834,6 +1719,19 @@ class WorkspaceBookPicker extends StatelessWidget {
                 ],
               );
             },
+    );
+    if (dense) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(0, 0, 8, 0),
+        child: dropdown,
+      );
+    }
+    // Match the library dock: surface fill, soft shadow, floating-bar radius.
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+      child: ZephyrFloatingChrome(
+        borderRadius: barRadius,
+        child: dropdown,
       ),
     );
   }
@@ -3090,7 +2988,7 @@ class _LibraryDock extends StatelessWidget {
       child: LibrarySwitcherMenu(
         model: model,
         onAddLibrary: openLibrary,
-        child: _FloatingChrome(
+        child: ZephyrFloatingChrome(
           borderRadius: radius,
           child: SizedBox(
             height: dockHeight,
