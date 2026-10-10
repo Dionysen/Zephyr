@@ -804,9 +804,14 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
                 compact: true,
                 child: Text(
                   '${article.wordCount}',
+                  textHeightBehavior: const TextHeightBehavior(
+                    applyHeightToFirstAscent: false,
+                    applyHeightToLastDescent: false,
+                  ),
                   style: TextStyle(
                     fontSize: 9,
-                    height: 1.2,
+                    height: 1,
+                    leadingDistribution: TextLeadingDistribution.even,
                     color: EditorOverlayCapsule.foregroundOf(context),
                   ),
                 ),
@@ -820,13 +825,32 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
             bottom: 24 + bottomInset + keyboardInset,
             child: Center(
               child: EditorOverlayCapsule(
+                stadium: true,
                 onTap: _jumpToEnd,
-                child: Text(
-                  context.l10n.jumpToEnd,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: EditorOverlayCapsule.foregroundOf(context),
-                    fontWeight: FontWeight.w500,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 18,
+                      color: EditorOverlayCapsule.foregroundOf(context),
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      context.l10n.jumpToEnd,
+                      textHeightBehavior: const TextHeightBehavior(
+                        applyHeightToFirstAscent: false,
+                        applyHeightToLastDescent: false,
+                      ),
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: EditorOverlayCapsule.foregroundOf(context),
+                        fontWeight: FontWeight.w500,
+                        height: 1,
+                        leadingDistribution: TextLeadingDistribution.even,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -836,13 +860,14 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   }
 }
 
-/// Rounded-rect overlay chip: white in light mode, black in dark mode, with shadow.
+/// Overlay chip: white in light mode, black in dark mode, with shadow.
 class EditorOverlayCapsule extends StatelessWidget {
   const EditorOverlayCapsule({
     super.key,
     required this.child,
     this.onTap,
     this.compact = false,
+    this.stadium = false,
   });
 
   final Widget child;
@@ -850,6 +875,9 @@ class EditorOverlayCapsule extends StatelessWidget {
 
   /// Tighter padding / softer shadow for small status chips (e.g. word count).
   final bool compact;
+
+  /// Fully rounded capsule ends (stadium / pill).
+  final bool stadium;
 
   static bool _isDark(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark;
@@ -867,13 +895,15 @@ class EditorOverlayCapsule extends StatelessWidget {
       alpha: compact ? 0.55 : 0.72,
     );
     final shadow = Theme.of(context).colorScheme.shadow;
-    // Large corners, but short of a stadium so it still reads as a rounded rect.
-    final radius = BorderRadius.circular(compact ? 6 : 10);
-    final shape = RoundedRectangleBorder(borderRadius: radius);
+    final radius = BorderRadius.circular(stadium ? 999 : (compact ? 6 : 10));
+    final OutlinedBorder shape = stadium
+        ? const StadiumBorder()
+        : RoundedRectangleBorder(borderRadius: radius);
+    // Slightly less bottom padding offsets CJK/label font metrics that sit low.
     final body = Padding(
       padding: compact
-          ? const EdgeInsets.symmetric(horizontal: 7, vertical: 3)
-          : const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          ? const EdgeInsets.fromLTRB(7, 3, 7, 2)
+          : const EdgeInsets.fromLTRB(14, 8, 14, 7),
       child: child,
     );
     final pill = Material(
