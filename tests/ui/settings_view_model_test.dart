@@ -38,7 +38,7 @@ void main() {
     );
   });
 
-  test('selectTab maps legacy subsections onto the four top tabs', () async {
+  test('selectTab maps stored sections onto the top tabs', () async {
     final repository = _SettingsRepository(
       const SettingsNavigation(
         section: SettingsSection.cloud,
@@ -47,7 +47,7 @@ void main() {
     );
     final model = SettingsViewModel(repository);
     await model.load();
-    expect(model.tab, SettingsTab.general);
+    expect(model.tab, SettingsTab.backup);
 
     model.selectTab(SettingsTab.appearance);
     await Future<void>.delayed(Duration.zero);

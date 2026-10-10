@@ -192,6 +192,8 @@ class CompactSettingsList extends StatelessWidget {
           compact: true,
           showStatusBarSettings: showStatusBarSettings,
         ),
+      ],
+      SettingsTab.backup => [
         ZephyrSettingsCategoryHeader(
           icon: SettingsSection.cloud.icon,
           title: SettingsSection.cloud.title(l10n),

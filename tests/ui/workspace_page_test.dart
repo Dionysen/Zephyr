@@ -410,6 +410,7 @@ void main() {
     expect(find.text(l10n.settingsSectionGeneral), findsWidgets);
     expect(find.text(l10n.languageTitle), findsOneWidget);
     expect(find.text(l10n.hideQuickToolbarTitle), findsOneWidget);
+    expect(find.text(l10n.backupAutoTitle), findsNothing);
     expect(find.text(l10n.settingsSectionCloud), findsOneWidget);
     expect(find.text(l10n.settingsSectionEditor), findsOneWidget);
     expect(find.text(l10n.immersiveStatusBarTitle), findsNothing);
@@ -420,12 +421,21 @@ void main() {
     await tester.tap(
       find.descendant(
         of: find.byType(NavigationBar),
-        matching: find.text(l10n.settingsSectionEditor),
+        matching: find.text(l10n.settingsSectionCloud),
       ),
     );
     await tester.pumpAndSettle();
     expect(find.text(l10n.languageTitle), findsNothing);
-    expect(find.text(l10n.editorSectionFooter), findsOneWidget);
+    expect(find.text(l10n.backupAutoTitle), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text(l10n.settingsSectionEditor),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(l10n.backupAutoTitle), findsNothing);
     await tester.scrollUntilVisible(
       find.text(l10n.shortcutsManageTitle),
       300,
