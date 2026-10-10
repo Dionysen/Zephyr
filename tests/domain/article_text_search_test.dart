@@ -168,12 +168,13 @@ void main() {
           articles: [(id: 'c0'), (id: 'c1'), (id: 'c2')],
         ),
       );
+      // Unfiled chapters (c1) sort above volume chapters (c0) in the same book.
       expect(
         sorted.map((m) => '${m.articleId}:${m.isTitleOnly}:${m.contentStart}'),
         [
-          'c0:false:0',
           'c1:true:null',
           'c1:false:4',
+          'c0:false:0',
           'c2:false:0',
         ],
       );

@@ -47,7 +47,7 @@ class ManuscriptSearchOrder {
   /// Volume rank within its book (0-based among siblings).
   final Map<String, int> volumeIndexInBook;
 
-  /// Number of volumes per book — unfiled chapters sort after these.
+  /// Number of volumes per book.
   final Map<String, int> volumeCountByBook;
 
   final Map<String, int> articleIndexById;
@@ -56,9 +56,10 @@ class ManuscriptSearchOrder {
 
   int bookIndex(String folderId) => bookIndexById[folderId] ?? _missing;
 
+  /// Unfiled chapters sort before any volume in the book.
   int volumeIndex(String folderId, String? categoryId) {
     if (categoryId == null) {
-      return volumeCountByBook[folderId] ?? 0;
+      return -1;
     }
     return volumeIndexInBook[categoryId] ?? _missing;
   }

@@ -2076,17 +2076,7 @@ class _ChapterTreeState extends State<_ChapterTree> {
       return volumeSliver.constraints.precedingScrollExtent + header + within;
     }
 
-    var offset = 0.0;
-    if (!isTrash) {
-      for (final volume in widget.library.categories.where(
-        (item) => item.folderId == bookId,
-      )) {
-        final sliver = _volumeSliver(volume.id);
-        offset += sliver?.geometry?.scrollExtent ?? 0;
-      }
-      // Padding + label for the "unfiled" header ([SliverToBoxAdapter]).
-      offset += 36;
-    }
+    // Unfiled chapters are the first sliver in the book list.
     final loose = sortArticleSummaries(
       widget.library.articles
           .where(
@@ -2098,8 +2088,7 @@ class _ChapterTreeState extends State<_ChapterTree> {
     );
     final index = loose.indexWhere((item) => item.id == chapter.id);
     if (index < 0) return null;
-    return offset +
-        _estimateOffsetWithinChapterList(loose, index, rowHeight);
+    return _estimateOffsetWithinChapterList(loose, index, rowHeight);
   }
 
   /// Offset of [index] inside a chapter sliver list, preferring a built sibling.
@@ -2230,7 +2219,6 @@ class _ChapterTreeState extends State<_ChapterTree> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
     final model = widget.model;
     final library = widget.library;
     final bookId = model.selectedBook?.id;
@@ -2251,6 +2239,35 @@ class _ChapterTreeState extends State<_ChapterTree> {
         .toList(growable: false);
     final volumeIds = volumes.map((item) => item.id).toList(growable: false);
     final slivers = <Widget>[];
+    // Unfiled chapters sit at the top of the book list (not under a header).
+    final loose = sortArticleSummaries(
+      chapters
+          .where((item) => isTrash || item.categoryId == null)
+          .toList(growable: false),
+      sortMode,
+    );
+    if (loose.isNotEmpty) {
+      final looseIds = loose.map((item) => item.id).toList(growable: false);
+      slivers.add(
+        SliverList.builder(
+          itemCount: loose.length,
+          itemBuilder: (context, index) {
+            final chapter = loose[index];
+            return KeyedSubtree(
+              key: _chapterKeyFor(chapter.id),
+              child: _ChapterRow(
+                chapter: chapter,
+                model: model,
+                siblingIds: looseIds,
+                canManage: canManage,
+                showDragHandle: showDragHandles,
+                isFirst: index == 0,
+              ),
+            );
+          },
+        ),
+      );
+    }
     for (var volumeIndex = 0; volumeIndex < volumes.length; volumeIndex++) {
       final volume = volumes[volumeIndex];
       final volumeChapters = sortArticleSummaries(
@@ -2302,44 +2319,6 @@ class _ChapterTreeState extends State<_ChapterTree> {
                 },
               ),
           ],
-        ),
-      );
-    }
-    final loose = sortArticleSummaries(
-      chapters
-          .where((item) => isTrash || item.categoryId == null)
-          .toList(growable: false),
-      sortMode,
-    );
-    if (loose.isNotEmpty) {
-      if (!isTrash) {
-        slivers.add(
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 14, 18, 4),
-              child: Text(l10n.unfiledChaptersHeader),
-            ),
-          ),
-        );
-      }
-      final looseIds = loose.map((item) => item.id).toList(growable: false);
-      slivers.add(
-        SliverList.builder(
-          itemCount: loose.length,
-          itemBuilder: (context, index) {
-            final chapter = loose[index];
-            return KeyedSubtree(
-              key: _chapterKeyFor(chapter.id),
-              child: _ChapterRow(
-                chapter: chapter,
-                model: model,
-                siblingIds: looseIds,
-                canManage: canManage,
-                showDragHandle: showDragHandles,
-                isFirst: index == 0,
-              ),
-            );
-          },
         ),
       );
     }
