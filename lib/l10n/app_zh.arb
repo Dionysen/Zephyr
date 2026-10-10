@@ -215,5 +215,22 @@
   "chapterMeta": "创建于{created} - 修改于{modified} - {wordCount}字",
   "themeSlotLight": "亮色",
   "themeSlotDark": "暗色",
-  "themePresetsSubtitle": "点按展开选择配色，会应用到当前亮色或暗色模式"
+  "themePresetsSubtitle": "点按展开选择配色，会应用到当前亮色或暗色模式",
+  "quickToolbarToolsTooltip": "快捷工具",
+  "quickToolbarUndoTooltip": "撤回",
+  "quickToolbarPasteTooltip": "粘贴",
+  "quickToolbarIndentTooltip": "缩进",
+  "quickToolbarFormatTooltip": "一键格式化",
+  "quickToolbarEdit": "编辑工具栏",
+  "quickToolbarEditHint": "拖拽排序，或在固定栏与自定义栏之间移动工具。",
+  "quickToolbarPinnedSection": "固定栏",
+  "quickToolbarCustomSection": "自定义栏",
+  "quickToolbarAddSection": "添加工具",
+  "quickToolbarSectionEmpty": "暂无工具",
+  "quickToolbarAddPhrase": "快捷短语",
+  "quickToolbarPhraseName": "显示名称",
+  "quickToolbarPhraseContent": "插入内容",
+  "quickToolbarMoveToPinned": "移到固定栏",
+  "quickToolbarMoveToCustom": "移到自定义栏",
+  "quickToolbarDrawerEmpty": "工具面板内容将稍后加入"
 }

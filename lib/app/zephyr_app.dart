@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../data/repositories/file_editor_preferences_repository.dart';
+import '../data/repositories/file_quick_toolbar_preferences_repository.dart';
 import '../data/repositories/file_settings_navigation_repository.dart';
 import '../data/repositories/file_system_font_repository.dart';
 import '../data/repositories/file_theme_preferences_repository.dart';
@@ -12,6 +13,7 @@ import '../data/repositories/file_workspace_layout_repository.dart';
 import '../data/repositories/purewriter_writing_library_repository.dart';
 import '../data/services/editor_preferences_file_storage.dart';
 import '../data/services/purewriter_database.dart';
+import '../data/services/quick_toolbar_file_storage.dart';
 import '../data/services/settings_navigation_file_storage.dart';
 import '../data/services/theme_file_storage.dart';
 import '../data/services/window_frame_file_storage.dart';
@@ -27,6 +29,7 @@ import '../ui/core/zephyr_scope.dart';
 import '../ui/core/zephyr_theme.dart';
 import '../ui/features/editor/view_models/editor_preferences_view_model.dart';
 import '../ui/features/editor/view_models/library_view_model.dart';
+import '../ui/features/editor/view_models/quick_toolbar_view_model.dart';
 import '../ui/features/settings/view_models/font_library.dart';
 import '../ui/features/settings/view_models/settings_view_model.dart';
 import '../ui/features/settings/view_models/theme_view_model.dart';
@@ -56,6 +59,9 @@ void runZephyr(
         FileEditorPreferencesRepository(EditorPreferencesFileStorage()),
         fonts,
       )..load(),
+      quickToolbar: QuickToolbarViewModel(
+        FileQuickToolbarPreferencesRepository(QuickToolbarFileStorage()),
+      )..load(),
       settings: SettingsViewModel(
         FileSettingsNavigationRepository(SettingsNavigationFileStorage()),
       )..load(),
@@ -69,12 +75,14 @@ class ZephyrApp extends StatelessWidget {
     required this.library,
     required this.theme,
     required this.editorPreferences,
+    required this.quickToolbar,
     required this.settings,
   });
 
   final LibraryViewModel library;
   final ThemeViewModel theme;
   final EditorPreferencesViewModel editorPreferences;
+  final QuickToolbarViewModel quickToolbar;
   final SettingsViewModel settings;
 
   @override
@@ -82,6 +90,7 @@ class ZephyrApp extends StatelessWidget {
     library: library,
     theme: theme,
     editorPreferences: editorPreferences,
+    quickToolbar: quickToolbar,
     settings: settings,
     child: ListenableBuilder(
       listenable: theme,

@@ -8,6 +8,8 @@ import '../../../../domain/use_cases/paragraph_indentation.dart';
 import '../../editor/plain_text/input/plain_text_editing_controller.dart';
 import '../../editor/plain_text/layout/editor_typography.dart';
 import '../../editor/plain_text/zephyr_plain_text_editor.dart';
+import '../../editor/quick_toolbar/quick_toolbar_host.dart';
+import '../../editor/quick_toolbar/workspace_editor_bridge.dart';
 import '../../editor/view_models/editor_preferences_view_model.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../../core/zephyr_l10n.dart';
@@ -19,6 +21,7 @@ class WorkspaceEditor extends StatefulWidget {
     required this.preferences,
     this.contentTopInset = 0,
     this.showWordCount = true,
+    this.bridge,
   });
 
   final LibraryViewModel model;
@@ -30,6 +33,9 @@ class WorkspaceEditor extends StatefulWidget {
   /// When false, the host (e.g. mobile chrome) owns the word-count capsule.
   final bool showWordCount;
 
+  /// Optional bridge for the compact IME quick toolbar.
+  final WorkspaceEditorBridge? bridge;
+
   @override
   State<WorkspaceEditor> createState() => _WorkspaceEditorState();
 }
@@ -40,6 +46,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   final _titleFocusNode = FocusNode();
   final _controller = PlainTextEditingController();
   final _titleController = TextEditingController();
+  final _editorKey = GlobalKey<ZephyrPlainTextEditorState>();
 
   /// Last caret per article for the current editor session.
   final Map<String, TextSelection> _carets = {};
@@ -61,10 +68,13 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     super.initState();
     widget.preferences.addListener(_onPreferences);
     _controller.addListener(_onControllerChanged);
+    _controller.addListener(_syncBridge);
     _titleController.addListener(_onTitleChanged);
     _titleFocusNode.addListener(_onTitleFocusChanged);
+    _focusNode.addListener(_syncBridge);
     _scrollController.addListener(_onScrollForJumpChip);
     _syncFromModel();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncBridge());
   }
 
   @override
@@ -74,6 +84,9 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
       oldWidget.preferences.removeListener(_onPreferences);
       widget.preferences.addListener(_onPreferences);
     }
+    if (oldWidget.bridge != widget.bridge) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _syncBridge());
+    }
     _syncFromModel();
   }
 
@@ -82,8 +95,10 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     _persistEditorPosition();
     widget.preferences.removeListener(_onPreferences);
     _controller.removeListener(_onControllerChanged);
+    _controller.removeListener(_syncBridge);
     _titleController.removeListener(_onTitleChanged);
     _titleFocusNode.removeListener(_onTitleFocusChanged);
+    _focusNode.removeListener(_syncBridge);
     _scrollController.removeListener(_onScrollForJumpChip);
     _controller.dispose();
     _titleController.dispose();
@@ -91,6 +106,17 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     _focusNode.dispose();
     _titleFocusNode.dispose();
     super.dispose();
+  }
+
+  void _syncBridge() {
+    final bridge = widget.bridge;
+    if (bridge == null) return;
+    bridge.bind(
+      controller: _controller,
+      editor: _editorKey.currentState,
+      bodyFocused: _focusNode.hasPrimaryFocus,
+      firstLineIndent: widget.preferences.preferences.firstLineIndent,
+    );
   }
 
   void _onPreferences() {
@@ -415,6 +441,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
         Positioned.fill(
           child: RepaintBoundary(
             child: ZephyrPlainTextEditor(
+              key: _editorKey,
               controller: _controller,
               typography: typography,
               scrollController: _scrollController,
@@ -426,6 +453,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
               scrollbarPadding: EdgeInsets.symmetric(
                 vertical: widget.contentTopInset,
               ),
+              bottomObstruction: quickToolbarBottomObstructionOf(context),
               onTextChanged: (_) {},
               onSelectionChanged: _onSelectionChanged,
             ),

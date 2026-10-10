@@ -619,4 +619,55 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get themePresetsSubtitle => '点按展开选择配色，会应用到当前亮色或暗色模式';
+
+  @override
+  String get quickToolbarToolsTooltip => '快捷工具';
+
+  @override
+  String get quickToolbarUndoTooltip => '撤回';
+
+  @override
+  String get quickToolbarPasteTooltip => '粘贴';
+
+  @override
+  String get quickToolbarIndentTooltip => '缩进';
+
+  @override
+  String get quickToolbarFormatTooltip => '一键格式化';
+
+  @override
+  String get quickToolbarEdit => '编辑工具栏';
+
+  @override
+  String get quickToolbarEditHint => '拖拽排序，或在固定栏与自定义栏之间移动工具。';
+
+  @override
+  String get quickToolbarPinnedSection => '固定栏';
+
+  @override
+  String get quickToolbarCustomSection => '自定义栏';
+
+  @override
+  String get quickToolbarAddSection => '添加工具';
+
+  @override
+  String get quickToolbarSectionEmpty => '暂无工具';
+
+  @override
+  String get quickToolbarAddPhrase => '快捷短语';
+
+  @override
+  String get quickToolbarPhraseName => '显示名称';
+
+  @override
+  String get quickToolbarPhraseContent => '插入内容';
+
+  @override
+  String get quickToolbarMoveToPinned => '移到固定栏';
+
+  @override
+  String get quickToolbarMoveToCustom => '移到自定义栏';
+
+  @override
+  String get quickToolbarDrawerEmpty => '工具面板内容将稍后加入';
 }

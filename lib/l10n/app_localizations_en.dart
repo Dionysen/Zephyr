@@ -654,4 +654,56 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get themePresetsSubtitle =>
       'Tap to apply a palette to the current light or dark mode.';
+
+  @override
+  String get quickToolbarToolsTooltip => 'Tools';
+
+  @override
+  String get quickToolbarUndoTooltip => 'Undo';
+
+  @override
+  String get quickToolbarPasteTooltip => 'Paste';
+
+  @override
+  String get quickToolbarIndentTooltip => 'Indent';
+
+  @override
+  String get quickToolbarFormatTooltip => 'Format';
+
+  @override
+  String get quickToolbarEdit => 'Edit toolbar';
+
+  @override
+  String get quickToolbarEditHint =>
+      'Drag to reorder, or move tools between the fixed and custom zones.';
+
+  @override
+  String get quickToolbarPinnedSection => 'Fixed bar';
+
+  @override
+  String get quickToolbarCustomSection => 'Custom bar';
+
+  @override
+  String get quickToolbarAddSection => 'Add tool';
+
+  @override
+  String get quickToolbarSectionEmpty => 'No tools yet';
+
+  @override
+  String get quickToolbarAddPhrase => 'Quick phrase';
+
+  @override
+  String get quickToolbarPhraseName => 'Display name';
+
+  @override
+  String get quickToolbarPhraseContent => 'Inserted text';
+
+  @override
+  String get quickToolbarMoveToPinned => 'Move to fixed bar';
+
+  @override
+  String get quickToolbarMoveToCustom => 'Move to custom bar';
+
+  @override
+  String get quickToolbarDrawerEmpty => 'Tool panel content coming soon';
 }

@@ -7,7 +7,9 @@ import 'package:zephyr/domain/models/settings_navigation.dart';
 import 'package:zephyr/domain/models/theme_color_pack.dart';
 import 'package:zephyr/domain/models/theme_tokens.dart';
 import 'package:zephyr/domain/models/ui_preferences.dart';
+import 'package:zephyr/domain/models/quick_toolbar_config.dart';
 import 'package:zephyr/domain/repositories/editor_preferences_repository.dart';
+import 'package:zephyr/domain/repositories/quick_toolbar_preferences_repository.dart';
 import 'package:zephyr/domain/repositories/settings_navigation_repository.dart';
 import 'package:zephyr/domain/repositories/theme_preferences_repository.dart';
 import 'package:zephyr/domain/repositories/writing_library_repository.dart';
@@ -15,6 +17,7 @@ import 'package:zephyr/ui/core/zephyr_scope.dart';
 import 'package:zephyr/ui/core/zephyr_theme.dart';
 import 'package:zephyr/ui/features/editor/view_models/editor_preferences_view_model.dart';
 import 'package:zephyr/ui/features/editor/view_models/library_view_model.dart';
+import 'package:zephyr/ui/features/editor/view_models/quick_toolbar_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/font_library.dart';
 import 'package:zephyr/ui/features/settings/view_models/settings_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/theme_view_model.dart';
@@ -62,9 +65,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Volume A').hitTestable(), findsNothing);
     expect(find.text('Volume B').hitTestable(), findsOneWidget);
+    // Later pinned headers can sit one volume-gap below the first header top.
     expect(
       tester.getTopLeft(find.text('Volume B')).dy,
-      closeTo(initialHeaderTop, 3),
+      closeTo(initialHeaderTop, 8),
     );
     await tester.tap(find.text('Volume B'));
     await tester.pumpAndSettle();
@@ -544,11 +548,13 @@ Widget _app({LibraryViewModel? library, bool needsLibrarySetup = false}) {
     _PreferencesRepository(),
     fonts,
   );
+  final quickToolbar = QuickToolbarViewModel(_QuickToolbarRepository());
   final settings = SettingsViewModel(_SettingsRepository());
   return ZephyrScope(
     library: library,
     theme: theme,
     editorPreferences: editorPreferences,
+    quickToolbar: quickToolbar,
     settings: settings,
     child: MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -811,6 +817,14 @@ class _PreferencesRepository implements EditorPreferencesRepository {
 
   @override
   Future<void> save(EditorPreferences preferences) async {}
+}
+
+class _QuickToolbarRepository implements QuickToolbarPreferencesRepository {
+  @override
+  Future<QuickToolbarConfig> load() async => QuickToolbarConfig.defaults;
+
+  @override
+  Future<void> save(QuickToolbarConfig config) async {}
 }
 
 class _SettingsRepository implements SettingsNavigationRepository {

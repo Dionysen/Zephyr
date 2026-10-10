@@ -14,6 +14,8 @@ import '../../../core/zephyr_status_bar.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_theme.dart';
+import '../../editor/quick_toolbar/quick_toolbar_host.dart';
+import '../../editor/quick_toolbar/workspace_editor_bridge.dart';
 import '../../editor/view_models/editor_preferences_view_model.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../settings/views/settings_page.dart';
@@ -363,6 +365,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
   static const _motion = Cubic(0.2, 0.0, 0.0, 1.0);
 
   late final AnimationController _hide;
+  final _editorBridge = WorkspaceEditorBridge();
 
   /// Accumulated delta before triggering a show/hide jump.
   var _slop = 0.0;
@@ -387,6 +390,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
   @override
   void dispose() {
     _hide.dispose();
+    _editorBridge.dispose();
     super.dispose();
   }
 
@@ -505,18 +509,27 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
     // Keep scroll padding stable — bar show/hide must not reflow the editor.
     final contentTop = statusTop + _barTravel;
     final barBottom = statusTop + _barInset + WorkspaceMobileBookBar.height;
-    final surface = Theme.of(context).colorScheme.surface;
+    final theme = Theme.of(context);
+    final surface = theme.colorScheme.surface;
+    final foreground = theme.colorScheme.onSurface;
     final wordCount = widget.model.article?.wordCount;
+    final quickToolbar = ZephyrScope.of(context).quickToolbar;
     return NotificationListener<ScrollNotification>(
       onNotification: _onScroll,
       child: Stack(
         children: [
           Positioned.fill(
-            child: WorkspaceEditor(
-              model: widget.model,
-              preferences: widget.preferences,
-              contentTopInset: contentTop,
-              showWordCount: false,
+            child: QuickToolbarHost(
+              toolbar: quickToolbar,
+              bridge: _editorBridge,
+              foreground: foreground,
+              child: WorkspaceEditor(
+                model: widget.model,
+                preferences: widget.preferences,
+                contentTopInset: contentTop,
+                showWordCount: false,
+                bridge: _editorBridge,
+              ),
             ),
           ),
           // Opaque band above the bar's bottom edge — no text, only surface.

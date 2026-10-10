@@ -1267,6 +1267,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap to apply a palette to the current light or dark mode.'**
   String get themePresetsSubtitle;
+
+  /// No description provided for @quickToolbarToolsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools'**
+  String get quickToolbarToolsTooltip;
+
+  /// No description provided for @quickToolbarUndoTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get quickToolbarUndoTooltip;
+
+  /// No description provided for @quickToolbarPasteTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get quickToolbarPasteTooltip;
+
+  /// No description provided for @quickToolbarIndentTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Indent'**
+  String get quickToolbarIndentTooltip;
+
+  /// No description provided for @quickToolbarFormatTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Format'**
+  String get quickToolbarFormatTooltip;
+
+  /// No description provided for @quickToolbarEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit toolbar'**
+  String get quickToolbarEdit;
+
+  /// No description provided for @quickToolbarEditHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reorder, or move tools between the fixed and custom zones.'**
+  String get quickToolbarEditHint;
+
+  /// No description provided for @quickToolbarPinnedSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixed bar'**
+  String get quickToolbarPinnedSection;
+
+  /// No description provided for @quickToolbarCustomSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom bar'**
+  String get quickToolbarCustomSection;
+
+  /// No description provided for @quickToolbarAddSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Add tool'**
+  String get quickToolbarAddSection;
+
+  /// No description provided for @quickToolbarSectionEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No tools yet'**
+  String get quickToolbarSectionEmpty;
+
+  /// No description provided for @quickToolbarAddPhrase.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick phrase'**
+  String get quickToolbarAddPhrase;
+
+  /// No description provided for @quickToolbarPhraseName.
+  ///
+  /// In en, this message translates to:
+  /// **'Display name'**
+  String get quickToolbarPhraseName;
+
+  /// No description provided for @quickToolbarPhraseContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Inserted text'**
+  String get quickToolbarPhraseContent;
+
+  /// No description provided for @quickToolbarMoveToPinned.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to fixed bar'**
+  String get quickToolbarMoveToPinned;
+
+  /// No description provided for @quickToolbarMoveToCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to custom bar'**
+  String get quickToolbarMoveToCustom;
+
+  /// No description provided for @quickToolbarDrawerEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Tool panel content coming soon'**
+  String get quickToolbarDrawerEmpty;
 }
 
 class _AppLocalizationsDelegate

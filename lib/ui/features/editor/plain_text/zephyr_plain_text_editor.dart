@@ -29,6 +29,7 @@ class ZephyrPlainTextEditor extends StatefulWidget {
     required this.selectionColor,
     this.header,
     this.scrollbarPadding = EdgeInsets.zero,
+    this.bottomObstruction = 0,
   });
 
   final PlainTextEditingController controller;
@@ -48,11 +49,15 @@ class ZephyrPlainTextEditor extends StatefulWidget {
   /// Outer inset for the editor scrollbar track (e.g. below a floating top bar).
   final EdgeInsets scrollbarPadding;
 
+  /// Extra bottom chrome (quick toolbar + tools drawer) above the soft keyboard
+  /// or replacing it. Used for caret visibility.
+  final double bottomObstruction;
+
   @override
-  State<ZephyrPlainTextEditor> createState() => _ZephyrPlainTextEditorState();
+  State<ZephyrPlainTextEditor> createState() => ZephyrPlainTextEditorState();
 }
 
-class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
+class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final PlainTextLayoutEngine _engine;
   late final ScrollController _scrollController;
@@ -75,6 +80,7 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   String _lastText = '';
   TextSelection _lastSelection = const TextSelection.collapsed(offset: 0);
   double _lastKeyboardInset = 0;
+  double _lastEffectiveBottomInset = 0;
 
   @override
   void initState() {
@@ -140,6 +146,9 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
       if (_focusNode.hasPrimaryFocus) _attachIme();
     }
     widget.controller.firstLineIndent = widget.typography.firstLineIndent;
+    if ((oldWidget.bottomObstruction - widget.bottomObstruction).abs() > 0.5) {
+      _maybeEnsureCaretForBottomInset();
+    }
   }
 
   @override
@@ -168,7 +177,16 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     _lastKeyboardInset = keyboard;
     // Rebuild so the end-of-document IME spacer matches the keyboard.
     setState(() {});
+    // Only scroll when the *effective* covered bottom changes. Opening the
+    // tools panel keeps toolbar+panel constant while the IME animates away.
+    _maybeEnsureCaretForBottomInset();
+  }
+
+  void _maybeEnsureCaretForBottomInset() {
     if (!_focusNode.hasPrimaryFocus) return;
+    final effective = _effectiveBottomInset(context);
+    if ((effective - _lastEffectiveBottomInset).abs() < 0.5) return;
+    _lastEffectiveBottomInset = effective;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _focusNode.hasPrimaryFocus) {
         _ensureCaretVisible();
@@ -185,6 +203,20 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     if (view == null) return 0;
     return view.viewInsets.bottom / view.devicePixelRatio;
   }
+
+  /// Keyboard plus overlay chrome that covers the bottom of the viewport.
+  double _effectiveBottomInset(BuildContext context) =>
+      _keyboardBottomInset(context) + widget.bottomObstruction;
+
+  void hideIme() => _inputClient?.hideIme();
+
+  void showIme() {
+    if (widget.readOnly || !_focusNode.hasPrimaryFocus) return;
+    _suppressImeAttach = false;
+    _inputClient?.attach();
+  }
+
+  Future<void> paste() => _paste();
 
   void _onScroll() {
     setState(() {});
@@ -297,7 +329,7 @@ class _ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     final bottom = caret.bottom + _headerExtent;
     final viewTop = _scrollController.offset;
     final viewport = _scrollController.position.viewportDimension;
-    final keyboard = _keyboardBottomInset(context);
+    final keyboard = _effectiveBottomInset(context);
     final viewBottom = viewTop + viewport - keyboard;
     final line =
         widget.typography.fontSize * widget.typography.lineHeight;

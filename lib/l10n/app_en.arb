@@ -287,5 +287,22 @@
   },
   "themeSlotLight": "Light",
   "themeSlotDark": "Dark",
-  "themePresetsSubtitle": "Tap to apply a palette to the current light or dark mode."
+  "themePresetsSubtitle": "Tap to apply a palette to the current light or dark mode.",
+  "quickToolbarToolsTooltip": "Tools",
+  "quickToolbarUndoTooltip": "Undo",
+  "quickToolbarPasteTooltip": "Paste",
+  "quickToolbarIndentTooltip": "Indent",
+  "quickToolbarFormatTooltip": "Format",
+  "quickToolbarEdit": "Edit toolbar",
+  "quickToolbarEditHint": "Drag to reorder, or move tools between the fixed and custom zones.",
+  "quickToolbarPinnedSection": "Fixed bar",
+  "quickToolbarCustomSection": "Custom bar",
+  "quickToolbarAddSection": "Add tool",
+  "quickToolbarSectionEmpty": "No tools yet",
+  "quickToolbarAddPhrase": "Quick phrase",
+  "quickToolbarPhraseName": "Display name",
+  "quickToolbarPhraseContent": "Inserted text",
+  "quickToolbarMoveToPinned": "Move to fixed bar",
+  "quickToolbarMoveToCustom": "Move to custom bar",
+  "quickToolbarDrawerEmpty": "Tool panel content coming soon"
 }

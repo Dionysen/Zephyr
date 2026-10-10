@@ -35,14 +35,27 @@ class PlainTextInputClient with TextInputClient, DeltaTextInputClient {
         ),
       );
     }
-    _connection!.show();
-    markImeDirty();
-    syncImeIfNeeded();
+    showIme();
   }
 
   void detach() {
     _connection?.close();
     _connection = null;
+  }
+
+  /// Hides the soft keyboard without closing the text-input connection.
+  void hideIme() {
+    if (!attached) return;
+    // Platform channel hide keeps the connection attached (unlike [close]).
+    SystemChannels.textInput.invokeMethod<void>('TextInput.hide');
+  }
+
+  /// Shows the soft keyboard for an already-attached connection.
+  void showIme() {
+    if (!attached) return;
+    _connection!.show();
+    markImeDirty();
+    syncImeIfNeeded();
   }
 
   void markImeDirty() => _imeDirty = true;
