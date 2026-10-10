@@ -9,6 +9,7 @@ import '../../../../data/services/folder_bookmark.dart';
 import '../../../../domain/models/library_backup.dart';
 
 import '../../../core/breakpoints.dart';
+import '../../../core/editor_background_layer.dart';
 import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_status_bar.dart';
@@ -165,6 +166,13 @@ class _WorkspacePageState extends State<WorkspacePage>
                 constraints.maxWidth * 0.88,
               );
               final immersive = immersiveStatusBar;
+              final editorBackground = scope.theme.ui.editorBackgroundFor(
+                dark: scope.theme.isEffectivelyDark,
+              );
+              final bleedEditorBackground = editorBackground.hasImage;
+              // Bleed under the status band when immersive or a writing-column
+              // background is active so the image fills above the book bar.
+              final invadeStatusBand = immersive || bleedEditorBackground;
               final sidebarColor =
                   Theme.of(context).colorScheme.surfaceContainerLowest;
               // Immersive: full-bleed under a transparent status bar; pad chrome
@@ -184,7 +192,7 @@ class _WorkspacePageState extends State<WorkspacePage>
                     body: ColoredBox(
                       color: surface,
                       child: ZephyrTopSafeArea(
-                        top: !immersive,
+                        top: !invadeStatusBand,
                         // Content paints under the transparent gesture bar.
                         bottom: false,
                         child: Column(
@@ -192,7 +200,9 @@ class _WorkspacePageState extends State<WorkspacePage>
                             if (model.needsLibrarySetup)
                               Padding(
                                 padding: EdgeInsets.only(
-                                  top: immersive ? zephyrTopInset(context) : 0,
+                                  top: invadeStatusBand
+                                      ? zephyrTopInset(context)
+                                      : 0,
                                 ),
                                 child: _LibrarySetupBanner(
                                   openLibrary: _openLibrary,
@@ -221,7 +231,8 @@ class _WorkspacePageState extends State<WorkspacePage>
                                 body: _MobileEditorChrome(
                                   model: model,
                                   preferences: scope.editorPreferences,
-                                  invadeStatusBar: immersive,
+                                  invadeStatusBar: invadeStatusBand,
+                                  transparentTopBar: bleedEditorBackground,
                                 ),
                               ),
                             ),
@@ -413,6 +424,7 @@ class _MobileEditorChrome extends StatefulWidget {
     required this.model,
     required this.preferences,
     this.invadeStatusBar = false,
+    this.transparentTopBar = false,
   });
 
   final LibraryViewModel model;
@@ -421,6 +433,9 @@ class _MobileEditorChrome extends StatefulWidget {
   /// When true, the editor extends under the status band so scrolled text can
   /// enter it naturally. Top-bar show/hide never changes scroll padding.
   final bool invadeStatusBar;
+
+  /// Clear the floating book bar fill so the editor background shows through.
+  final bool transparentTopBar;
 
   @override
   State<_MobileEditorChrome> createState() => _MobileEditorChromeState();
@@ -592,73 +607,122 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
     final themeVm = scope.theme;
     return NotificationListener<ScrollNotification>(
       onNotification: _onScroll,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: ListenableBuilder(
-              listenable: Listenable.merge([widget.preferences, themeVm]),
-              builder: (context, _) => QuickToolbarHost(
-                toolbar: quickToolbar,
-                bridge: _editorBridge,
-                foreground: foreground,
-                bodyFontFamily: widget.preferences.preferences.fontFamily,
-                hidden: themeVm.ui.hideQuickToolbar,
-                child: WorkspaceEditor(
-                  model: widget.model,
-                  preferences: widget.preferences,
-                  contentTopInset: contentTop,
-                  showWordCount: false,
-                  bridge: _editorBridge,
+      child: AnimatedBuilder(
+        animation: _hide,
+        builder: (context, _) {
+          // Match the opaque-band fade: while the bar is visible, hide text
+          // above its bottom edge; as it hides, release the clip.
+          final textClipTop =
+              widget.transparentTopBar ? barBottom * (1.0 - _hide.value) : 0.0;
+          return Stack(
+            children: [
+              if (widget.transparentTopBar)
+                Positioned.fill(
+                  child: ListenableBuilder(
+                    listenable: themeVm,
+                    builder: (context, _) => EditorBackgroundLayer(
+                      config: themeVm.ui.editorBackgroundFor(
+                        dark: themeVm.isEffectivelyDark,
+                      ),
+                      child: const SizedBox.expand(),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ),
-          // Opaque band above the bar's bottom edge — no text, only surface.
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: barBottom,
-            child: _chromeFade(
-              travel: contentTop,
-              child: ColoredBox(color: surface),
-            ),
-          ),
-          Positioned(
-            top: statusTop + _barInset,
-            left: _barSideInset,
-            right: _barSideInset,
-            child: _chromeFade(
-              travel: contentTop,
-              child: WorkspaceMobileBookBar(
-                model: widget.model,
-                onOpenMenu: () => ZephyrSwipeDrawer.of(context).open(),
-              ),
-            ),
-          ),
-          if (wordCount != null)
-            Positioned(
-              // Below the book bar, top-right of the reading area.
-              top: statusTop + _barTravel,
-              right: 8,
-              child: _wordCountFade(
-                child: EditorOverlayCapsule(
-                  compact: true,
-                  child: Text(
-                    '$wordCount',
-                    style: TextStyle(
-                      fontSize: 9,
-                      height: 1.2,
-                      color: EditorOverlayCapsule.foregroundOf(context),
+              Positioned.fill(
+                child: ClipRect(
+                  clipper: textClipTop > 0.5
+                      ? _TopExcludeClipper(textClipTop)
+                      : null,
+                  child: ListenableBuilder(
+                    listenable: Listenable.merge([
+                      widget.preferences,
+                      themeVm,
+                    ]),
+                    builder: (context, _) => QuickToolbarHost(
+                      toolbar: quickToolbar,
+                      bridge: _editorBridge,
+                      foreground: foreground,
+                      bodyFontFamily:
+                          widget.preferences.preferences.fontFamily,
+                      hidden: themeVm.ui.hideQuickToolbar,
+                      child: WorkspaceEditor(
+                        model: widget.model,
+                        preferences: widget.preferences,
+                        contentTopInset: contentTop,
+                        showWordCount: false,
+                        bridge: _editorBridge,
+                        showBackground: !widget.transparentTopBar,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
+              // Opaque band above the bar when there is no background image.
+              if (!widget.transparentTopBar)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: barBottom,
+                  child: _chromeFade(
+                    travel: contentTop,
+                    child: ColoredBox(color: surface),
+                  ),
+                ),
+              Positioned(
+                top: statusTop + _barInset,
+                left: _barSideInset,
+                right: _barSideInset,
+                child: _chromeFade(
+                  travel: contentTop,
+                  child: WorkspaceMobileBookBar(
+                    model: widget.model,
+                    onOpenMenu: () => ZephyrSwipeDrawer.of(context).open(),
+                    transparentBackground: widget.transparentTopBar,
+                  ),
+                ),
+              ),
+              if (wordCount != null)
+                Positioned(
+                  // Below the book bar, top-right of the reading area.
+                  top: statusTop + _barTravel,
+                  right: 8,
+                  child: _wordCountFade(
+                    child: EditorOverlayCapsule(
+                      compact: true,
+                      child: Text(
+                        '$wordCount',
+                        style: TextStyle(
+                          fontSize: 9,
+                          height: 1.2,
+                          color: EditorOverlayCapsule.foregroundOf(context),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
+}
+
+/// Clips away the top [excludeHeight] so text cannot paint under the book bar,
+/// while a separate full-bleed background layer remains visible.
+class _TopExcludeClipper extends CustomClipper<Rect> {
+  const _TopExcludeClipper(this.excludeHeight);
+
+  final double excludeHeight;
+
+  @override
+  Rect getClip(Size size) =>
+      Rect.fromLTRB(0, excludeHeight, size.width, size.height);
+
+  @override
+  bool shouldReclip(covariant _TopExcludeClipper oldClipper) =>
+      oldClipper.excludeHeight != excludeHeight;
 }
 
 class _LibrarySetupBanner extends StatelessWidget {

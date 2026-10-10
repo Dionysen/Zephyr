@@ -78,10 +78,15 @@ class _FloatingChrome extends StatelessWidget {
   const _FloatingChrome({
     required this.borderRadius,
     required this.child,
+    this.fillColor,
   });
 
   final BorderRadius borderRadius;
   final Widget child;
+
+  /// When null, uses [ColorScheme.surface]. Pass [Colors.transparent] so an
+  /// editor background can show through while [boxShadow] still draws.
+  final Color? fillColor;
 
   static List<BoxShadow> shadowsFor(ColorScheme scheme) {
     final shadow = scheme.shadow;
@@ -107,20 +112,84 @@ class _FloatingChrome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final fill = fillColor ?? theme.colorScheme.surface;
+    final shadows = shadowsFor(theme.colorScheme);
+    final content = Material(
+      elevation: 0,
+      color: fill,
+      shape: RoundedRectangleBorder(borderRadius: borderRadius),
+      clipBehavior: Clip.antiAlias,
+      child: child,
+    );
+    // Transparent fill: punch the bar out of soft shadows so only the outer
+    // halo remains and the editor background stays clear under the chrome.
+    if (fill.a == 0) {
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _OuterBoxShadowPainter(
+                borderRadius: borderRadius,
+                shadows: shadows,
+              ),
+            ),
+          ),
+          content,
+        ],
+      );
+    }
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: borderRadius,
-        boxShadow: shadowsFor(theme.colorScheme),
+        boxShadow: shadows,
       ),
-      child: Material(
-        elevation: 0,
-        color: theme.colorScheme.surface,
-        shape: RoundedRectangleBorder(borderRadius: borderRadius),
-        clipBehavior: Clip.antiAlias,
-        child: child,
-      ),
+      child: content,
     );
   }
+}
+
+/// Soft shadows that only appear outside [borderRadius] (interior punched out).
+class _OuterBoxShadowPainter extends CustomPainter {
+  const _OuterBoxShadowPainter({
+    required this.borderRadius,
+    required this.shadows,
+  });
+
+  final BorderRadius borderRadius;
+  final List<BoxShadow> shadows;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bounds = Offset.zero & size;
+    final hole = borderRadius.toRRect(bounds);
+    for (final shadow in shadows) {
+      final blurSigma = shadow.blurRadius * 0.57735 + 0.5;
+      final pad = shadow.blurRadius * 2 +
+          shadow.spreadRadius.abs() +
+          shadow.offset.distance;
+      final layerRect = bounds.inflate(pad).shift(shadow.offset);
+      canvas.saveLayer(layerRect, Paint());
+      final shape = hole
+          .shift(shadow.offset)
+          .inflate(shadow.spreadRadius);
+      canvas.drawRRect(
+        shape,
+        Paint()
+          ..color = shadow.color
+          ..maskFilter = blurSigma > 0
+              ? MaskFilter.blur(BlurStyle.normal, blurSigma)
+              : null,
+      );
+      canvas.drawRRect(hole, Paint()..blendMode = BlendMode.dstOut);
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _OuterBoxShadowPainter oldDelegate) =>
+      oldDelegate.borderRadius != borderRadius ||
+      oldDelegate.shadows != shadows;
 }
 
 class WorkspaceSidebar extends StatefulWidget {
@@ -437,6 +506,7 @@ class WorkspaceMobileBookBar extends StatelessWidget {
     required this.onOpenMenu,
     this.tools = const [],
     this.toolsBuilder,
+    this.transparentBackground = false,
   });
 
   /// Compact floating bar; icon buttons sit at 40 inside a 48-tall shell.
@@ -453,6 +523,10 @@ class WorkspaceMobileBookBar extends StatelessWidget {
   /// Optional builder merged after [tools] when the sheet opens.
   final List<WorkspaceMobileTool> Function(BuildContext context)? toolsBuilder;
 
+  /// When true, the bar fill is clear so the editor background shows through;
+  /// the floating shadow is unchanged.
+  final bool transparentBackground;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -466,6 +540,7 @@ class WorkspaceMobileBookBar extends StatelessWidget {
 
     return _FloatingChrome(
       borderRadius: radius,
+      fillColor: transparentBackground ? Colors.transparent : null,
       child: SizedBox(
         height: height,
         child: Padding(

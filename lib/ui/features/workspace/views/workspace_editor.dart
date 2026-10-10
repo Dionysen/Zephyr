@@ -26,6 +26,7 @@ class WorkspaceEditor extends StatefulWidget {
     this.contentTopInset = 0,
     this.showWordCount = true,
     this.bridge,
+    this.showBackground = true,
   });
 
   final LibraryViewModel model;
@@ -39,6 +40,10 @@ class WorkspaceEditor extends StatefulWidget {
 
   /// Optional bridge for the compact IME quick toolbar.
   final WorkspaceEditorBridge? bridge;
+
+  /// When false, the host paints [EditorBackgroundLayer] (e.g. full-bleed under
+  /// a transparent book bar while text is clipped separately).
+  final bool showBackground;
 
   @override
   State<WorkspaceEditor> createState() => _WorkspaceEditorState();
@@ -719,13 +724,17 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     final themeVm = ZephyrScope.of(context).theme;
     final article = widget.model.article;
     if (article == null) {
+      final empty = Center(child: Text(context.l10n.editorEmptyState));
+      if (!widget.showBackground) {
+        return empty;
+      }
       return ListenableBuilder(
         listenable: themeVm,
         builder: (context, _) => EditorBackgroundLayer(
           config: themeVm.ui.editorBackgroundFor(
             dark: themeVm.isEffectivelyDark,
           ),
-          child: Center(child: Text(context.l10n.editorEmptyState)),
+          child: empty,
         ),
       );
     }
@@ -752,33 +761,36 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
           child: ListenableBuilder(
             listenable: themeVm,
             builder: (context, _) {
-              final liveBackground = themeVm.ui.editorBackgroundFor(
-                dark: themeVm.isEffectivelyDark,
-              );
-              return EditorBackgroundLayer(
-                config: liveBackground,
-                child: RepaintBoundary(
-                  child: ZephyrPlainTextEditor(
-                    key: _editorKey,
-                    controller: _controller,
-                    typography: typography,
-                    scrollController: _scrollController,
-                    focusNode: _focusNode,
-                    readOnly: widget.model.isReadOnly,
-                    cursorColor: cursorColor,
-                    selectionColor: selectionColor,
-                    decorations: _pairDecorations(context),
-                    header: _titleHeader(context, preferences),
-                    scrollbarPadding: EdgeInsets.symmetric(
-                      vertical: widget.contentTopInset,
-                    ),
-                    bottomObstruction: quickToolbarBottomObstructionOf(context),
-                    consumeNewline: _consumePairNewline,
-                    shortcuts: ZephyrScope.of(context).keyboardShortcuts,
-                    onTextChanged: (_) {},
-                    onSelectionChanged: _onSelectionChanged,
+              final editor = RepaintBoundary(
+                child: ZephyrPlainTextEditor(
+                  key: _editorKey,
+                  controller: _controller,
+                  typography: typography,
+                  scrollController: _scrollController,
+                  focusNode: _focusNode,
+                  readOnly: widget.model.isReadOnly,
+                  cursorColor: cursorColor,
+                  selectionColor: selectionColor,
+                  decorations: _pairDecorations(context),
+                  header: _titleHeader(context, preferences),
+                  scrollbarPadding: EdgeInsets.symmetric(
+                    vertical: widget.contentTopInset,
                   ),
+                  bottomObstruction: quickToolbarBottomObstructionOf(context),
+                  consumeNewline: _consumePairNewline,
+                  shortcuts: ZephyrScope.of(context).keyboardShortcuts,
+                  onTextChanged: (_) {},
+                  onSelectionChanged: _onSelectionChanged,
                 ),
+              );
+              if (!widget.showBackground) {
+                return editor;
+              }
+              return EditorBackgroundLayer(
+                config: themeVm.ui.editorBackgroundFor(
+                  dark: themeVm.isEffectivelyDark,
+                ),
+                child: editor,
               );
             },
           ),
