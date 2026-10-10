@@ -94,7 +94,107 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsSectionGeneral => '通用';
 
   @override
-  String get settingsSectionCloud => '云同步';
+  String get settingsSectionCloud => '备份';
+
+  @override
+  String get backupAutoTitle => '自动备份';
+
+  @override
+  String get backupAutoSubtitle => '内容有变更且离开应用时写入 Backups/Auto，保留最近 25 份';
+
+  @override
+  String get backupNowTitle => '立即备份';
+
+  @override
+  String get backupNowSubtitle => '在 Backups 目录创建一份手动备份（不会被自动清理）';
+
+  @override
+  String get backupNowSuccess => '备份已完成';
+
+  @override
+  String backupFailed(String error) {
+    return '备份失败：$error';
+  }
+
+  @override
+  String get backupRestoreTitle => '恢复备份';
+
+  @override
+  String backupRestoreSubtitle(int count) {
+    return '共 $count 份备份，可覆盖或合并';
+  }
+
+  @override
+  String get backupRestoreEmpty => '尚未找到 .pwb 备份';
+
+  @override
+  String get backupRestoreModeTitle => '恢复方式';
+
+  @override
+  String get backupRestoreModeMerge => '合并（按更新时间取较新）';
+
+  @override
+  String get backupRestoreModeOverwrite => '覆盖（替换整个文库）';
+
+  @override
+  String get backupRestoreConfirmTitle => '确认恢复';
+
+  @override
+  String get backupRestoreConfirmMerge => '将把所选备份与当前文库合并。恢复前会先创建一份安全备份。';
+
+  @override
+  String get backupRestoreConfirmOverwrite => '将用所选备份完整替换当前文库。恢复前会先创建一份安全备份。';
+
+  @override
+  String get backupRestoreAction => '恢复';
+
+  @override
+  String get backupRestoreSuccess => '已从备份恢复';
+
+  @override
+  String get backupKindAuto => '自动';
+
+  @override
+  String get backupKindManual => '手动';
+
+  @override
+  String get backupFooter => '请勿与纯纯写作同时打开同一文库。备份为 PureWriter 兼容的 .pwb。';
+
+  @override
+  String get historyTitle => '时光机';
+
+  @override
+  String get historyEmpty => '暂无历史版本';
+
+  @override
+  String get historyEmptyRevision => '（空内容）';
+
+  @override
+  String get historyRestoreTitle => '恢复此版本？';
+
+  @override
+  String get historyRestoreBody => '当前正文将替换为所选历史版本，并记入时光机。';
+
+  @override
+  String get historyRestoreAction => '恢复';
+
+  @override
+  String get historyRestoreSuccess => '已恢复到所选版本';
+
+  @override
+  String get historyMenuLabel => '时光机';
+
+  @override
+  String get draftRecoverTitle => '发现未保存草稿';
+
+  @override
+  String get draftRecoverBody => '检测到比文库更新的草稿，是否恢复？';
+
+  @override
+  String get draftRecoverAction => '恢复';
+
+  @override
+  String get draftDismissAction => '丢弃';
 
   @override
   String get settingsSectionEditor => '编辑器';

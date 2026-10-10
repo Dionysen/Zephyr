@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/domain/models/app_theme_mode.dart';
 import 'package:zephyr/domain/models/editor_preferences.dart';
+import 'package:zephyr/domain/models/library_backup.dart';
 import 'package:zephyr/domain/models/purewriter_models.dart';
 import 'package:zephyr/domain/models/settings_navigation.dart';
 import 'package:zephyr/domain/models/theme_color_pack.dart';
@@ -9,6 +10,7 @@ import 'package:zephyr/domain/models/theme_tokens.dart';
 import 'package:zephyr/domain/models/ui_preferences.dart';
 import 'package:zephyr/domain/models/quick_toolbar_config.dart';
 import 'package:zephyr/domain/models/keyboard_shortcuts.dart';
+import 'package:zephyr/domain/repositories/backup_preferences_repository.dart';
 import 'package:zephyr/domain/repositories/editor_preferences_repository.dart';
 import 'package:zephyr/domain/repositories/keyboard_shortcuts_repository.dart';
 import 'package:zephyr/domain/repositories/quick_toolbar_preferences_repository.dart';
@@ -20,6 +22,7 @@ import 'package:zephyr/ui/core/zephyr_theme.dart';
 import 'package:zephyr/ui/features/editor/view_models/editor_preferences_view_model.dart';
 import 'package:zephyr/ui/features/editor/view_models/library_view_model.dart';
 import 'package:zephyr/ui/features/editor/view_models/quick_toolbar_view_model.dart';
+import 'package:zephyr/ui/features/settings/view_models/backup_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/font_library.dart';
 import 'package:zephyr/ui/features/settings/view_models/keyboard_shortcuts_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/settings_view_model.dart';
@@ -558,6 +561,10 @@ Widget _app({LibraryViewModel? library, bool needsLibrarySetup = false}) {
     _KeyboardShortcutsRepository(),
   );
   final settings = SettingsViewModel(_SettingsRepository());
+  final backup = BackupViewModel(
+    library: library,
+    preferencesRepository: _BackupPreferencesRepository(),
+  );
   return ZephyrScope(
     library: library,
     theme: theme,
@@ -565,6 +572,7 @@ Widget _app({LibraryViewModel? library, bool needsLibrarySetup = false}) {
     quickToolbar: quickToolbar,
     keyboardShortcuts: keyboardShortcuts,
     settings: settings,
+    backup: backup,
     child: MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -795,6 +803,12 @@ class _LibraryRepository implements WritingLibraryRepository {
   Future<List<ArticleHistory>> listHistory(String articleId) async => const [];
 
   @override
+  Future<void> restoreHistory({
+    required String articleId,
+    required DateTime createdAt,
+  }) async {}
+
+  @override
   Future<List<DailyWriting>> listDaily() async => const [];
 
   @override
@@ -802,6 +816,40 @@ class _LibraryRepository implements WritingLibraryRepository {
 
   @override
   Future<void> writeScroll(String articleId, double offset) async {}
+
+  @override
+  Future<void> upsertDraft(ArticleDraft draft) async {}
+
+  @override
+  Future<void> clearDraft(String articleId) async {}
+
+  @override
+  Future<ArticleDraft?> getDraft(String articleId) async => null;
+
+  @override
+  Future<List<ArticleDraft>> listDraftsNewerThanArticles() async => const [];
+
+  @override
+  Future<List<BackupEntry>> listBackups() async => const [];
+
+  @override
+  Future<BackupEntry> createBackup({required BackupKind kind}) async =>
+      BackupEntry(
+        path: '/tmp/fake.pwb',
+        fileName: 'fake.pwb',
+        modified: DateTime.utc(2026),
+        sizeBytes: 1,
+        kind: kind,
+      );
+
+  @override
+  Future<void> restoreBackup({
+    required BackupEntry entry,
+    required RestoreMode mode,
+  }) async {}
+
+  @override
+  Future<void> pruneAutomaticBackups({int keep = 25}) async {}
 }
 
 class _ThemeRepository implements ThemePreferencesRepository {
@@ -842,6 +890,18 @@ class _KeyboardShortcutsRepository implements KeyboardShortcutsRepository {
 
   @override
   Future<void> save(ShortcutOverrides overrides) async {}
+}
+
+class _BackupPreferencesRepository implements BackupPreferencesRepository {
+  BackupPreferences preferences = BackupPreferences.defaults;
+
+  @override
+  Future<BackupPreferences> load() async => preferences;
+
+  @override
+  Future<void> save(BackupPreferences preferences) async {
+    this.preferences = preferences;
+  }
 }
 
 class _SettingsRepository implements SettingsNavigationRepository {

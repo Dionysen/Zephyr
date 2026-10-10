@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/l10n/app_localizations_en.dart';
+import 'package:zephyr/domain/models/library_backup.dart';
 import 'package:zephyr/domain/models/purewriter_models.dart';
 import 'package:zephyr/domain/models/workspace_layout.dart';
 import 'package:zephyr/domain/repositories/workspace_layout_repository.dart';
@@ -18,6 +19,16 @@ void main() {
     expect(repository.saved.content, 'Updated text');
     expect(repository.saved.wordCount, 'Updated text'.runes.length);
     expect(repository.saved.createdAt, DateTime.utc(2025));
+  });
+
+  test('flushPending saves dirty content before switching chapters', () async {
+    final repository = FakeLibraryRepository();
+    final model = LibraryViewModel(repository);
+    await model.load();
+    model.updateContent('Unsaved on A');
+    await model.selectArticle('article-b');
+    expect(repository.saved.content, 'Unsaved on A');
+    expect(model.article?.id, 'article-b');
   });
 
   test('save refreshes sidebar preview when leading text changes', () async {
@@ -347,7 +358,7 @@ class FakeLibraryRepository implements WritingLibraryRepository {
       collapsed: false,
     ),
   ];
-  late final WritingArticle _secondArticle = WritingArticle(
+  WritingArticle _secondArticle = WritingArticle(
     id: 'article-b',
     title: 'Chapter B',
     content: '',
@@ -400,7 +411,11 @@ class FakeLibraryRepository implements WritingLibraryRepository {
       saved;
   @override
   Future<void> saveArticle(WritingArticle article) async {
-    saved = article;
+    if (article.id == _secondArticle.id) {
+      _secondArticle = article;
+    } else {
+      saved = article;
+    }
   }
 
   @override
@@ -574,11 +589,42 @@ class FakeLibraryRepository implements WritingLibraryRepository {
   @override
   Future<List<ArticleHistory>> listHistory(String articleId) async => const [];
   @override
+  Future<void> restoreHistory({
+    required String articleId,
+    required DateTime createdAt,
+  }) async {}
+  @override
   Future<List<DailyWriting>> listDaily() async => const [];
   @override
   Future<Map<String, double>> readScrolls() async => const {};
   @override
   Future<void> writeScroll(String articleId, double offset) async {}
+  @override
+  Future<void> upsertDraft(ArticleDraft draft) async {}
+  @override
+  Future<void> clearDraft(String articleId) async {}
+  @override
+  Future<ArticleDraft?> getDraft(String articleId) async => null;
+  @override
+  Future<List<ArticleDraft>> listDraftsNewerThanArticles() async => const [];
+  @override
+  Future<List<BackupEntry>> listBackups() async => const [];
+  @override
+  Future<BackupEntry> createBackup({required BackupKind kind}) async =>
+      BackupEntry(
+        path: '/tmp/fake.pwb',
+        fileName: 'fake.pwb',
+        modified: DateTime.utc(2026),
+        sizeBytes: 1,
+        kind: kind,
+      );
+  @override
+  Future<void> restoreBackup({
+    required BackupEntry entry,
+    required RestoreMode mode,
+  }) async {}
+  @override
+  Future<void> pruneAutomaticBackups({int keep = 25}) async {}
 }
 
 class FakeLayoutRepository implements WorkspaceLayoutRepository {

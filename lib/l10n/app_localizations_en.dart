@@ -96,7 +96,115 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSectionGeneral => 'General';
 
   @override
-  String get settingsSectionCloud => 'Cloud sync';
+  String get settingsSectionCloud => 'Backup';
+
+  @override
+  String get backupAutoTitle => 'Automatic backup';
+
+  @override
+  String get backupAutoSubtitle =>
+      'After edits, back up to Backups/Auto when leaving the app. Keeps the newest 25.';
+
+  @override
+  String get backupNowTitle => 'Back up now';
+
+  @override
+  String get backupNowSubtitle =>
+      'Write a manual .pwb under Backups (not auto-pruned).';
+
+  @override
+  String get backupNowSuccess => 'Backup completed.';
+
+  @override
+  String backupFailed(String error) {
+    return 'Backup failed: $error';
+  }
+
+  @override
+  String get backupRestoreTitle => 'Restore backup';
+
+  @override
+  String backupRestoreSubtitle(int count) {
+    return '$count backups available — overwrite or merge.';
+  }
+
+  @override
+  String get backupRestoreEmpty => 'No .pwb backups found.';
+
+  @override
+  String get backupRestoreModeTitle => 'Restore mode';
+
+  @override
+  String get backupRestoreModeMerge => 'Merge (newer updateTime wins)';
+
+  @override
+  String get backupRestoreModeOverwrite =>
+      'Overwrite (replace the whole library)';
+
+  @override
+  String get backupRestoreConfirmTitle => 'Confirm restore';
+
+  @override
+  String get backupRestoreConfirmMerge =>
+      'Merge the selected backup into the current library. A safety backup is created first.';
+
+  @override
+  String get backupRestoreConfirmOverwrite =>
+      'Replace the current library with the selected backup. A safety backup is created first.';
+
+  @override
+  String get backupRestoreAction => 'Restore';
+
+  @override
+  String get backupRestoreSuccess => 'Library restored from backup.';
+
+  @override
+  String get backupKindAuto => 'Auto';
+
+  @override
+  String get backupKindManual => 'Manual';
+
+  @override
+  String get backupFooter =>
+      'Do not open the same library in Pure Writer at the same time. Backups are PureWriter-compatible .pwb files.';
+
+  @override
+  String get historyTitle => 'History';
+
+  @override
+  String get historyEmpty => 'No history revisions yet.';
+
+  @override
+  String get historyEmptyRevision => '(empty)';
+
+  @override
+  String get historyRestoreTitle => 'Restore this revision?';
+
+  @override
+  String get historyRestoreBody =>
+      'The current chapter text will be replaced by this revision and recorded in History.';
+
+  @override
+  String get historyRestoreAction => 'Restore';
+
+  @override
+  String get historyRestoreSuccess => 'Restored to the selected revision.';
+
+  @override
+  String get historyMenuLabel => 'History';
+
+  @override
+  String get draftRecoverTitle => 'Unsaved draft found';
+
+  @override
+  String get draftRecoverBody =>
+      'A draft newer than the library was found. Restore it?';
+
+  @override
+  String get draftRecoverAction => 'Restore';
+
+  @override
+  String get draftDismissAction => 'Discard';
 
   @override
   String get settingsSectionEditor => 'Editor';

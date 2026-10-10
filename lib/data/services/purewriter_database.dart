@@ -72,9 +72,11 @@ class PureWriterDatabase {
         ).create(recursive: true);
       }
     } else if (latestBackup != null &&
-        _looksLikeEmptyStubLibrary(resolved.room, latestBackup)) {
+        _looksLikeEmptyStubLibrary(resolved.room, latestBackup) &&
+        await _roomHasNoArticleContent(resolved.room)) {
       // Android PureWriter often keeps the live corpus in Backups while App/
-      // only has a tiny placeholder Room.db — never keep the stub.
+      // only has a tiny placeholder Room.db — never keep an empty stub.
+      // Skip when the stub already has article text (Zephyr may have written).
       await _backups.restoreRoomDb(
         pwb: latestBackup,
         destinationRoomDb: resolved.room,
@@ -98,6 +100,7 @@ class PureWriterDatabase {
         room: resolved.room,
         createIfMissing: createIfMissing || isNewLibrary,
       );
+      await _ensureZephyrTables(_database!);
       _location = LibraryLocation(
         rootPath: resolved.root.path,
         schema: await _readSchema(_database!),
@@ -107,6 +110,61 @@ class PureWriterDatabase {
       await close();
       rethrow;
     }
+  }
+
+  /// Absolute path to the open library's `App/Room.db`.
+  File get roomDbFile {
+    final root = location?.rootPath;
+    if (root == null) {
+      throw StateError('No PureWriter library is open.');
+    }
+    return resolvePureWriterLibrary(root).room;
+  }
+
+  PureWriterBackup get backups => _backups;
+
+  /// Consistent on-disk snapshot of [roomDbFile] for `.pwb` packing.
+  Future<File> snapshotRoomDbToTemp() async {
+    final db = database;
+    final tempDir = await Directory.systemTemp.createTemp('zephyr-room-snap-');
+    final dest = File(path.join(tempDir.path, 'Room.db'));
+    try {
+      await db.execute('PRAGMA wal_checkpoint(FULL)');
+    } on Object {
+      // Non-WAL journals ignore checkpoint.
+    }
+    try {
+      final escaped = dest.path.replaceAll("'", "''");
+      await db.execute("VACUUM INTO '$escaped'");
+      return dest;
+    } on Object {
+      await roomDbFile.copy(dest.path);
+      return dest;
+    }
+  }
+
+  /// Opens an external SQLite file read-only (e.g. extracted backup).
+  Future<Database> openReadOnlyDatabase(File file) =>
+      _libraryDatabaseFactory.openDatabase(
+        file.path,
+        options: OpenDatabaseOptions(readOnly: true, singleInstance: false),
+      );
+
+  Future<void> _ensureZephyrTables(Database db) async {
+    await db.execute(
+      'CREATE TABLE IF NOT EXISTS ZephyrDraft ('
+      'article_id TEXT NOT NULL PRIMARY KEY, '
+      'content TEXT NOT NULL, '
+      'title TEXT NOT NULL, '
+      'updated_at INTEGER NOT NULL'
+      ')',
+    );
+    await db.execute(
+      'CREATE TABLE IF NOT EXISTS ZephyrMeta ('
+      'key TEXT NOT NULL PRIMARY KEY, '
+      'value TEXT NOT NULL'
+      ')',
+    );
   }
 
   void ensureWritable() {
@@ -311,6 +369,29 @@ bool _looksLikeEmptyStubLibrary(File room, File latestBackup) {
   // Fresh Zephyr stubs are ~100KB; real PureWriter libraries / backups are
   // hundreds of KB to multiple MB once they contain books.
   return roomSize > 0 && roomSize < 200 * 1024 && backupSize > roomSize * 3;
+}
+
+/// Opens [room] read-only and reports whether any article has non-empty content.
+Future<bool> _roomHasNoArticleContent(File room) async {
+  if (!room.existsSync()) return true;
+  Database? db;
+  try {
+    db = await _libraryDatabaseFactory.openDatabase(
+      room.path,
+      options: OpenDatabaseOptions(readOnly: true, singleInstance: false),
+    );
+    if (!await _hasTable(db, 'Article')) return true;
+    final rows = await db.rawQuery(
+      "SELECT 1 FROM Article WHERE deleted = 0 AND length(trim(content)) > 0 "
+      'LIMIT 1',
+    );
+    return rows.isEmpty;
+  } on Object {
+    // Unreadable stub — treat as empty so backup restore can proceed.
+    return true;
+  } finally {
+    await db?.close();
+  }
 }
 
 /// Platform database factory: native sqflite on mobile, FFI on desktop.

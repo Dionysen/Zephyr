@@ -10,6 +10,7 @@ import '../../../core/zephyr_status_bar.dart';
 import '../../../core/zephyr_theme.dart';
 import '../models/settings_section.dart';
 import 'about_settings_view.dart';
+import 'backup_settings_view.dart';
 import 'editor_settings_view.dart';
 import 'general_settings_view.dart';
 import 'shortcuts_settings_page.dart';
@@ -159,6 +160,10 @@ class CompactSettingsList extends StatelessWidget {
               ],
             ),
             SettingsSection.about => const AboutSettingsView(compact: true),
+            SettingsSection.cloud => BackupSettingsView(
+              viewModel: scope.backup,
+              compact: true,
+            ),
             _ => ZephyrSettingsSection(
               children: [
                 ZephyrSettingsListTile(

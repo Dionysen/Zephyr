@@ -13,7 +13,9 @@ Zephyr is a Flutter local-first plain-text editor. The document library is a **P
 | --- | --- |
 | App entry / startup library | `lib/main.dart`, `lib/data/services/startup_library.dart` |
 | Room.db open / schema / repair | `lib/data/services/purewriter_database.dart` |
-| `.pwb` backup restore | `lib/data/services/purewriter_backup.dart` |
+| `.pwb` create / list / restore | `lib/data/services/purewriter_backup.dart` (+ Android `createPwb`/`restorePwb`) |
+| Backup settings UI / VM | `backup_settings_view.dart`, `BackupViewModel`, prefs JSON under app-support |
+| Crash drafts (`ZephyrDraft`) | Created IF NOT EXISTS on open — **do not** change `identity_hash` / `user_version` |
 | Library CRUD | `lib/data/repositories/purewriter_writing_library_repository.dart` |
 | Domain models | `lib/domain/models/purewriter_models.dart` |
 | Library UI state | `lib/ui/features/editor/view_models/library_view_model.dart` |
@@ -82,11 +84,19 @@ Zephyr is a Flutter local-first plain-text editor. The document library is a **P
 - Do **not** use `SystemUiMode.immersiveSticky` (it hides the gesture bar). Hide-status-icons uses `SystemUiMode.manual` with only `SystemUiOverlay.bottom`.
 - Native: `WindowCompat.setDecorFitsSystemWindows(false)`, `isNavigationBarContrastEnforced = false` in `MainActivity.kt`; theme styles set transparent status/nav + `enforceNavigationBarContrast` false (API 29+).
 
+## Save / backup durability
+
+- Content debounce 500ms; **`flushPending()`** (by article-id snapshot) before chapter/book/library switch, lifecycle pause, dispose, and backups.
+- `ZephyrDraft` / `ZephyrMeta` are Zephyr-only tables (`CREATE IF NOT EXISTS`); never bump Room fingerprint.
+- Local `.pwb`: manual → `Backups/`, auto → `Backups/Auto/` (keep 25); restore overwrite or merge (newer `updateTime` wins).
+- Chapter History UI: sidebar chapter menu → `article_history_sheet.dart`.
+- Stub auto-restore from `.pwb` only when Room looks tiny **and** has no article text.
+
 ## Database pitfalls (Android)
 
 - Native **sqflite allows one SQL statement per `execute`**. Schema must be `_schemaStatements` + `batch`, not a multi-statement string (FFI desktop hid this bug).
 - Incomplete Zephyr DBs (fingerprint + missing `Article`) are repaired in `_ensureCompleteSchema`.
-- Existing PureWriter libraries open as-is (no `onUpgrade`); stub `Room.db` may restore from `Backups/*.pwb`.
+- Existing PureWriter libraries open as-is (no `onUpgrade`); stub `Room.db` may restore from `Backups/*.pwb` only when empty of article text.
 
 ## Tests
 

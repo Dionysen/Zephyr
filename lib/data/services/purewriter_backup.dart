@@ -3,30 +3,111 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
 
+import '../../domain/models/library_backup.dart';
 import 'purewriter_database.dart';
 
-/// Locates and restores PureWriter `.pwb` backups (7z archives containing a
-/// `*.db` snapshot of `App/Room.db`).
+/// Locates, creates, and restores PureWriter `.pwb` backups (7z archives
+/// containing a `*.db` snapshot of `App/Room.db`).
 class PureWriterBackup {
   PureWriterBackup({MethodChannel? channel})
     : _channel = channel ?? const MethodChannel('zephyr/purewriter_backup');
 
   final MethodChannel _channel;
 
+  static const autoKeepCount = 25;
+
   /// Newest `.pwb` under `{root}/Backups` (including `Backups/Auto`).
   File? findLatestBackup(Directory libraryRoot) {
+    final entries = listBackups(libraryRoot);
+    return entries.isEmpty ? null : File(entries.first.path);
+  }
+
+  bool hasBackups(Directory libraryRoot) =>
+      listBackups(libraryRoot).isNotEmpty;
+
+  /// All `.pwb` files, newest first.
+  List<BackupEntry> listBackups(Directory libraryRoot) {
     final backups = findChildDirectory(libraryRoot, 'backups');
-    if (backups == null) return null;
+    if (backups == null) return const [];
     final files = <File>[];
     _collectPwb(backups, files);
-    if (files.isEmpty) return null;
     files.sort(
       (a, b) => b.statSync().modified.compareTo(a.statSync().modified),
     );
-    return files.first;
+    return [
+      for (final file in files)
+        BackupEntry(
+          path: file.path,
+          fileName: path.basename(file.path),
+          modified: file.statSync().modified,
+          sizeBytes: file.lengthSync(),
+          kind: _kindFor(file, backups),
+        ),
+    ];
   }
 
-  bool hasBackups(Directory libraryRoot) => findLatestBackup(libraryRoot) != null;
+  BackupKind _kindFor(File file, Directory backupsRoot) {
+    final parent = file.parent;
+    if (path.equals(parent.path, backupsRoot.path)) {
+      return BackupKind.manual;
+    }
+    final name = path.basename(parent.path).toLowerCase();
+    return name == 'auto' ? BackupKind.automatic : BackupKind.manual;
+  }
+
+  /// Packs [roomDb] into a new `.pwb` under `Backups/` or `Backups/Auto/`.
+  Future<BackupEntry> createPwb({
+    required Directory libraryRoot,
+    required File roomDb,
+    required BackupKind kind,
+  }) async {
+    final backupsDir = Directory(path.join(libraryRoot.path, 'Backups'));
+    final targetDir = kind == BackupKind.automatic
+        ? Directory(path.join(backupsDir.path, 'Auto'))
+        : backupsDir;
+    await targetDir.create(recursive: true);
+    final stamp = _fileStamp(DateTime.now());
+    final pwb = File(path.join(targetDir.path, 'Zephyr-$stamp.pwb'));
+    await _packRoomDb(roomDb: roomDb, pwb: pwb);
+    if (kind == BackupKind.automatic) {
+      await pruneAutomaticBackups(libraryRoot, keep: autoKeepCount);
+    }
+    final stat = pwb.statSync();
+    return BackupEntry(
+      path: pwb.path,
+      fileName: path.basename(pwb.path),
+      modified: stat.modified,
+      sizeBytes: stat.size,
+      kind: kind,
+    );
+  }
+
+  Future<void> pruneAutomaticBackups(
+    Directory libraryRoot, {
+    int keep = autoKeepCount,
+  }) async {
+    final auto = findChildDirectory(
+      findChildDirectory(libraryRoot, 'backups') ??
+          Directory(path.join(libraryRoot.path, 'Backups')),
+      'auto',
+    );
+    if (auto == null || !auto.existsSync()) return;
+    final files = auto
+        .listSync(followLinks: false)
+        .whereType<File>()
+        .where((f) => path.extension(f.path).toLowerCase() == '.pwb')
+        .toList()
+      ..sort(
+        (a, b) => b.statSync().modified.compareTo(a.statSync().modified),
+      );
+    for (var i = keep; i < files.length; i++) {
+      try {
+        await files[i].delete();
+      } on Object {
+        // Best-effort cleanup.
+      }
+    }
+  }
 
   /// Extracts the database from [pwb] into [destinationRoomDb].
   Future<void> restoreRoomDb({
@@ -42,6 +123,46 @@ class PureWriterBackup {
       return;
     }
     await _restoreWithBsdtar(pwb, destinationRoomDb);
+  }
+
+  /// Extracts the `.db` from [pwb] into a temp file and returns it.
+  Future<File> extractRoomDbToTemp(File pwb) async {
+    final staging = await Directory.systemTemp.createTemp('zephyr-pwb-extract-');
+    final destination = File(path.join(staging.path, 'Room.db'));
+    await restoreRoomDb(pwb: pwb, destinationRoomDb: destination);
+    return destination;
+  }
+
+  Future<void> _packRoomDb({required File roomDb, required File pwb}) async {
+    if (Platform.isAndroid) {
+      await _channel.invokeMethod<void>('createPwb', {
+        'roomDbPath': roomDb.path,
+        'pwbPath': pwb.path,
+      });
+      return;
+    }
+    final staging = await Directory.systemTemp.createTemp('zephyr-pack-pwb-');
+    try {
+      final dbName = 'PureWriterBackup.db';
+      await roomDb.copy(path.join(staging.path, dbName));
+      if (await pwb.exists()) {
+        await pwb.delete();
+      }
+      final packed = await Process.run('bsdtar', [
+        '--format',
+        '7zip',
+        '-cf',
+        pwb.path,
+        '-C',
+        staging.path,
+        dbName,
+      ]);
+      if (packed.exitCode != 0) {
+        throw StateError('Could not create PureWriter backup: ${packed.stderr}');
+      }
+    } finally {
+      await staging.delete(recursive: true);
+    }
   }
 
   Future<void> _restoreWithBsdtar(File pwb, File destinationRoomDb) async {
@@ -92,5 +213,11 @@ class PureWriterBackup {
         out.add(entity);
       }
     }
+  }
+
+  String _fileStamp(DateTime time) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${time.year}${two(time.month)}${two(time.day)}-'
+        '${two(time.hour)}${two(time.minute)}${two(time.second)}';
   }
 }

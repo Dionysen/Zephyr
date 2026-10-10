@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../data/services/android_storage_access.dart';
 import '../../../../data/services/folder_bookmark.dart';
+import '../../../../domain/models/library_backup.dart';
 
 import '../../../core/breakpoints.dart';
 import '../../../core/window_chrome.dart';
@@ -32,10 +34,18 @@ class WorkspacePage extends StatefulWidget {
   State<WorkspacePage> createState() => _WorkspacePageState();
 }
 
-class _WorkspacePageState extends State<WorkspacePage> {
+class _WorkspacePageState extends State<WorkspacePage>
+    with WidgetsBindingObserver {
   LibraryViewModel? _library;
   var _started = false;
   var _settingsOpen = false;
+  var _offeredDraftRecovery = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   @override
   void didChangeDependencies() {
@@ -45,12 +55,74 @@ class _WorkspacePageState extends State<WorkspacePage> {
       return;
     }
     _started = true;
-    _library!.load();
+    unawaited(_bootstrapLibrary());
+  }
+
+  Future<void> _bootstrapLibrary() async {
+    final library = _library;
+    if (library == null) return;
+    await library.load();
+    if (!mounted || _offeredDraftRecovery) return;
+    _offeredDraftRecovery = true;
+    await _offerDraftRecovery(library);
+  }
+
+  Future<void> _offerDraftRecovery(LibraryViewModel library) async {
+    final drafts = List<ArticleDraft>.from(library.recoverableDrafts);
+    for (final draft in drafts) {
+      if (!mounted) return;
+      final l10n = context.l10n;
+      final action = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(l10n.draftRecoverTitle),
+          content: Text(l10n.draftRecoverBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'dismiss'),
+              child: Text(l10n.draftDismissAction),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, 'restore'),
+              child: Text(l10n.draftRecoverAction),
+            ),
+          ],
+        ),
+      );
+      if (!mounted) return;
+      if (action == 'restore') {
+        await library.applyRecoverableDraft(draft);
+      } else if (action == 'dismiss') {
+        await library.dismissRecoverableDraft(draft);
+      }
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      final library = _library;
+      if (library != null) {
+        unawaited(library.flushPending());
+      }
+      if (mounted &&
+          (state == AppLifecycleState.paused ||
+              state == AppLifecycleState.inactive)) {
+        final backup = ZephyrScope.of(context).backup;
+        unawaited(backup.maybeAutoBackupOnLeave());
+      }
+    }
   }
 
   @override
   void dispose() {
-    _library?.save();
+    WidgetsBinding.instance.removeObserver(this);
+    final library = _library;
+    if (library != null) {
+      unawaited(library.flushPending());
+    }
     super.dispose();
   }
 

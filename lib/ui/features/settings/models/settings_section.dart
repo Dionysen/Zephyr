@@ -17,7 +17,7 @@ extension SettingsSectionLabels on SettingsSection {
 
   IconData get icon => switch (this) {
     SettingsSection.general => Icons.tune,
-    SettingsSection.cloud => Icons.cloud_outlined,
+    SettingsSection.cloud => Icons.backup_outlined,
     SettingsSection.editor => Icons.edit_outlined,
     SettingsSection.shortcuts => Icons.keyboard_outlined,
     SettingsSection.theme => Icons.palette_outlined,

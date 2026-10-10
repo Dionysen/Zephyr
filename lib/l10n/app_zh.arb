@@ -28,7 +28,53 @@
   "settingsComingSoonSubtitle": "此分组的设置项稍后加入",
   "settingsPlaceholderBody": "此设置分组将用于对应功能的选项",
   "settingsSectionGeneral": "通用",
-  "settingsSectionCloud": "云同步",
+  "settingsSectionCloud": "备份",
+  "backupAutoTitle": "自动备份",
+  "backupAutoSubtitle": "内容有变更且离开应用时写入 Backups/Auto，保留最近 25 份",
+  "backupNowTitle": "立即备份",
+  "backupNowSubtitle": "在 Backups 目录创建一份手动备份（不会被自动清理）",
+  "backupNowSuccess": "备份已完成",
+  "backupFailed": "备份失败：{error}",
+  "@backupFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "backupRestoreTitle": "恢复备份",
+  "backupRestoreSubtitle": "共 {count} 份备份，可覆盖或合并",
+  "@backupRestoreSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupRestoreEmpty": "尚未找到 .pwb 备份",
+  "backupRestoreModeTitle": "恢复方式",
+  "backupRestoreModeMerge": "合并（按更新时间取较新）",
+  "backupRestoreModeOverwrite": "覆盖（替换整个文库）",
+  "backupRestoreConfirmTitle": "确认恢复",
+  "backupRestoreConfirmMerge": "将把所选备份与当前文库合并。恢复前会先创建一份安全备份。",
+  "backupRestoreConfirmOverwrite": "将用所选备份完整替换当前文库。恢复前会先创建一份安全备份。",
+  "backupRestoreAction": "恢复",
+  "backupRestoreSuccess": "已从备份恢复",
+  "backupKindAuto": "自动",
+  "backupKindManual": "手动",
+  "backupFooter": "请勿与纯纯写作同时打开同一文库。备份为 PureWriter 兼容的 .pwb。",
+  "historyTitle": "时光机",
+  "historyEmpty": "暂无历史版本",
+  "historyEmptyRevision": "（空内容）",
+  "historyRestoreTitle": "恢复此版本？",
+  "historyRestoreBody": "当前正文将替换为所选历史版本，并记入时光机。",
+  "historyRestoreAction": "恢复",
+  "historyRestoreSuccess": "已恢复到所选版本",
+  "historyMenuLabel": "时光机",
+  "draftRecoverTitle": "发现未保存草稿",
+  "draftRecoverBody": "检测到比文库更新的草稿，是否恢复？",
+  "draftRecoverAction": "恢复",
+  "draftDismissAction": "丢弃",
   "settingsSectionEditor": "编辑器",
   "settingsSectionShortcuts": "快捷键",
   "shortcutsManageTitle": "自定义快捷键",

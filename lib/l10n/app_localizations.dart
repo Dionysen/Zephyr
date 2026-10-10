@@ -269,8 +269,200 @@ abstract class AppLocalizations {
   /// No description provided for @settingsSectionCloud.
   ///
   /// In en, this message translates to:
-  /// **'Cloud sync'**
+  /// **'Backup'**
   String get settingsSectionCloud;
+
+  /// No description provided for @backupAutoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic backup'**
+  String get backupAutoTitle;
+
+  /// No description provided for @backupAutoSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'After edits, back up to Backups/Auto when leaving the app. Keeps the newest 25.'**
+  String get backupAutoSubtitle;
+
+  /// No description provided for @backupNowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Back up now'**
+  String get backupNowTitle;
+
+  /// No description provided for @backupNowSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a manual .pwb under Backups (not auto-pruned).'**
+  String get backupNowSubtitle;
+
+  /// No description provided for @backupNowSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup completed.'**
+  String get backupNowSuccess;
+
+  /// No description provided for @backupFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup failed: {error}'**
+  String backupFailed(String error);
+
+  /// No description provided for @backupRestoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore backup'**
+  String get backupRestoreTitle;
+
+  /// No description provided for @backupRestoreSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} backups available — overwrite or merge.'**
+  String backupRestoreSubtitle(int count);
+
+  /// No description provided for @backupRestoreEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No .pwb backups found.'**
+  String get backupRestoreEmpty;
+
+  /// No description provided for @backupRestoreModeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore mode'**
+  String get backupRestoreModeTitle;
+
+  /// No description provided for @backupRestoreModeMerge.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge (newer updateTime wins)'**
+  String get backupRestoreModeMerge;
+
+  /// No description provided for @backupRestoreModeOverwrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Overwrite (replace the whole library)'**
+  String get backupRestoreModeOverwrite;
+
+  /// No description provided for @backupRestoreConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm restore'**
+  String get backupRestoreConfirmTitle;
+
+  /// No description provided for @backupRestoreConfirmMerge.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge the selected backup into the current library. A safety backup is created first.'**
+  String get backupRestoreConfirmMerge;
+
+  /// No description provided for @backupRestoreConfirmOverwrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace the current library with the selected backup. A safety backup is created first.'**
+  String get backupRestoreConfirmOverwrite;
+
+  /// No description provided for @backupRestoreAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get backupRestoreAction;
+
+  /// No description provided for @backupRestoreSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Library restored from backup.'**
+  String get backupRestoreSuccess;
+
+  /// No description provided for @backupKindAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get backupKindAuto;
+
+  /// No description provided for @backupKindManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual'**
+  String get backupKindManual;
+
+  /// No description provided for @backupFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not open the same library in Pure Writer at the same time. Backups are PureWriter-compatible .pwb files.'**
+  String get backupFooter;
+
+  /// No description provided for @historyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get historyTitle;
+
+  /// No description provided for @historyEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No history revisions yet.'**
+  String get historyEmpty;
+
+  /// No description provided for @historyEmptyRevision.
+  ///
+  /// In en, this message translates to:
+  /// **'(empty)'**
+  String get historyEmptyRevision;
+
+  /// No description provided for @historyRestoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore this revision?'**
+  String get historyRestoreTitle;
+
+  /// No description provided for @historyRestoreBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The current chapter text will be replaced by this revision and recorded in History.'**
+  String get historyRestoreBody;
+
+  /// No description provided for @historyRestoreAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get historyRestoreAction;
+
+  /// No description provided for @historyRestoreSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Restored to the selected revision.'**
+  String get historyRestoreSuccess;
+
+  /// No description provided for @historyMenuLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get historyMenuLabel;
+
+  /// No description provided for @draftRecoverTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved draft found'**
+  String get draftRecoverTitle;
+
+  /// No description provided for @draftRecoverBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A draft newer than the library was found. Restore it?'**
+  String get draftRecoverBody;
+
+  /// No description provided for @draftRecoverAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get draftRecoverAction;
+
+  /// No description provided for @draftDismissAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get draftDismissAction;
 
   /// No description provided for @settingsSectionEditor.
   ///

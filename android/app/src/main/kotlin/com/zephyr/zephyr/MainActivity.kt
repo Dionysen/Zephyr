@@ -12,7 +12,9 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry
 import org.apache.commons.compress.archivers.sevenz.SevenZFile
+import org.apache.commons.compress.archivers.sevenz.SevenZOutputFile
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 
 class MainActivity : FlutterActivity() {
@@ -60,6 +62,20 @@ class MainActivity : FlutterActivity() {
                             result.error("restore_failed", error.message, null)
                         }
                     }
+                    "createPwb" -> {
+                        try {
+                            val roomDbPath = call.argument<String>("roomDbPath")
+                            val pwbPath = call.argument<String>("pwbPath")
+                            if (roomDbPath.isNullOrEmpty() || pwbPath.isNullOrEmpty()) {
+                                result.error("bad_args", "roomDbPath and pwbPath required", null)
+                                return@setMethodCallHandler
+                            }
+                            createPwb(File(roomDbPath), File(pwbPath))
+                            result.success(null)
+                        } catch (error: Exception) {
+                            result.error("create_failed", error.message, null)
+                        }
+                    }
                     else -> result.notImplemented()
                 }
             }
@@ -104,6 +120,28 @@ class MainActivity : FlutterActivity() {
             if (!restored) {
                 throw IllegalStateException("PureWriter backup contains no .db database.")
             }
+        }
+    }
+
+    private fun createPwb(roomDb: File, pwb: File) {
+        if (!roomDb.isFile) {
+            throw IllegalStateException("Room database not found: ${roomDb.path}")
+        }
+        pwb.parentFile?.mkdirs()
+        if (pwb.exists()) {
+            pwb.delete()
+        }
+        SevenZOutputFile(pwb).use { archive ->
+            val entry = archive.createArchiveEntry(roomDb, "PureWriterBackup.db")
+            archive.putArchiveEntry(entry)
+            FileInputStream(roomDb).use { input ->
+                val buffer = ByteArray(64 * 1024)
+                var read: Int
+                while (input.read(buffer).also { read = it } > 0) {
+                    archive.write(buffer, 0, read)
+                }
+            }
+            archive.closeArchiveEntry()
         }
     }
 }

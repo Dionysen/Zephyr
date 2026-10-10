@@ -28,7 +28,53 @@
   "settingsComingSoonSubtitle": "Settings for this section will arrive later.",
   "settingsPlaceholderBody": "This settings section is reserved for its own feature settings.",
   "settingsSectionGeneral": "General",
-  "settingsSectionCloud": "Cloud sync",
+  "settingsSectionCloud": "Backup",
+  "backupAutoTitle": "Automatic backup",
+  "backupAutoSubtitle": "After edits, back up to Backups/Auto when leaving the app. Keeps the newest 25.",
+  "backupNowTitle": "Back up now",
+  "backupNowSubtitle": "Write a manual .pwb under Backups (not auto-pruned).",
+  "backupNowSuccess": "Backup completed.",
+  "backupFailed": "Backup failed: {error}",
+  "@backupFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "backupRestoreTitle": "Restore backup",
+  "backupRestoreSubtitle": "{count} backups available — overwrite or merge.",
+  "@backupRestoreSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupRestoreEmpty": "No .pwb backups found.",
+  "backupRestoreModeTitle": "Restore mode",
+  "backupRestoreModeMerge": "Merge (newer updateTime wins)",
+  "backupRestoreModeOverwrite": "Overwrite (replace the whole library)",
+  "backupRestoreConfirmTitle": "Confirm restore",
+  "backupRestoreConfirmMerge": "Merge the selected backup into the current library. A safety backup is created first.",
+  "backupRestoreConfirmOverwrite": "Replace the current library with the selected backup. A safety backup is created first.",
+  "backupRestoreAction": "Restore",
+  "backupRestoreSuccess": "Library restored from backup.",
+  "backupKindAuto": "Auto",
+  "backupKindManual": "Manual",
+  "backupFooter": "Do not open the same library in Pure Writer at the same time. Backups are PureWriter-compatible .pwb files.",
+  "historyTitle": "History",
+  "historyEmpty": "No history revisions yet.",
+  "historyEmptyRevision": "(empty)",
+  "historyRestoreTitle": "Restore this revision?",
+  "historyRestoreBody": "The current chapter text will be replaced by this revision and recorded in History.",
+  "historyRestoreAction": "Restore",
+  "historyRestoreSuccess": "Restored to the selected revision.",
+  "historyMenuLabel": "History",
+  "draftRecoverTitle": "Unsaved draft found",
+  "draftRecoverBody": "A draft newer than the library was found. Restore it?",
+  "draftRecoverAction": "Restore",
+  "draftDismissAction": "Discard",
   "settingsSectionEditor": "Editor",
   "settingsSectionShortcuts": "Shortcuts",
   "shortcutsManageTitle": "Customize shortcuts",

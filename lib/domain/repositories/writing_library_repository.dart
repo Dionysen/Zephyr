@@ -1,3 +1,4 @@
+import '../models/library_backup.dart';
 import '../models/purewriter_models.dart';
 
 /// PureWriter-compatible library operations. The Room database remains the
@@ -53,7 +54,25 @@ abstract interface class WritingLibraryRepository {
   Future<void> trashArticle(String articleId);
   Future<void> restoreArticle(String articleId, {required String folderId});
   Future<List<ArticleHistory>> listHistory(String articleId);
+  Future<void> restoreHistory({
+    required String articleId,
+    required DateTime createdAt,
+  });
   Future<List<DailyWriting>> listDaily();
   Future<Map<String, double>> readScrolls();
   Future<void> writeScroll(String articleId, double offset);
+
+  /// Upserts a Zephyr-only crash draft (does not change Article).
+  Future<void> upsertDraft(ArticleDraft draft);
+  Future<void> clearDraft(String articleId);
+  Future<ArticleDraft?> getDraft(String articleId);
+  Future<List<ArticleDraft>> listDraftsNewerThanArticles();
+
+  Future<List<BackupEntry>> listBackups();
+  Future<BackupEntry> createBackup({required BackupKind kind});
+  Future<void> restoreBackup({
+    required BackupEntry entry,
+    required RestoreMode mode,
+  });
+  Future<void> pruneAutomaticBackups({int keep = 25});
 }

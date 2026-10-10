@@ -5,6 +5,15 @@ import 'package:path/path.dart' as path;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:zephyr/data/repositories/purewriter_writing_library_repository.dart';
 import 'package:zephyr/data/services/purewriter_database.dart';
+import 'package:zephyr/domain/models/library_backup.dart';
+
+final _hasBsdtar = () {
+  try {
+    return Process.runSync('bsdtar', ['--version']).exitCode == 0;
+  } on Object {
+    return false;
+  }
+}();
 
 void main() {
   late Directory root;
@@ -38,6 +47,8 @@ void main() {
         'Shortcut',
         'License',
         'UserMessage',
+        'ZephyrDraft',
+        'ZephyrMeta',
         'Setting',
       ]),
     );
@@ -125,36 +136,42 @@ void main() {
     expect(location.rootPath, libraryRoot.path);
   });
 
-  test('restores Room.db from the newest Backups/*.pwb when missing', () async {
-    final root = await Directory.systemTemp.createTemp('zephyr-pwb-restore-');
-    addTearDown(() => root.delete(recursive: true));
-    final libraryRoot = await Directory(path.join(root.path, 'PW')).create();
-    final seed = PureWriterDatabase(supportDirectory: () async => root);
-    addTearDown(seed.close);
-    await seed.openLibrary(libraryRoot.path, createIfMissing: true);
-    final article = await PureWriterWritingLibraryRepository(seed).createArticle(
-      folderId: PureWriterDatabase.defaultFolderId,
-    );
-    await PureWriterWritingLibraryRepository(seed).saveArticle(
-      article.copyWith(content: 'From backup'),
-    );
-    await seed.close();
+  test(
+    'restores Room.db from the newest Backups/*.pwb when missing',
+    () async {
+      final root = await Directory.systemTemp.createTemp('zephyr-pwb-restore-');
+      addTearDown(() => root.delete(recursive: true));
+      final libraryRoot = await Directory(path.join(root.path, 'PW')).create();
+      final seed = PureWriterDatabase(supportDirectory: () async => root);
+      addTearDown(seed.close);
+      await seed.openLibrary(libraryRoot.path, createIfMissing: true);
+      final article = await PureWriterWritingLibraryRepository(seed)
+          .createArticle(
+        folderId: PureWriterDatabase.defaultFolderId,
+      );
+      await PureWriterWritingLibraryRepository(seed).saveArticle(
+        article.copyWith(content: 'From backup'),
+      );
+      await seed.close();
 
-    final room = File(path.join(libraryRoot.path, 'App', 'Room.db'));
-    final backups = Directory(path.join(libraryRoot.path, 'Backups', 'Auto'))
-      ..createSync(recursive: true);
-    final pwb = File(path.join(backups.path, 'library.pwb'));
-    await _packPwb(room: room, pwb: pwb);
-    await room.delete();
+      final room = File(path.join(libraryRoot.path, 'App', 'Room.db'));
+      final backups = Directory(path.join(libraryRoot.path, 'Backups', 'Auto'))
+        ..createSync(recursive: true);
+      final pwb = File(path.join(backups.path, 'library.pwb'));
+      await _packPwb(room: room, pwb: pwb);
+      await room.delete();
 
-    final store = PureWriterDatabase(supportDirectory: () async => root);
-    addTearDown(store.close);
-    await store.openLibrary(libraryRoot.path);
-    final reloaded = await PureWriterWritingLibraryRepository(store).getArticle(
-      article.id,
-    );
-    expect(reloaded.content, 'From backup');
-  });
+      final store = PureWriterDatabase(supportDirectory: () async => root);
+      addTearDown(store.close);
+      await store.openLibrary(libraryRoot.path);
+      final reloaded = await PureWriterWritingLibraryRepository(store)
+          .getArticle(
+        article.id,
+      );
+      expect(reloaded.content, 'From backup');
+    },
+    skip: !_hasBsdtar ? 'bsdtar required to pack .pwb on desktop' : false,
+  );
 
   test('resolvePureWriterLibrary maps Android layout paths', () {
     final root = Directory.systemTemp.createTempSync('zephyr-resolve-');
@@ -346,6 +363,59 @@ void main() {
       whereArgs: [article.id],
     );
     expect(raw.single, {'editorId': 0, 'preview': 0, 'preview1': 0});
+  });
+
+  test('creates ZephyrDraft table and round-trips crash drafts', () async {
+    final repository = PureWriterWritingLibraryRepository(database);
+    final article = await repository.createArticle(
+      folderId: PureWriterDatabase.defaultFolderId,
+    );
+    await repository.upsertDraft(
+      ArticleDraft(
+        articleId: article.id,
+        content: 'Draft body',
+        title: 'Draft title',
+        updatedAt: DateTime.utc(2026, 4, 1),
+      ),
+    );
+    final draft = await repository.getDraft(article.id);
+    expect(draft?.content, 'Draft body');
+    expect(draft?.title, 'Draft title');
+    await repository.clearDraft(article.id);
+    expect(await repository.getDraft(article.id), isNull);
+  });
+
+  test('createBackup writes a .pwb that listBackups can see', () async {
+    final repository = PureWriterWritingLibraryRepository(database);
+    final article = await repository.createArticle(
+      folderId: PureWriterDatabase.defaultFolderId,
+    );
+    await repository.saveArticle(article.copyWith(content: 'Backup me'));
+    final entry = await repository.createBackup(kind: BackupKind.manual);
+    expect(entry.kind, BackupKind.manual);
+    expect(File(entry.path).existsSync(), isTrue);
+    final listed = await repository.listBackups();
+    expect(listed.any((item) => item.path == entry.path), isTrue);
+  }, skip: !_hasBsdtar ? 'bsdtar required to pack .pwb on desktop' : false);
+
+  test('restoreHistory rewrites article content from History', () async {
+    final repository = PureWriterWritingLibraryRepository(database);
+    final article = await repository.createArticle(
+      folderId: PureWriterDatabase.defaultFolderId,
+    );
+    await repository.saveArticle(article.copyWith(content: 'v1'));
+    await repository.saveArticle(
+      (await repository.getArticle(article.id)).copyWith(content: 'v2'),
+    );
+    final history = await repository.listHistory(article.id);
+    expect(history, isNotEmpty);
+    final older = history.last;
+    await repository.restoreHistory(
+      articleId: article.id,
+      createdAt: older.createdAt,
+    );
+    final restored = await repository.getArticle(article.id);
+    expect(restored.content, older.content);
   });
 }
 

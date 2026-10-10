@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../domain/models/library_backup.dart';
 import '../../domain/models/purewriter_models.dart';
 import '../../domain/repositories/writing_library_repository.dart';
 import '../../domain/use_cases/article_preview_summary.dart';
@@ -194,6 +197,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
         whereArgs: [article.id],
       );
     });
+    await clearDraft(article.id);
   }
 
   ArticleSummary _summary(Map<String, Object?> row) => ArticleSummary(
@@ -691,4 +695,323 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   @override
   Future<void> writeScroll(String articleId, double offset) =>
       _store.writeScroll(articleId, offset);
+
+  @override
+  Future<void> restoreHistory({
+    required String articleId,
+    required DateTime createdAt,
+  }) async {
+    _store.ensureWritable();
+    if (!await _hasHistoryTable(_store.database)) {
+      throw StateError('History table is not available.');
+    }
+    final rows = await _store.database.query(
+      'History',
+      columns: ['article_content'],
+      where: 'article_id = ? AND createTime = ?',
+      whereArgs: [articleId, createdAt.millisecondsSinceEpoch],
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      throw StateError('History revision not found.');
+    }
+    final article = await getArticle(articleId);
+    await saveArticle(
+      article.copyWith(content: rows.single['article_content'] as String? ?? ''),
+    );
+  }
+
+  @override
+  Future<void> upsertDraft(ArticleDraft draft) async {
+    if (!(_store.location?.schema.writesAllowed ?? false)) return;
+    await _store.database.insert('ZephyrDraft', {
+      'article_id': draft.articleId,
+      'content': draft.content,
+      'title': draft.title,
+      'updated_at': draft.updatedAt.millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  @override
+  Future<void> clearDraft(String articleId) async {
+    if (_store.location == null) return;
+    try {
+      await _store.database.delete(
+        'ZephyrDraft',
+        where: 'article_id = ?',
+        whereArgs: [articleId],
+      );
+    } on Object {
+      // Table may be missing on read-only / foreign libraries.
+    }
+  }
+
+  @override
+  Future<ArticleDraft?> getDraft(String articleId) async {
+    if (_store.location == null) return null;
+    try {
+      final rows = await _store.database.query(
+        'ZephyrDraft',
+        where: 'article_id = ?',
+        whereArgs: [articleId],
+        limit: 1,
+      );
+      if (rows.isEmpty) return null;
+      return _draftFromRow(rows.single);
+    } on Object {
+      return null;
+    }
+  }
+
+  @override
+  Future<List<ArticleDraft>> listDraftsNewerThanArticles() async {
+    if (_store.location == null) return const [];
+    try {
+      final drafts = await _store.database.query('ZephyrDraft');
+      final out = <ArticleDraft>[];
+      for (final row in drafts) {
+        final draft = _draftFromRow(row);
+        final articles = await _store.database.query(
+          'Article',
+          columns: ['content', 'title', 'updateTime'],
+          where: 'id = ?',
+          whereArgs: [draft.articleId],
+          limit: 1,
+        );
+        if (articles.isEmpty) {
+          out.add(draft);
+          continue;
+        }
+        final article = articles.single;
+        final articleUpdated = _date(article['updateTime']! as int);
+        final contentDiffers =
+            (article['content'] as String? ?? '') != draft.content ||
+            (article['title'] as String? ?? '') != draft.title;
+        if (contentDiffers &&
+            !draft.updatedAt.isBefore(articleUpdated)) {
+          out.add(draft);
+        }
+      }
+      return out;
+    } on Object {
+      return const [];
+    }
+  }
+
+  ArticleDraft _draftFromRow(Map<String, Object?> row) => ArticleDraft(
+    articleId: row['article_id']! as String,
+    content: row['content']! as String,
+    title: row['title']! as String,
+    updatedAt: _date(row['updated_at']! as int),
+  );
+
+  @override
+  Future<List<BackupEntry>> listBackups() async {
+    final root = _libraryRoot;
+    return _store.backups.listBackups(root);
+  }
+
+  @override
+  Future<BackupEntry> createBackup({required BackupKind kind}) async {
+    _store.ensureWritable();
+    final root = _libraryRoot;
+    File? snapshot;
+    try {
+      snapshot = await _store.snapshotRoomDbToTemp();
+      return await _store.backups.createPwb(
+        libraryRoot: root,
+        roomDb: snapshot,
+        kind: kind,
+      );
+    } finally {
+      final parent = snapshot?.parent;
+      if (parent != null && await parent.exists()) {
+        await parent.delete(recursive: true);
+      }
+    }
+  }
+
+  @override
+  Future<void> pruneAutomaticBackups({int keep = 25}) async {
+    await _store.backups.pruneAutomaticBackups(_libraryRoot, keep: keep);
+  }
+
+  @override
+  Future<void> restoreBackup({
+    required BackupEntry entry,
+    required RestoreMode mode,
+  }) async {
+    _store.ensureWritable();
+    final rootPath = _store.location!.rootPath;
+    // Safety net before destructive restore.
+    await createBackup(kind: BackupKind.manual);
+    switch (mode) {
+      case RestoreMode.overwrite:
+        await _restoreOverwrite(File(entry.path), rootPath);
+      case RestoreMode.merge:
+        await _restoreMerge(File(entry.path));
+    }
+  }
+
+  Directory get _libraryRoot {
+    final root = _store.location?.rootPath;
+    if (root == null) {
+      throw StateError('No PureWriter library is open.');
+    }
+    return Directory(root);
+  }
+
+  Future<void> _restoreOverwrite(File pwb, String rootPath) async {
+    final room = _store.roomDbFile;
+    final backups = _store.backups;
+    await _store.close();
+    await _deleteSqliteSidecars(room);
+    await backups.restoreRoomDb(pwb: pwb, destinationRoomDb: room);
+    await _store.openLibrary(rootPath, createIfMissing: false);
+  }
+
+  Future<void> _restoreMerge(File pwb) async {
+    File? extracted;
+    Database? backupDb;
+    try {
+      extracted = await _store.backups.extractRoomDbToTemp(pwb);
+      backupDb = await _store.openReadOnlyDatabase(extracted);
+      await _mergeTable(
+        backupDb: backupDb,
+        table: 'Folder',
+        idColumn: 'id',
+        timeColumn: 'updateTime',
+      );
+      await _mergeTable(
+        backupDb: backupDb,
+        table: 'Category',
+        idColumn: 'id',
+        timeColumn: 'updateTime',
+      );
+      await _mergeTable(
+        backupDb: backupDb,
+        table: 'Article',
+        idColumn: 'id',
+        timeColumn: 'updateTime',
+      );
+      await _mergeHistory(backupDb);
+      await _mergeZephyrDrafts(backupDb);
+    } finally {
+      await backupDb?.close();
+      final parent = extracted?.parent;
+      if (parent != null && await parent.exists()) {
+        await parent.delete(recursive: true);
+      }
+    }
+  }
+
+  Future<void> _mergeTable({
+    required Database backupDb,
+    required String table,
+    required String idColumn,
+    required String timeColumn,
+  }) async {
+    final localDb = _store.database;
+    if (!await _hasTable(localDb, table) || !await _hasTable(backupDb, table)) {
+      return;
+    }
+    final remoteRows = await backupDb.query(table);
+    for (final remote in remoteRows) {
+      final id = remote[idColumn];
+      if (id == null) continue;
+      final local = await localDb.query(
+        table,
+        where: '$idColumn = ?',
+        whereArgs: [id],
+        limit: 1,
+      );
+      if (local.isEmpty) {
+        await localDb.insert(table, remote);
+        continue;
+      }
+      final localTime = (local.single[timeColumn] as int?) ?? 0;
+      final remoteTime = (remote[timeColumn] as int?) ?? 0;
+      if (remoteTime >= localTime) {
+        await localDb.update(
+          table,
+          remote,
+          where: '$idColumn = ?',
+          whereArgs: [id],
+        );
+      }
+    }
+  }
+
+  Future<void> _mergeHistory(Database backupDb) async {
+    final localDb = _store.database;
+    if (!await _hasHistoryTable(localDb) ||
+        !await _hasHistoryTable(backupDb)) {
+      return;
+    }
+    final remoteRows = await backupDb.query('History');
+    for (final remote in remoteRows) {
+      final articleId = remote['article_id'];
+      final createTime = remote['createTime'];
+      final content = remote['article_content'] as String? ?? '';
+      if (articleId == null || createTime == null) continue;
+      final existing = await localDb.query(
+        'History',
+        columns: ['id'],
+        where:
+            'article_id = ? AND createTime = ? AND article_content = ?',
+        whereArgs: [articleId, createTime, content],
+        limit: 1,
+      );
+      if (existing.isNotEmpty) continue;
+      final copy = Map<String, Object?>.from(remote)..remove('id');
+      await localDb.insert('History', copy);
+    }
+  }
+
+  Future<void> _mergeZephyrDrafts(Database backupDb) async {
+    final localDb = _store.database;
+    if (!await _hasTable(localDb, 'ZephyrDraft') ||
+        !await _hasTable(backupDb, 'ZephyrDraft')) {
+      return;
+    }
+    final remoteRows = await backupDb.query('ZephyrDraft');
+    for (final remote in remoteRows) {
+      final id = remote['article_id'] as String?;
+      if (id == null) continue;
+      final local = await localDb.query(
+        'ZephyrDraft',
+        where: 'article_id = ?',
+        whereArgs: [id],
+        limit: 1,
+      );
+      if (local.isEmpty) {
+        await localDb.insert('ZephyrDraft', remote);
+        continue;
+      }
+      final localTime = (local.single['updated_at'] as int?) ?? 0;
+      final remoteTime = (remote['updated_at'] as int?) ?? 0;
+      if (remoteTime >= localTime) {
+        await localDb.insert(
+          'ZephyrDraft',
+          remote,
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteSqliteSidecars(File room) async {
+    for (final suffix in ['-journal', '-wal', '-shm']) {
+      final file = File('${room.path}$suffix');
+      if (await file.exists()) {
+        await file.delete();
+      }
+    }
+  }
+
+  Future<bool> _hasTable(DatabaseExecutor database, String name) async =>
+      (await database.rawQuery(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1",
+        [name],
+      )).isNotEmpty;
 }

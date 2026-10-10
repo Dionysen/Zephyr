@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 
+import '../../../../domain/models/library_backup.dart';
 import '../../../../domain/models/purewriter_models.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../domain/models/workspace_layout.dart';
@@ -27,6 +28,13 @@ class LibraryViewModel extends ChangeNotifier {
   Timer? _pendingSave;
   Timer? _pendingTitleSave;
   Timer? _pendingLayoutSave;
+  Timer? _pendingDraftSave;
+  /// Content/title awaiting persistence, keyed by article id (survives chapter switch).
+  WritingArticle? _dirtyArticle;
+  String? _dirtyTitleArticleId;
+  String? _dirtyTitle;
+  List<ArticleDraft> _recoverableDrafts = const [];
+  var _contentDirtySinceBackup = false;
   bool _isSidebarExpanded = true;
   bool _isReorderMode = false;
   bool _isResizingSidebar = false;
@@ -47,6 +55,10 @@ class LibraryViewModel extends ChangeNotifier {
   Object? get error => _error;
   bool get isLibraryInUse => _error is LibraryInUseException;
   bool get isReadOnly => _repository.location?.schema.writesAllowed == false;
+  /// Drafts newer than Article after load — UI may offer recovery.
+  List<ArticleDraft> get recoverableDrafts => _recoverableDrafts;
+  bool get contentDirtySinceBackup => _contentDirtySinceBackup;
+  WritingLibraryRepository get repository => _repository;
   /// True until the user has chosen a PureWriter library folder.
   bool get needsLibrarySetup => _needsLibrarySetup;
   bool get isSidebarExpanded => _isSidebarExpanded;
@@ -206,6 +218,7 @@ class LibraryViewModel extends ChangeNotifier {
 
   Future<void> selectBook(String bookId) async {
     if (_selectedBookId == bookId) return;
+    await flushPending();
     if (bookId == WritingFolder.trashId) {
       _isReorderMode = false;
     }
@@ -253,6 +266,7 @@ class LibraryViewModel extends ChangeNotifier {
 
   Future<void> openLibrary(String rootPath, {String? bookmark}) async {
     try {
+      await flushPending();
       await _repository.openLibrary(rootPath);
       _lastLibraryRoot = _repository.location?.rootPath ?? rootPath;
       _needsLibrarySetup = false;
@@ -273,6 +287,7 @@ class LibraryViewModel extends ChangeNotifier {
 
   Future<void> load() async {
     try {
+      await flushPending();
       await _loadLayout();
       if (_lastLibraryRoot != null) {
         _needsLibrarySetup = false;
@@ -286,6 +301,7 @@ class LibraryViewModel extends ChangeNotifier {
       _library = await _repository.loadLibrary();
       _restoreSelection();
       await _restoreArticle();
+      _recoverableDrafts = await _repository.listDraftsNewerThanArticles();
       _error = null;
     } on Object catch (error) {
       _error = error;
@@ -294,6 +310,7 @@ class LibraryViewModel extends ChangeNotifier {
   }
 
   Future<void> selectArticle(String id) async {
+    await flushPending();
     _article = await _repository.getArticle(id);
     _selectedArticleId = _article?.id;
     if (_article != null) {
@@ -305,6 +322,7 @@ class LibraryViewModel extends ChangeNotifier {
 
   Future<void> createArticle() async {
     if (isReadOnly) return;
+    await flushPending();
     final book = selectedBook;
     if (book == null || book.isTrash) return;
     _article = await _repository.createArticle(folderId: book.id);
@@ -351,6 +369,7 @@ class LibraryViewModel extends ChangeNotifier {
 
   Future<void> insertChapterBelow(String afterArticleId) async {
     if (isReadOnly) return;
+    await flushPending();
     final book = selectedBook;
     if (book == null || book.isTrash) return;
     final after = _library?.articles
@@ -489,7 +508,7 @@ class LibraryViewModel extends ChangeNotifier {
   void updateContent(String content) {
     final article = _article;
     if (article == null) return;
-    _article = WritingArticle(
+    final next = WritingArticle(
       id: article.id,
       title: article.title,
       content: content,
@@ -500,8 +519,14 @@ class LibraryViewModel extends ChangeNotifier {
       updatedAt: DateTime.now(),
       wordCount: content.runes.where((rune) => rune != 10 && rune != 13).length,
     );
+    _article = next;
+    _dirtyArticle = next;
+    _contentDirtySinceBackup = true;
     _pendingSave?.cancel();
-    _pendingSave = Timer(const Duration(milliseconds: 500), save);
+    _pendingSave = Timer(const Duration(milliseconds: 500), () {
+      unawaited(save());
+    });
+    _scheduleDraftUpsert(next);
     notifyListeners();
   }
 
@@ -546,27 +571,154 @@ class LibraryViewModel extends ChangeNotifier {
         ],
       );
     }
+    _dirtyTitleArticleId = article.id;
+    _dirtyTitle = title;
+    _contentDirtySinceBackup = true;
     _pendingTitleSave?.cancel();
     _pendingTitleSave = Timer(const Duration(milliseconds: 400), () {
       unawaited(_persistTitle(article.id, title));
     });
+    final draftSource = _dirtyArticle ?? _article;
+    if (draftSource != null) {
+      _scheduleDraftUpsert(
+        WritingArticle(
+          id: draftSource.id,
+          title: title,
+          content: draftSource.content,
+          summary: draftSource.summary,
+          folderId: draftSource.folderId,
+          categoryId: draftSource.categoryId,
+          createdAt: draftSource.createdAt,
+          updatedAt: DateTime.now(),
+          wordCount: draftSource.wordCount,
+        ),
+      );
+    }
     notifyListeners();
   }
 
   Future<void> _persistTitle(String articleId, String title) async {
     try {
       await _repository.renameArticle(articleId: articleId, title: title);
+      if (_dirtyTitleArticleId == articleId && _dirtyTitle == title) {
+        _dirtyTitleArticleId = null;
+        _dirtyTitle = null;
+      }
     } on Object {
       // Keep the in-memory title; the next edit retries persistence.
     }
   }
 
+  /// Persists any pending content/title immediately (by article id snapshot).
+  Future<void> flushPending() async {
+    _pendingSave?.cancel();
+    _pendingSave = null;
+    _pendingTitleSave?.cancel();
+    _pendingTitleSave = null;
+    _pendingDraftSave?.cancel();
+    _pendingDraftSave = null;
+
+    final dirty = _dirtyArticle;
+    if (dirty != null) {
+      _dirtyArticle = null;
+      try {
+        await _repository.saveArticle(dirty);
+        if (_article?.id == dirty.id) {
+          _refreshSidebarPreviewIfNeeded(dirty);
+        }
+      } on Object {
+        _dirtyArticle = dirty;
+        rethrow;
+      }
+    }
+
+    final titleId = _dirtyTitleArticleId;
+    final title = _dirtyTitle;
+    if (titleId != null && title != null) {
+      await _persistTitle(titleId, title);
+    }
+  }
+
   Future<void> save() async {
     _pendingSave?.cancel();
-    final article = _article;
+    final article = _dirtyArticle ?? _article;
     if (article == null) return;
+    _dirtyArticle = null;
     await _repository.saveArticle(article);
-    _refreshSidebarPreviewIfNeeded(article);
+    if (_article?.id == article.id) {
+      _refreshSidebarPreviewIfNeeded(article);
+    }
+  }
+
+  void _scheduleDraftUpsert(WritingArticle article) {
+    if (isReadOnly) return;
+    _pendingDraftSave?.cancel();
+    _pendingDraftSave = Timer(const Duration(milliseconds: 150), () {
+      unawaited(
+        _repository.upsertDraft(
+          ArticleDraft(
+            articleId: article.id,
+            content: article.content,
+            title: article.title,
+            updatedAt: DateTime.now(),
+          ),
+        ),
+      );
+    });
+  }
+
+  Future<void> applyRecoverableDraft(ArticleDraft draft) async {
+    await _repository.saveArticle(
+      (await _repository.getArticle(draft.articleId)).copyWith(
+        content: draft.content,
+      ),
+    );
+    if (draft.title.isNotEmpty) {
+      await _repository.renameArticle(
+        articleId: draft.articleId,
+        title: draft.title,
+      );
+    }
+    await _repository.clearDraft(draft.articleId);
+    _recoverableDrafts = [
+      for (final item in _recoverableDrafts)
+        if (item.articleId != draft.articleId) item,
+    ];
+    if (_selectedArticleId == draft.articleId || _article?.id == draft.articleId) {
+      _article = await _repository.getArticle(draft.articleId);
+    }
+    notifyListeners();
+  }
+
+  Future<void> dismissRecoverableDraft(ArticleDraft draft) async {
+    await _repository.clearDraft(draft.articleId);
+    _recoverableDrafts = [
+      for (final item in _recoverableDrafts)
+        if (item.articleId != draft.articleId) item,
+    ];
+    notifyListeners();
+  }
+
+  void markBackupCompleted() {
+    _contentDirtySinceBackup = false;
+  }
+
+  Future<List<ArticleHistory>> listHistory(String articleId) =>
+      _repository.listHistory(articleId);
+
+  Future<void> restoreHistoryRevision({
+    required String articleId,
+    required DateTime createdAt,
+  }) async {
+    await flushPending();
+    await _repository.restoreHistory(
+      articleId: articleId,
+      createdAt: createdAt,
+    );
+    if (_article?.id == articleId) {
+      _article = await _repository.getArticle(articleId);
+      notifyListeners();
+    }
   }
 
   /// When the saved content changes the leading preview text, push it into the
@@ -714,16 +866,7 @@ class LibraryViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _pendingSave?.cancel();
-    if (_pendingTitleSave?.isActive == true) {
-      _pendingTitleSave?.cancel();
-      final article = _article;
-      if (article != null) {
-        unawaited(_persistTitle(article.id, article.title));
-      }
-    } else {
-      _pendingTitleSave?.cancel();
-    }
+    unawaited(flushPending());
     _pendingLayoutSave?.cancel();
     super.dispose();
   }

@@ -4,6 +4,7 @@ import '../../../../domain/models/purewriter_models.dart';
 import '../../../core/breakpoints.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../editor/view_models/library_view_model.dart';
+import '../../editor/views/article_history_sheet.dart';
 
 class SidebarMenuAction {
   const SidebarMenuAction({
@@ -133,6 +134,11 @@ List<SidebarMenuAction> chapterMenuActions(AppLocalizations l10n) => [
     icon: Icons.drive_file_rename_outline,
   ),
   SidebarMenuAction(
+    id: 'history',
+    label: l10n.historyMenuLabel,
+    icon: Icons.history,
+  ),
+  SidebarMenuAction(
     id: 'move',
     label: l10n.actionMoveToVolume,
     icon: Icons.drive_file_move_outline,
@@ -198,6 +204,12 @@ Future<void> handleChapterMenuAction(
       if (title != null) {
         await model.renameChapter(articleId: chapter.id, title: title);
       }
+    case 'history':
+      await showArticleHistorySheet(
+        context,
+        model: model,
+        articleId: chapter.id,
+      );
     case 'move':
       final volumes =
           model.library?.categories
