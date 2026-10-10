@@ -89,9 +89,20 @@ class MainActivity : FlutterActivity() {
                             }
                         }
                     }
+                    "getDeviceName" -> result.success(deviceDisplayName())
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    private fun deviceDisplayName(): String {
+        val named = try {
+            Settings.Global.getString(contentResolver, Settings.Global.DEVICE_NAME)
+        } catch (_: Exception) {
+            null
+        }
+        if (!named.isNullOrBlank()) return named.trim()
+        return Build.MODEL.orEmpty().ifBlank { "Android" }
     }
 
     private fun hasFullExternalStorageAccess(): Boolean {

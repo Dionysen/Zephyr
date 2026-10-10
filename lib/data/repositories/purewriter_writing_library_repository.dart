@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
@@ -7,6 +8,7 @@ import '../../domain/models/library_backup.dart';
 import '../../domain/models/purewriter_models.dart';
 import '../../domain/repositories/writing_library_repository.dart';
 import '../../domain/use_cases/article_preview_summary.dart';
+import '../services/device_label.dart';
 import '../services/purewriter_database.dart';
 
 class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
@@ -815,11 +817,13 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     final root = _libraryRoot;
     File? snapshot;
     try {
+      final label = await _backupFileLabel();
       snapshot = await _store.snapshotRoomDbToTemp();
       return await _store.backups.createPwb(
         libraryRoot: root,
         roomDb: snapshot,
         kind: kind,
+        label: label,
       );
     } finally {
       final parent = snapshot?.parent;
@@ -827,6 +831,34 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
         await parent.delete(recursive: true);
       }
     }
+  }
+
+  Future<BackupFileLabel> _backupFileLabel() async {
+    final db = _store.database;
+    final bookRows = await db.rawQuery(
+      "SELECT COUNT(*) AS c FROM Folder "
+      "WHERE deleted = 0 AND id != ?",
+      [WritingFolder.trashId],
+    );
+    final articleRows = await db.rawQuery(
+      'SELECT COUNT(*) AS c FROM Article WHERE deleted = 0',
+    );
+    final package = await PackageInfo.fromPlatform();
+    final device = await resolveDeviceLabel();
+    return BackupFileLabel(
+      bookCount: _countOf(bookRows),
+      articleCount: _countOf(articleRows),
+      appVersion: package.version,
+      deviceName: device,
+      createdAt: DateTime.now(),
+    );
+  }
+
+  static int _countOf(List<Map<String, Object?>> rows) {
+    final value = rows.single['c'];
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse('$value') ?? 0;
   }
 
   @override

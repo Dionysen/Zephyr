@@ -37,14 +37,15 @@ class PureWriterBackup {
     required Directory libraryRoot,
     required File roomDb,
     required BackupKind kind,
+    required BackupFileLabel label,
   }) async {
     final backupsDir = Directory(path.join(libraryRoot.path, 'Backups'));
     final targetDir = kind == BackupKind.automatic
         ? Directory(path.join(backupsDir.path, 'Auto'))
         : backupsDir;
     await targetDir.create(recursive: true);
-    final stamp = _fileStamp(DateTime.now());
-    final pwbPath = path.join(targetDir.path, 'Zephyr-$stamp.pwb');
+    final fileName = label.toFileName();
+    final pwbPath = path.join(targetDir.path, fileName);
     await _packRoomDb(roomDbPath: roomDb.path, pwbPath: pwbPath);
     if (kind == BackupKind.automatic) {
       await pruneAutomaticBackups(libraryRoot, keep: autoKeepCount);
@@ -175,11 +176,6 @@ class PureWriterBackup {
     }
   }
 
-  String _fileStamp(DateTime time) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${time.year}${two(time.month)}${two(time.day)}-'
-        '${two(time.hour)}${two(time.minute)}${two(time.second)}';
-  }
 }
 
 /// Sync listing used from [Isolate.run] and open-library restore heuristics.

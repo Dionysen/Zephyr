@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:zephyr/data/repositories/purewriter_writing_library_repository.dart';
@@ -16,6 +17,15 @@ final _hasBsdtar = () {
 }();
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  PackageInfo.setMockInitialValues(
+    appName: 'Zephyr',
+    packageName: 'com.zephyr.zephyr',
+    version: '0.1.0',
+    buildNumber: '1',
+    buildSignature: '',
+  );
+
   late Directory root;
   late PureWriterDatabase database;
 
@@ -394,6 +404,9 @@ void main() {
     final entry = await repository.createBackup(kind: BackupKind.manual);
     expect(entry.kind, BackupKind.manual);
     expect(File(entry.path).existsSync(), isTrue);
+    expect(entry.fileName, contains('books-'));
+    expect(entry.fileName, contains('articles.pwb'));
+    expect(entry.fileName, contains('0.1.0'));
     final listed = await repository.listBackups();
     expect(listed.any((item) => item.path == entry.path), isTrue);
   }, skip: !_hasBsdtar ? 'bsdtar required to pack .pwb on desktop' : false);

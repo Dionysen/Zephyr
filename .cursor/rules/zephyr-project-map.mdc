@@ -13,7 +13,7 @@ Zephyr is a Flutter local-first plain-text editor. The document library is a **P
 | --- | --- |
 | App entry / startup library | `lib/main.dart`, `lib/data/services/startup_library.dart` |
 | Room.db open / schema / repair | `lib/data/services/purewriter_database.dart` |
-| `.pwb` create / list / restore | `lib/data/services/purewriter_backup.dart` (+ Android `createPwb`/`restorePwb`) |
+| `.pwb` create / list / restore | `lib/data/services/purewriter_backup.dart` (+ Android `createPwb`/`restorePwb`/`getDeviceName`); names via `BackupFileLabel` |
 | Backup settings UI / VM | `backup_settings_view.dart`, `BackupViewModel`, prefs JSON under app-support |
 | Crash drafts (`ZephyrDraft`) | Created IF NOT EXISTS on open — **do not** change `identity_hash` / `user_version` |
 | Library CRUD | `lib/data/repositories/purewriter_writing_library_repository.dart` |
