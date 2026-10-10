@@ -284,6 +284,18 @@ abstract class AppLocalizations {
   /// **'Shortcuts'**
   String get settingsSectionShortcuts;
 
+  /// No description provided for @shortcutsManageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize shortcuts'**
+  String get shortcutsManageTitle;
+
+  /// No description provided for @shortcutsManageSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'View and change key bindings'**
+  String get shortcutsManageSubtitle;
+
   /// No description provided for @shortcutsResetAll.
   ///
   /// In en, this message translates to:
@@ -679,6 +691,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Only when immersive is on. Icons auto-hide; swipe from the edge to peek.'**
   String get hideStatusBarIconsSubtitle;
+
+  /// No description provided for @hideQuickToolbarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide quick input bar'**
+  String get hideQuickToolbarTitle;
+
+  /// No description provided for @hideQuickToolbarSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When on, the accessory toolbar above the keyboard is hidden.'**
+  String get hideQuickToolbarSubtitle;
 
   /// No description provided for @editorSectionTitle.
   ///

@@ -212,6 +212,17 @@ void main() {
     expect(model.ui.hideStatusBarIcons, isFalse);
     expect(model.lightTokens, ThemeTokens.presets[ThemePreset.light]);
   });
+
+  test('hide quick toolbar defaults off and updates independently', () {
+    final model = ThemeViewModel(_ThemeRepository());
+
+    expect(model.ui.hideQuickToolbar, isFalse);
+    model.updateHideQuickToolbar(true);
+    expect(model.ui.hideQuickToolbar, isTrue);
+    model.updateHideQuickToolbar(false);
+    expect(model.ui.hideQuickToolbar, isFalse);
+    expect(model.lightTokens, ThemeTokens.presets[ThemePreset.light]);
+  });
 }
 
 class _ThemeRepository implements ThemePreferencesRepository {

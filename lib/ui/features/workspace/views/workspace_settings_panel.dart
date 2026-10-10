@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/nested_back_navigator.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../settings/views/settings_page.dart';
@@ -23,7 +24,6 @@ class WorkspaceSettingsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final l10n = context.l10n;
     final surface = theme.colorScheme.surface;
     return Material(
       elevation: 8,
@@ -31,38 +31,63 @@ class WorkspaceSettingsPanel extends StatelessWidget {
       color: surface,
       child: SizedBox(
         width: width,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(
-              height: 52,
-              child: NavigationToolbar(
-                middle: Text(
-                  l10n.settingsTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                centerMiddle: true,
-                trailing: IconButton(
-                  onPressed: onClose,
-                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                  icon: const Icon(Icons.close),
+        child: NestedBackNavigator(
+          onExit: onClose,
+          onGenerateRoute: (settings) {
+            return MaterialPageRoute<void>(
+              settings: settings,
+              builder: (_) => _PanelSettingsHome(onClose: onClose),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _PanelSettingsHome extends StatelessWidget {
+  const _PanelSettingsHome({required this.onClose});
+
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final surface = theme.colorScheme.surface;
+    return ColoredBox(
+      color: surface,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            height: 52,
+            child: NavigationToolbar(
+              middle: Text(
+                l10n.settingsTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
               ),
+              centerMiddle: true,
+              trailing: IconButton(
+                onPressed: onClose,
+                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                icon: const Icon(Icons.close),
+              ),
             ),
-            Divider(
-              height: 1,
-              thickness: 1,
-              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-            ),
-            const Expanded(
-              child: CompactSettingsList(showStatusBarSettings: false),
-            ),
-          ],
-        ),
+          ),
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+          const Expanded(
+            child: CompactSettingsList(showStatusBarSettings: false),
+          ),
+        ],
       ),
     );
   }

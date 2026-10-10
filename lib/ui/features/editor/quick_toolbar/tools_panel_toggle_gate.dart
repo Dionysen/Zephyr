@@ -45,6 +45,13 @@ class ToolsPanelToggleGate {
     });
   }
 
+  /// Close without waiting for [actionDelay] (e.g. system / gesture back).
+  void close() {
+    _debounce?.cancel();
+    _pendingOpen = null;
+    _commit(false);
+  }
+
   void _commit(bool open) {
     if (_busy) {
       _queuedOpen = open;

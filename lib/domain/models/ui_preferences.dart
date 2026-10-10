@@ -30,6 +30,7 @@ class UiPreferences {
     required this.sidebarVolumeGap,
     required this.immersiveStatusBar,
     required this.hideStatusBarIcons,
+    required this.hideQuickToolbar,
     required this.localePreference,
   });
 
@@ -46,6 +47,7 @@ class UiPreferences {
     sidebarVolumeGap: 6,
     immersiveStatusBar: false,
     hideStatusBarIcons: true,
+    hideQuickToolbar: false,
     localePreference: AppLocalePreference.system,
   );
 
@@ -89,6 +91,9 @@ class UiPreferences {
   /// (immersive sticky). Ignored while immersive is off.
   final bool hideStatusBarIcons;
 
+  /// When true, the IME quick input toolbar above the soft keyboard is hidden.
+  final bool hideQuickToolbar;
+
   /// App UI language: system, Simplified Chinese, or English.
   final AppLocalePreference localePreference;
 
@@ -106,6 +111,7 @@ class UiPreferences {
     double? sidebarVolumeGap,
     bool? immersiveStatusBar,
     bool? hideStatusBarIcons,
+    bool? hideQuickToolbar,
     AppLocalePreference? localePreference,
   }) => UiPreferences(
     fontFamily: clearFontFamily ? null : fontFamily ?? this.fontFamily,
@@ -118,6 +124,7 @@ class UiPreferences {
     sidebarVolumeGap: sidebarVolumeGap ?? this.sidebarVolumeGap,
     immersiveStatusBar: immersiveStatusBar ?? this.immersiveStatusBar,
     hideStatusBarIcons: hideStatusBarIcons ?? this.hideStatusBarIcons,
+    hideQuickToolbar: hideQuickToolbar ?? this.hideQuickToolbar,
     localePreference: localePreference ?? this.localePreference,
   );
 }

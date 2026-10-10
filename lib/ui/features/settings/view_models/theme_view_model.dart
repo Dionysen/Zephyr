@@ -337,6 +337,9 @@ class ThemeViewModel extends ChangeNotifier {
   void updateHideStatusBarIcons(bool value) =>
       _updateUi(_ui.copyWith(hideStatusBarIcons: value));
 
+  void updateHideQuickToolbar(bool value) =>
+      _updateUi(_ui.copyWith(hideQuickToolbar: value));
+
   void updateLocalePreference(AppLocalePreference value) =>
       _updateUi(_ui.copyWith(localePreference: value));
 

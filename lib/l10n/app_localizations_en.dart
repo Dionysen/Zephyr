@@ -105,6 +105,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSectionShortcuts => 'Shortcuts';
 
   @override
+  String get shortcutsManageTitle => 'Customize shortcuts';
+
+  @override
+  String get shortcutsManageSubtitle => 'View and change key bindings';
+
+  @override
   String get shortcutsResetAll => 'Reset all to defaults';
 
   @override
@@ -306,6 +312,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get hideStatusBarIconsSubtitle =>
       'Only when immersive is on. Icons auto-hide; swipe from the edge to peek.';
+
+  @override
+  String get hideQuickToolbarTitle => 'Hide quick input bar';
+
+  @override
+  String get hideQuickToolbarSubtitle =>
+      'When on, the accessory toolbar above the keyboard is hidden.';
 
   @override
   String get editorSectionTitle => 'Editor';

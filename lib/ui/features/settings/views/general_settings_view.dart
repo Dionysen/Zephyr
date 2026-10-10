@@ -47,7 +47,13 @@ class GeneralSettingsView extends StatelessWidget {
             ),
           ],
           onSelected: viewModel.updateLocalePreference,
+        ),
+        ZephyrSettingsSwitchTile(
+          title: l10n.hideQuickToolbarTitle,
+          subtitle: l10n.hideQuickToolbarSubtitle,
+          value: viewModel.ui.hideQuickToolbar,
           showDivider: showStatusBarSettings,
+          onChanged: viewModel.updateHideQuickToolbar,
         ),
         if (showStatusBarSettings) ...[
           ZephyrSettingsSwitchTile(

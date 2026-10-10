@@ -33,7 +33,8 @@ Zephyr is a Flutter local-first plain-text editor. The document library is a **P
 | Shared control sizes / theme | `lib/ui/core/zephyr_controls.dart`, `lib/ui/core/zephyr_theme.dart` |
 | UI prefs (immersive status bar, etc.) | `lib/domain/models/ui_preferences.dart`, settings under `lib/ui/features/settings/` |
 | Keyboard shortcuts (defaults + overrides) | `lib/domain/models/keyboard_shortcuts.dart`, `lib/domain/use_cases/shortcut_resolver.dart` |
-| Shortcuts persist / VM / settings UI | `keyboard-shortcuts.json`, `KeyboardShortcutsViewModel`, `shortcuts_settings_view.dart` |
+| Shortcuts persist / VM / settings UI | `keyboard-shortcuts.json`, `KeyboardShortcutsViewModel`, `shortcuts_settings_page.dart` (nested under settings Navigator) |
+| Nested settings / drawer system back | `nested_back_navigator.dart` (PopScope → nested pop before host); swipe drawer + tools drawer also PopScope |
 | Word boundaries | `lib/domain/use_cases/text_word_boundaries.dart` |
 
 ## Startup & temporary library

@@ -231,6 +231,11 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
         'uiHideStatusBarIcons',
         UiPreferences.defaults.hideStatusBarIcons,
       ),
+      hideQuickToolbar: _bool(
+        values,
+        'uiHideQuickToolbar',
+        UiPreferences.defaults.hideQuickToolbar,
+      ),
       localePreference: AppLocalePreference.fromStorage(
         values['uiLocale'] as String?,
       ),
@@ -248,6 +253,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'uiSidebarVolumeGap': ui.sidebarVolumeGap,
     'uiImmersiveStatusBar': ui.immersiveStatusBar,
     'uiHideStatusBarIcons': ui.hideStatusBarIcons,
+    'uiHideQuickToolbar': ui.hideQuickToolbar,
     'uiLocale': ui.localePreference.storageValue,
   };
 

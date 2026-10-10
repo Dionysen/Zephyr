@@ -63,6 +63,7 @@ void main() {
           sidebarVolumeGap: 4,
           immersiveStatusBar: true,
           hideStatusBarIcons: false,
+          hideQuickToolbar: true,
           localePreference: AppLocalePreference.system,
         ),
       );
@@ -94,6 +95,7 @@ void main() {
       expect(actual.ui.sidebarVolumeGap, expected.ui.sidebarVolumeGap);
       expect(actual.ui.immersiveStatusBar, expected.ui.immersiveStatusBar);
       expect(actual.ui.hideStatusBarIcons, expected.ui.hideStatusBarIcons);
+      expect(actual.ui.hideQuickToolbar, expected.ui.hideQuickToolbar);
       expect(actual.ui.localePreference, expected.ui.localePreference);
     },
   );
@@ -136,6 +138,10 @@ void main() {
     expect(
       appearance.ui.hideStatusBarIcons,
       UiPreferences.defaults.hideStatusBarIcons,
+    );
+    expect(
+      appearance.ui.hideQuickToolbar,
+      UiPreferences.defaults.hideQuickToolbar,
     );
     expect(appearance.ui.localePreference, UiPreferences.defaults.localePreference);
     expect(appearance.ui.fontFamily, isNull);

@@ -421,6 +421,7 @@ void main() {
     expect(find.text(l10n.settingsTitle), findsWidgets);
     expect(find.text(l10n.settingsSectionGeneral), findsOneWidget);
     expect(find.text(l10n.languageTitle), findsOneWidget);
+    expect(find.text(l10n.hideQuickToolbarTitle), findsOneWidget);
     expect(find.text(l10n.settingsSectionEditor), findsOneWidget);
     expect(find.text(l10n.immersiveStatusBarTitle), findsNothing);
     expect(find.text(l10n.hideStatusBarIconsTitle), findsNothing);
@@ -480,6 +481,7 @@ void main() {
     expect(find.byType(SettingsPage), findsOneWidget);
     expect(find.byType(WorkspaceSettingsPanel), findsNothing);
     expect(find.text(l10n.languageTitle), findsOneWidget);
+    expect(find.text(l10n.hideQuickToolbarTitle), findsOneWidget);
     expect(find.text(l10n.immersiveStatusBarTitle), findsOneWidget);
     expect(find.text(l10n.hideStatusBarIconsTitle), findsOneWidget);
   });

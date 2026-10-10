@@ -516,19 +516,22 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
     final surface = theme.colorScheme.surface;
     final foreground = theme.colorScheme.onSurface;
     final wordCount = widget.model.article?.wordCount;
-    final quickToolbar = ZephyrScope.of(context).quickToolbar;
+    final scope = ZephyrScope.of(context);
+    final quickToolbar = scope.quickToolbar;
+    final themeVm = scope.theme;
     return NotificationListener<ScrollNotification>(
       onNotification: _onScroll,
       child: Stack(
         children: [
           Positioned.fill(
             child: ListenableBuilder(
-              listenable: widget.preferences,
+              listenable: Listenable.merge([widget.preferences, themeVm]),
               builder: (context, _) => QuickToolbarHost(
                 toolbar: quickToolbar,
                 bridge: _editorBridge,
                 foreground: foreground,
                 bodyFontFamily: widget.preferences.preferences.fontFamily,
+                hidden: themeVm.ui.hideQuickToolbar,
                 child: WorkspaceEditor(
                   model: widget.model,
                   preferences: widget.preferences,

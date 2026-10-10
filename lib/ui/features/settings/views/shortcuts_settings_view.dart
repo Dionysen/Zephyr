@@ -73,14 +73,8 @@ class ShortcutsSettingsView extends StatelessWidget {
         ),
       ];
 
-      if (compact) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: children,
-        );
-      }
       return ListView(
-        padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
+        padding: EdgeInsets.fromLTRB(compact ? 16 : 0, 8, compact ? 16 : 0, 32),
         children: children,
       );
     },

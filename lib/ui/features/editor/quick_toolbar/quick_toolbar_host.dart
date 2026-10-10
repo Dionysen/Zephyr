@@ -19,6 +19,7 @@ class QuickToolbarHost extends StatefulWidget {
     required this.foreground,
     required this.child,
     this.bodyFontFamily,
+    this.hidden = false,
   });
 
   final QuickToolbarViewModel toolbar;
@@ -28,6 +29,9 @@ class QuickToolbarHost extends StatefulWidget {
 
   /// Article body font for phrase chips on the bar.
   final String? bodyFontFamily;
+
+  /// When true, the bar and tools panel are not shown (IME inset unchanged).
+  final bool hidden;
 
   /// Extra inset layered on top of [MediaQuery.viewInsets].
   ///
@@ -117,10 +121,19 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
         // the latched height — but never below the live keyboard (overshoot).
         final panelHeight =
             fixedPanel ? math.max(latched, keyboard) : keyboard;
-        final visible =
-            bodyFocused && (fixedPanel || keyboard > 0.5);
+        final visible = !widget.hidden &&
+            bodyFocused &&
+            (fixedPanel || keyboard > 0.5);
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (widget.hidden &&
+              (toolbar.toolsDrawerOpen || toolbar.holdingPanelForIme)) {
+            final wasDrawer = toolbar.toolsDrawerOpen;
+            toolbar.closeToolsDrawer();
+            _toolsGate.markSettled();
+            if (wasDrawer) bridge.focusBodyAndShowIme();
+            return;
+          }
           toolbar.reportKeyboardInset(keyboard);
           _syncToolsGateSettle(keyboard);
           if (!bodyFocused &&
@@ -137,58 +150,66 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
           panelHeight: fixedPanel ? panelHeight : 0,
         );
 
-        return Stack(
-          children: [
-            Positioned.fill(
-              child: _BottomObstructionScope(
-                obstruction: obstruction,
-                child: widget.child,
-              ),
-            ),
-            if (visible)
-              // Toolbar / drawer must never steal focus from the body caret.
-              ExcludeFocus(
-                child: Stack(
-                  children: [
-                    if (drawerOpen)
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: QuickToolbarDrawer(
-                          height: panelHeight,
-                          foreground: widget.foreground,
-                          onEditToolbar: () {
-                            showQuickToolbarEditSheet(
-                              context,
-                              toolbar: toolbar,
-                            );
-                          },
-                        ),
-                      ),
-                    // While holding for IME: leave the slot empty so the system
-                    // keyboard paints in without a Flutter flash frame.
-                    // Stable key: when the drawer Positioned is inserted/removed
-                    // above this slot, Flutter must not recreate the bar (that
-                    // was snapping the tools-icon spin on close).
-                    Positioned(
-                      key: const ValueKey<String>('ime_quick_toolbar_bar'),
-                      left: 0,
-                      right: 0,
-                      bottom: panelHeight,
-                      child: QuickToolbarBar(
-                        config: toolbar.config,
-                        foreground: widget.foreground,
-                        toolsDrawerOpen: drawerOpen,
-                        canUndo: bridge.canUndo,
-                        bodyFontFamily: widget.bodyFontFamily,
-                        onToolPressed: (tool) => _onTool(context, tool),
-                      ),
-                    ),
-                  ],
+        return PopScope(
+          canPop: !drawerOpen,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop && drawerOpen) {
+              _toolsGate.close();
+            }
+          },
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: _BottomObstructionScope(
+                  obstruction: obstruction,
+                  child: widget.child,
                 ),
               ),
-          ],
+              if (visible)
+                // Toolbar / drawer must never steal focus from the body caret.
+                ExcludeFocus(
+                  child: Stack(
+                    children: [
+                      if (drawerOpen)
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          child: QuickToolbarDrawer(
+                            height: panelHeight,
+                            foreground: widget.foreground,
+                            onEditToolbar: () {
+                              showQuickToolbarEditSheet(
+                                context,
+                                toolbar: toolbar,
+                              );
+                            },
+                          ),
+                        ),
+                      // While holding for IME: leave the slot empty so the system
+                      // keyboard paints in without a Flutter flash frame.
+                      // Stable key: when the drawer Positioned is inserted/removed
+                      // above this slot, Flutter must not recreate the bar (that
+                      // was snapping the tools-icon spin on close).
+                      Positioned(
+                        key: const ValueKey<String>('ime_quick_toolbar_bar'),
+                        left: 0,
+                        right: 0,
+                        bottom: panelHeight,
+                        child: QuickToolbarBar(
+                          config: toolbar.config,
+                          foreground: widget.foreground,
+                          toolsDrawerOpen: drawerOpen,
+                          canUndo: bridge.canUndo,
+                          bodyFontFamily: widget.bodyFontFamily,
+                          onToolPressed: (tool) => _onTool(context, tool),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         );
       },
     );

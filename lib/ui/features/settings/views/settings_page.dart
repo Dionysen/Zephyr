@@ -2,8 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../core/zephyr_scope.dart';
+import '../../../core/nested_back_navigator.dart';
 import '../../../core/zephyr_l10n.dart';
+import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_settings.dart';
 import '../../../core/zephyr_status_bar.dart';
 import '../../../core/zephyr_theme.dart';
@@ -11,7 +12,7 @@ import '../models/settings_section.dart';
 import 'about_settings_view.dart';
 import 'editor_settings_view.dart';
 import 'general_settings_view.dart';
-import 'shortcuts_settings_view.dart';
+import 'shortcuts_settings_page.dart';
 import 'theme_settings_view.dart';
 
 /// Compact full-page settings route (mobile / narrow layouts).
@@ -44,11 +45,10 @@ class _SettingsPageState extends State<SettingsPage> {
     return ListenableBuilder(
       listenable: scope.theme,
       builder: (context, _) {
-        final l10n = context.l10n;
         final immersiveStatusBar = scope.theme.ui.immersiveStatusBar;
         final hideStatusBarIcons = scope.theme.ui.hideStatusBarIcons;
-        final barColor = ZephyrSettingsAppBar.backgroundColor(context);
         final surface = Theme.of(context).colorScheme.surface;
+        final barColor = ZephyrSettingsAppBar.backgroundColor(context);
         return Theme(
           data: withMobileRoundControls(Theme.of(context)),
           child: ZephyrStatusBar(
@@ -57,31 +57,51 @@ class _SettingsPageState extends State<SettingsPage> {
             statusBarColor: immersiveStatusBar ? surface : barColor,
             child: Scaffold(
               backgroundColor: surface,
-              body: ColoredBox(
-                color: surface,
-                child: Column(
-                  children: [
-                    ColoredBox(
-                      // Status bar band shows app-bar chrome color.
-                      color: barColor,
-                      child: ZephyrTopSafeArea(
-                        bottom: false,
-                        child: ZephyrSettingsAppBar(
-                          title: l10n.settingsTitle,
-                          onBack: () => Navigator.of(context).maybePop(),
-                        ),
-                      ),
-                    ),
-                    const Expanded(
-                      child: CompactSettingsList(),
-                    ),
-                  ],
-                ),
+              // Nested navigator + PopScope: gesture back pops sub-pages /
+              // sheets before leaving settings.
+              body: NestedBackNavigator(
+                onGenerateRoute: (settings) {
+                  return MaterialPageRoute<void>(
+                    settings: settings,
+                    builder: (_) => const _SettingsHome(),
+                  );
+                },
               ),
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class _SettingsHome extends StatelessWidget {
+  const _SettingsHome();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final surface = Theme.of(context).colorScheme.surface;
+    final barColor = ZephyrSettingsAppBar.backgroundColor(context);
+    return ColoredBox(
+      color: surface,
+      child: Column(
+        children: [
+          ColoredBox(
+            color: barColor,
+            child: ZephyrTopSafeArea(
+              bottom: false,
+              child: ZephyrSettingsAppBar(
+                title: l10n.settingsTitle,
+                onBack: () => Navigator.of(context, rootNavigator: true).maybePop(),
+              ),
+            ),
+          ),
+          const Expanded(
+            child: CompactSettingsList(),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -122,9 +142,21 @@ class CompactSettingsList extends StatelessWidget {
               viewModel: scope.editorPreferences,
               compact: true,
             ),
-            SettingsSection.shortcuts => ShortcutsSettingsView(
-              viewModel: scope.keyboardShortcuts,
-              compact: true,
+            SettingsSection.shortcuts => ZephyrSettingsSection(
+              children: [
+                ZephyrSettingsListTile(
+                  title: l10n.shortcutsManageTitle,
+                  subtitle: l10n.shortcutsManageSubtitle,
+                  showDivider: false,
+                  trailing: Icon(
+                    Icons.chevron_right,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  onTap: () {
+                    Navigator.of(context).push(ShortcutsSettingsPage.route());
+                  },
+                ),
+              ],
             ),
             SettingsSection.about => const AboutSettingsView(compact: true),
             _ => ZephyrSettingsSection(

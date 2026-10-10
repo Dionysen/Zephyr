@@ -103,6 +103,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsSectionShortcuts => '快捷键';
 
   @override
+  String get shortcutsManageTitle => '自定义快捷键';
+
+  @override
+  String get shortcutsManageSubtitle => '查看与修改按键绑定';
+
+  @override
   String get shortcutsResetAll => '全部恢复默认';
 
   @override
@@ -301,6 +307,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get hideStatusBarIconsSubtitle => '仅在沉浸式通知栏开启时生效，图标自动隐藏，边缘滑动可临时显示';
+
+  @override
+  String get hideQuickToolbarTitle => '隐藏快捷输入栏';
+
+  @override
+  String get hideQuickToolbarSubtitle => '开启后，键盘上方不再显示快捷工具栏';
 
   @override
   String get editorSectionTitle => '编辑器';
