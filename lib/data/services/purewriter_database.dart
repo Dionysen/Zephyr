@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -123,24 +124,28 @@ class PureWriterDatabase {
 
   PureWriterBackup get backups => _backups;
 
-  /// Consistent on-disk snapshot of [roomDbFile] for `.pwb` packing.
+  /// Lightweight on-disk snapshot of [roomDbFile] for `.pwb` packing.
+  ///
+  /// Checkpoint merges WAL into the main file, then copy runs in a background
+  /// isolate (avoids `VACUUM INTO` on the UI path).
   Future<File> snapshotRoomDbToTemp() async {
     final db = database;
+    final sourcePath = roomDbFile.path;
     final tempDir = await Directory.systemTemp.createTemp('zephyr-room-snap-');
-    final dest = File(path.join(tempDir.path, 'Room.db'));
+    final destPath = path.join(tempDir.path, 'Room.db');
     try {
-      await db.execute('PRAGMA wal_checkpoint(FULL)');
+      await db.execute('PRAGMA wal_checkpoint(TRUNCATE)');
     } on Object {
-      // Non-WAL journals ignore checkpoint.
+      try {
+        await db.execute('PRAGMA wal_checkpoint(FULL)');
+      } on Object {
+        // Non-WAL journals ignore checkpoint.
+      }
     }
-    try {
-      final escaped = dest.path.replaceAll("'", "''");
-      await db.execute("VACUUM INTO '$escaped'");
-      return dest;
-    } on Object {
-      await roomDbFile.copy(dest.path);
-      return dest;
-    }
+    await Isolate.run(() {
+      File(sourcePath).copySync(destPath);
+    });
+    return File(destPath);
   }
 
   /// Opens an external SQLite file read-only (e.g. extracted backup).

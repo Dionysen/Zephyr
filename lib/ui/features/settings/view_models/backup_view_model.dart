@@ -61,6 +61,8 @@ class BackupViewModel extends ChangeNotifier {
     _statusMessage = null;
     _error = null;
     notifyListeners();
+    // Let the busy indicator paint before heavy IO / compression.
+    await Future<void>.delayed(Duration.zero);
     try {
       await _library.flushPending();
       await _repository.createBackup(kind: kind);
@@ -88,6 +90,7 @@ class BackupViewModel extends ChangeNotifier {
     _statusMessage = null;
     _error = null;
     notifyListeners();
+    await Future<void>.delayed(Duration.zero);
     try {
       await _library.flushPending();
       await _repository.restoreBackup(entry: entry, mode: mode);
@@ -102,12 +105,13 @@ class BackupViewModel extends ChangeNotifier {
     }
   }
 
-  /// Call when the app leaves the foreground after edits.
+  /// Call when the app is backgrounded after edits (fire-and-forget).
   Future<void> maybeAutoBackupOnLeave() async {
     if (!_preferences.autoBackupEnabled) return;
     if (!_library.contentDirtySinceBackup) return;
     if (_library.isReadOnly) return;
     if (_busy) return;
-    await backupNow(kind: BackupKind.automatic);
+    // Do not await from lifecycle — keeps pause animation smooth.
+    unawaited(backupNow(kind: BackupKind.automatic));
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
@@ -18,41 +19,17 @@ class PureWriterBackup {
 
   /// Newest `.pwb` under `{root}/Backups` (including `Backups/Auto`).
   File? findLatestBackup(Directory libraryRoot) {
-    final entries = listBackups(libraryRoot);
+    final entries = listBackupsAtPath(libraryRoot.path);
     return entries.isEmpty ? null : File(entries.first.path);
   }
 
   bool hasBackups(Directory libraryRoot) =>
-      listBackups(libraryRoot).isNotEmpty;
+      listBackupsAtPath(libraryRoot.path).isNotEmpty;
 
-  /// All `.pwb` files, newest first.
-  List<BackupEntry> listBackups(Directory libraryRoot) {
-    final backups = findChildDirectory(libraryRoot, 'backups');
-    if (backups == null) return const [];
-    final files = <File>[];
-    _collectPwb(backups, files);
-    files.sort(
-      (a, b) => b.statSync().modified.compareTo(a.statSync().modified),
-    );
-    return [
-      for (final file in files)
-        BackupEntry(
-          path: file.path,
-          fileName: path.basename(file.path),
-          modified: file.statSync().modified,
-          sizeBytes: file.lengthSync(),
-          kind: _kindFor(file, backups),
-        ),
-    ];
-  }
-
-  BackupKind _kindFor(File file, Directory backupsRoot) {
-    final parent = file.parent;
-    if (path.equals(parent.path, backupsRoot.path)) {
-      return BackupKind.manual;
-    }
-    final name = path.basename(parent.path).toLowerCase();
-    return name == 'auto' ? BackupKind.automatic : BackupKind.manual;
+  /// Lists backups on a background isolate so directory walks do not jank UI.
+  Future<List<BackupEntry>> listBackups(Directory libraryRoot) {
+    final rootPath = libraryRoot.path;
+    return Isolate.run(() => listBackupsAtPath(rootPath));
   }
 
   /// Packs [roomDb] into a new `.pwb` under `Backups/` or `Backups/Auto/`.
@@ -67,46 +44,31 @@ class PureWriterBackup {
         : backupsDir;
     await targetDir.create(recursive: true);
     final stamp = _fileStamp(DateTime.now());
-    final pwb = File(path.join(targetDir.path, 'Zephyr-$stamp.pwb'));
-    await _packRoomDb(roomDb: roomDb, pwb: pwb);
+    final pwbPath = path.join(targetDir.path, 'Zephyr-$stamp.pwb');
+    await _packRoomDb(roomDbPath: roomDb.path, pwbPath: pwbPath);
     if (kind == BackupKind.automatic) {
       await pruneAutomaticBackups(libraryRoot, keep: autoKeepCount);
     }
-    final stat = pwb.statSync();
-    return BackupEntry(
-      path: pwb.path,
-      fileName: path.basename(pwb.path),
-      modified: stat.modified,
-      sizeBytes: stat.size,
-      kind: kind,
-    );
+    final kindIndex = kind.index;
+    return Isolate.run(() {
+      final pwb = File(pwbPath);
+      final stat = pwb.statSync();
+      return BackupEntry(
+        path: pwb.path,
+        fileName: path.basename(pwb.path),
+        modified: stat.modified,
+        sizeBytes: stat.size,
+        kind: BackupKind.values[kindIndex],
+      );
+    });
   }
 
   Future<void> pruneAutomaticBackups(
     Directory libraryRoot, {
     int keep = autoKeepCount,
-  }) async {
-    final auto = findChildDirectory(
-      findChildDirectory(libraryRoot, 'backups') ??
-          Directory(path.join(libraryRoot.path, 'Backups')),
-      'auto',
-    );
-    if (auto == null || !auto.existsSync()) return;
-    final files = auto
-        .listSync(followLinks: false)
-        .whereType<File>()
-        .where((f) => path.extension(f.path).toLowerCase() == '.pwb')
-        .toList()
-      ..sort(
-        (a, b) => b.statSync().modified.compareTo(a.statSync().modified),
-      );
-    for (var i = keep; i < files.length; i++) {
-      try {
-        await files[i].delete();
-      } on Object {
-        // Best-effort cleanup.
-      }
-    }
+  }) {
+    final rootPath = libraryRoot.path;
+    return Isolate.run(() => pruneAutomaticBackupsAtPath(rootPath, keep));
   }
 
   /// Extracts the database from [pwb] into [destinationRoomDb].
@@ -122,7 +84,7 @@ class PureWriterBackup {
       });
       return;
     }
-    await _restoreWithBsdtar(pwb, destinationRoomDb);
+    await _restoreWithBsdtar(pwb.path, destinationRoomDb.path);
   }
 
   /// Extracts the `.db` from [pwb] into a temp file and returns it.
@@ -133,28 +95,35 @@ class PureWriterBackup {
     return destination;
   }
 
-  Future<void> _packRoomDb({required File roomDb, required File pwb}) async {
+  Future<void> _packRoomDb({
+    required String roomDbPath,
+    required String pwbPath,
+  }) async {
     if (Platform.isAndroid) {
+      // Native side compresses on a background executor.
       await _channel.invokeMethod<void>('createPwb', {
-        'roomDbPath': roomDb.path,
-        'pwbPath': pwb.path,
+        'roomDbPath': roomDbPath,
+        'pwbPath': pwbPath,
       });
       return;
     }
     final staging = await Directory.systemTemp.createTemp('zephyr-pack-pwb-');
     try {
-      final dbName = 'PureWriterBackup.db';
-      await roomDb.copy(path.join(staging.path, dbName));
-      if (await pwb.exists()) {
-        await pwb.delete();
-      }
+      const dbName = 'PureWriterBackup.db';
+      final stagedDb = path.join(staging.path, dbName);
+      final stagingPath = staging.path;
+      await Isolate.run(() {
+        File(roomDbPath).copySync(stagedDb);
+        final out = File(pwbPath);
+        if (out.existsSync()) out.deleteSync();
+      });
       final packed = await Process.run('bsdtar', [
         '--format',
         '7zip',
         '-cf',
-        pwb.path,
+        pwbPath,
         '-C',
-        staging.path,
+        stagingPath,
         dbName,
       ]);
       if (packed.exitCode != 0) {
@@ -165,10 +134,10 @@ class PureWriterBackup {
     }
   }
 
-  Future<void> _restoreWithBsdtar(File pwb, File destinationRoomDb) async {
+  Future<void> _restoreWithBsdtar(String pwbPath, String destinationPath) async {
     final staging = await Directory.systemTemp.createTemp('zephyr-pwb-');
     try {
-      final listed = await Process.run('bsdtar', ['-tf', pwb.path]);
+      final listed = await Process.run('bsdtar', ['-tf', pwbPath]);
       if (listed.exitCode != 0) {
         throw StateError('Could not read PureWriter backup: ${listed.stderr}');
       }
@@ -183,7 +152,7 @@ class PureWriterBackup {
       final dbEntry = entries.first;
       final extracted = await Process.run('bsdtar', [
         '-xf',
-        pwb.path,
+        pwbPath,
         '-C',
         staging.path,
         dbEntry,
@@ -193,25 +162,16 @@ class PureWriterBackup {
           'Could not extract PureWriter backup: ${extracted.stderr}',
         );
       }
-      final source = File(path.join(staging.path, dbEntry));
-      if (!source.existsSync()) {
-        throw StateError('Extracted backup database was not found.');
-      }
-      await source.copy(destinationRoomDb.path);
+      final sourcePath = path.join(staging.path, dbEntry);
+      await Isolate.run(() {
+        final source = File(sourcePath);
+        if (!source.existsSync()) {
+          throw StateError('Extracted backup database was not found.');
+        }
+        source.copySync(destinationPath);
+      });
     } finally {
       await staging.delete(recursive: true);
-    }
-  }
-
-  void _collectPwb(Directory dir, List<File> out) {
-    if (!dir.existsSync()) return;
-    for (final entity in dir.listSync(followLinks: false)) {
-      if (entity is Directory) {
-        _collectPwb(entity, out);
-      } else if (entity is File &&
-          path.extension(entity.path).toLowerCase() == '.pwb') {
-        out.add(entity);
-      }
     }
   }
 
@@ -219,5 +179,75 @@ class PureWriterBackup {
     String two(int n) => n.toString().padLeft(2, '0');
     return '${time.year}${two(time.month)}${two(time.day)}-'
         '${two(time.hour)}${two(time.minute)}${two(time.second)}';
+  }
+}
+
+/// Sync listing used from [Isolate.run] and open-library restore heuristics.
+List<BackupEntry> listBackupsAtPath(String libraryRootPath) {
+  final libraryRoot = Directory(libraryRootPath);
+  final backups = findChildDirectory(libraryRoot, 'backups');
+  if (backups == null) return const [];
+  final files = <File>[];
+  _collectPwb(backups, files);
+  files.sort(
+    (a, b) => b.statSync().modified.compareTo(a.statSync().modified),
+  );
+  return [
+    for (final file in files) _backupEntryFor(file, backups),
+  ];
+}
+
+void pruneAutomaticBackupsAtPath(String libraryRootPath, int keep) {
+  final backups =
+      findChildDirectory(Directory(libraryRootPath), 'backups') ??
+      Directory(path.join(libraryRootPath, 'Backups'));
+  final auto = findChildDirectory(backups, 'auto');
+  if (auto == null || !auto.existsSync()) return;
+  final files = auto
+      .listSync(followLinks: false)
+      .whereType<File>()
+      .where((f) => path.extension(f.path).toLowerCase() == '.pwb')
+      .toList()
+    ..sort(
+      (a, b) => b.statSync().modified.compareTo(a.statSync().modified),
+    );
+  for (var i = keep; i < files.length; i++) {
+    try {
+      files[i].deleteSync();
+    } on Object {
+      // Best-effort cleanup.
+    }
+  }
+}
+
+BackupEntry _backupEntryFor(File file, Directory backupsRoot) {
+  final stat = file.statSync();
+  return BackupEntry(
+    path: file.path,
+    fileName: path.basename(file.path),
+    modified: stat.modified,
+    sizeBytes: stat.size,
+    kind: _backupKindFor(file, backupsRoot),
+  );
+}
+
+BackupKind _backupKindFor(File file, Directory backupsRoot) {
+  final parent = file.parent;
+  if (path.equals(parent.path, backupsRoot.path)) {
+    return BackupKind.manual;
+  }
+  final name = path.basename(parent.path).toLowerCase();
+  return name == 'auto' ? BackupKind.automatic : BackupKind.manual;
+}
+
+void _collectPwb(Directory dir, List<File> out) {
+  if (!dir.existsSync()) return;
+  for (final entity in dir.listSync(followLinks: false)) {
+    if (entity is Directory) {
+      _collectPwb(entity, out);
+    } else if (entity is File &&
+        path.extension(entity.path).toLowerCase() == '.pwb') {
+      out.add(entity);
+    }
   }
 }

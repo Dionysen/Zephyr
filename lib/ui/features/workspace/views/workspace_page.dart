@@ -107,11 +107,10 @@ class _WorkspacePageState extends State<WorkspacePage>
       if (library != null) {
         unawaited(library.flushPending());
       }
-      if (mounted &&
-          (state == AppLifecycleState.paused ||
-              state == AppLifecycleState.inactive)) {
-        final backup = ZephyrScope.of(context).backup;
-        unawaited(backup.maybeAutoBackupOnLeave());
+      // Auto-backup only on paused (not inactive) to avoid double work and
+      // competing with the system transition animation.
+      if (mounted && state == AppLifecycleState.paused) {
+        unawaited(ZephyrScope.of(context).backup.maybeAutoBackupOnLeave());
       }
     }
   }

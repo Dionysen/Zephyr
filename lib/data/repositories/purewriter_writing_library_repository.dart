@@ -806,10 +806,8 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   );
 
   @override
-  Future<List<BackupEntry>> listBackups() async {
-    final root = _libraryRoot;
-    return _store.backups.listBackups(root);
-  }
+  Future<List<BackupEntry>> listBackups() =>
+      _store.backups.listBackups(_libraryRoot);
 
   @override
   Future<BackupEntry> createBackup({required BackupKind kind}) async {
@@ -916,30 +914,34 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
       return;
     }
     final remoteRows = await backupDb.query(table);
-    for (final remote in remoteRows) {
-      final id = remote[idColumn];
-      if (id == null) continue;
-      final local = await localDb.query(
-        table,
-        where: '$idColumn = ?',
-        whereArgs: [id],
-        limit: 1,
-      );
-      if (local.isEmpty) {
-        await localDb.insert(table, remote);
-        continue;
+    if (remoteRows.isEmpty) return;
+    final localRows = await localDb.query(
+      table,
+      columns: [idColumn, timeColumn],
+    );
+    final localTimes = <Object?, int>{
+      for (final row in localRows) row[idColumn]: (row[timeColumn] as int?) ?? 0,
+    };
+    await localDb.transaction((txn) async {
+      final batch = txn.batch();
+      for (final remote in remoteRows) {
+        final id = remote[idColumn];
+        if (id == null) continue;
+        final remoteTime = (remote[timeColumn] as int?) ?? 0;
+        final localTime = localTimes[id];
+        if (localTime == null) {
+          batch.insert(table, remote);
+        } else if (remoteTime >= localTime) {
+          batch.update(
+            table,
+            remote,
+            where: '$idColumn = ?',
+            whereArgs: [id],
+          );
+        }
       }
-      final localTime = (local.single[timeColumn] as int?) ?? 0;
-      final remoteTime = (remote[timeColumn] as int?) ?? 0;
-      if (remoteTime >= localTime) {
-        await localDb.update(
-          table,
-          remote,
-          where: '$idColumn = ?',
-          whereArgs: [id],
-        );
-      }
-    }
+      await batch.commit(noResult: true);
+    });
   }
 
   Future<void> _mergeHistory(Database backupDb) async {
@@ -949,23 +951,30 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
       return;
     }
     final remoteRows = await backupDb.query('History');
-    for (final remote in remoteRows) {
-      final articleId = remote['article_id'];
-      final createTime = remote['createTime'];
-      final content = remote['article_content'] as String? ?? '';
-      if (articleId == null || createTime == null) continue;
-      final existing = await localDb.query(
-        'History',
-        columns: ['id'],
-        where:
-            'article_id = ? AND createTime = ? AND article_content = ?',
-        whereArgs: [articleId, createTime, content],
-        limit: 1,
-      );
-      if (existing.isNotEmpty) continue;
-      final copy = Map<String, Object?>.from(remote)..remove('id');
-      await localDb.insert('History', copy);
-    }
+    if (remoteRows.isEmpty) return;
+    final existingRows = await localDb.query(
+      'History',
+      columns: ['article_id', 'createTime', 'article_content'],
+    );
+    final existing = <String>{
+      for (final row in existingRows)
+        '${row['article_id']}|${row['createTime']}|${row['article_content']}',
+    };
+    await localDb.transaction((txn) async {
+      final batch = txn.batch();
+      for (final remote in remoteRows) {
+        final articleId = remote['article_id'];
+        final createTime = remote['createTime'];
+        final content = remote['article_content'] as String? ?? '';
+        if (articleId == null || createTime == null) continue;
+        final key = '$articleId|$createTime|$content';
+        if (existing.contains(key)) continue;
+        existing.add(key);
+        final copy = Map<String, Object?>.from(remote)..remove('id');
+        batch.insert('History', copy);
+      }
+      await batch.commit(noResult: true);
+    });
   }
 
   Future<void> _mergeZephyrDrafts(Database backupDb) async {
@@ -975,29 +984,32 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
       return;
     }
     final remoteRows = await backupDb.query('ZephyrDraft');
-    for (final remote in remoteRows) {
-      final id = remote['article_id'] as String?;
-      if (id == null) continue;
-      final local = await localDb.query(
-        'ZephyrDraft',
-        where: 'article_id = ?',
-        whereArgs: [id],
-        limit: 1,
-      );
-      if (local.isEmpty) {
-        await localDb.insert('ZephyrDraft', remote);
-        continue;
+    if (remoteRows.isEmpty) return;
+    final localRows = await localDb.query(
+      'ZephyrDraft',
+      columns: ['article_id', 'updated_at'],
+    );
+    final localTimes = <String, int>{
+      for (final row in localRows)
+        row['article_id']! as String: (row['updated_at'] as int?) ?? 0,
+    };
+    await localDb.transaction((txn) async {
+      final batch = txn.batch();
+      for (final remote in remoteRows) {
+        final id = remote['article_id'] as String?;
+        if (id == null) continue;
+        final remoteTime = (remote['updated_at'] as int?) ?? 0;
+        final localTime = localTimes[id];
+        if (localTime == null || remoteTime >= localTime) {
+          batch.insert(
+            'ZephyrDraft',
+            remote,
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
       }
-      final localTime = (local.single['updated_at'] as int?) ?? 0;
-      final remoteTime = (remote['updated_at'] as int?) ?? 0;
-      if (remoteTime >= localTime) {
-        await localDb.insert(
-          'ZephyrDraft',
-          remote,
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
-      }
-    }
+      await batch.commit(noResult: true);
+    });
   }
 
   Future<void> _deleteSqliteSidecars(File room) async {

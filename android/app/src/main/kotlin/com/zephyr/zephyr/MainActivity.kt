@@ -5,6 +5,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import androidx.core.view.WindowCompat
 import io.flutter.embedding.android.FlutterActivity
@@ -16,10 +18,13 @@ import org.apache.commons.compress.archivers.sevenz.SevenZOutputFile
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.util.concurrent.Executors
 
 class MainActivity : FlutterActivity() {
     private val storageChannel = "zephyr/android_storage"
     private val backupChannel = "zephyr/purewriter_backup"
+    private val backupExecutor = Executors.newSingleThreadExecutor()
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Let Flutter draw under status + gesture nav bars (true edge-to-edge).
@@ -49,31 +54,39 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "restorePwb" -> {
-                        try {
-                            val pwbPath = call.argument<String>("pwbPath")
-                            val destinationPath = call.argument<String>("destinationPath")
-                            if (pwbPath.isNullOrEmpty() || destinationPath.isNullOrEmpty()) {
-                                result.error("bad_args", "pwbPath and destinationPath required", null)
-                                return@setMethodCallHandler
+                        val pwbPath = call.argument<String>("pwbPath")
+                        val destinationPath = call.argument<String>("destinationPath")
+                        if (pwbPath.isNullOrEmpty() || destinationPath.isNullOrEmpty()) {
+                            result.error("bad_args", "pwbPath and destinationPath required", null)
+                            return@setMethodCallHandler
+                        }
+                        backupExecutor.execute {
+                            try {
+                                restorePwb(File(pwbPath), File(destinationPath))
+                                mainHandler.post { result.success(null) }
+                            } catch (error: Exception) {
+                                mainHandler.post {
+                                    result.error("restore_failed", error.message, null)
+                                }
                             }
-                            restorePwb(File(pwbPath), File(destinationPath))
-                            result.success(null)
-                        } catch (error: Exception) {
-                            result.error("restore_failed", error.message, null)
                         }
                     }
                     "createPwb" -> {
-                        try {
-                            val roomDbPath = call.argument<String>("roomDbPath")
-                            val pwbPath = call.argument<String>("pwbPath")
-                            if (roomDbPath.isNullOrEmpty() || pwbPath.isNullOrEmpty()) {
-                                result.error("bad_args", "roomDbPath and pwbPath required", null)
-                                return@setMethodCallHandler
+                        val roomDbPath = call.argument<String>("roomDbPath")
+                        val pwbPath = call.argument<String>("pwbPath")
+                        if (roomDbPath.isNullOrEmpty() || pwbPath.isNullOrEmpty()) {
+                            result.error("bad_args", "roomDbPath and pwbPath required", null)
+                            return@setMethodCallHandler
+                        }
+                        backupExecutor.execute {
+                            try {
+                                createPwb(File(roomDbPath), File(pwbPath))
+                                mainHandler.post { result.success(null) }
+                            } catch (error: Exception) {
+                                mainHandler.post {
+                                    result.error("create_failed", error.message, null)
+                                }
                             }
-                            createPwb(File(roomDbPath), File(pwbPath))
-                            result.success(null)
-                        } catch (error: Exception) {
-                            result.error("create_failed", error.message, null)
                         }
                     }
                     else -> result.notImplemented()
