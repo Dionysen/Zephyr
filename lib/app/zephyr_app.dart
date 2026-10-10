@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../data/repositories/file_editor_preferences_repository.dart';
+import '../data/repositories/file_keyboard_shortcuts_repository.dart';
 import '../data/repositories/file_quick_toolbar_preferences_repository.dart';
 import '../data/repositories/file_settings_navigation_repository.dart';
 import '../data/repositories/file_system_font_repository.dart';
@@ -12,6 +13,7 @@ import '../data/repositories/file_window_frame_repository.dart';
 import '../data/repositories/file_workspace_layout_repository.dart';
 import '../data/repositories/purewriter_writing_library_repository.dart';
 import '../data/services/editor_preferences_file_storage.dart';
+import '../data/services/keyboard_shortcuts_file_storage.dart';
 import '../data/services/purewriter_database.dart';
 import '../data/services/quick_toolbar_file_storage.dart';
 import '../data/services/settings_navigation_file_storage.dart';
@@ -31,6 +33,7 @@ import '../ui/features/editor/view_models/editor_preferences_view_model.dart';
 import '../ui/features/editor/view_models/library_view_model.dart';
 import '../ui/features/editor/view_models/quick_toolbar_view_model.dart';
 import '../ui/features/settings/view_models/font_library.dart';
+import '../ui/features/settings/view_models/keyboard_shortcuts_view_model.dart';
 import '../ui/features/settings/view_models/settings_view_model.dart';
 import '../ui/features/settings/view_models/theme_view_model.dart';
 import '../ui/features/workspace/views/workspace_page.dart';
@@ -62,6 +65,9 @@ void runZephyr(
       quickToolbar: QuickToolbarViewModel(
         FileQuickToolbarPreferencesRepository(QuickToolbarFileStorage()),
       )..load(),
+      keyboardShortcuts: KeyboardShortcutsViewModel(
+        FileKeyboardShortcutsRepository(KeyboardShortcutsFileStorage()),
+      )..load(),
       settings: SettingsViewModel(
         FileSettingsNavigationRepository(SettingsNavigationFileStorage()),
       )..load(),
@@ -76,6 +82,7 @@ class ZephyrApp extends StatelessWidget {
     required this.theme,
     required this.editorPreferences,
     required this.quickToolbar,
+    required this.keyboardShortcuts,
     required this.settings,
   });
 
@@ -83,6 +90,7 @@ class ZephyrApp extends StatelessWidget {
   final ThemeViewModel theme;
   final EditorPreferencesViewModel editorPreferences;
   final QuickToolbarViewModel quickToolbar;
+  final KeyboardShortcutsViewModel keyboardShortcuts;
   final SettingsViewModel settings;
 
   @override
@@ -91,6 +99,7 @@ class ZephyrApp extends StatelessWidget {
     theme: theme,
     editorPreferences: editorPreferences,
     quickToolbar: quickToolbar,
+    keyboardShortcuts: keyboardShortcuts,
     settings: settings,
     child: ListenableBuilder(
       listenable: theme,

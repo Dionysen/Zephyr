@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../../domain/use_cases/paragraph_indentation.dart';
+import '../../../../../domain/use_cases/text_word_boundaries.dart';
 import '../document/plain_text_document.dart';
 import '../document/plain_text_selection.dart';
 
@@ -133,10 +134,117 @@ class PlainTextEditingController extends ChangeNotifier {
     insertText(ideographicIndent(_firstLineIndent), coalesce: false);
   }
 
+  /// Removes up to [firstLineIndent] leading ideographic spaces at the caret
+  /// line (or the selection start line).
+  void outdentTabIndent() {
+    if (_firstLineIndent <= 0) return;
+    final offset = _selection.start;
+    final paraIndex = _document.paragraphIndexForOffset(offset);
+    final starts = _document.paragraphStarts();
+    final paraStart = starts[paraIndex];
+    final para = _document.paragraphs[paraIndex];
+    final leading = leadingIdeographicIndentCount(para);
+    if (leading <= 0) return;
+    final remove = leading < _firstLineIndent ? leading : _firstLineIndent;
+    _pushUndo(coalesce: false);
+    _document = _document.replaceRange(paraStart, paraStart + remove, '');
+    final delta = remove;
+    final base = (_selection.baseOffset - delta).clamp(0, _document.length);
+    final extent = (_selection.extentOffset - delta).clamp(0, _document.length);
+    _selection = TextSelection(baseOffset: base, extentOffset: extent);
+    _composing = TextRange.empty;
+    _redo.clear();
+    notifyListeners();
+  }
+
   void selectAll() {
     setSelection(
       TextSelection(baseOffset: 0, extentOffset: _document.length),
     );
+  }
+
+  int lineStartOffset(int offset) {
+    final i = _document.paragraphIndexForOffset(offset);
+    return _document.paragraphStarts()[i];
+  }
+
+  int lineEndOffset(int offset) {
+    final i = _document.paragraphIndexForOffset(offset);
+    final starts = _document.paragraphStarts();
+    final start = starts[i];
+    return start + _document.paragraphs[i].length;
+  }
+
+  void moveCaret(int offset, {bool extend = false}) {
+    final next = offset.clamp(0, _document.length);
+    if (extend) {
+      setSelection(
+        TextSelection(
+          baseOffset: _selection.baseOffset,
+          extentOffset: next,
+        ),
+      );
+    } else {
+      setSelection(TextSelection.collapsed(offset: next));
+    }
+  }
+
+  void moveWordLeft({bool extend = false}) {
+    moveCaret(wordBoundaryLeft(text, _selection.extentOffset), extend: extend);
+  }
+
+  void moveWordRight({bool extend = false}) {
+    moveCaret(wordBoundaryRight(text, _selection.extentOffset), extend: extend);
+  }
+
+  void moveLineStart({bool extend = false}) {
+    moveCaret(lineStartOffset(_selection.extentOffset), extend: extend);
+  }
+
+  void moveLineEnd({bool extend = false}) {
+    moveCaret(lineEndOffset(_selection.extentOffset), extend: extend);
+  }
+
+  void moveDocumentStart({bool extend = false}) {
+    moveCaret(0, extend: extend);
+  }
+
+  void moveDocumentEnd({bool extend = false}) {
+    moveCaret(_document.length, extend: extend);
+  }
+
+  void deleteWordBackward() {
+    if (!_selection.isCollapsed) {
+      replaceSelection('');
+      return;
+    }
+    final end = _selection.extentOffset;
+    if (end == 0) return;
+    final start = wordBoundaryLeft(text, end);
+    if (start >= end) return;
+    _pushUndo(coalesce: false);
+    _document = _document.replaceRange(start, end, '');
+    _selection = TextSelection.collapsed(offset: start);
+    _composing = TextRange.empty;
+    _redo.clear();
+    notifyListeners();
+  }
+
+  void deleteWordForward() {
+    if (!_selection.isCollapsed) {
+      replaceSelection('');
+      return;
+    }
+    final start = _selection.extentOffset;
+    if (start >= _document.length) return;
+    final end = wordBoundaryRight(text, start);
+    if (end <= start) return;
+    _pushUndo(coalesce: false);
+    _document = _document.replaceRange(start, end, '');
+    _selection = TextSelection.collapsed(offset: start);
+    _composing = TextRange.empty;
+    _redo.clear();
+    notifyListeners();
   }
 
   bool get canUndo => _undo.isNotEmpty;

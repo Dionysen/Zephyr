@@ -11,6 +11,7 @@ import '../models/settings_section.dart';
 import 'about_settings_view.dart';
 import 'editor_settings_view.dart';
 import 'general_settings_view.dart';
+import 'shortcuts_settings_view.dart';
 import 'theme_settings_view.dart';
 
 /// Compact full-page settings route (mobile / narrow layouts).
@@ -119,6 +120,10 @@ class CompactSettingsList extends StatelessWidget {
             ),
             SettingsSection.editor => EditorSettingsView(
               viewModel: scope.editorPreferences,
+              compact: true,
+            ),
+            SettingsSection.shortcuts => ShortcutsSettingsView(
+              viewModel: scope.keyboardShortcuts,
               compact: true,
             ),
             SettingsSection.about => const AboutSettingsView(compact: true),

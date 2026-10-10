@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../../../data/services/android_storage_access.dart';
 import '../../../../data/services/folder_bookmark.dart';
@@ -18,6 +17,7 @@ import '../../editor/quick_toolbar/quick_toolbar_host.dart';
 import '../../editor/quick_toolbar/workspace_editor_bridge.dart';
 import '../../editor/view_models/editor_preferences_view_model.dart';
 import '../../editor/view_models/library_view_model.dart';
+import '../../../../domain/models/keyboard_shortcuts.dart';
 import '../../settings/views/settings_page.dart';
 import 'workspace_editor.dart';
 import 'workspace_settings_panel.dart';
@@ -216,33 +216,36 @@ class _WorkspacePageState extends State<WorkspacePage> {
               ],
             );
             final shell = _settingsOpen
-                ? CallbackShortcuts(
-                    bindings: {
-                      const SingleActivator(LogicalKeyboardKey.escape):
-                          _closeSettings,
+                ? Focus(
+                    autofocus: true,
+                    onKeyEvent: (node, event) {
+                      final action =
+                          scope.keyboardShortcuts.actionForKeyEvent(event);
+                      if (action == ShortcutActionId.closeSettings) {
+                        _closeSettings();
+                        return KeyEventResult.handled;
+                      }
+                      return KeyEventResult.ignored;
                     },
-                    child: Focus(
-                      autofocus: true,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          workspace,
-                          GestureDetector(
-                            onTap: _closeSettings,
-                            behavior: HitTestBehavior.opaque,
-                            child: const ColoredBox(color: Colors.transparent),
-                          ),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: _WorkspaceSettingsSlideIn(
-                              child: WorkspaceSettingsPanel(
-                                width: panelWidth,
-                                onClose: _closeSettings,
-                              ),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        workspace,
+                        GestureDetector(
+                          onTap: _closeSettings,
+                          behavior: HitTestBehavior.opaque,
+                          child: const ColoredBox(color: Colors.transparent),
+                        ),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: _WorkspaceSettingsSlideIn(
+                            child: WorkspaceSettingsPanel(
+                              width: panelWidth,
+                              onClose: _closeSettings,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   )
                 : workspace;

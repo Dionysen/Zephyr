@@ -284,6 +284,324 @@ abstract class AppLocalizations {
   /// **'Shortcuts'**
   String get settingsSectionShortcuts;
 
+  /// No description provided for @shortcutsResetAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset all to defaults'**
+  String get shortcutsResetAll;
+
+  /// No description provided for @shortcutsResetAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get shortcutsResetAction;
+
+  /// No description provided for @shortcutsClearAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get shortcutsClearAction;
+
+  /// No description provided for @shortcutsRecordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Press a new shortcut'**
+  String get shortcutsRecordTitle;
+
+  /// No description provided for @shortcutsRecordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Esc to cancel · Backspace to clear'**
+  String get shortcutsRecordHint;
+
+  /// No description provided for @shortcutsUnbound.
+  ///
+  /// In en, this message translates to:
+  /// **'Unbound'**
+  String get shortcutsUnbound;
+
+  /// No description provided for @shortcutsConflictHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Conflicting shortcuts were replaced'**
+  String get shortcutsConflictHint;
+
+  /// No description provided for @shortcutGroupClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Clipboard'**
+  String get shortcutGroupClipboard;
+
+  /// No description provided for @shortcutGroupHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get shortcutGroupHistory;
+
+  /// No description provided for @shortcutGroupDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get shortcutGroupDelete;
+
+  /// No description provided for @shortcutGroupIndent.
+  ///
+  /// In en, this message translates to:
+  /// **'Indent'**
+  String get shortcutGroupIndent;
+
+  /// No description provided for @shortcutGroupNewline.
+  ///
+  /// In en, this message translates to:
+  /// **'Newline'**
+  String get shortcutGroupNewline;
+
+  /// No description provided for @shortcutGroupNavigate.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigate'**
+  String get shortcutGroupNavigate;
+
+  /// No description provided for @shortcutGroupSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get shortcutGroupSelect;
+
+  /// No description provided for @shortcutGroupWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace'**
+  String get shortcutGroupWorkspace;
+
+  /// No description provided for @shortcutActionCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get shortcutActionCopy;
+
+  /// No description provided for @shortcutActionCut.
+  ///
+  /// In en, this message translates to:
+  /// **'Cut'**
+  String get shortcutActionCut;
+
+  /// No description provided for @shortcutActionPaste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get shortcutActionPaste;
+
+  /// No description provided for @shortcutActionSelectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get shortcutActionSelectAll;
+
+  /// No description provided for @shortcutActionUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get shortcutActionUndo;
+
+  /// No description provided for @shortcutActionRedo.
+  ///
+  /// In en, this message translates to:
+  /// **'Redo'**
+  String get shortcutActionRedo;
+
+  /// No description provided for @shortcutActionDeleteBackward.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete backward'**
+  String get shortcutActionDeleteBackward;
+
+  /// No description provided for @shortcutActionDeleteForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete forward'**
+  String get shortcutActionDeleteForward;
+
+  /// No description provided for @shortcutActionDeleteWordBackward.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete word backward'**
+  String get shortcutActionDeleteWordBackward;
+
+  /// No description provided for @shortcutActionDeleteWordForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete word forward'**
+  String get shortcutActionDeleteWordForward;
+
+  /// No description provided for @shortcutActionIndent.
+  ///
+  /// In en, this message translates to:
+  /// **'Indent'**
+  String get shortcutActionIndent;
+
+  /// No description provided for @shortcutActionOutdent.
+  ///
+  /// In en, this message translates to:
+  /// **'Outdent'**
+  String get shortcutActionOutdent;
+
+  /// No description provided for @shortcutActionNewline.
+  ///
+  /// In en, this message translates to:
+  /// **'Newline'**
+  String get shortcutActionNewline;
+
+  /// No description provided for @shortcutActionMoveLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Move left'**
+  String get shortcutActionMoveLeft;
+
+  /// No description provided for @shortcutActionMoveRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Move right'**
+  String get shortcutActionMoveRight;
+
+  /// No description provided for @shortcutActionMoveUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Move up'**
+  String get shortcutActionMoveUp;
+
+  /// No description provided for @shortcutActionMoveDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Move down'**
+  String get shortcutActionMoveDown;
+
+  /// No description provided for @shortcutActionMoveWordLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Move word left'**
+  String get shortcutActionMoveWordLeft;
+
+  /// No description provided for @shortcutActionMoveWordRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Move word right'**
+  String get shortcutActionMoveWordRight;
+
+  /// No description provided for @shortcutActionMoveLineStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Line start'**
+  String get shortcutActionMoveLineStart;
+
+  /// No description provided for @shortcutActionMoveLineEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Line end'**
+  String get shortcutActionMoveLineEnd;
+
+  /// No description provided for @shortcutActionMovePageUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Page up'**
+  String get shortcutActionMovePageUp;
+
+  /// No description provided for @shortcutActionMovePageDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Page down'**
+  String get shortcutActionMovePageDown;
+
+  /// No description provided for @shortcutActionMoveDocumentStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Document start'**
+  String get shortcutActionMoveDocumentStart;
+
+  /// No description provided for @shortcutActionMoveDocumentEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Document end'**
+  String get shortcutActionMoveDocumentEnd;
+
+  /// No description provided for @shortcutActionSelectLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Select left'**
+  String get shortcutActionSelectLeft;
+
+  /// No description provided for @shortcutActionSelectRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Select right'**
+  String get shortcutActionSelectRight;
+
+  /// No description provided for @shortcutActionSelectUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Select up'**
+  String get shortcutActionSelectUp;
+
+  /// No description provided for @shortcutActionSelectDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Select down'**
+  String get shortcutActionSelectDown;
+
+  /// No description provided for @shortcutActionSelectWordLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Select word left'**
+  String get shortcutActionSelectWordLeft;
+
+  /// No description provided for @shortcutActionSelectWordRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Select word right'**
+  String get shortcutActionSelectWordRight;
+
+  /// No description provided for @shortcutActionSelectLineStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Select to line start'**
+  String get shortcutActionSelectLineStart;
+
+  /// No description provided for @shortcutActionSelectLineEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Select to line end'**
+  String get shortcutActionSelectLineEnd;
+
+  /// No description provided for @shortcutActionSelectPageUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Select page up'**
+  String get shortcutActionSelectPageUp;
+
+  /// No description provided for @shortcutActionSelectPageDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Select page down'**
+  String get shortcutActionSelectPageDown;
+
+  /// No description provided for @shortcutActionSelectDocumentStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Select to document start'**
+  String get shortcutActionSelectDocumentStart;
+
+  /// No description provided for @shortcutActionSelectDocumentEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Select to document end'**
+  String get shortcutActionSelectDocumentEnd;
+
+  /// No description provided for @shortcutActionCloseSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Close settings'**
+  String get shortcutActionCloseSettings;
+
   /// No description provided for @settingsSectionTheme.
   ///
   /// In en, this message translates to:

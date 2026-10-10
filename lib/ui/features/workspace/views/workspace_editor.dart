@@ -15,6 +15,7 @@ import '../../editor/quick_toolbar/workspace_editor_bridge.dart';
 import '../../editor/view_models/editor_preferences_view_model.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../../core/zephyr_l10n.dart';
+import '../../../core/zephyr_scope.dart';
 
 class WorkspaceEditor extends StatefulWidget {
   const WorkspaceEditor({
@@ -755,6 +756,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
               ),
               bottomObstruction: quickToolbarBottomObstructionOf(context),
               consumeNewline: _consumePairNewline,
+              shortcuts: ZephyrScope.of(context).keyboardShortcuts,
               onTextChanged: (_) {},
               onSelectionChanged: _onSelectionChanged,
             ),

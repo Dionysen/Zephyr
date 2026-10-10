@@ -8,7 +8,9 @@ import 'package:zephyr/domain/models/theme_color_pack.dart';
 import 'package:zephyr/domain/models/theme_tokens.dart';
 import 'package:zephyr/domain/models/ui_preferences.dart';
 import 'package:zephyr/domain/models/quick_toolbar_config.dart';
+import 'package:zephyr/domain/models/keyboard_shortcuts.dart';
 import 'package:zephyr/domain/repositories/editor_preferences_repository.dart';
+import 'package:zephyr/domain/repositories/keyboard_shortcuts_repository.dart';
 import 'package:zephyr/domain/repositories/quick_toolbar_preferences_repository.dart';
 import 'package:zephyr/domain/repositories/settings_navigation_repository.dart';
 import 'package:zephyr/domain/repositories/theme_preferences_repository.dart';
@@ -19,6 +21,7 @@ import 'package:zephyr/ui/features/editor/view_models/editor_preferences_view_mo
 import 'package:zephyr/ui/features/editor/view_models/library_view_model.dart';
 import 'package:zephyr/ui/features/editor/view_models/quick_toolbar_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/font_library.dart';
+import 'package:zephyr/ui/features/settings/view_models/keyboard_shortcuts_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/settings_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/theme_view_model.dart';
 import 'package:zephyr/l10n/app_localizations.dart';
@@ -549,12 +552,16 @@ Widget _app({LibraryViewModel? library, bool needsLibrarySetup = false}) {
     fonts,
   );
   final quickToolbar = QuickToolbarViewModel(_QuickToolbarRepository());
+  final keyboardShortcuts = KeyboardShortcutsViewModel(
+    _KeyboardShortcutsRepository(),
+  );
   final settings = SettingsViewModel(_SettingsRepository());
   return ZephyrScope(
     library: library,
     theme: theme,
     editorPreferences: editorPreferences,
     quickToolbar: quickToolbar,
+    keyboardShortcuts: keyboardShortcuts,
     settings: settings,
     child: MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -825,6 +832,14 @@ class _QuickToolbarRepository implements QuickToolbarPreferencesRepository {
 
   @override
   Future<void> save(QuickToolbarConfig config) async {}
+}
+
+class _KeyboardShortcutsRepository implements KeyboardShortcutsRepository {
+  @override
+  Future<ShortcutOverrides> load() async => ShortcutOverrides.empty;
+
+  @override
+  Future<void> save(ShortcutOverrides overrides) async {}
 }
 
 class _SettingsRepository implements SettingsNavigationRepository {

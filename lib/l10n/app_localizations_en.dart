@@ -105,6 +105,165 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSectionShortcuts => 'Shortcuts';
 
   @override
+  String get shortcutsResetAll => 'Reset all to defaults';
+
+  @override
+  String get shortcutsResetAction => 'Reset';
+
+  @override
+  String get shortcutsClearAction => 'Clear';
+
+  @override
+  String get shortcutsRecordTitle => 'Press a new shortcut';
+
+  @override
+  String get shortcutsRecordHint => 'Esc to cancel · Backspace to clear';
+
+  @override
+  String get shortcutsUnbound => 'Unbound';
+
+  @override
+  String get shortcutsConflictHint => 'Conflicting shortcuts were replaced';
+
+  @override
+  String get shortcutGroupClipboard => 'Clipboard';
+
+  @override
+  String get shortcutGroupHistory => 'History';
+
+  @override
+  String get shortcutGroupDelete => 'Delete';
+
+  @override
+  String get shortcutGroupIndent => 'Indent';
+
+  @override
+  String get shortcutGroupNewline => 'Newline';
+
+  @override
+  String get shortcutGroupNavigate => 'Navigate';
+
+  @override
+  String get shortcutGroupSelect => 'Select';
+
+  @override
+  String get shortcutGroupWorkspace => 'Workspace';
+
+  @override
+  String get shortcutActionCopy => 'Copy';
+
+  @override
+  String get shortcutActionCut => 'Cut';
+
+  @override
+  String get shortcutActionPaste => 'Paste';
+
+  @override
+  String get shortcutActionSelectAll => 'Select all';
+
+  @override
+  String get shortcutActionUndo => 'Undo';
+
+  @override
+  String get shortcutActionRedo => 'Redo';
+
+  @override
+  String get shortcutActionDeleteBackward => 'Delete backward';
+
+  @override
+  String get shortcutActionDeleteForward => 'Delete forward';
+
+  @override
+  String get shortcutActionDeleteWordBackward => 'Delete word backward';
+
+  @override
+  String get shortcutActionDeleteWordForward => 'Delete word forward';
+
+  @override
+  String get shortcutActionIndent => 'Indent';
+
+  @override
+  String get shortcutActionOutdent => 'Outdent';
+
+  @override
+  String get shortcutActionNewline => 'Newline';
+
+  @override
+  String get shortcutActionMoveLeft => 'Move left';
+
+  @override
+  String get shortcutActionMoveRight => 'Move right';
+
+  @override
+  String get shortcutActionMoveUp => 'Move up';
+
+  @override
+  String get shortcutActionMoveDown => 'Move down';
+
+  @override
+  String get shortcutActionMoveWordLeft => 'Move word left';
+
+  @override
+  String get shortcutActionMoveWordRight => 'Move word right';
+
+  @override
+  String get shortcutActionMoveLineStart => 'Line start';
+
+  @override
+  String get shortcutActionMoveLineEnd => 'Line end';
+
+  @override
+  String get shortcutActionMovePageUp => 'Page up';
+
+  @override
+  String get shortcutActionMovePageDown => 'Page down';
+
+  @override
+  String get shortcutActionMoveDocumentStart => 'Document start';
+
+  @override
+  String get shortcutActionMoveDocumentEnd => 'Document end';
+
+  @override
+  String get shortcutActionSelectLeft => 'Select left';
+
+  @override
+  String get shortcutActionSelectRight => 'Select right';
+
+  @override
+  String get shortcutActionSelectUp => 'Select up';
+
+  @override
+  String get shortcutActionSelectDown => 'Select down';
+
+  @override
+  String get shortcutActionSelectWordLeft => 'Select word left';
+
+  @override
+  String get shortcutActionSelectWordRight => 'Select word right';
+
+  @override
+  String get shortcutActionSelectLineStart => 'Select to line start';
+
+  @override
+  String get shortcutActionSelectLineEnd => 'Select to line end';
+
+  @override
+  String get shortcutActionSelectPageUp => 'Select page up';
+
+  @override
+  String get shortcutActionSelectPageDown => 'Select page down';
+
+  @override
+  String get shortcutActionSelectDocumentStart => 'Select to document start';
+
+  @override
+  String get shortcutActionSelectDocumentEnd => 'Select to document end';
+
+  @override
+  String get shortcutActionCloseSettings => 'Close settings';
+
+  @override
   String get settingsSectionTheme => 'Theme';
 
   @override

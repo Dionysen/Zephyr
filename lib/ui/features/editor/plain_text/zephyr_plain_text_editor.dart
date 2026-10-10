@@ -3,7 +3,10 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../domain/models/keyboard_shortcuts.dart';
+import '../../../../domain/use_cases/shortcut_resolver.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
+import '../../settings/view_models/keyboard_shortcuts_view_model.dart';
 import 'decoration/text_decoration_model.dart';
 import 'gestures/plain_text_gesture_handler.dart';
 import 'input/plain_text_editing_controller.dart';
@@ -31,6 +34,7 @@ class ZephyrPlainTextEditor extends StatefulWidget {
     this.scrollbarPadding = EdgeInsets.zero,
     this.bottomObstruction = 0,
     this.consumeNewline,
+    this.shortcuts,
   });
 
   final PlainTextEditingController controller;
@@ -56,6 +60,9 @@ class ZephyrPlainTextEditor extends StatefulWidget {
 
   /// When this returns true, Enter / IME newline is swallowed.
   final bool Function()? consumeNewline;
+
+  /// Customizable shortcuts; null uses platform defaults.
+  final KeyboardShortcutsViewModel? shortcuts;
 
   @override
   State<ZephyrPlainTextEditor> createState() => ZephyrPlainTextEditorState();
@@ -394,6 +401,15 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     }
   }
 
+  ShortcutActionId? _resolveAction(KeyEvent event) {
+    final shortcuts = widget.shortcuts;
+    if (shortcuts != null) {
+      return shortcuts.actionForKeyEvent(event);
+    }
+    return ShortcutResolver(platform: defaultTargetPlatform)
+        .actionForKeyEvent(event);
+  }
+
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (widget.readOnly || !_focusNode.hasPrimaryFocus) {
       return KeyEventResult.ignored;
@@ -401,106 +417,164 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
       return KeyEventResult.ignored;
     }
-    final key = event.logicalKey;
-    final meta = HardwareKeyboard.instance.isMetaPressed ||
-        HardwareKeyboard.instance.isControlPressed;
-    final shift = HardwareKeyboard.instance.isShiftPressed;
-
-    if (key == LogicalKeyboardKey.tab && !shift) {
-      widget.controller.insertTabIndent();
-      return KeyEventResult.handled;
+    final action = _resolveAction(event);
+    if (action == null) return KeyEventResult.ignored;
+    if (action == ShortcutActionId.closeSettings) {
+      return KeyEventResult.ignored;
     }
-    if (key == LogicalKeyboardKey.enter ||
-        key == LogicalKeyboardKey.numpadEnter) {
-      if (_consumeNewline()) {
+    return _dispatchEditorAction(action);
+  }
+
+  KeyEventResult _dispatchEditorAction(ShortcutActionId action) {
+    final c = widget.controller;
+    switch (action) {
+      case ShortcutActionId.copy:
+        _copy();
         return KeyEventResult.handled;
-      }
-      // IME also sends newline; desktop key path inserts here.
-      if (defaultTargetPlatform == TargetPlatform.macOS ||
-          defaultTargetPlatform == TargetPlatform.windows ||
-          defaultTargetPlatform == TargetPlatform.linux) {
-        widget.controller.insertNewlineWithIndent();
+      case ShortcutActionId.cut:
+        _cut();
         return KeyEventResult.handled;
-      }
+      case ShortcutActionId.paste:
+        _paste();
+        return KeyEventResult.handled;
+      case ShortcutActionId.selectAll:
+        c.selectAll();
+        return KeyEventResult.handled;
+      case ShortcutActionId.undo:
+        c.undo();
+        return KeyEventResult.handled;
+      case ShortcutActionId.redo:
+        c.redo();
+        return KeyEventResult.handled;
+      case ShortcutActionId.deleteBackward:
+        c.deleteBackward();
+        return KeyEventResult.handled;
+      case ShortcutActionId.deleteForward:
+        c.deleteForward();
+        return KeyEventResult.handled;
+      case ShortcutActionId.deleteWordBackward:
+        c.deleteWordBackward();
+        return KeyEventResult.handled;
+      case ShortcutActionId.deleteWordForward:
+        c.deleteWordForward();
+        return KeyEventResult.handled;
+      case ShortcutActionId.indent:
+        c.insertTabIndent();
+        return KeyEventResult.handled;
+      case ShortcutActionId.outdent:
+        c.outdentTabIndent();
+        return KeyEventResult.handled;
+      case ShortcutActionId.newline:
+        if (_consumeNewline()) return KeyEventResult.handled;
+        c.insertNewlineWithIndent();
+        return KeyEventResult.handled;
+      case ShortcutActionId.moveLeft:
+        _moveByChars(-1, extend: false);
+        return KeyEventResult.handled;
+      case ShortcutActionId.moveRight:
+        _moveByChars(1, extend: false);
+        return KeyEventResult.handled;
+      case ShortcutActionId.moveUp:
+        _moveVertical(-1, extend: false);
+        return KeyEventResult.handled;
+      case ShortcutActionId.moveDown:
+        _moveVertical(1, extend: false);
+        return KeyEventResult.handled;
+      case ShortcutActionId.moveWordLeft:
+        c.moveWordLeft();
+        return KeyEventResult.handled;
+      case ShortcutActionId.moveWordRight:
+        c.moveWordRight();
+        return KeyEventResult.handled;
+      case ShortcutActionId.moveLineStart:
+        c.moveLineStart();
+        return KeyEventResult.handled;
+      case ShortcutActionId.moveLineEnd:
+        c.moveLineEnd();
+        return KeyEventResult.handled;
+      case ShortcutActionId.movePageUp:
+        _movePage(-1, extend: false);
+        return KeyEventResult.handled;
+      case ShortcutActionId.movePageDown:
+        _movePage(1, extend: false);
+        return KeyEventResult.handled;
+      case ShortcutActionId.moveDocumentStart:
+        c.moveDocumentStart();
+        return KeyEventResult.handled;
+      case ShortcutActionId.moveDocumentEnd:
+        c.moveDocumentEnd();
+        return KeyEventResult.handled;
+      case ShortcutActionId.selectLeft:
+        _moveByChars(-1, extend: true);
+        return KeyEventResult.handled;
+      case ShortcutActionId.selectRight:
+        _moveByChars(1, extend: true);
+        return KeyEventResult.handled;
+      case ShortcutActionId.selectUp:
+        _moveVertical(-1, extend: true);
+        return KeyEventResult.handled;
+      case ShortcutActionId.selectDown:
+        _moveVertical(1, extend: true);
+        return KeyEventResult.handled;
+      case ShortcutActionId.selectWordLeft:
+        c.moveWordLeft(extend: true);
+        return KeyEventResult.handled;
+      case ShortcutActionId.selectWordRight:
+        c.moveWordRight(extend: true);
+        return KeyEventResult.handled;
+      case ShortcutActionId.selectLineStart:
+        c.moveLineStart(extend: true);
+        return KeyEventResult.handled;
+      case ShortcutActionId.selectLineEnd:
+        c.moveLineEnd(extend: true);
+        return KeyEventResult.handled;
+      case ShortcutActionId.selectPageUp:
+        _movePage(-1, extend: true);
+        return KeyEventResult.handled;
+      case ShortcutActionId.selectPageDown:
+        _movePage(1, extend: true);
+        return KeyEventResult.handled;
+      case ShortcutActionId.selectDocumentStart:
+        c.moveDocumentStart(extend: true);
+        return KeyEventResult.handled;
+      case ShortcutActionId.selectDocumentEnd:
+        c.moveDocumentEnd(extend: true);
+        return KeyEventResult.handled;
+      case ShortcutActionId.closeSettings:
+        return KeyEventResult.ignored;
     }
-    if (key == LogicalKeyboardKey.backspace) {
-      widget.controller.deleteBackward();
-      return KeyEventResult.handled;
-    }
-    if (key == LogicalKeyboardKey.delete) {
-      widget.controller.deleteForward();
-      return KeyEventResult.handled;
-    }
-    if (meta && key == LogicalKeyboardKey.keyA) {
-      widget.controller.selectAll();
-      return KeyEventResult.handled;
-    }
-    if (meta && key == LogicalKeyboardKey.keyZ && !shift) {
-      widget.controller.undo();
-      return KeyEventResult.handled;
-    }
-    if (meta && (key == LogicalKeyboardKey.keyZ && shift ||
-        key == LogicalKeyboardKey.keyY)) {
-      widget.controller.redo();
-      return KeyEventResult.handled;
-    }
-    if (meta && key == LogicalKeyboardKey.keyC) {
-      _copy();
-      return KeyEventResult.handled;
-    }
-    if (meta && key == LogicalKeyboardKey.keyX) {
-      _cut();
-      return KeyEventResult.handled;
-    }
-    if (meta && key == LogicalKeyboardKey.keyV) {
-      _paste();
-      return KeyEventResult.handled;
-    }
-    if (_handleArrow(key, shift: shift, meta: meta)) {
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
   }
 
-  bool _handleArrow(
-    LogicalKeyboardKey key, {
-    required bool shift,
-    required bool meta,
-  }) {
-    final sel = widget.controller.selection;
-    final text = widget.controller.text;
-    var extent = sel.extentOffset;
-    if (key == LogicalKeyboardKey.arrowLeft) {
-      extent = meta ? _lineStart(extent) : (extent > 0 ? extent - 1 : 0);
-    } else if (key == LogicalKeyboardKey.arrowRight) {
-      extent = meta ? _lineEnd(extent) : (extent < text.length ? extent + 1 : text.length);
-    } else if (key == LogicalKeyboardKey.arrowUp) {
-      extent = _verticalMove(extent, -1);
-    } else if (key == LogicalKeyboardKey.arrowDown) {
-      extent = _verticalMove(extent, 1);
-    } else {
-      return false;
-    }
-    if (!shift) {
-      widget.controller.setSelection(TextSelection.collapsed(offset: extent));
-    } else {
-      widget.controller.setSelection(
-        TextSelection(baseOffset: sel.baseOffset, extentOffset: extent),
-      );
-    }
-    return true;
+  void _moveByChars(int delta, {required bool extend}) {
+    final extent = widget.controller.selection.extentOffset;
+    final next = (extent + delta).clamp(0, widget.controller.text.length);
+    widget.controller.moveCaret(next, extend: extend);
   }
 
-  int _lineStart(int offset) {
-    final i = widget.controller.document.paragraphIndexForOffset(offset);
-    return widget.controller.document.paragraphStarts()[i];
+  void _moveVertical(int direction, {required bool extend}) {
+    final extent = widget.controller.selection.extentOffset;
+    widget.controller.moveCaret(
+      _verticalMove(extent, direction),
+      extend: extend,
+    );
   }
 
-  int _lineEnd(int offset) {
-    final doc = widget.controller.document;
-    final i = doc.paragraphIndexForOffset(offset);
-    final start = doc.paragraphStarts()[i];
-    return start + doc.paragraphs[i].length;
+  void _movePage(int direction, {required bool extend}) {
+    if (!_scrollController.hasClients) {
+      _moveVertical(direction, extend: extend);
+      return;
+    }
+    final extent = widget.controller.selection.extentOffset;
+    final caret = _engine.caretRectForOffset(extent);
+    if (caret == null) return;
+    final page = _scrollController.position.viewportDimension *
+        0.9 *
+        direction;
+    final target = Offset(caret.left, caret.center.dy + page);
+    widget.controller.moveCaret(
+      _engine.offsetForPosition(target),
+      extend: extend,
+    );
   }
 
   int _verticalMove(int offset, int direction) {

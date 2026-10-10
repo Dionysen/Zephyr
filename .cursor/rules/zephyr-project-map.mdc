@@ -32,6 +32,9 @@ Zephyr is a Flutter local-first plain-text editor. The document library is a **P
 | Swipe drawer (IME dismiss) | `lib/ui/core/zephyr_swipe_drawer.dart` |
 | Shared control sizes / theme | `lib/ui/core/zephyr_controls.dart`, `lib/ui/core/zephyr_theme.dart` |
 | UI prefs (immersive status bar, etc.) | `lib/domain/models/ui_preferences.dart`, settings under `lib/ui/features/settings/` |
+| Keyboard shortcuts (defaults + overrides) | `lib/domain/models/keyboard_shortcuts.dart`, `lib/domain/use_cases/shortcut_resolver.dart` |
+| Shortcuts persist / VM / settings UI | `keyboard-shortcuts.json`, `KeyboardShortcutsViewModel`, `shortcuts_settings_view.dart` |
+| Word boundaries | `lib/domain/use_cases/text_word_boundaries.dart` |
 
 ## Startup & temporary library
 
@@ -91,6 +94,8 @@ Zephyr is a Flutter local-first plain-text editor. The document library is a **P
 - Workspace / mobile bar: `tests/ui/workspace_page_test.dart`, `tests/ui/library_view_model_test.dart`
 - Paired punct: `tests/domain/paired_punctuation_test.dart`
 - Controller undo / toolbar: `tests/ui/plain_text_editing_controller_toolbar_test.dart`
+- Shortcuts: `tests/domain/shortcut_resolver_test.dart`, `tests/data/file_keyboard_shortcuts_repository_test.dart`
+- Editor nav: `tests/ui/plain_text_editing_controller_nav_test.dart`, `tests/domain/text_word_boundaries_test.dart`
 
 ## Wireless debug note
 

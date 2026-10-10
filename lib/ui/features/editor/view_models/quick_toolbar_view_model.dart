@@ -77,8 +77,15 @@ class QuickToolbarViewModel extends ChangeNotifier {
   void openToolsDrawer({required double keyboardHeight}) {
     if (_toolsDrawerOpen) return;
     _holdingPanelForIme = false;
-    if (keyboardHeight >= 80) {
-      _latchedKeyboardHeight = keyboardHeight;
+    // Prefer the larger of live inset and the last latch so a mid-collapse
+    // keyboard (rapid re-open) does not shrink the panel under the bar.
+    final candidate = keyboardHeight > _latchedKeyboardHeight
+        ? keyboardHeight
+        : _latchedKeyboardHeight;
+    if (candidate >= 80) {
+      _latchedKeyboardHeight = candidate;
+    }
+    if (keyboardHeight > 0.5) {
       _lastKeyboardInset = keyboardHeight;
     }
     _toolsDrawerOpen = true;

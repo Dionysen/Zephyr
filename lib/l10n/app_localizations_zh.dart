@@ -103,6 +103,165 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsSectionShortcuts => '快捷键';
 
   @override
+  String get shortcutsResetAll => '全部恢复默认';
+
+  @override
+  String get shortcutsResetAction => '恢复默认';
+
+  @override
+  String get shortcutsClearAction => '清除';
+
+  @override
+  String get shortcutsRecordTitle => '按下新的快捷键';
+
+  @override
+  String get shortcutsRecordHint => 'Esc 取消 · Backspace 清除';
+
+  @override
+  String get shortcutsUnbound => '未绑定';
+
+  @override
+  String get shortcutsConflictHint => '已覆盖冲突的快捷键';
+
+  @override
+  String get shortcutGroupClipboard => '剪贴板';
+
+  @override
+  String get shortcutGroupHistory => '历史';
+
+  @override
+  String get shortcutGroupDelete => '删除';
+
+  @override
+  String get shortcutGroupIndent => '缩进';
+
+  @override
+  String get shortcutGroupNewline => '换行';
+
+  @override
+  String get shortcutGroupNavigate => '导航';
+
+  @override
+  String get shortcutGroupSelect => '选择';
+
+  @override
+  String get shortcutGroupWorkspace => '工作区';
+
+  @override
+  String get shortcutActionCopy => '复制';
+
+  @override
+  String get shortcutActionCut => '剪切';
+
+  @override
+  String get shortcutActionPaste => '粘贴';
+
+  @override
+  String get shortcutActionSelectAll => '全选';
+
+  @override
+  String get shortcutActionUndo => '撤销';
+
+  @override
+  String get shortcutActionRedo => '重做';
+
+  @override
+  String get shortcutActionDeleteBackward => '向前删除';
+
+  @override
+  String get shortcutActionDeleteForward => '向后删除';
+
+  @override
+  String get shortcutActionDeleteWordBackward => '删除前一词';
+
+  @override
+  String get shortcutActionDeleteWordForward => '删除后一词';
+
+  @override
+  String get shortcutActionIndent => '增加缩进';
+
+  @override
+  String get shortcutActionOutdent => '减少缩进';
+
+  @override
+  String get shortcutActionNewline => '换行';
+
+  @override
+  String get shortcutActionMoveLeft => '左移';
+
+  @override
+  String get shortcutActionMoveRight => '右移';
+
+  @override
+  String get shortcutActionMoveUp => '上移';
+
+  @override
+  String get shortcutActionMoveDown => '下移';
+
+  @override
+  String get shortcutActionMoveWordLeft => '左移一词';
+
+  @override
+  String get shortcutActionMoveWordRight => '右移一词';
+
+  @override
+  String get shortcutActionMoveLineStart => '行首';
+
+  @override
+  String get shortcutActionMoveLineEnd => '行末';
+
+  @override
+  String get shortcutActionMovePageUp => '上一页';
+
+  @override
+  String get shortcutActionMovePageDown => '下一页';
+
+  @override
+  String get shortcutActionMoveDocumentStart => '文首';
+
+  @override
+  String get shortcutActionMoveDocumentEnd => '文末';
+
+  @override
+  String get shortcutActionSelectLeft => '向左选择';
+
+  @override
+  String get shortcutActionSelectRight => '向右选择';
+
+  @override
+  String get shortcutActionSelectUp => '向上选择';
+
+  @override
+  String get shortcutActionSelectDown => '向下选择';
+
+  @override
+  String get shortcutActionSelectWordLeft => '向左选一词';
+
+  @override
+  String get shortcutActionSelectWordRight => '向右选一词';
+
+  @override
+  String get shortcutActionSelectLineStart => '选至行首';
+
+  @override
+  String get shortcutActionSelectLineEnd => '选至行末';
+
+  @override
+  String get shortcutActionSelectPageUp => '向上选一页';
+
+  @override
+  String get shortcutActionSelectPageDown => '向下选一页';
+
+  @override
+  String get shortcutActionSelectDocumentStart => '选至文首';
+
+  @override
+  String get shortcutActionSelectDocumentEnd => '选至文末';
+
+  @override
+  String get shortcutActionCloseSettings => '关闭设置';
+
+  @override
   String get settingsSectionTheme => '外观';
 
   @override

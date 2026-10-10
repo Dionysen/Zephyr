@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../features/editor/view_models/editor_preferences_view_model.dart';
 import '../features/editor/view_models/library_view_model.dart';
 import '../features/editor/view_models/quick_toolbar_view_model.dart';
+import '../features/settings/view_models/keyboard_shortcuts_view_model.dart';
 import '../features/settings/view_models/settings_view_model.dart';
 import '../features/settings/view_models/theme_view_model.dart';
 
@@ -15,6 +16,7 @@ class ZephyrScope extends InheritedWidget {
     required this.theme,
     required this.editorPreferences,
     required this.quickToolbar,
+    required this.keyboardShortcuts,
     required this.settings,
     required super.child,
   });
@@ -23,6 +25,7 @@ class ZephyrScope extends InheritedWidget {
   final ThemeViewModel theme;
   final EditorPreferencesViewModel editorPreferences;
   final QuickToolbarViewModel quickToolbar;
+  final KeyboardShortcutsViewModel keyboardShortcuts;
   final SettingsViewModel settings;
 
   static ZephyrScope of(BuildContext context) {
@@ -37,5 +40,6 @@ class ZephyrScope extends InheritedWidget {
       theme != oldWidget.theme ||
       editorPreferences != oldWidget.editorPreferences ||
       quickToolbar != oldWidget.quickToolbar ||
+      keyboardShortcuts != oldWidget.keyboardShortcuts ||
       settings != oldWidget.settings;
 }
