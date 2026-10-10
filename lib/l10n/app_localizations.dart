@@ -2014,7 +2014,7 @@ abstract class AppLocalizations {
   /// No description provided for @moreSheetTitle.
   ///
   /// In en, this message translates to:
-  /// **'More'**
+  /// **'Quick tools'**
   String get moreSheetTitle;
 
   /// No description provided for @noMobileTools.

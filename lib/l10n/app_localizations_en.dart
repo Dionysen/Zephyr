@@ -1050,7 +1050,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get newBookTitle => 'New book';
 
   @override
-  String get moreSheetTitle => 'More';
+  String get moreSheetTitle => 'Quick tools';
 
   @override
   String get noMobileTools => 'No tools available';

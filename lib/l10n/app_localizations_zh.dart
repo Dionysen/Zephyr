@@ -1003,7 +1003,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get newBookTitle => '新建书籍';
 
   @override
-  String get moreSheetTitle => '更多';
+  String get moreSheetTitle => '快捷工具';
 
   @override
   String get noMobileTools => '暂无可用工具';

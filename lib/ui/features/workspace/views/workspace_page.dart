@@ -22,6 +22,7 @@ import '../../editor/view_models/editor_preferences_view_model.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../../../domain/models/keyboard_shortcuts.dart';
 import '../../settings/views/settings_page.dart';
+import 'library_search_sheet.dart';
 import 'workspace_editor.dart';
 import 'workspace_settings_panel.dart';
 import 'workspace_sidebar.dart';
@@ -233,6 +234,7 @@ class _WorkspacePageState extends State<WorkspacePage>
                                   preferences: scope.editorPreferences,
                                   invadeStatusBar: invadeStatusBand,
                                   transparentTopBar: bleedEditorBackground,
+                                  openSettings: _openSettings,
                                 ),
                               ),
                             ),
@@ -423,12 +425,14 @@ class _MobileEditorChrome extends StatefulWidget {
   const _MobileEditorChrome({
     required this.model,
     required this.preferences,
+    required this.openSettings,
     this.invadeStatusBar = false,
     this.transparentTopBar = false,
   });
 
   final LibraryViewModel model;
   final EditorPreferencesViewModel preferences;
+  final VoidCallback openSettings;
 
   /// When true, the editor extends under the status band so scrolled text can
   /// enter it naturally. Top-bar show/hide never changes scroll padding.
@@ -679,6 +683,26 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                     model: widget.model,
                     onOpenMenu: () => ZephyrSwipeDrawer.of(context).open(),
                     transparentBackground: widget.transparentTopBar,
+                    toolsBuilder: (barContext) {
+                      final l10n = barContext.l10n;
+                      return [
+                        WorkspaceMobileTool(
+                          icon: Icons.search,
+                          label: l10n.tooltipSearchChapters,
+                          onTap: () => unawaited(
+                            showLibrarySearchSheet(
+                              barContext,
+                              model: widget.model,
+                            ),
+                          ),
+                        ),
+                        WorkspaceMobileTool(
+                          icon: Icons.settings_outlined,
+                          label: l10n.tooltipSettings,
+                          onTap: widget.openSettings,
+                        ),
+                      ];
+                    },
                   ),
                 ),
               ),

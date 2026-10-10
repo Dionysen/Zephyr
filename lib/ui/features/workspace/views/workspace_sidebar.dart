@@ -1273,58 +1273,101 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
 class _MobileToolsSheet extends StatelessWidget {
   const _MobileToolsSheet({required this.tools});
 
+  static const _columns = 5;
+  static const _iconSize = 26.0;
+
   final List<WorkspaceMobileTool> tools;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
+    final radius = context.zephyrBorderRadius;
     return SafeArea(
-      child: ZephyrBottomSheet.listTheme(
-        context: context,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: ZephyrBottomSheet.titlePadding,
+            child: Text(
+              l10n.moreSheetTitle,
+              style: ZephyrBottomSheet.titleStyle(theme),
+            ),
+          ),
+          if (tools.isEmpty)
             Padding(
-              padding: ZephyrBottomSheet.titlePadding,
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
               child: Text(
-                l10n.moreSheetTitle,
-                style: ZephyrBottomSheet.titleStyle(theme),
+                l10n.noMobileTools,
+                style: ZephyrBottomSheet.bodyStyle(theme),
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: tools.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: _columns,
+                  mainAxisSpacing: 4,
+                  crossAxisSpacing: 4,
+                  childAspectRatio: 0.82,
+                ),
+                itemBuilder: (context, index) {
+                  final tool = tools[index];
+                  final enabled = tool.enabled;
+                  final fg = enabled
+                      ? theme.colorScheme.onSurface
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.38);
+                  return Material(
+                    type: MaterialType.transparency,
+                    child: InkWell(
+                      borderRadius: radius,
+                      onTap: !enabled
+                          ? null
+                          : () {
+                              Navigator.of(context).pop();
+                              tool.onTap();
+                            },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 2,
+                          vertical: 8,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              tool.icon ?? Icons.circle_outlined,
+                              size: _iconSize,
+                              color: enabled
+                                  ? theme.colorScheme.onSurface
+                                      .withValues(alpha: 0.82)
+                                  : fg,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              tool.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: fg,
+                                height: 1.15,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
-            if (tools.isEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-                child: Text(
-                  l10n.noMobileTools,
-                  style: ZephyrBottomSheet.bodyStyle(theme),
-                ),
-              )
-            else
-              for (var i = 0; i < tools.length; i++)
-                ZephyrBottomSheet.withRowDivider(
-                  context: context,
-                  showDivider: i < tools.length - 1,
-                  child: ListTile(
-                    enabled: tools[i].enabled,
-                    leading: tools[i].icon == null
-                        ? null
-                        : Icon(
-                            tools[i].icon,
-                            size: ZephyrBottomSheet.rowIconSize,
-                          ),
-                    title: Text(tools[i].label),
-                    onTap: !tools[i].enabled
-                        ? null
-                        : () {
-                            Navigator.of(context).pop();
-                            tools[i].onTap();
-                          },
-                  ),
-                ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -2731,6 +2774,16 @@ class _ChapterRow extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (selected) ...[
+                  const SizedBox(width: 8),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const SizedBox(width: 8, height: 8),
+                  ),
+                ],
                 if (showDragHandle) ...[
                   const SizedBox(width: 4),
                   _SidebarDragHandle<_ChapterDragData>(

@@ -541,8 +541,9 @@ void main() {
 
     await tester.tap(find.byTooltip('More'));
     await tester.pumpAndSettle();
-    expect(find.text('More'), findsOneWidget);
-    expect(find.text('No tools available'), findsOneWidget);
+    expect(find.text('Quick tools'), findsOneWidget);
+    expect(find.text('Search'), findsOneWidget);
+    expect(find.text('Settings'), findsWidgets);
   });
 }
 
