@@ -4,6 +4,7 @@ import '../../../../domain/models/app_theme_mode.dart';
 import '../../../../domain/models/theme_color_pack.dart';
 import '../../../../domain/models/theme_tokens.dart';
 import '../../../../domain/models/ui_preferences.dart';
+import '../../../core/zephyr_dialog.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_settings.dart';
 import '../../../core/zephyr_theme.dart';
@@ -681,7 +682,8 @@ class _ThemeNameDialogState extends State<_ThemeNameDialog> {
     final l10n = context.l10n;
     return AlertDialog(
       title: Text(widget.title),
-      content: SizedBox(
+      content: zephyrDialogScrollableContent(
+        context: context,
         width: 360,
         child: Form(
           key: _formKey,

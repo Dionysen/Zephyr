@@ -47,6 +47,7 @@ dependencies:
   flutter_displaymode: ^0.7.0
   package_info_plus: ^10.2.2
   url_launcher: ^6.3.3
+  koni_archive: ^0.9.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

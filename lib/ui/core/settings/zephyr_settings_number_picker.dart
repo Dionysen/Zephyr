@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../zephyr_dialog.dart';
 import '../zephyr_l10n.dart';
 import '../zephyr_theme.dart';
 import 'zephyr_settings_value_tile.dart';
@@ -113,61 +114,64 @@ class _ZephyrSettingsNumberPickerDialogState
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
       title: Text(widget.title),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (widget.description != null) ...[
-            Text(widget.description!, style: theme.textTheme.bodySmall),
-            const SizedBox(height: 16),
-          ],
-          Text(
-            _format(_value),
-            textAlign: TextAlign.center,
-            style: theme.textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.numberPickerDefaultLabel(defaultLabel),
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              IconButton(
-                onPressed: _value <= widget.min
-                    ? null
-                    : () => _nudge(-_step()),
-                icon: const Icon(Icons.remove_circle_outline),
-              ),
-              Expanded(
-                child: Slider(
-                  value: _value,
-                  min: widget.min,
-                  max: widget.max,
-                  divisions: widget.divisions,
-                  onChanged: (v) => setState(() => _value = v),
-                ),
-              ),
-              IconButton(
-                onPressed: _value >= widget.max
-                    ? null
-                    : () => _nudge(_step()),
-                icon: const Icon(Icons.add_circle_outline),
-              ),
+      content: zephyrDialogScrollableContent(
+        context: context,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (widget.description != null) ...[
+              Text(widget.description!, style: theme.textTheme.bodySmall),
+              const SizedBox(height: 16),
             ],
-          ),
-          Align(
-            alignment: Alignment.center,
-            child: TextButton(
-              onPressed: () => setState(() => _value = widget.defaultValue),
-              child: Text(l10n.numberPickerRestoreDefault(defaultLabel)),
+            Text(
+              _format(_value),
+              textAlign: TextAlign.center,
+              style: theme.textTheme.headlineSmall,
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              l10n.numberPickerDefaultLabel(defaultLabel),
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                IconButton(
+                  onPressed: _value <= widget.min
+                      ? null
+                      : () => _nudge(-_step()),
+                  icon: const Icon(Icons.remove_circle_outline),
+                ),
+                Expanded(
+                  child: Slider(
+                    value: _value,
+                    min: widget.min,
+                    max: widget.max,
+                    divisions: widget.divisions,
+                    onChanged: (v) => setState(() => _value = v),
+                  ),
+                ),
+                IconButton(
+                  onPressed: _value >= widget.max
+                      ? null
+                      : () => _nudge(_step()),
+                  icon: const Icon(Icons.add_circle_outline),
+                ),
+              ],
+            ),
+            Align(
+              alignment: Alignment.center,
+              child: TextButton(
+                onPressed: () => setState(() => _value = widget.defaultValue),
+                child: Text(l10n.numberPickerRestoreDefault(defaultLabel)),
+              ),
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(

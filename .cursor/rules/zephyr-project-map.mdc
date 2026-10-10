@@ -13,7 +13,7 @@ Zephyr is a Flutter local-first plain-text editor. The document library is a **P
 | --- | --- |
 | App entry / startup library | `lib/main.dart`, `lib/data/services/startup_library.dart` |
 | Room.db open / schema / repair | `lib/data/services/purewriter_database.dart` |
-| `.pwb` create / list / restore | `lib/data/services/purewriter_backup.dart` (+ Android `createPwb`/`restorePwb`/`getDeviceName`); names via `BackupFileLabel` |
+| `.pwb` create / list / restore | `lib/data/services/purewriter_backup.dart` (pure Dart `koni_archive` 7z); Android channel only `getDeviceName`; names via `BackupFileLabel` |
 | Backup settings UI / VM | `backup_settings_view.dart`, `BackupViewModel`, prefs JSON under app-support |
 | Crash drafts (`ZephyrDraft`) | Created IF NOT EXISTS on open — **do not** change `identity_hash` / `user_version` |
 | Library CRUD | `lib/data/repositories/purewriter_writing_library_repository.dart` |
@@ -88,7 +88,7 @@ Zephyr is a Flutter local-first plain-text editor. The document library is a **P
 
 - Content debounce 500ms; **`flushPending()`** (by article-id snapshot) before chapter/book/library switch, lifecycle pause, dispose, and backups.
 - `ZephyrDraft` / `ZephyrMeta` are Zephyr-only tables (`CREATE IF NOT EXISTS`); never bump Room fingerprint.
-- Local `.pwb`: manual → `Backups/`, auto → `Backups/Auto/` (keep 25); restore overwrite or merge (newer `updateTime` wins).
+- Local `.pwb`: manual → `Backups/`, auto → `Backups/Auto/` (keep 25); restore overwrite or merge (newer `updateTime` wins). Pack/extract via `koni_archive` (no `bsdtar`).
 - Chapter History UI: sidebar chapter menu → `article_history_sheet.dart`.
 - Stub auto-restore from `.pwb` only when Room looks tiny **and** has no article text.
 

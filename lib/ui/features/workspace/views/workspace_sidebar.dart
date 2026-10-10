@@ -9,6 +9,7 @@ import '../../../core/breakpoints.dart';
 import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_bottom_sheet.dart';
 import '../../../core/zephyr_controls.dart';
+import '../../../core/zephyr_dialog.dart';
 import '../../../core/zephyr_dropdown.dart';
 import '../../../core/zephyr_resize_handle.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
@@ -1122,7 +1123,8 @@ class _EditBookDialogState extends State<_EditBookDialog> {
     final l10n = context.l10n;
     return AlertDialog(
       title: Text(l10n.editBookTitle, style: theme.textTheme.titleLarge),
-      content: SizedBox(
+      content: zephyrDialogScrollableContent(
+        context: context,
         width: 380,
         child: Form(
           key: _formKey,

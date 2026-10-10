@@ -5,16 +5,9 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:zephyr/data/repositories/purewriter_writing_library_repository.dart';
+import 'package:zephyr/data/services/purewriter_backup.dart';
 import 'package:zephyr/data/services/purewriter_database.dart';
 import 'package:zephyr/domain/models/library_backup.dart';
-
-final _hasBsdtar = () {
-  try {
-    return Process.runSync('bsdtar', ['--version']).exitCode == 0;
-  } on Object {
-    return false;
-  }
-}();
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -180,7 +173,6 @@ void main() {
       );
       expect(reloaded.content, 'From backup');
     },
-    skip: !_hasBsdtar ? 'bsdtar required to pack .pwb on desktop' : false,
   );
 
   test('resolvePureWriterLibrary maps Android layout paths', () {
@@ -409,7 +401,7 @@ void main() {
     expect(entry.fileName, contains('0.1.0'));
     final listed = await repository.listBackups();
     expect(listed.any((item) => item.path == entry.path), isTrue);
-  }, skip: !_hasBsdtar ? 'bsdtar required to pack .pwb on desktop' : false);
+  });
 
   test('restoreHistory rewrites article content from History', () async {
     final repository = PureWriterWritingLibraryRepository(database);
@@ -432,22 +424,5 @@ void main() {
   });
 }
 
-Future<void> _packPwb({required File room, required File pwb}) async {
-  final staging = await Directory.systemTemp.createTemp('zephyr-pack-pwb-');
-  try {
-    final dbName = 'PureWriterBackup-test.db';
-    await room.copy(path.join(staging.path, dbName));
-    final packed = await Process.run('bsdtar', [
-      '--format',
-      '7zip',
-      '-cf',
-      pwb.path,
-      '-C',
-      staging.path,
-      dbName,
-    ]);
-    expect(packed.exitCode, 0, reason: '${packed.stderr}');
-  } finally {
-    await staging.delete(recursive: true);
-  }
-}
+Future<void> _packPwb({required File room, required File pwb}) =>
+    packRoomDbToPwb(roomDbPath: room.path, pwbPath: pwb.path);

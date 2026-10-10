@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../zephyr_dialog.dart';
 import '../zephyr_l10n.dart';
 import '../zephyr_theme.dart';
 
@@ -82,7 +83,8 @@ class _ZephyrColorPickerDialogState extends State<_ZephyrColorPickerDialog> {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
       title: Text(widget.title ?? l10n.customColorsTitle),
-      content: SizedBox(
+      content: zephyrDialogScrollableContent(
+        context: context,
         width: 280,
         child: Column(
           mainAxisSize: MainAxisSize.min,

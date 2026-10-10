@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../domain/models/purewriter_models.dart';
 import '../../../core/breakpoints.dart';
 import '../../../core/zephyr_bottom_sheet.dart';
+import '../../../core/zephyr_dialog.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../editor/views/article_history_sheet.dart';
@@ -472,7 +473,8 @@ class _RenameDialogState extends State<_RenameDialog> {
     final l10n = context.l10n;
     return AlertDialog(
       title: Text(widget.title),
-      content: SizedBox(
+      content: zephyrDialogScrollableContent(
+        context: context,
         width: 360,
         child: Form(
           key: _formKey,

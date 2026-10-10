@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:typed_data';
 
-import 'package:flutter/services.dart';
+import 'package:koni_archive/io.dart';
 import 'package:path/path.dart' as path;
 
 import '../../domain/models/library_backup.dart';
@@ -9,13 +10,14 @@ import 'purewriter_database.dart';
 
 /// Locates, creates, and restores PureWriter `.pwb` backups (7z archives
 /// containing a `*.db` snapshot of `App/Room.db`).
+///
+/// Pack/extract uses pure-Dart [koni_archive] (no system `bsdtar`, no native
+/// 7z channel).
 class PureWriterBackup {
-  PureWriterBackup({MethodChannel? channel})
-    : _channel = channel ?? const MethodChannel('zephyr/purewriter_backup');
-
-  final MethodChannel _channel;
+  PureWriterBackup();
 
   static const autoKeepCount = 25;
+  static const _dbEntryName = 'PureWriterBackup.db';
 
   /// Newest `.pwb` under `{root}/Backups` (including `Backups/Auto`).
   File? findLatestBackup(Directory libraryRoot) {
@@ -46,7 +48,7 @@ class PureWriterBackup {
     await targetDir.create(recursive: true);
     final fileName = label.toFileName();
     final pwbPath = path.join(targetDir.path, fileName);
-    await _packRoomDb(roomDbPath: roomDb.path, pwbPath: pwbPath);
+    await packRoomDbToPwb(roomDbPath: roomDb.path, pwbPath: pwbPath);
     if (kind == BackupKind.automatic) {
       await pruneAutomaticBackups(libraryRoot, keep: autoKeepCount);
     }
@@ -78,14 +80,10 @@ class PureWriterBackup {
     required File destinationRoomDb,
   }) async {
     await destinationRoomDb.parent.create(recursive: true);
-    if (Platform.isAndroid) {
-      await _channel.invokeMethod<void>('restorePwb', {
-        'pwbPath': pwb.path,
-        'destinationPath': destinationRoomDb.path,
-      });
-      return;
-    }
-    await _restoreWithBsdtar(pwb.path, destinationRoomDb.path);
+    await extractDbFromPwb(
+      pwbPath: pwb.path,
+      destinationPath: destinationRoomDb.path,
+    );
   }
 
   /// Extracts the `.db` from [pwb] into a temp file and returns it.
@@ -95,87 +93,74 @@ class PureWriterBackup {
     await restoreRoomDb(pwb: pwb, destinationRoomDb: destination);
     return destination;
   }
+}
 
-  Future<void> _packRoomDb({
-    required String roomDbPath,
-    required String pwbPath,
-  }) async {
-    if (Platform.isAndroid) {
-      // Native side compresses on a background executor.
-      await _channel.invokeMethod<void>('createPwb', {
-        'roomDbPath': roomDbPath,
-        'pwbPath': pwbPath,
-      });
-      return;
+/// Packs [roomDbPath] into a 7z `.pwb` at [pwbPath] (CPU work on a worker isolate).
+Future<void> packRoomDbToPwb({
+  required String roomDbPath,
+  required String pwbPath,
+}) => Isolate.run(() => _packRoomDbSync(roomDbPath, pwbPath));
+
+/// Extracts the first `*.db` entry from [pwbPath] to [destinationPath].
+Future<void> extractDbFromPwb({
+  required String pwbPath,
+  required String destinationPath,
+}) => Isolate.run(() => _extractDbSync(pwbPath, destinationPath));
+
+Future<void> _packRoomDbSync(String roomDbPath, String pwbPath) async {
+  final room = File(roomDbPath);
+  if (!room.existsSync()) {
+    throw StateError('Room database not found: $roomDbPath');
+  }
+  final out = File(pwbPath);
+  if (out.existsSync()) {
+    out.deleteSync();
+  }
+  final size = room.lengthSync();
+  final writer = await createArchiveFile(
+    pwbPath,
+    format: const SevenZWriteFormat(),
+  );
+  try {
+    await writer.addStream(
+      ArchiveEntrySpec(path: PureWriterBackup._dbEntryName),
+      room.openRead().map(
+        (chunk) => chunk is Uint8List ? chunk : Uint8List.fromList(chunk),
+      ),
+      size: size,
+    );
+  } finally {
+    await writer.close();
+  }
+}
+
+Future<void> _extractDbSync(String pwbPath, String destinationPath) async {
+  final archive = await openArchiveFile(pwbPath);
+  try {
+    ArchiveEntry? entry;
+    for (final candidate in archive.entries) {
+      if (candidate.type == ArchiveEntryType.file &&
+          candidate.path.toLowerCase().endsWith('.db')) {
+        entry = candidate;
+        break;
+      }
     }
-    final staging = await Directory.systemTemp.createTemp('zephyr-pack-pwb-');
+    if (entry == null) {
+      throw StateError('PureWriter backup contains no .db database.');
+    }
+    final out = File(destinationPath);
+    out.parent.createSync(recursive: true);
+    final sink = out.openWrite();
     try {
-      const dbName = 'PureWriterBackup.db';
-      final stagedDb = path.join(staging.path, dbName);
-      final stagingPath = staging.path;
-      await Isolate.run(() {
-        File(roomDbPath).copySync(stagedDb);
-        final out = File(pwbPath);
-        if (out.existsSync()) out.deleteSync();
-      });
-      final packed = await Process.run('bsdtar', [
-        '--format',
-        '7zip',
-        '-cf',
-        pwbPath,
-        '-C',
-        stagingPath,
-        dbName,
-      ]);
-      if (packed.exitCode != 0) {
-        throw StateError('Could not create PureWriter backup: ${packed.stderr}');
+      await for (final chunk in archive.openRead(entry)) {
+        sink.add(chunk);
       }
     } finally {
-      await staging.delete(recursive: true);
+      await sink.close();
     }
+  } finally {
+    await archive.close();
   }
-
-  Future<void> _restoreWithBsdtar(String pwbPath, String destinationPath) async {
-    final staging = await Directory.systemTemp.createTemp('zephyr-pwb-');
-    try {
-      final listed = await Process.run('bsdtar', ['-tf', pwbPath]);
-      if (listed.exitCode != 0) {
-        throw StateError('Could not read PureWriter backup: ${listed.stderr}');
-      }
-      final entries = (listed.stdout as String)
-          .split('\n')
-          .map((line) => line.trim())
-          .where((line) => line.toLowerCase().endsWith('.db'))
-          .toList(growable: false);
-      if (entries.isEmpty) {
-        throw StateError('PureWriter backup contains no .db database.');
-      }
-      final dbEntry = entries.first;
-      final extracted = await Process.run('bsdtar', [
-        '-xf',
-        pwbPath,
-        '-C',
-        staging.path,
-        dbEntry,
-      ]);
-      if (extracted.exitCode != 0) {
-        throw StateError(
-          'Could not extract PureWriter backup: ${extracted.stderr}',
-        );
-      }
-      final sourcePath = path.join(staging.path, dbEntry);
-      await Isolate.run(() {
-        final source = File(sourcePath);
-        if (!source.existsSync()) {
-          throw StateError('Extracted backup database was not found.');
-        }
-        source.copySync(destinationPath);
-      });
-    } finally {
-      await staging.delete(recursive: true);
-    }
-  }
-
 }
 
 /// Sync listing used from [Isolate.run] and open-library restore heuristics.

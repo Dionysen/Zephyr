@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../domain/models/quick_toolbar_config.dart';
 import '../../../core/zephyr_bottom_sheet.dart';
+import '../../../core/zephyr_dialog.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../view_models/quick_toolbar_view_model.dart';
 
@@ -247,24 +248,28 @@ class _PhraseDialogState extends State<_PhraseDialog> {
     final l10n = context.l10n;
     return AlertDialog(
       title: Text(l10n.quickToolbarAddPhrase),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _label,
-            decoration: InputDecoration(labelText: l10n.quickToolbarPhraseName),
-            textInputAction: TextInputAction.next,
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _payload,
-            decoration: InputDecoration(
-              labelText: l10n.quickToolbarPhraseContent,
+      content: zephyrDialogScrollableContent(
+        context: context,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _label,
+              decoration:
+                  InputDecoration(labelText: l10n.quickToolbarPhraseName),
+              textInputAction: TextInputAction.next,
             ),
-            minLines: 2,
-            maxLines: 4,
-          ),
-        ],
+            const SizedBox(height: 12),
+            TextField(
+              controller: _payload,
+              decoration: InputDecoration(
+                labelText: l10n.quickToolbarPhraseContent,
+              ),
+              minLines: 2,
+              maxLines: 4,
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(
