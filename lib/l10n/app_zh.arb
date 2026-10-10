@@ -33,6 +33,19 @@
   "settingsSectionShortcuts": "快捷键",
   "settingsSectionTheme": "外观",
   "settingsSectionAbout": "关于",
+  "aboutVersionLabel": "版本 {version}",
+  "@aboutVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutGitHubTitle": "GitHub",
+  "aboutCheckUpdatesTitle": "检查更新",
+  "aboutCheckUpdatesSubtitle": "从 GitHub 获取最新版本信息",
+  "aboutCheckUpdatesComingSoon": "更新检查即将推出",
+  "aboutOpenLinkFailed": "无法打开链接",
   "generalSectionTitle": "通用",
   "immersiveStatusBarTitle": "沉浸式通知栏",
   "immersiveStatusBarSubtitle": "开启后应用延伸到透明通知栏下（控件仍留白），正文可上滑进入该区域",

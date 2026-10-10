@@ -106,13 +106,21 @@ class _ToolsPanelButton extends StatelessWidget {
     return _ToolbarInk(
       onTap: onPressed,
       width: QuickToolButton.iconExtent,
-      child: _ToolsIconSpin(open: open, foreground: foreground),
+      child: _ToolsIconSpin(
+        key: const ValueKey<String>('tools_icon_spin'),
+        open: open,
+        foreground: foreground,
+      ),
     );
   }
 }
 
 class _ToolsIconSpin extends StatefulWidget {
-  const _ToolsIconSpin({required this.open, required this.foreground});
+  const _ToolsIconSpin({
+    super.key,
+    required this.open,
+    required this.foreground,
+  });
 
   final bool open;
   final Color foreground;
@@ -121,52 +129,42 @@ class _ToolsIconSpin extends StatefulWidget {
   State<_ToolsIconSpin> createState() => _ToolsIconSpinState();
 }
 
-class _ToolsIconSpinState extends State<_ToolsIconSpin>
-    with SingleTickerProviderStateMixin {
+class _ToolsIconSpinState extends State<_ToolsIconSpin> {
   static const _stepTurns = 0.125; // 45°
-  static const _duration = Duration(milliseconds: 340);
+  static const _duration = Duration(milliseconds: 600);
 
-  late final AnimationController _controller;
-  late Animation<double> _turns;
-  double _angleTurns = 0;
+  /// Increments on every open/close; drives a fresh tween via [ValueKey].
+  int _steps = 0;
 
   @override
   void initState() {
     super.initState();
-    _angleTurns = widget.open ? _stepTurns : 0;
-    _controller = AnimationController(vsync: this, duration: _duration);
-    _turns = AlwaysStoppedAnimation(_angleTurns);
+    // Match current panel state without playing an intro spin.
+    _steps = widget.open ? 1 : 0;
   }
 
   @override
   void didUpdateWidget(covariant _ToolsIconSpin oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.open == widget.open) return;
-    final begin = _angleTurns;
-    _angleTurns += _stepTurns;
-    _turns = Tween<double>(begin: begin, end: _angleTurns).animate(
-      CurvedAnimation(
-        parent: _controller,
-        // Overshoot then settle — reads as a quick, lively nudge.
-        curve: const Cubic(0.22, 1.4, 0.36, 1),
-      ),
-    );
-    _controller.forward(from: 0);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+    if (oldWidget.open != widget.open) {
+      setState(() => _steps += 1);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
+    final begin = math.max(0, _steps - 1) * _stepTurns;
+    final end = _steps * _stepTurns;
+    return TweenAnimationBuilder<double>(
+      // New key → always runs begin→end; survives parent rebuilds cleanly.
+      key: ValueKey<int>(_steps),
+      tween: Tween<double>(begin: begin, end: end),
+      duration: _duration,
+      // Soft overshoot, then settle.
+      curve: const Cubic(0.22, 1.35, 0.36, 1),
+      builder: (context, turns, child) {
         return Transform.rotate(
-          angle: _turns.value * 2 * math.pi,
+          angle: turns * 2 * math.pi,
           child: child,
         );
       },

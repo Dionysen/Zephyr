@@ -8,6 +8,7 @@ import '../../../core/zephyr_settings.dart';
 import '../../../core/zephyr_status_bar.dart';
 import '../../../core/zephyr_theme.dart';
 import '../models/settings_section.dart';
+import 'about_settings_view.dart';
 import 'editor_settings_view.dart';
 import 'general_settings_view.dart';
 import 'theme_settings_view.dart';
@@ -120,6 +121,7 @@ class CompactSettingsList extends StatelessWidget {
               viewModel: scope.editorPreferences,
               compact: true,
             ),
+            SettingsSection.about => const AboutSettingsView(compact: true),
             _ => ZephyrSettingsSection(
               children: [
                 ZephyrSettingsListTile(

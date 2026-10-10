@@ -112,7 +112,11 @@ class QuickToolbarHost extends StatelessWidget {
                       ),
                     // While holding for IME: leave the slot empty so the system
                     // keyboard paints in without a Flutter flash frame.
+                    // Stable key: when the drawer Positioned is inserted/removed
+                    // above this slot, Flutter must not recreate the bar (that
+                    // was snapping the tools-icon spin on close).
                     Positioned(
+                      key: const ValueKey<String>('ime_quick_toolbar_bar'),
                       left: 0,
                       right: 0,
                       bottom: panelHeight,

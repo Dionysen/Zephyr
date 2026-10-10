@@ -33,6 +33,19 @@
   "settingsSectionShortcuts": "Shortcuts",
   "settingsSectionTheme": "Theme",
   "settingsSectionAbout": "About",
+  "aboutVersionLabel": "Version {version}",
+  "@aboutVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutGitHubTitle": "GitHub",
+  "aboutCheckUpdatesTitle": "Check for updates",
+  "aboutCheckUpdatesSubtitle": "Fetch the latest release info from GitHub.",
+  "aboutCheckUpdatesComingSoon": "Update checks are coming soon.",
+  "aboutOpenLinkFailed": "Could not open the link.",
   "generalSectionTitle": "General",
   "immersiveStatusBarTitle": "Immersive status bar",
   "immersiveStatusBarSubtitle": "Draw under a transparent status bar (chrome stays padded); text may scroll into that band.",

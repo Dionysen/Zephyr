@@ -109,6 +109,26 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsSectionAbout => '关于';
 
   @override
+  String aboutVersionLabel(String version) {
+    return '版本 $version';
+  }
+
+  @override
+  String get aboutGitHubTitle => 'GitHub';
+
+  @override
+  String get aboutCheckUpdatesTitle => '检查更新';
+
+  @override
+  String get aboutCheckUpdatesSubtitle => '从 GitHub 获取最新版本信息';
+
+  @override
+  String get aboutCheckUpdatesComingSoon => '更新检查即将推出';
+
+  @override
+  String get aboutOpenLinkFailed => '无法打开链接';
+
+  @override
   String get generalSectionTitle => '通用';
 
   @override

@@ -111,6 +111,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSectionAbout => 'About';
 
   @override
+  String aboutVersionLabel(String version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get aboutGitHubTitle => 'GitHub';
+
+  @override
+  String get aboutCheckUpdatesTitle => 'Check for updates';
+
+  @override
+  String get aboutCheckUpdatesSubtitle =>
+      'Fetch the latest release info from GitHub.';
+
+  @override
+  String get aboutCheckUpdatesComingSoon => 'Update checks are coming soon.';
+
+  @override
+  String get aboutOpenLinkFailed => 'Could not open the link.';
+
+  @override
   String get generalSectionTitle => 'General';
 
   @override

@@ -296,6 +296,42 @@ abstract class AppLocalizations {
   /// **'About'**
   String get settingsSectionAbout;
 
+  /// No description provided for @aboutVersionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version}'**
+  String aboutVersionLabel(String version);
+
+  /// No description provided for @aboutGitHubTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub'**
+  String get aboutGitHubTitle;
+
+  /// No description provided for @aboutCheckUpdatesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for updates'**
+  String get aboutCheckUpdatesTitle;
+
+  /// No description provided for @aboutCheckUpdatesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch the latest release info from GitHub.'**
+  String get aboutCheckUpdatesSubtitle;
+
+  /// No description provided for @aboutCheckUpdatesComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Update checks are coming soon.'**
+  String get aboutCheckUpdatesComingSoon;
+
+  /// No description provided for @aboutOpenLinkFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the link.'**
+  String get aboutOpenLinkFailed;
+
   /// No description provided for @generalSectionTitle.
   ///
   /// In en, this message translates to:
