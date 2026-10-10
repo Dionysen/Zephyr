@@ -5,6 +5,7 @@ import '../../../core/breakpoints.dart';
 import '../../../core/zephyr_bottom_sheet.dart';
 import '../../../core/zephyr_dialog.dart';
 import '../../../core/zephyr_l10n.dart';
+import '../../../core/zephyr_snackbar.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../editor/views/article_history_sheet.dart';
 
@@ -118,6 +119,16 @@ List<SidebarMenuAction> volumeMenuActions(AppLocalizations l10n) => [
     icon: Icons.drive_file_rename_outline,
   ),
   SidebarMenuAction(
+    id: 'moveBook',
+    label: l10n.actionMoveToBook,
+    icon: Icons.menu_book_outlined,
+  ),
+  SidebarMenuAction(
+    id: 'convertBook',
+    label: l10n.actionConvertVolumeToBook,
+    icon: Icons.auto_stories_outlined,
+  ),
+  SidebarMenuAction(
     id: 'delete',
     label: l10n.actionDelete,
     icon: Icons.delete_outline,
@@ -147,6 +158,11 @@ List<SidebarMenuAction> chapterMenuActions(AppLocalizations l10n) => [
     icon: Icons.drive_file_move_outline,
   ),
   SidebarMenuAction(
+    id: 'moveBook',
+    label: l10n.actionMoveToBook,
+    icon: Icons.menu_book_outlined,
+  ),
+  SidebarMenuAction(
     id: 'delete',
     label: l10n.actionDelete,
     icon: Icons.delete_outline,
@@ -174,6 +190,16 @@ Future<void> handleVolumeMenuAction(
       if (name != null) {
         await model.renameVolume(volumeId: volume.id, name: name);
       }
+    case 'moveBook':
+      final targetId = await _pickTargetBook(
+        context,
+        model: model,
+        currentFolderId: volume.folderId,
+      );
+      if (targetId == null) return;
+      await model.moveVolumeToBook(volumeId: volume.id, folderId: targetId);
+    case 'convertBook':
+      await model.convertVolumeToBook(volume.id);
     case 'delete':
       final choice = await showDeleteVolumeDialog(
         context,
@@ -229,6 +255,14 @@ Future<void> handleChapterMenuAction(
         articleId: chapter.id,
         volumeId: target.isEmpty ? null : target,
       );
+    case 'moveBook':
+      final targetId = await _pickTargetBook(
+        context,
+        model: model,
+        currentFolderId: chapter.folderId,
+      );
+      if (targetId == null) return;
+      await model.moveChapterToBook(articleId: chapter.id, folderId: targetId);
     case 'delete':
       final confirmed = await showDeleteChapterDialog(
         context,
@@ -237,6 +271,25 @@ Future<void> handleChapterMenuAction(
       if (confirmed != true) return;
       await model.deleteChapter(chapter.id);
   }
+}
+
+Future<String?> _pickTargetBook(
+  BuildContext context, {
+  required LibraryViewModel model,
+  required String currentFolderId,
+}) async {
+  final books =
+      model.library?.folders
+          .where((book) => !book.isTrash && book.id != currentFolderId)
+          .toList(growable: false) ??
+      const [];
+  if (books.isEmpty) {
+    if (context.mounted) {
+      ZephyrSnackBar.show(context, context.l10n.moveToBookNoTargets);
+    }
+    return null;
+  }
+  return showMoveToBookSheet(context, books: books);
 }
 
 Future<String?> showRenameDialog(
@@ -366,6 +419,45 @@ Future<String?> showMoveChapterSheet(
                 selected: volumes[i].id == currentCategoryId,
                 showDivider: i < volumes.length - 1,
                 onTap: () => Navigator.of(sheetContext).pop(volumes[i].id),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+/// Returns the selected book id, or null when cancelled.
+Future<String?> showMoveToBookSheet(
+  BuildContext context, {
+  required List<WritingFolder> books,
+}) {
+  final l10n = context.l10n;
+  return showModalBottomSheet<String>(
+    context: context,
+    showDragHandle: true,
+    builder: (sheetContext) {
+      return SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: ZephyrBottomSheet.titlePadding,
+              child: Text(
+                l10n.moveToBookSheetTitle,
+                style: ZephyrBottomSheet.titleStyle(Theme.of(sheetContext)),
+              ),
+            ),
+            for (var i = 0; i < books.length; i++)
+              _CompactSheetTile(
+                icon: Icons.menu_book_outlined,
+                label: books[i].name.trim().isEmpty
+                    ? l10n.untitled
+                    : books[i].name.trim(),
+                showDivider: i < books.length - 1,
+                onTap: () => Navigator.of(sheetContext).pop(books[i].id),
               ),
             const SizedBox(height: 8),
           ],

@@ -747,6 +747,89 @@ class FakeLibraryRepository implements WritingLibraryRepository {
   }
 
   @override
+  Future<void> moveArticleToFolder({
+    required String articleId,
+    required String folderId,
+  }) async {
+    if (saved.id != articleId) return;
+    saved = WritingArticle(
+      id: saved.id,
+      title: saved.title,
+      content: saved.content,
+      summary: saved.summary,
+      folderId: folderId,
+      categoryId: null,
+      createdAt: saved.createdAt,
+      updatedAt: saved.updatedAt,
+      wordCount: saved.wordCount,
+    );
+  }
+
+  @override
+  Future<void> moveCategoryToFolder({
+    required String categoryId,
+    required String folderId,
+  }) async {
+    final index = categories.indexWhere((item) => item.id == categoryId);
+    if (index >= 0) {
+      final old = categories[index];
+      categories[index] = WritingCategory(
+        id: old.id,
+        folderId: folderId,
+        name: old.name,
+        rank: old.rank,
+        collapsed: old.collapsed,
+      );
+    }
+    if (saved.categoryId == categoryId) {
+      saved = WritingArticle(
+        id: saved.id,
+        title: saved.title,
+        content: saved.content,
+        summary: saved.summary,
+        folderId: folderId,
+        categoryId: categoryId,
+        createdAt: saved.createdAt,
+        updatedAt: saved.updatedAt,
+        wordCount: saved.wordCount,
+      );
+    }
+  }
+
+  @override
+  Future<WritingFolder> convertCategoryToFolder({
+    required String categoryId,
+  }) async {
+    final index = categories.indexWhere((item) => item.id == categoryId);
+    if (index < 0) {
+      throw StateError('category not found');
+    }
+    final volume = categories.removeAt(index);
+    final folder = WritingFolder(
+      id: 'book-from-$categoryId',
+      name: volume.name.trim().isEmpty ? 'Untitled' : volume.name.trim(),
+      rank: folders.length,
+      description: '',
+      tags: '',
+    );
+    folders.add(folder);
+    if (saved.categoryId == categoryId) {
+      saved = WritingArticle(
+        id: saved.id,
+        title: saved.title,
+        content: saved.content,
+        summary: saved.summary,
+        folderId: folder.id,
+        categoryId: null,
+        createdAt: saved.createdAt,
+        updatedAt: saved.updatedAt,
+        wordCount: saved.wordCount,
+      );
+    }
+    return folder;
+  }
+
+  @override
   Future<void> reorderCategories({
     required String folderId,
     required List<String> orderedIds,

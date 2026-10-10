@@ -923,6 +923,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionMoveToVolume => 'Move to volume';
 
   @override
+  String get actionMoveToBook => 'Move to book';
+
+  @override
+  String get actionConvertVolumeToBook => 'Convert this volume to a book';
+
+  @override
+  String get moveToBookSheetTitle => 'Move to book';
+
+  @override
+  String get moveToBookNoTargets => 'There are no other books to move into.';
+
+  @override
   String get renameVolumeTitle => 'Rename volume';
 
   @override

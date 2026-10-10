@@ -876,6 +876,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get actionMoveToVolume => '移动到卷';
 
   @override
+  String get actionMoveToBook => '移动到书';
+
+  @override
+  String get actionConvertVolumeToBook => '将此卷转化为一本书';
+
+  @override
+  String get moveToBookSheetTitle => '移动到书';
+
+  @override
+  String get moveToBookNoTargets => '没有可移动到的其他书。';
+
+  @override
   String get renameVolumeTitle => '重命名卷';
 
   @override

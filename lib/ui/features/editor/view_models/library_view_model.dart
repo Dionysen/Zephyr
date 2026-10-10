@@ -812,6 +812,74 @@ class LibraryViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Moves a chapter into another book as unfiled.
+  Future<void> moveChapterToBook({
+    required String articleId,
+    required String folderId,
+  }) async {
+    if (isReadOnly) return;
+    if (folderId == WritingFolder.trashId) return;
+    final source = selectedBook;
+    if (source == null || source.isTrash || source.id == folderId) return;
+    await flushPending();
+    await _repository.moveArticleToFolder(
+      articleId: articleId,
+      folderId: folderId,
+    );
+    if (_article?.id == articleId) {
+      _article = await _repository.getArticle(articleId);
+      _selectedBookId = folderId;
+    }
+    _scheduleLayoutSave();
+    await load();
+    notifyListeners();
+  }
+
+  /// Turns [volumeId] into a new book and selects that book.
+  Future<WritingFolder?> convertVolumeToBook(String volumeId) async {
+    if (isReadOnly) return null;
+    final source = selectedBook;
+    if (source == null || source.isTrash) return null;
+    await flushPending();
+    final folder = await _repository.convertCategoryToFolder(
+      categoryId: volumeId,
+    );
+    _expandedVolumesByBook[source.id]?.remove(volumeId);
+    _scheduleLayoutSave();
+    await load();
+    await selectBook(folder.id);
+    return folder;
+  }
+
+  /// Moves a volume (and its chapters) into another book.
+  Future<void> moveVolumeToBook({
+    required String volumeId,
+    required String folderId,
+  }) async {
+    if (isReadOnly) return;
+    if (folderId == WritingFolder.trashId) return;
+    final source = selectedBook;
+    if (source == null || source.isTrash || source.id == folderId) return;
+    await flushPending();
+    await _repository.moveCategoryToFolder(
+      categoryId: volumeId,
+      folderId: folderId,
+    );
+    _expandedVolumesByBook[source.id]?.remove(volumeId);
+    final expanded = _expandedVolumesByBook.putIfAbsent(
+      folderId,
+      () => <String>{},
+    );
+    expanded.add(volumeId);
+    if (_article?.categoryId == volumeId) {
+      _article = await _repository.getArticle(_article!.id);
+      _selectedBookId = folderId;
+    }
+    _scheduleLayoutSave();
+    await load();
+    notifyListeners();
+  }
+
   Future<void> reorderVolumes(List<String> orderedIds) async {
     if (isReadOnly) return;
     final book = selectedBook;

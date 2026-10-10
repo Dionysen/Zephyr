@@ -1765,6 +1765,30 @@ abstract class AppLocalizations {
   /// **'Move to volume'**
   String get actionMoveToVolume;
 
+  /// No description provided for @actionMoveToBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to book'**
+  String get actionMoveToBook;
+
+  /// No description provided for @actionConvertVolumeToBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert this volume to a book'**
+  String get actionConvertVolumeToBook;
+
+  /// No description provided for @moveToBookSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to book'**
+  String get moveToBookSheetTitle;
+
+  /// No description provided for @moveToBookNoTargets.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no other books to move into.'**
+  String get moveToBookNoTargets;
+
   /// No description provided for @renameVolumeTitle.
   ///
   /// In en, this message translates to:

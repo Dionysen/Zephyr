@@ -473,6 +473,246 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   }
 
   @override
+  Future<void> moveArticleToFolder({
+    required String articleId,
+    required String folderId,
+  }) async {
+    _store.ensureWritable();
+    if (folderId == WritingFolder.trashId) {
+      throw ArgumentError('Use trashArticle to move into trash.');
+    }
+    final db = _store.database;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final rows = await db.query(
+      'Article',
+      columns: ['id', 'folderId'],
+      where: 'id = ? AND deleted = 0',
+      whereArgs: [articleId],
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      throw StateError('PureWriter article not found: $articleId');
+    }
+    if (rows.single['folderId'] == folderId) return;
+    final folderRows = await db.query(
+      'Folder',
+      columns: ['id'],
+      where: 'id = ? AND deleted = 0',
+      whereArgs: [folderId],
+      limit: 1,
+    );
+    if (folderRows.isEmpty) {
+      throw StateError('PureWriter folder not found: $folderId');
+    }
+    final maxRank = await db.rawQuery(
+      'SELECT COALESCE(MAX(rank), 0) AS value FROM Article WHERE folderId = ? AND deleted = 0',
+      [folderId],
+    );
+    final rank = (maxRank.single['value']! as int) + 1;
+    await db.update(
+      'Article',
+      {
+        'folderId': folderId,
+        'folderIdUpdateTime': now,
+        'categoryId': null,
+        'categoryIdUpdateTime': now,
+        'rank': rank,
+        'rankUpdateTime': now,
+        'orderKey': _orderKey(rank),
+        'structureUpdateTime': now,
+        'updateTime': now,
+      },
+      where: 'id = ?',
+      whereArgs: [articleId],
+    );
+  }
+
+  @override
+  Future<void> moveCategoryToFolder({
+    required String categoryId,
+    required String folderId,
+  }) async {
+    _store.ensureWritable();
+    if (folderId == WritingFolder.trashId) {
+      throw ArgumentError('Volumes cannot be moved into trash.');
+    }
+    final db = _store.database;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final rows = await db.query(
+      'Category',
+      columns: ['id', 'folderId'],
+      where: 'id = ? AND deleted = 0',
+      whereArgs: [categoryId],
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      throw StateError('PureWriter category not found: $categoryId');
+    }
+    final sourceFolderId = rows.single['folderId']! as String;
+    if (sourceFolderId == folderId) return;
+    final folderRows = await db.query(
+      'Folder',
+      columns: ['id'],
+      where: 'id = ? AND deleted = 0',
+      whereArgs: [folderId],
+      limit: 1,
+    );
+    if (folderRows.isEmpty) {
+      throw StateError('PureWriter folder not found: $folderId');
+    }
+    final maxCategoryRank = await db.rawQuery(
+      'SELECT COALESCE(MAX(rank), 0) AS value FROM Category WHERE folderId = ? AND deleted = 0',
+      [folderId],
+    );
+    final categoryRank = (maxCategoryRank.single['value']! as int) + 1;
+    final articles = await db.query(
+      'Article',
+      columns: ['id'],
+      where: 'categoryId = ? AND deleted = 0',
+      whereArgs: [categoryId],
+      orderBy: 'orderKey ASC, rank ASC',
+    );
+    final maxArticleRank = await db.rawQuery(
+      'SELECT COALESCE(MAX(rank), 0) AS value FROM Article WHERE folderId = ? AND deleted = 0',
+      [folderId],
+    );
+    var nextArticleRank = (maxArticleRank.single['value']! as int) + 1;
+    await db.transaction((txn) async {
+      await txn.update(
+        'Category',
+        {
+          'folderId': folderId,
+          'folderIdUpdateTime': now,
+          'rank': categoryRank,
+          'rankUpdateTime': now,
+          'orderKey': _orderKey(categoryRank),
+          'structureUpdateTime': now,
+          'updateTime': now,
+        },
+        where: 'id = ?',
+        whereArgs: [categoryId],
+      );
+      for (final row in articles) {
+        final rank = nextArticleRank++;
+        await txn.update(
+          'Article',
+          {
+            'folderId': folderId,
+            'folderIdUpdateTime': now,
+            'rank': rank,
+            'rankUpdateTime': now,
+            'orderKey': _orderKey(rank),
+            'structureUpdateTime': now,
+            'updateTime': now,
+          },
+          where: 'id = ?',
+          whereArgs: [row['id']],
+        );
+      }
+    });
+  }
+
+  @override
+  Future<WritingFolder> convertCategoryToFolder({
+    required String categoryId,
+  }) async {
+    _store.ensureWritable();
+    final db = _store.database;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final rows = await db.query(
+      'Category',
+      columns: ['id', 'name'],
+      where: 'id = ? AND deleted = 0',
+      whereArgs: [categoryId],
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      throw StateError('PureWriter category not found: $categoryId');
+    }
+    final rawName = (rows.single['name'] as String?)?.trim() ?? '';
+    final bookName = rawName.isEmpty ? 'Untitled' : rawName;
+    final articles = await db.query(
+      'Article',
+      columns: ['id'],
+      where: 'categoryId = ? AND deleted = 0',
+      whereArgs: [categoryId],
+      orderBy: 'orderKey ASC, rank ASC',
+    );
+    final folderId = _uuid.v4().replaceAll('-', '').substring(0, 24);
+    final maxRows = await db.rawQuery(
+      'SELECT COALESCE(MAX(rank), -1) AS value FROM Folder '
+      'WHERE deleted = 0 AND id != ?',
+      [WritingFolder.trashId],
+    );
+    final folderRank = (maxRows.single['value']! as int) + 1;
+    await db.transaction((txn) async {
+      await txn.rawUpdate(
+        'UPDATE Folder SET rank = ?, rankUpdateTime = ?, updateTime = ? '
+        'WHERE id = ? AND deleted = 0 AND rank <= ?',
+        [folderRank + 1, now, now, WritingFolder.trashId, folderRank],
+      );
+      await txn.insert('Folder', {
+        'id': folderId,
+        'name': bookName,
+        'createdTime': now,
+        'description': '',
+        'rank': folderRank,
+        'deleted': 0,
+        'deletedTime': 0,
+        'updateTime': now,
+        'rankUpdateTime': now,
+        'autoChapter': 0,
+        'autoChapterUpdateTime': 0,
+        'autoChapterResetForCategory': 0,
+        'autoChapterResetForCategoryUpdateTime': 0,
+        'autoChapterReplaceBadPrefix': 0,
+        'autoChapterReplaceBadPrefixUpdateTime': 0,
+        'tags': '',
+        'tagsUpdateTime': now,
+        'rankModeUpdateTime': 0,
+      });
+      var articleRank = 1;
+      for (final row in articles) {
+        final rank = articleRank++;
+        await txn.update(
+          'Article',
+          {
+            'folderId': folderId,
+            'folderIdUpdateTime': now,
+            'categoryId': null,
+            'categoryIdUpdateTime': now,
+            'rank': rank,
+            'rankUpdateTime': now,
+            'orderKey': _orderKey(rank),
+            'structureUpdateTime': now,
+            'updateTime': now,
+          },
+          where: 'id = ?',
+          whereArgs: [row['id']],
+        );
+      }
+      await txn.update(
+        'Category',
+        {
+          'deleted': 1,
+          'deletedTime': now,
+          'updateTime': now,
+          'structureUpdateTime': now,
+        },
+        where: 'id = ?',
+        whereArgs: [categoryId],
+      );
+    });
+    return WritingFolder(
+      id: folderId,
+      name: bookName,
+      rank: folderRank,
+      description: '',
+      tags: '',
+    );
+  }
+
+  @override
   Future<void> reorderCategories({
     required String folderId,
     required List<String> orderedIds,

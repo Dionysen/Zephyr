@@ -754,6 +754,30 @@ class _LibraryRepository implements WritingLibraryRepository {
   }) async {}
 
   @override
+  Future<void> moveArticleToFolder({
+    required String articleId,
+    required String folderId,
+  }) async {}
+
+  @override
+  Future<void> moveCategoryToFolder({
+    required String categoryId,
+    required String folderId,
+  }) async {}
+
+  @override
+  Future<WritingFolder> convertCategoryToFolder({
+    required String categoryId,
+  }) async =>
+      const WritingFolder(
+        id: 'converted',
+        name: 'Converted',
+        rank: 0,
+        description: '',
+        tags: '',
+      );
+
+  @override
   Future<void> reorderCategories({
     required String folderId,
     required List<String> orderedIds,

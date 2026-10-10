@@ -52,6 +52,25 @@ abstract interface class WritingLibraryRepository {
     required String articleId,
     String? categoryId,
   });
+
+  /// Moves a chapter into another book as unfiled (clears [categoryId]).
+  Future<void> moveArticleToFolder({
+    required String articleId,
+    required String folderId,
+  });
+
+  /// Moves a volume and all of its chapters into another book.
+  Future<void> moveCategoryToFolder({
+    required String categoryId,
+    required String folderId,
+  });
+
+  /// Turns a volume into a new book: creates a folder named after the volume,
+  /// moves its chapters in as unfiled, and soft-deletes the volume.
+  Future<WritingFolder> convertCategoryToFolder({
+    required String categoryId,
+  });
+
   Future<void> reorderCategories({
     required String folderId,
     required List<String> orderedIds,

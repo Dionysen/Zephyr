@@ -338,6 +338,94 @@ void main() {
     );
   });
 
+  test('converts a volume into a book with unfiled chapters', () async {
+    final repository = PureWriterWritingLibraryRepository(database);
+    final volume = await repository.createCategory(
+      folderId: PureWriterDatabase.defaultFolderId,
+      name: 'Standalone',
+    );
+    final a = await repository.createArticle(
+      folderId: PureWriterDatabase.defaultFolderId,
+      categoryId: volume.id,
+    );
+    final b = await repository.createArticle(
+      folderId: PureWriterDatabase.defaultFolderId,
+      categoryId: volume.id,
+      afterArticleId: a.id,
+    );
+
+    final book = await repository.convertCategoryToFolder(
+      categoryId: volume.id,
+    );
+    final library = await repository.loadLibrary();
+
+    expect(book.name, 'Standalone');
+    expect(library.categories.any((item) => item.id == volume.id), isFalse);
+    expect(
+      library.folders.any((item) => item.id == book.id),
+      isTrue,
+    );
+    expect(
+      library.articles.singleWhere((item) => item.id == a.id).folderId,
+      book.id,
+    );
+    expect(
+      library.articles.singleWhere((item) => item.id == a.id).categoryId,
+      isNull,
+    );
+    expect(
+      library.articles.singleWhere((item) => item.id == b.id).folderId,
+      book.id,
+    );
+  });
+
+  test('moves chapters and volumes between books', () async {
+    final repository = PureWriterWritingLibraryRepository(database);
+    final other = await repository.createFolder(name: 'Other book');
+    final volume = await repository.createCategory(
+      folderId: PureWriterDatabase.defaultFolderId,
+      name: 'Volume A',
+    );
+    final inVolume = await repository.createArticle(
+      folderId: PureWriterDatabase.defaultFolderId,
+      categoryId: volume.id,
+    );
+    final loose = await repository.createArticle(
+      folderId: PureWriterDatabase.defaultFolderId,
+    );
+
+    await repository.moveArticleToFolder(
+      articleId: loose.id,
+      folderId: other.id,
+    );
+    await repository.moveCategoryToFolder(
+      categoryId: volume.id,
+      folderId: other.id,
+    );
+
+    final library = await repository.loadLibrary();
+    expect(
+      library.articles.singleWhere((item) => item.id == loose.id).folderId,
+      other.id,
+    );
+    expect(
+      library.articles.singleWhere((item) => item.id == loose.id).categoryId,
+      isNull,
+    );
+    expect(
+      library.categories.singleWhere((item) => item.id == volume.id).folderId,
+      other.id,
+    );
+    expect(
+      library.articles.singleWhere((item) => item.id == inVolume.id).folderId,
+      other.id,
+    );
+    expect(
+      library.articles.singleWhere((item) => item.id == inVolume.id).categoryId,
+      volume.id,
+    );
+  });
+
   test('saves content without overwriting unrelated article fields and records history', () async {
     final repository = PureWriterWritingLibraryRepository(database);
     final article = await repository.createArticle(
