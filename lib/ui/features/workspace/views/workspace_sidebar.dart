@@ -1845,6 +1845,9 @@ class _ChapterTreeState extends State<_ChapterTree> {
   GlobalKey _chapterKeyFor(String chapterId) =>
       _chapterKeys.putIfAbsent(chapterId, GlobalKey.new);
 
+  static const _locateAlignment = 0.25;
+  static const _locateCurve = Curves.easeInOutCubic;
+
   /// Expands the current chapter's volume if needed, then scrolls it into view.
   Future<void> scrollToCurrentArticle() async {
     final articleId = widget.model.article?.id;
@@ -1861,11 +1864,55 @@ class _ChapterTreeState extends State<_ChapterTree> {
       if (!mounted) return;
     }
 
+    if (!_scrollController.hasClients) {
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted || !_scrollController.hasClients) return;
+    }
+
+    // Still in the lazy window: [ensureVisible] can animate the full trip.
+    final built = _chapterKeyFor(articleId).currentContext;
+    if (built != null && built.mounted) {
+      await Scrollable.ensureVisible(
+        built,
+        alignment: _locateAlignment,
+        duration: _locateScrollDuration(240),
+        curve: _locateCurve,
+      );
+      return;
+    }
+
+    // Far off-screen rows are disposed. Animate to an estimated offset so the
+    // list builds along the way — never jumpTo, or the motion disappears.
+    final estimated = _estimateChapterScrollOffset(chapter);
+    if (estimated == null) return;
+    final position = _scrollController.position;
+    final destination =
+        (estimated - position.viewportDimension * _locateAlignment)
+            .clamp(0.0, position.maxScrollExtent);
+    final distance = (destination - position.pixels).abs();
+    if (distance >= 1) {
+      await _scrollController.animateTo(
+        destination,
+        duration: _locateScrollDuration(distance),
+        curve: _locateCurve,
+      );
+      if (!mounted) return;
+    }
+    await _fineTuneChapterVisibility(articleId, chapter);
+  }
+
+  Duration _locateScrollDuration(double distance) {
+    final ms = (240 + distance * 0.32).round().clamp(280, 720);
+    return Duration(milliseconds: ms);
+  }
+
+  /// Corrects residual error after an estimated [animateTo] (no animation).
+  Future<void> _fineTuneChapterVisibility(
+    String articleId,
+    ArticleSummary chapter,
+  ) async {
     var target = _chapterKeyFor(articleId).currentContext;
     if (target == null) {
-      // Lazy [SliverList.builder] disposes rows far outside the cache extent, so
-      // the GlobalKey has no context. Jump near the estimated offset first so
-      // the row is rebuilt, then fine-tune with ensureVisible.
       await _scrollTowardChapter(chapter);
       if (!mounted) return;
       target = _chapterKeyFor(articleId).currentContext;
@@ -1873,13 +1920,12 @@ class _ChapterTreeState extends State<_ChapterTree> {
     if (target == null || !target.mounted) return;
     await Scrollable.ensureVisible(
       target,
-      alignment: 0.25,
-      duration: const Duration(milliseconds: 280),
-      curve: Curves.easeOutCubic,
+      alignment: _locateAlignment,
+      duration: Duration.zero,
     );
   }
 
-  /// Jumps the sidebar so [chapter] enters the lazy-build window.
+  /// Nudges the sidebar so [chapter] enters the lazy-build window.
   Future<void> _scrollTowardChapter(ArticleSummary chapter) async {
     if (!_scrollController.hasClients) {
       await WidgetsBinding.instance.endOfFrame;
@@ -1890,12 +1936,12 @@ class _ChapterTreeState extends State<_ChapterTree> {
       await WidgetsBinding.instance.endOfFrame;
       return;
     }
-    final position = _scrollController.position;
-    final viewport = position.viewportDimension;
     // Prefer putting the estimate near the upper quarter; nudge by ~1 viewport
     // if row-height variance still leaves the row unbuilt.
     for (final alignment in const [0.25, -0.65, 1.15]) {
-      final offset = (estimated - viewport * alignment)
+      if (!_scrollController.hasClients) return;
+      final position = _scrollController.position;
+      final offset = (estimated - position.viewportDimension * alignment)
           .clamp(0.0, position.maxScrollExtent);
       _scrollController.jumpTo(offset);
       await WidgetsBinding.instance.endOfFrame;
@@ -1922,19 +1968,16 @@ class _ChapterTreeState extends State<_ChapterTree> {
           .toList(growable: false);
       final index = chapters.indexWhere((item) => item.id == chapter.id);
       if (index < 0) return null;
+      final header = _headerExtentOf(volumeSliver);
+      final total = volumeSliver.geometry?.scrollExtent ?? 0;
+      final bodyExtent = (total - header).clamp(0.0, double.infinity);
       final within = _estimateOffsetWithinChapterList(
         chapters,
         index,
         rowHeight,
-        volumeBodyExtent: () {
-          final header = _headerExtentOf(volumeSliver);
-          final total = volumeSliver.geometry?.scrollExtent ?? 0;
-          return (total - header).clamp(0.0, double.infinity);
-        },
+        listExtent: bodyExtent,
       );
-      return volumeSliver.constraints.precedingScrollExtent +
-          _headerExtentOf(volumeSliver) +
-          within;
+      return volumeSliver.constraints.precedingScrollExtent + header + within;
     }
 
     var offset = 0.0;
@@ -1965,7 +2008,7 @@ class _ChapterTreeState extends State<_ChapterTree> {
     List<ArticleSummary> chapters,
     int index,
     double rowHeight, {
-    double Function()? volumeBodyExtent,
+    double listExtent = 0,
   }) {
     for (var i = 0; i < chapters.length; i++) {
       final ctx = _chapterKeys[chapters[i].id]?.currentContext;
@@ -1975,9 +2018,8 @@ class _ChapterTreeState extends State<_ChapterTree> {
       if (siblingOffset == null) continue;
       return siblingOffset + (index - i) * rowHeight;
     }
-    final body = volumeBodyExtent?.call() ?? 0;
-    if (body > 0 && chapters.isNotEmpty) {
-      return body * (index / chapters.length);
+    if (listExtent > 0 && chapters.isNotEmpty) {
+      return listExtent * (index / chapters.length);
     }
     return index * rowHeight;
   }

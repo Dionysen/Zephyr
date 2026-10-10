@@ -255,13 +255,28 @@ class _LibrarySearchSheetState extends State<_LibrarySearchSheet> {
               controller: _queryController,
               focusNode: _queryFocus,
               textInputAction: TextInputAction.search,
+              style: theme.textTheme.bodyMedium?.copyWith(fontSize: 14),
               onChanged: _onQueryChanged,
               onSubmitted: (_) => unawaited(_runSearch()),
               decoration: InputDecoration(
                 hintText: l10n.searchSheetHint,
-                prefixIcon: const Icon(Icons.search),
+                hintStyle: theme.textTheme.bodySmall?.copyWith(
+                  fontSize: 13,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                prefixIcon: const Icon(Icons.search, size: 18),
+                prefixIconConstraints: const BoxConstraints(
+                  minWidth: 36,
+                  minHeight: 36,
+                ),
                 isDense: true,
-                border: const OutlineInputBorder(),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 11,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: context.zephyrBorderRadius,
+                ),
               ),
             ),
           ),
