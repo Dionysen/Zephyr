@@ -1,3 +1,4 @@
+import 'package:characters/characters.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../domain/models/quick_toolbar_config.dart';
@@ -13,6 +14,7 @@ class QuickToolButton extends StatelessWidget {
     this.enabled = true,
     this.selected = false,
     this.tooltip,
+    this.bodyFontFamily,
   });
 
   final QuickTool tool;
@@ -22,9 +24,14 @@ class QuickToolButton extends StatelessWidget {
   final bool selected;
   final String? tooltip;
 
+  /// Article body font; used for phrase chips.
+  final String? bodyFontFamily;
+
   static const double height = 32;
   static const double iconExtent = 32;
   static const double iconSize = 18;
+  static const double phraseFontSize = 13;
+  static const double symbolFontSize = 20;
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +42,7 @@ class QuickToolButton extends StatelessWidget {
         foreground: color,
         selected: selected,
         onPressed: enabled ? onPressed : null,
+        fontFamily: bodyFontFamily,
       ),
       _ => SizedBox(
         width: iconExtent,
@@ -69,23 +77,44 @@ class QuickToolButton extends StatelessWidget {
   };
 }
 
+/// Short punctuation / symbol labels (quotes, dashes, brackets, …).
+bool quickToolbarLabelLooksLikeSymbol(String label) {
+  final trimmed = label.trim();
+  if (trimmed.isEmpty) return false;
+  final graphemes = trimmed.characters;
+  if (graphemes.length > 2) return false;
+  // Letters / numbers (incl. CJK) → normal phrase chip.
+  return !RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(trimmed);
+}
+
 class _PhraseChip extends StatelessWidget {
   const _PhraseChip({
     required this.label,
     required this.foreground,
     required this.selected,
     required this.onPressed,
+    this.fontFamily,
   });
 
   final String label;
   final Color foreground;
   final bool selected;
   final VoidCallback? onPressed;
+  final String? fontFamily;
 
   @override
   Widget build(BuildContext context) {
+    final symbol = quickToolbarLabelLooksLikeSymbol(label);
+    final style = TextStyle(
+      fontFamily: fontFamily,
+      fontSize: symbol
+          ? QuickToolButton.symbolFontSize
+          : QuickToolButton.phraseFontSize,
+      height: 1,
+      color: foreground,
+    );
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
+      padding: EdgeInsets.symmetric(horizontal: symbol ? 0 : 2),
       child: TextButton(
         onPressed: onPressed,
         style: TextButton.styleFrom(
@@ -94,15 +123,26 @@ class _PhraseChip extends StatelessWidget {
           backgroundColor: selected
               ? foreground.withValues(alpha: 0.12)
               : Colors.transparent,
-          minimumSize: const Size(0, QuickToolButton.height),
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+          minimumSize: Size(
+            symbol ? QuickToolButton.iconExtent : 0,
+            QuickToolButton.height,
+          ),
+          maximumSize: symbol
+              ? const Size(QuickToolButton.iconExtent, QuickToolButton.height)
+              : null,
+          padding: EdgeInsets.symmetric(horizontal: symbol ? 0 : 10),
           shape: ZephyrControls.labeledButtonShape,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 13, color: foreground),
+        child: Align(
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: style,
+          ),
         ),
       ),
     );

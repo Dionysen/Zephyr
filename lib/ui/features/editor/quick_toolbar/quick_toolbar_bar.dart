@@ -16,6 +16,7 @@ class QuickToolbarBar extends StatelessWidget {
     required this.toolsDrawerOpen,
     required this.canUndo,
     required this.onToolPressed,
+    this.bodyFontFamily,
   });
 
   final QuickToolbarConfig config;
@@ -23,6 +24,9 @@ class QuickToolbarBar extends StatelessWidget {
   final bool toolsDrawerOpen;
   final bool canUndo;
   final ValueChanged<QuickTool> onToolPressed;
+
+  /// Article body font for phrase chips.
+  final String? bodyFontFamily;
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +44,7 @@ class QuickToolbarBar extends StatelessWidget {
               foreground: foreground,
               selected: toolsDrawerOpen,
               tooltip: l10n.quickToolbarToolsTooltip,
+              bodyFontFamily: bodyFontFamily,
               onPressed: () => onToolPressed(QuickTool.tools),
             ),
             for (final tool in pinned)
@@ -48,6 +53,7 @@ class QuickToolbarBar extends StatelessWidget {
                 foreground: foreground,
                 enabled: tool.kind != QuickToolKind.undo || canUndo,
                 tooltip: _tooltip(l10n, tool),
+                bodyFontFamily: bodyFontFamily,
                 onPressed: () => onToolPressed(tool),
               ),
             if (custom.isNotEmpty) ...[
@@ -64,6 +70,7 @@ class QuickToolbarBar extends StatelessWidget {
                       foreground: foreground,
                       enabled: tool.kind != QuickToolKind.undo || canUndo,
                       tooltip: _tooltip(l10n, tool),
+                      bodyFontFamily: bodyFontFamily,
                       onPressed: () => onToolPressed(tool),
                     );
                   },

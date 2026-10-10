@@ -10,6 +10,15 @@ import 'package:zephyr/ui/features/editor/view_models/quick_toolbar_view_model.d
 import 'package:zephyr/domain/repositories/quick_toolbar_preferences_repository.dart';
 
 void main() {
+  test('symbol phrase labels are short punctuation only', () {
+    expect(quickToolbarLabelLooksLikeSymbol('"'), isTrue);
+    expect(quickToolbarLabelLooksLikeSymbol('「」'), isTrue);
+    expect(quickToolbarLabelLooksLikeSymbol('—'), isTrue);
+    expect(quickToolbarLabelLooksLikeSymbol('署名'), isFalse);
+    expect(quickToolbarLabelLooksLikeSymbol('Hello'), isFalse);
+    expect(quickToolbarLabelLooksLikeSymbol('……完'), isFalse);
+  });
+
   testWidgets('fixed tools stay outside the horizontal scroller', (tester) async {
     final pressed = <String>[];
     await tester.pumpWidget(

@@ -17,12 +17,16 @@ class QuickToolbarHost extends StatelessWidget {
     required this.bridge,
     required this.foreground,
     required this.child,
+    this.bodyFontFamily,
   });
 
   final QuickToolbarViewModel toolbar;
   final WorkspaceEditorBridge bridge;
   final Color foreground;
   final Widget child;
+
+  /// Article body font for phrase chips on the bar.
+  final String? bodyFontFamily;
 
   /// Extra inset layered on top of [MediaQuery.viewInsets].
   ///
@@ -117,6 +121,7 @@ class QuickToolbarHost extends StatelessWidget {
                         foreground: foreground,
                         toolsDrawerOpen: drawerOpen,
                         canUndo: bridge.canUndo,
+                        bodyFontFamily: bodyFontFamily,
                         onToolPressed: (tool) => _onTool(context, tool),
                       ),
                     ),

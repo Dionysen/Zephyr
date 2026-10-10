@@ -519,16 +519,20 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
       child: Stack(
         children: [
           Positioned.fill(
-            child: QuickToolbarHost(
-              toolbar: quickToolbar,
-              bridge: _editorBridge,
-              foreground: foreground,
-              child: WorkspaceEditor(
-                model: widget.model,
-                preferences: widget.preferences,
-                contentTopInset: contentTop,
-                showWordCount: false,
+            child: ListenableBuilder(
+              listenable: widget.preferences,
+              builder: (context, _) => QuickToolbarHost(
+                toolbar: quickToolbar,
                 bridge: _editorBridge,
+                foreground: foreground,
+                bodyFontFamily: widget.preferences.preferences.fontFamily,
+                child: WorkspaceEditor(
+                  model: widget.model,
+                  preferences: widget.preferences,
+                  contentTopInset: contentTop,
+                  showWordCount: false,
+                  bridge: _editorBridge,
+                ),
               ),
             ),
           ),
