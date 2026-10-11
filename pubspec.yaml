@@ -102,6 +102,8 @@ flutter_launcher_icons:
     icon_size: 256
   macos:
     generate: true
+    # Full-bleed square — macOS applies its own mask; do not use the iOS-rounded PNG.
+    image_path: branding/app_icon_square.png
   linux:
     generate: true
   adaptive_icon_background: "#0E0E0E"

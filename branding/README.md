@@ -18,7 +18,7 @@ That:
 2. Writes:
    - `branding/app_icon.png` — 1024×1024 with **iOS continuous-corner** mask (~22.37% radius)
    - `branding/app_icon_square.png` — 1024×1024 full-bleed (for iOS / Android adaptive)
-3. Runs `flutter_launcher_icons` (desktop/web use the rounded PNG; iOS/Android use the square PNG)
+3. Runs `flutter_launcher_icons` (Windows/web use the rounded PNG; macOS/iOS/Android use the square PNG — macOS applies its own mask)
 
 Requirements: Flutter SDK on `PATH` (`flutter` and `dart`).
 
