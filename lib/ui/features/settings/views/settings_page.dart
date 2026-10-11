@@ -211,6 +211,9 @@ class CompactSettingsList extends StatelessWidget {
         EditorSettingsView(
           viewModel: scope.editorPreferences,
           compact: true,
+          // Desktop settings panel omits status-bar toggles; use centered
+          // editor width there. Mobile keeps left/right margins.
+          centeredEditorWidth: !showStatusBarSettings,
         ),
         ZephyrSettingsCategoryHeader(
           icon: SettingsSection.shortcuts.icon,

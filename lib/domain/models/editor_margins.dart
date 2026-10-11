@@ -12,6 +12,23 @@ class EditorMargins {
   final double right;
   final double contentWidth;
 
+  /// Centers a fixed [desiredContentWidth] in the viewport.
+  ///
+  /// When the viewport is narrower than the desire, the column fills the
+  /// viewport (zero side insets). Sides are always equal.
+  static EditorMargins resolveCentered({
+    required double viewportWidth,
+    required double desiredContentWidth,
+    double minContentWidth = 120,
+  }) {
+    final viewport = math.max(0.0, viewportWidth);
+    final minContent = math.min(minContentWidth, viewport).clamp(0.0, viewport);
+    final want = math.max(minContent, desiredContentWidth);
+    final content = math.min(want, viewport);
+    final side = (viewport - content) / 2;
+    return EditorMargins(left: side, right: side, contentWidth: content);
+  }
+
   /// Places content between [desiredLeft] and [desiredRight].
   ///
   /// When the viewport is too narrow for the desired margins plus

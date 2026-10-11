@@ -175,6 +175,8 @@
   "editorMarginLeftDescription": "Left inset of the reading column. When space is tight, both margins shrink in proportion.",
   "editorMarginRightTitle": "Right margin",
   "editorMarginRightDescription": "Right inset of the reading column. Equal values stay strictly symmetric.",
+  "editorWidthTitle": "Editor width",
+  "editorWidthDescription": "Width of the text column, always centered in the window. Shrinks with the viewport when space is tight.",
   "appearanceSectionTitle": "Appearance",
   "appearanceSectionIntro": "Choose a color palette, then tweak semantic colors if needed. Fonts, radius, and other chrome stay separate from themes.",
   "themeModeTitle": "Theme mode",

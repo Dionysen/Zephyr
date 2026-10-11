@@ -10,6 +10,7 @@ class EditorPreferences {
     required this.firstLineIndent,
     required this.marginLeft,
     required this.marginRight,
+    required this.editorWidth,
     required this.titleFontSize,
     required this.titleCentered,
   });
@@ -23,6 +24,7 @@ class EditorPreferences {
     firstLineIndent: 2,
     marginLeft: 24,
     marginRight: 24,
+    editorWidth: 720,
     titleFontSize: 25,
     titleCentered: true,
   );
@@ -31,6 +33,8 @@ class EditorPreferences {
   static const maxTitleFontSize = 48.0;
   static const minMargin = 0.0;
   static const maxMargin = 120.0;
+  static const minEditorWidth = 320.0;
+  static const maxEditorWidth = 1200.0;
 
   final String? fontFamily;
 
@@ -48,10 +52,15 @@ class EditorPreferences {
 
   /// Preferred left inset of the reading column (px). May shrink proportionally
   /// with [marginRight] when the viewport is too narrow.
+  /// Used on compact / mobile layouts.
   final double marginLeft;
 
   /// Preferred right inset of the reading column (px).
+  /// Used on compact / mobile layouts.
   final double marginRight;
+
+  /// Preferred reading-column width on desktop (px), always centered.
+  final double editorWidth;
 
   /// Chapter title block above the writing column.
   final double titleFontSize;
@@ -70,6 +79,7 @@ class EditorPreferences {
     int? firstLineIndent,
     double? marginLeft,
     double? marginRight,
+    double? editorWidth,
     double? titleFontSize,
     bool? titleCentered,
   }) => EditorPreferences(
@@ -83,6 +93,7 @@ class EditorPreferences {
     firstLineIndent: firstLineIndent ?? this.firstLineIndent,
     marginLeft: marginLeft ?? this.marginLeft,
     marginRight: marginRight ?? this.marginRight,
+    editorWidth: editorWidth ?? this.editorWidth,
     titleFontSize: titleFontSize ?? this.titleFontSize,
     titleCentered: titleCentered ?? this.titleCentered,
   );

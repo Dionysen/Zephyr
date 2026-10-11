@@ -175,6 +175,8 @@
   "editorMarginLeftDescription": "正文左侧边距，空间不足时与右边距按比例缩小",
   "editorMarginRightTitle": "右边距",
   "editorMarginRightDescription": "正文右侧边距，与左边距相等时始终严格对称",
+  "editorWidthTitle": "编辑器宽度",
+  "editorWidthDescription": "正文区域宽度，在窗口中始终左右居中；窗口更窄时随窗口收窄",
   "appearanceSectionTitle": "外观",
   "appearanceSectionIntro": "选择配色，需要时可自定义语义色；字体、圆角等单独设置，不随主题切换",
   "themeModeTitle": "主题模式",

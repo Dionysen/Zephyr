@@ -114,6 +114,50 @@ void main() {
     expect(margins.contentWidth, 120);
   });
 
+  test('centered content width stays centered', () {
+    final margins = EditorMargins.resolveCentered(
+      viewportWidth: 1000,
+      desiredContentWidth: 720,
+    );
+    expect(margins.contentWidth, 720);
+    expect(margins.left, 140);
+    expect(margins.right, 140);
+  });
+
+  test('centered content width fills a narrow viewport', () {
+    final margins = EditorMargins.resolveCentered(
+      viewportWidth: 500,
+      desiredContentWidth: 720,
+      minContentWidth: 120,
+    );
+    expect(margins.contentWidth, 500);
+    expect(margins.left, 0);
+    expect(margins.right, 0);
+  });
+
+  test('layout engine centers fixed content width', () {
+    final engine = PlainTextLayoutEngine();
+    addTearDown(engine.dispose);
+    const padded = EditorTypography(
+      color: Color(0xFF000000),
+      fontSize: 20,
+      lineHeight: 1.5,
+      paragraphSpacing: 0.5,
+      marginLeft: 24,
+      marginRight: 24,
+      centeredContentWidth: 300,
+      paddingTop: 0,
+      paddingBottom: 0,
+    );
+    engine.update(
+      document: const PlainTextDocument('Hello'),
+      typography: padded,
+      viewportWidth: 500,
+    );
+    expect(engine.contentWidth, 300);
+    expect(engine.contentLeft, 100);
+  });
+
   test('unequal margins keep their ratio when scaled down', () {
     final margins = EditorMargins.resolve(
       viewportWidth: 200,

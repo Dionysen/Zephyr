@@ -42,12 +42,23 @@ class PlainTextLayoutEngine {
   /// Left edge of the text column inside the viewport (resolved margin).
   double get contentLeft => _contentLeft;
 
-  EditorMargins _resolveMargins() => EditorMargins.resolve(
-    viewportWidth: _viewportWidth,
-    desiredLeft: _typography.marginLeft,
-    desiredRight: _typography.marginRight,
-    minContentWidth: math.max(120.0, _typography.fontSize * 8),
-  );
+  EditorMargins _resolveMargins() {
+    final minContent = math.max(120.0, _typography.fontSize * 8);
+    final centered = _typography.centeredContentWidth;
+    if (centered != null) {
+      return EditorMargins.resolveCentered(
+        viewportWidth: _viewportWidth,
+        desiredContentWidth: centered,
+        minContentWidth: minContent,
+      );
+    }
+    return EditorMargins.resolve(
+      viewportWidth: _viewportWidth,
+      desiredLeft: _typography.marginLeft,
+      desiredRight: _typography.marginRight,
+      minContentWidth: minContent,
+    );
+  }
 
   void dispose() {
     _metrics = const [];

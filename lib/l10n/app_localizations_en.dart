@@ -503,6 +503,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Right inset of the reading column. Equal values stay strictly symmetric.';
 
   @override
+  String get editorWidthTitle => 'Editor width';
+
+  @override
+  String get editorWidthDescription =>
+      'Width of the text column, always centered in the window. Shrinks with the viewport when space is tight.';
+
+  @override
   String get appearanceSectionTitle => 'Appearance';
 
   @override

@@ -12,10 +12,14 @@ class EditorSettingsView extends StatefulWidget {
     super.key,
     required this.viewModel,
     this.compact = false,
+    this.centeredEditorWidth = false,
   });
 
   final EditorPreferencesViewModel viewModel;
   final bool compact;
+
+  /// Desktop: one centered column-width control instead of left/right margins.
+  final bool centeredEditorWidth;
 
   @override
   State<EditorSettingsView> createState() => _EditorSettingsViewState();
@@ -140,33 +144,53 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
           divisions: 4,
           onChanged: (value) => viewModel.updateFirstLineIndent(value.round()),
         ),
-        ZephyrSettingsAdaptiveNumber(
-          compact: compact,
-          icon: Icons.align_horizontal_left,
-          title: l10n.editorMarginLeftTitle,
-          description: l10n.editorMarginLeftDescription,
-          value: preferences.marginLeft,
-          min: EditorPreferences.minMargin,
-          max: EditorPreferences.maxMargin,
-          defaultValue: defaults.marginLeft,
-          suffix: 'px',
-          divisions: EditorPreferences.maxMargin.toInt(),
-          onChanged: viewModel.updateMarginLeft,
-        ),
-        ZephyrSettingsAdaptiveNumber(
-          compact: compact,
-          icon: Icons.align_horizontal_right,
-          title: l10n.editorMarginRightTitle,
-          description: l10n.editorMarginRightDescription,
-          value: preferences.marginRight,
-          min: EditorPreferences.minMargin,
-          max: EditorPreferences.maxMargin,
-          defaultValue: defaults.marginRight,
-          suffix: 'px',
-          divisions: EditorPreferences.maxMargin.toInt(),
-          showDivider: false,
-          onChanged: viewModel.updateMarginRight,
-        ),
+        if (widget.centeredEditorWidth)
+          ZephyrSettingsAdaptiveNumber(
+            compact: compact,
+            icon: Icons.swap_horiz,
+            title: l10n.editorWidthTitle,
+            description: l10n.editorWidthDescription,
+            value: preferences.editorWidth,
+            min: EditorPreferences.minEditorWidth,
+            max: EditorPreferences.maxEditorWidth,
+            defaultValue: defaults.editorWidth,
+            suffix: 'px',
+            divisions:
+                (EditorPreferences.maxEditorWidth -
+                        EditorPreferences.minEditorWidth)
+                    .toInt(),
+            showDivider: false,
+            onChanged: viewModel.updateEditorWidth,
+          )
+        else ...[
+          ZephyrSettingsAdaptiveNumber(
+            compact: compact,
+            icon: Icons.align_horizontal_left,
+            title: l10n.editorMarginLeftTitle,
+            description: l10n.editorMarginLeftDescription,
+            value: preferences.marginLeft,
+            min: EditorPreferences.minMargin,
+            max: EditorPreferences.maxMargin,
+            defaultValue: defaults.marginLeft,
+            suffix: 'px',
+            divisions: EditorPreferences.maxMargin.toInt(),
+            onChanged: viewModel.updateMarginLeft,
+          ),
+          ZephyrSettingsAdaptiveNumber(
+            compact: compact,
+            icon: Icons.align_horizontal_right,
+            title: l10n.editorMarginRightTitle,
+            description: l10n.editorMarginRightDescription,
+            value: preferences.marginRight,
+            min: EditorPreferences.minMargin,
+            max: EditorPreferences.maxMargin,
+            defaultValue: defaults.marginRight,
+            suffix: 'px',
+            divisions: EditorPreferences.maxMargin.toInt(),
+            showDivider: false,
+            onChanged: viewModel.updateMarginRight,
+          ),
+        ],
       ];
 
       if (compact) {

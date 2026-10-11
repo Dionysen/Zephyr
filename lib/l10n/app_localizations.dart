@@ -1022,6 +1022,18 @@ abstract class AppLocalizations {
   /// **'Right inset of the reading column. Equal values stay strictly symmetric.'**
   String get editorMarginRightDescription;
 
+  /// No description provided for @editorWidthTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Editor width'**
+  String get editorWidthTitle;
+
+  /// No description provided for @editorWidthDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Width of the text column, always centered in the window. Shrinks with the viewport when space is tight.'**
+  String get editorWidthDescription;
+
   /// No description provided for @appearanceSectionTitle.
   ///
   /// In en, this message translates to:

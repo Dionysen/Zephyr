@@ -16,6 +16,7 @@ import '../../editor/quick_toolbar/workspace_editor_bridge.dart';
 import '../../editor/view_models/editor_preferences_view_model.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../../core/editor_background_layer.dart';
+import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_embossed_mark.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_scope.dart';
@@ -788,9 +789,31 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
       paragraphSpacing: prefs.paragraphSpacing,
       marginLeft: prefs.marginLeft,
       marginRight: prefs.marginRight,
+      centeredContentWidth:
+          WindowChrome.isDesktop ? prefs.editorWidth : null,
       firstLineIndent: prefs.firstLineIndent,
       paddingTop: 12,
       paddingBottom: 48,
+    );
+  }
+
+  EditorMargins _resolveMargins(
+    EditorPreferences prefs,
+    double viewportWidth,
+  ) {
+    final minContent = math.max(120.0, prefs.fontSize * 8);
+    if (WindowChrome.isDesktop) {
+      return EditorMargins.resolveCentered(
+        viewportWidth: viewportWidth,
+        desiredContentWidth: prefs.editorWidth,
+        minContentWidth: minContent,
+      );
+    }
+    return EditorMargins.resolve(
+      viewportWidth: viewportWidth,
+      desiredLeft: prefs.marginLeft,
+      desiredRight: prefs.marginRight,
+      minContentWidth: minContent,
     );
   }
 
@@ -800,12 +823,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final margins = EditorMargins.resolve(
-          viewportWidth: constraints.maxWidth,
-          desiredLeft: prefs.marginLeft,
-          desiredRight: prefs.marginRight,
-          minContentWidth: math.max(120.0, prefs.fontSize * 8),
-        );
+        final margins = _resolveMargins(prefs, constraints.maxWidth);
         return Padding(
           padding: EdgeInsets.fromLTRB(margins.left, top, margins.right, 0),
           child: Column(

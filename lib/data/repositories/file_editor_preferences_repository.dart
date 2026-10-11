@@ -29,6 +29,8 @@ class FileEditorPreferencesRepository implements EditorPreferencesRepository {
       marginLeft: _optionalDouble(values, 'marginLeft') ?? defaults.marginLeft,
       marginRight:
           _optionalDouble(values, 'marginRight') ?? defaults.marginRight,
+      editorWidth:
+          _optionalDouble(values, 'editorWidth') ?? defaults.editorWidth,
       titleFontSize: _optionalDouble(values, 'titleFontSize') ??
           defaults.titleFontSize,
       titleCentered:
@@ -54,6 +56,7 @@ class FileEditorPreferencesRepository implements EditorPreferencesRepository {
     'firstLineIndent': value.firstLineIndent,
     'marginLeft': value.marginLeft,
     'marginRight': value.marginRight,
+    'editorWidth': value.editorWidth,
     'titleFontSize': value.titleFontSize,
     'titleCentered': value.titleCentered,
   });

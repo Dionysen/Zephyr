@@ -479,6 +479,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get editorMarginRightDescription => '正文右侧边距，与左边距相等时始终严格对称';
 
   @override
+  String get editorWidthTitle => '编辑器宽度';
+
+  @override
+  String get editorWidthDescription => '正文区域宽度，在窗口中始终左右居中；窗口更窄时随窗口收窄';
+
+  @override
   String get appearanceSectionTitle => '外观';
 
   @override

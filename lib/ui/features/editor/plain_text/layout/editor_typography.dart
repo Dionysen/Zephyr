@@ -9,6 +9,7 @@ class EditorTypography {
     required this.paragraphSpacing,
     required this.marginLeft,
     required this.marginRight,
+    this.centeredContentWidth,
     this.fontFamily,
     this.firstLineIndent = 0,
     this.paddingTop = 12,
@@ -26,9 +27,12 @@ class EditorTypography {
   final double paragraphSpacing;
 
   /// Preferred left / right reading margins (px). Resolved against the
-  /// viewport in [PlainTextLayoutEngine].
+  /// viewport in [PlainTextLayoutEngine] when [centeredContentWidth] is null.
   final double marginLeft;
   final double marginRight;
+
+  /// When set (desktop), centers this content width instead of using margins.
+  final double? centeredContentWidth;
 
   final int firstLineIndent;
   final double paddingTop;
@@ -59,6 +63,8 @@ class EditorTypography {
     double? paragraphSpacing,
     double? marginLeft,
     double? marginRight,
+    double? centeredContentWidth,
+    bool clearCenteredContentWidth = false,
     int? firstLineIndent,
     double? paddingTop,
     double? paddingBottom,
@@ -70,6 +76,9 @@ class EditorTypography {
     paragraphSpacing: paragraphSpacing ?? this.paragraphSpacing,
     marginLeft: marginLeft ?? this.marginLeft,
     marginRight: marginRight ?? this.marginRight,
+    centeredContentWidth: clearCenteredContentWidth
+        ? null
+        : centeredContentWidth ?? this.centeredContentWidth,
     firstLineIndent: firstLineIndent ?? this.firstLineIndent,
     paddingTop: paddingTop ?? this.paddingTop,
     paddingBottom: paddingBottom ?? this.paddingBottom,
@@ -85,6 +94,7 @@ class EditorTypography {
       paragraphSpacing == other.paragraphSpacing &&
       marginLeft == other.marginLeft &&
       marginRight == other.marginRight &&
+      centeredContentWidth == other.centeredContentWidth &&
       firstLineIndent == other.firstLineIndent &&
       paddingTop == other.paddingTop &&
       paddingBottom == other.paddingBottom;
@@ -98,6 +108,7 @@ class EditorTypography {
     paragraphSpacing,
     marginLeft,
     marginRight,
+    centeredContentWidth,
     firstLineIndent,
     paddingTop,
     paddingBottom,
