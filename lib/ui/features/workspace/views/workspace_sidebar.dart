@@ -1455,20 +1455,28 @@ class WorkspaceHeader extends StatelessWidget {
     this.showMenuButton = false,
     this.showSidebarToggle = false,
     this.onOpenMenu,
+    this.showDocumentTitle = true,
   });
 
   static double get height => WindowChrome.titleBarHeight;
+
+  static const titleMotionDuration = Duration(milliseconds: 240);
 
   final LibraryViewModel model;
   final bool showMenuButton;
   final bool showSidebarToggle;
   final VoidCallback? onOpenMenu;
 
+  /// When false, the in-editor chapter title is still on screen — hide the
+  /// chrome copy. When true, animate it into the title bar.
+  final bool showDocumentTitle;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
     final title = model.article?.title.trim();
+    final label = title?.isNotEmpty == true ? title! : l10n.untitled;
     final leadingInset = showSidebarToggle
         ? WindowChrome.leadingChromeInset
         : 0.0;
@@ -1507,11 +1515,26 @@ class WorkspaceHeader extends StatelessWidget {
                   padding: EdgeInsets.symmetric(
                     horizontal: showMenuButton || showSidebarToggle ? 48 : 16,
                   ),
-                  child: Text(
-                    title?.isNotEmpty == true ? title! : l10n.untitled,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall,
+                  // Slides up into the title bar (and back down) within chrome.
+                  child: ClipRect(
+                    child: AnimatedSlide(
+                      duration: titleMotionDuration,
+                      curve: Curves.easeOutCubic,
+                      offset: showDocumentTitle
+                          ? Offset.zero
+                          : const Offset(0, 0.65),
+                      child: AnimatedOpacity(
+                        duration: titleMotionDuration,
+                        curve: Curves.easeOutCubic,
+                        opacity: showDocumentTitle ? 1 : 0,
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),

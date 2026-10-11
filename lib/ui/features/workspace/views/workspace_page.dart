@@ -50,6 +50,8 @@ class _WorkspacePageState extends State<WorkspacePage>
   var _started = false;
   var _settingsOpen = false;
   var _offeredDraftRecovery = false;
+  /// Chrome title when the in-editor chapter title has scrolled away.
+  var _showTitleInChrome = false;
 
   @override
   void initState() {
@@ -291,11 +293,16 @@ class _WorkspacePageState extends State<WorkspacePage>
                       WorkspaceHeader(
                         model: model,
                         showSidebarToggle: !model.isSidebarExpanded,
+                        showDocumentTitle: _showTitleInChrome,
                       ),
                       Expanded(
                         child: WorkspaceEditor(
                           model: model,
                           preferences: scope.editorPreferences,
+                          onDocumentTitleObscured: (obscured) {
+                            if (_showTitleInChrome == obscured) return;
+                            setState(() => _showTitleInChrome = obscured);
+                          },
                         ),
                       ),
                     ],

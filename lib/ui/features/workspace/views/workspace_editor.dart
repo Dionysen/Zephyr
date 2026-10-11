@@ -30,6 +30,7 @@ class WorkspaceEditor extends StatefulWidget {
     this.showWordCount = true,
     this.bridge,
     this.showBackground = true,
+    this.onDocumentTitleObscured,
   });
 
   final LibraryViewModel model;
@@ -48,6 +49,9 @@ class WorkspaceEditor extends StatefulWidget {
   /// a transparent book bar while text is clipped separately).
   final bool showBackground;
 
+  /// Desktop chrome: `true` when the in-editor chapter title has scrolled away.
+  final ValueChanged<bool>? onDocumentTitleObscured;
+
   @override
   State<WorkspaceEditor> createState() => _WorkspaceEditorState();
 }
@@ -59,6 +63,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   final _controller = PlainTextEditingController();
   final _titleController = TextEditingController();
   final _editorKey = GlobalKey<ZephyrPlainTextEditorState>();
+  final _titleHeaderKey = GlobalKey();
 
   /// Last caret per article for the current editor session.
   final Map<String, TextSelection> _carets = {};
@@ -80,6 +85,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   int? _searchHighlightStart;
   int? _searchHighlightEnd;
   var _applyingSearchHighlight = false;
+  var _documentTitleObscured = false;
 
   @override
   void initState() {
@@ -91,11 +97,12 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     _titleController.addListener(_onTitleChanged);
     _titleFocusNode.addListener(_onTitleFocusChanged);
     _focusNode.addListener(_onBodyFocusChanged);
-    _scrollController.addListener(_onScrollForJumpChip);
+    _scrollController.addListener(_onScrollChrome);
     _syncFromModel();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _syncBridge();
       _applyPendingSearchHighlight();
+      _updateDocumentTitleObscured();
     });
   }
 
@@ -113,6 +120,11 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     if (oldWidget.bridge != widget.bridge) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _syncBridge());
     }
+    if (oldWidget.onDocumentTitleObscured != widget.onDocumentTitleObscured) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _updateDocumentTitleObscured(forceNotify: true);
+      });
+    }
     _syncFromModel();
   }
 
@@ -126,7 +138,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     _titleController.removeListener(_onTitleChanged);
     _titleFocusNode.removeListener(_onTitleFocusChanged);
     _focusNode.removeListener(_onBodyFocusChanged);
-    _scrollController.removeListener(_onScrollForJumpChip);
+    _scrollController.removeListener(_onScrollChrome);
     _controller.dispose();
     _titleController.dispose();
     _scrollController.dispose();
@@ -563,6 +575,11 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     setState(() => _showJumpToEnd = show);
   }
 
+  void _onScrollChrome() {
+    _onScrollForJumpChip();
+    _updateDocumentTitleObscured();
+  }
+
   /// Keep the chip while scrolling down; dismiss on scroll-up or reaching end.
   void _onScrollForJumpChip() {
     if (_ignoreScrollForJump || !_showJumpToEnd) return;
@@ -578,6 +595,45 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     if (delta < -1.5) {
       _dismissJumpToEnd();
     }
+  }
+
+  /// Reports whether the in-editor title has left the visible editor band.
+  void _updateDocumentTitleObscured({bool forceNotify = false}) {
+    final notify = widget.onDocumentTitleObscured;
+    if (notify == null) return;
+
+    // No in-document title — keep the chrome label visible.
+    if (widget.model.article == null) {
+      _setDocumentTitleObscured(true, forceNotify: forceNotify);
+      return;
+    }
+
+    final titleBox =
+        _titleHeaderKey.currentContext?.findRenderObject() as RenderBox?;
+    final editorBox = context.findRenderObject() as RenderBox?;
+    if (titleBox == null ||
+        editorBox == null ||
+        !titleBox.hasSize ||
+        !editorBox.hasSize) {
+      return;
+    }
+
+    final titleTop = titleBox.localToGlobal(Offset.zero).dy;
+    final titleBottom = titleTop + titleBox.size.height;
+    final viewTop = editorBox.localToGlobal(Offset.zero).dy;
+    final visibleExtent = titleBottom - viewTop;
+
+    // Hysteresis avoids flicker at the threshold.
+    final obscured = _documentTitleObscured
+        ? visibleExtent < 28
+        : visibleExtent < 8;
+    _setDocumentTitleObscured(obscured, forceNotify: forceNotify);
+  }
+
+  void _setDocumentTitleObscured(bool obscured, {bool forceNotify = false}) {
+    if (!forceNotify && obscured == _documentTitleObscured) return;
+    _documentTitleObscured = obscured;
+    widget.onDocumentTitleObscured?.call(obscured);
   }
 
   void _jumpToEnd() {
@@ -631,6 +687,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
       if (_showJumpToEnd) {
         setState(() => _showJumpToEnd = false);
       }
+      _setDocumentTitleObscured(true);
       return;
     }
 
@@ -694,16 +751,20 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
             pending.articleId == article.id &&
             pending.hasContentRange) {
           _applyPendingSearchHighlight();
+          _updateDocumentTitleObscured();
           return;
         }
         _restoreScroll(article.id);
         if (!_scrollController.hasClients) return;
         _lastJumpScroll = _scrollController.offset;
         _syncJumpToEndVisibility(ignoreCaret: true);
+        _updateDocumentTitleObscured();
       });
     } else {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _applyPendingSearchHighlight();
+        if (!mounted) return;
+        _applyPendingSearchHighlight();
+        _updateDocumentTitleObscured();
       });
     }
   }
@@ -821,58 +882,66 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     final theme = Theme.of(context);
     final top = 20 + widget.contentTopInset;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final margins = _resolveMargins(prefs, constraints.maxWidth);
-        return Padding(
-          padding: EdgeInsets.fromLTRB(margins.left, top, margins.right, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextField(
-                controller: _titleController,
-                focusNode: _titleFocusNode,
-                readOnly: widget.model.isReadOnly,
-                maxLines: null,
-                textAlign: prefs.titleCentered
-                    ? TextAlign.center
-                    : TextAlign.start,
-                textInputAction: TextInputAction.done,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontSize: prefs.titleFontSize,
-                  fontFamily: prefs.fontFamily,
-                  fontWeight: FontWeight.w600,
-                  height: 1.3,
-                  color: theme.colorScheme.onSurface,
-                ),
-                cursorColor:
-                    theme.textSelectionTheme.cursorColor ??
-                    theme.colorScheme.onSurface,
-                decoration: InputDecoration(
-                  isDense: true,
-                  filled: false,
-                  hintText: context.l10n.untitled,
-                  hintStyle: theme.textTheme.titleLarge?.copyWith(
+    return KeyedSubtree(
+      key: _titleHeaderKey,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final margins = _resolveMargins(prefs, constraints.maxWidth);
+          return Padding(
+            padding: EdgeInsets.fromLTRB(margins.left, top, margins.right, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  controller: _titleController,
+                  focusNode: _titleFocusNode,
+                  readOnly: widget.model.isReadOnly,
+                  maxLines: null,
+                  textAlign: prefs.titleCentered
+                      ? TextAlign.center
+                      : TextAlign.start,
+                  textInputAction: TextInputAction.done,
+                  style: theme.textTheme.titleLarge?.copyWith(
                     fontSize: prefs.titleFontSize,
                     fontFamily: prefs.fontFamily,
                     fontWeight: FontWeight.w600,
                     height: 1.3,
-                    color: theme.colorScheme.onSurfaceVariant.withValues(
-                      alpha: 0.45,
-                    ),
+                    color: theme.colorScheme.onSurface,
                   ),
-                  contentPadding: const EdgeInsets.fromLTRB(0, 8, 0, 4),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
+                  cursorColor:
+                      theme.textSelectionTheme.cursorColor ??
+                      theme.colorScheme.onSurface,
+                  decoration: InputDecoration(
+                    isDense: true,
+                    filled: false,
+                    hintText: context.l10n.untitled,
+                    hintStyle: theme.textTheme.titleLarge?.copyWith(
+                      fontSize: prefs.titleFontSize,
+                      fontFamily: prefs.fontFamily,
+                      fontWeight: FontWeight.w600,
+                      height: 1.3,
+                      color: theme.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.45,
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.fromLTRB(0, 8, 0, 4),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                  ),
+                  onSubmitted: (_) => _focusNode.requestFocus(),
+                  onChanged: (_) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) _updateDocumentTitleObscured();
+                    });
+                  },
                 ),
-                onSubmitted: (_) => _focusNode.requestFocus(),
-              ),
-              const SizedBox(height: 4),
-            ],
-          ),
-        );
-      },
+                const SizedBox(height: 4),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
