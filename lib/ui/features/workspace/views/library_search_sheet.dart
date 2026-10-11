@@ -22,7 +22,7 @@ Future<void> showLibrarySearchSheet(
   required LibraryViewModel model,
 }) async {
   FocusManager.instance.primaryFocus?.unfocus();
-  model.collapseSidebar();
+  // Close mobile drawer chrome only; keep the desktop docked sidebar open.
   ZephyrSwipeDrawer.maybeOf(context)?.close();
   final scaffold = Scaffold.maybeOf(context);
   if (scaffold != null && scaffold.isDrawerOpen) {
