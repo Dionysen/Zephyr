@@ -136,54 +136,68 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
               SizedBox(
                 height: WorkspaceHeader.height,
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (WindowChrome.leadingChromeInset > 0)
-                      SizedBox(width: WindowChrome.leadingChromeInset),
-                    IconButton(
-                      onPressed: model.toggleSidebar,
-                      icon: const Icon(Icons.menu_open),
-                      tooltip: l10n.tooltipHideSidebar,
+                      WindowDragArea(
+                        child: SizedBox(
+                          width: WindowChrome.leadingChromeInset,
+                          height: WorkspaceHeader.height,
+                        ),
+                      ),
+                    WindowNonDragArea(
+                      child: IconButton(
+                        onPressed: model.toggleSidebar,
+                        icon: const Icon(Icons.menu_open),
+                        tooltip: l10n.tooltipHideSidebar,
+                      ),
                     ),
                     const Expanded(
                       child: WindowDragArea(child: SizedBox.expand()),
                     ),
-                    _SidebarAddMenuButton(
-                      enabled: _canCreateVolume,
-                      model: model,
-                    ),
-                    IconButton(
-                      onPressed: () => unawaited(
-                        showLibrarySearchSheet(context, model: model),
+                    WindowNonDragArea(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _SidebarAddMenuButton(
+                            enabled: _canCreateVolume,
+                            model: model,
+                          ),
+                          IconButton(
+                            onPressed: () => unawaited(
+                              showLibrarySearchSheet(context, model: model),
+                            ),
+                            icon: const Icon(Icons.search),
+                            tooltip: l10n.tooltipSearchChapters,
+                          ),
+                          IconButton(
+                            onPressed: model.hasVolumes
+                                ? () => _chapterTreeKey.currentState
+                                    ?.toggleAllVolumes()
+                                : null,
+                            icon: Icon(
+                              model.areAllVolumesExpanded
+                                  ? Icons.unfold_less
+                                  : Icons.unfold_more,
+                            ),
+                            tooltip: model.areAllVolumesExpanded
+                                ? l10n.tooltipCollapseAll
+                                : l10n.tooltipExpandAll,
+                          ),
+                          IconButton(
+                            onPressed: model.article == null
+                                ? null
+                                : () => _chapterTreeKey.currentState
+                                    ?.scrollToCurrentArticle(),
+                            icon: const Icon(Icons.my_location_outlined),
+                            tooltip: l10n.tooltipLocateCurrentChapter,
+                          ),
+                          _ChapterSortMenuButton(
+                            model: model,
+                            canAdjustOrder: _canReorder,
+                          ),
+                        ],
                       ),
-                      icon: const Icon(Icons.search),
-                      tooltip: l10n.tooltipSearchChapters,
-                    ),
-                    IconButton(
-                      onPressed: model.hasVolumes
-                          ? () => _chapterTreeKey.currentState
-                              ?.toggleAllVolumes()
-                          : null,
-                      icon: Icon(
-                        model.areAllVolumesExpanded
-                            ? Icons.unfold_less
-                            : Icons.unfold_more,
-                      ),
-                      tooltip: model.areAllVolumesExpanded
-                          ? l10n.tooltipCollapseAll
-                          : l10n.tooltipExpandAll,
-                    ),
-                    IconButton(
-                      onPressed: model.article == null
-                          ? null
-                          : () => _chapterTreeKey.currentState
-                              ?.scrollToCurrentArticle(),
-                      icon: const Icon(Icons.my_location_outlined),
-                      tooltip: l10n.tooltipLocateCurrentChapter,
-                    ),
-                    _ChapterSortMenuButton(
-                      model: model,
-                      canAdjustOrder: _canReorder,
                     ),
                   ],
                 ),
@@ -1487,23 +1501,32 @@ class WorkspaceHeader extends StatelessWidget {
         child: Stack(
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (leadingInset > 0)
                   WindowDragArea(
                     child: SizedBox(width: leadingInset, height: height),
                   ),
-                if (showMenuButton)
-                  IconButton(
-                    onPressed: onOpenMenu ??
-                        () => Scaffold.maybeOf(context)?.openDrawer(),
-                    icon: const Icon(Icons.menu),
-                    tooltip: l10n.tooltipOpenLibrary,
-                  ),
-                if (showSidebarToggle)
-                  IconButton(
-                    onPressed: model.toggleSidebar,
-                    icon: const Icon(Icons.menu_open),
-                    tooltip: l10n.tooltipOpenSidebar,
+                if (showMenuButton || showSidebarToggle)
+                  WindowNonDragArea(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (showMenuButton)
+                          IconButton(
+                            onPressed: onOpenMenu ??
+                                () => Scaffold.maybeOf(context)?.openDrawer(),
+                            icon: const Icon(Icons.menu),
+                            tooltip: l10n.tooltipOpenLibrary,
+                          ),
+                        if (showSidebarToggle)
+                          IconButton(
+                            onPressed: model.toggleSidebar,
+                            icon: const Icon(Icons.menu_open),
+                            tooltip: l10n.tooltipOpenSidebar,
+                          ),
+                      ],
+                    ),
                   ),
                 const Expanded(child: WindowDragArea(child: SizedBox.expand())),
                 const WindowCaptionButtons(),

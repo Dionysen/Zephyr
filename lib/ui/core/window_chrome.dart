@@ -13,6 +13,8 @@ import 'zephyr_controls.dart';
 
 /// Isolates desktop window dragging and caption buttons from feature widgets.
 abstract final class WindowChrome {
+  static const _channel = MethodChannel('zephyr/window_chrome');
+
   static bool get isDesktop {
     if (kIsWeb || Platform.environment.containsKey('FLUTTER_TEST')) {
       return false;
@@ -50,8 +52,7 @@ abstract final class WindowChrome {
       return;
     }
     try {
-      const channel = MethodChannel('zephyr/window_chrome');
-      final metrics = await channel.invokeMapMethod<String, dynamic>('metrics');
+      final metrics = await _channel.invokeMapMethod<String, dynamic>('metrics');
       if (metrics == null) {
         return;
       }
@@ -67,6 +68,22 @@ abstract final class WindowChrome {
       // Native chrome is optional when the embedder has no method channel.
     }
   }
+
+  static Future<void> startDrag() async {
+    try {
+      await _channel.invokeMethod<void>('startDrag');
+    } on Object {
+      // Dragging is optional when the embedder has no method channel.
+    }
+  }
+
+  static Future<void> toggleZoom() async {
+    try {
+      await _channel.invokeMethod<void>('toggleZoom');
+    } on Object {
+      // Zoom is optional when the embedder has no method channel.
+    }
+  }
 }
 
 class WindowDragArea extends StatelessWidget {
@@ -79,8 +96,32 @@ class WindowDragArea extends StatelessWidget {
     if (!WindowChrome.isDesktop) {
       return child;
     }
+    // macOS: native title-bar drag is disabled (`isMovable = false`); only
+    // this widget may move/zoom the window through the chrome channel.
+    if (WindowChrome.usesMacOSTrafficLights) {
+      return GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onPanStart: (_) => unawaited(WindowChrome.startDrag()),
+        onDoubleTap: () => unawaited(WindowChrome.toggleZoom()),
+        child: child,
+      );
+    }
     return DragToMoveArea(child: child);
   }
+}
+
+/// Marks title-bar controls that must not sit in a [WindowDragArea].
+///
+/// Do not attach [GestureDetector.onDoubleTap] here: it delays child
+/// [IconButton] taps while the arena waits for a possible second tap.
+/// Native chrome already blocks system title-bar drag/zoom on macOS.
+class WindowNonDragArea extends StatelessWidget {
+  const WindowNonDragArea({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => child;
 }
 
 /// Keeps the native window backdrop aligned with the writing-shell theme.

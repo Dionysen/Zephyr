@@ -4,6 +4,8 @@ import FlutterMacOS
 
 class MainFlutterWindow: NSWindow {
   private var accessedFolderUrls: [URL] = []
+  private var allowProgrammaticZoom = false
+  private var dragMouseUpMonitor: Any?
 
   override func awakeFromNib() {
     let flutterViewController = FlutterViewController()
@@ -11,6 +13,10 @@ class MainFlutterWindow: NSWindow {
     self.styleMask.insert(.fullSizeContentView)
     self.titleVisibility = .hidden
     self.titlebarAppearsTransparent = true
+    // Drag / double-click zoom only via Flutter [WindowDragArea]. Keeping the
+    // window movable lets the system title-bar band steal gestures from the
+    // sidebar and editor chrome controls that sit in that strip.
+    self.isMovable = false
     self.isMovableByWindowBackground = false
     self.contentViewController = flutterViewController
     self.setFrame(windowFrame, display: true)
@@ -21,6 +27,20 @@ class MainFlutterWindow: NSWindow {
     registerSystemFontsChannel(flutterViewController)
 
     super.awakeFromNib()
+  }
+
+  /// window_manager maximizes via `zoom(_:)`; the system title bar double-click
+  /// calls `performZoom` directly. Allow only the programmatic path so chrome
+  /// controls in the title-bar strip do not toggle zoom.
+  override func zoom(_ sender: Any?) {
+    allowProgrammaticZoom = true
+    super.zoom(sender)
+    allowProgrammaticZoom = false
+  }
+
+  override func performZoom(_ sender: Any?) {
+    guard allowProgrammaticZoom else { return }
+    super.performZoom(sender)
   }
 
   private func registerWindowChromeChannel(
@@ -44,10 +64,39 @@ class MainFlutterWindow: NSWindow {
       switch call.method {
       case "metrics":
         result(self.chromeMetrics())
+      case "startDrag":
+        self.beginChromeDrag()
+        result(nil)
+      case "toggleZoom":
+        self.zoom(nil)
+        result(nil)
       default:
         result(FlutterMethodNotImplemented)
       }
     }
+  }
+
+  /// `performDrag` requires a movable window; enable only for the drag that
+  /// Flutter's [WindowDragArea] started, then lock again on mouse-up.
+  private func beginChromeDrag() {
+    guard let event = currentEvent else { return }
+    isMovable = true
+    performDrag(with: event)
+    if dragMouseUpMonitor != nil { return }
+    dragMouseUpMonitor = NSEvent.addLocalMonitorForEvents(
+      matching: [.leftMouseUp]
+    ) { [weak self] event in
+      self?.endChromeDrag()
+      return event
+    }
+  }
+
+  private func endChromeDrag() {
+    if let dragMouseUpMonitor {
+      NSEvent.removeMonitor(dragMouseUpMonitor)
+      self.dragMouseUpMonitor = nil
+    }
+    isMovable = false
   }
 
   /// Distances from the Flutter content view origin so toolbar controls can
