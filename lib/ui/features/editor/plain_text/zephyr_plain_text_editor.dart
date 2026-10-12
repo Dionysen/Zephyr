@@ -2,18 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:plain_text_editor/plain_text_editor.dart';
 
 import '../../../../domain/models/keyboard_shortcuts.dart';
 import '../../../../domain/use_cases/shortcut_resolver.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
 import '../../settings/view_models/keyboard_shortcuts_view_model.dart';
-import 'decoration/text_decoration_model.dart';
-import 'gestures/plain_text_gesture_handler.dart';
-import 'input/plain_text_editing_controller.dart';
-import 'input/plain_text_input_client.dart';
-import 'layout/editor_typography.dart';
-import 'layout/plain_text_layout_engine.dart';
-import 'render/plain_text_editor_render_object.dart';
 import 'zephyr_editor_scrollbar.dart';
 
 /// High-performance plain-text editor backed by per-paragraph [TextPainter]s.

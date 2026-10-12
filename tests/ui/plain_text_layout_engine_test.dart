@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/painting.dart';
-import 'package:flutter/services.dart' show TextSelection;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/domain/models/editor_margins.dart';
 import 'package:zephyr/ui/features/editor/plain_text/document/plain_text_document.dart';

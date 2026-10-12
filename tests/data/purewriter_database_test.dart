@@ -11,6 +11,8 @@ import 'package:zephyr/domain/models/library_backup.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  // The package exposes this setup API specifically for tests.
+  // ignore: invalid_use_of_visible_for_testing_member
   PackageInfo.setMockInitialValues(
     appName: 'Zephyr',
     packageName: 'com.zephyr.zephyr',

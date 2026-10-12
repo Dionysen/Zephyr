@@ -417,7 +417,7 @@ class _LibraryRowAction extends StatelessWidget {
 
 /// Book-stack mark for the dock: upright volumes + one leaning.
 class _LibraryBuildingIcon extends StatelessWidget {
-  const _LibraryBuildingIcon({this.size = 24});
+  const _LibraryBuildingIcon() : size = 24;
 
   static const _asset = 'branding/library_building.svg';
 

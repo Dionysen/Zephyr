@@ -7,6 +7,8 @@ alwaysApply: true
 
 Zephyr is a Flutter local-first plain-text editor. The document library is a **PureWriter-compatible SQLite** `App/Room.db` (v27 Room fingerprint), not a folder of text files.
 
+Read `AGENTS.md` and `docs/ARCHITECTURE.md` for current boundaries. The paths below point to implementations; legacy paths under `lib/ui/features/editor/plain_text/{document,input,layout,render,gestures,decoration}` are compatibility exports.
+
 ## Architecture (where to look)
 
 | Concern | Path |
@@ -23,10 +25,10 @@ Zephyr is a Flutter local-first plain-text editor. The document library is a **P
 | Sidebar + mobile top bar | `lib/ui/features/workspace/views/workspace_sidebar.dart` |
 | Editor + scroll / jump-to-end / pair session | `lib/ui/features/workspace/views/workspace_editor.dart` |
 | Plain-text editor shell | `lib/ui/features/editor/plain_text/zephyr_plain_text_editor.dart` |
-| IME client + pair expand / caret lock | `lib/ui/features/editor/plain_text/input/plain_text_input_client.dart` |
-| Editing controller (undo/redo) | `lib/ui/features/editor/plain_text/input/plain_text_editing_controller.dart` |
-| Span decorations (pair frame paint) | `lib/ui/features/editor/plain_text/decoration/` |
-| Paired punctuation domain | `lib/domain/use_cases/paired_punctuation.dart` |
+| IME client + pair expand / caret lock | `packages/plain_text_editor/lib/input/plain_text_input_client.dart` |
+| Editing controller (undo/redo) | `packages/plain_text_editor/lib/input/plain_text_editing_controller.dart` |
+| Span decorations (pair frame paint) | `packages/plain_text_editor/lib/decoration/` |
+| Paired punctuation rules | `packages/plain_text_editor/lib/text/paired_punctuation.dart` |
 | Sidebar preview summary text | `lib/domain/use_cases/article_preview_summary.dart` |
 | Quick toolbar (IME bar + tools drawer) | `lib/ui/features/editor/quick_toolbar/` |
 | Quick toolbar config / persist | `lib/domain/models/quick_toolbar_config.dart`, data repos under `lib/data/` |
@@ -36,8 +38,8 @@ Zephyr is a Flutter local-first plain-text editor. The document library is a **P
 | UI prefs (immersive status bar, etc.) | `lib/domain/models/ui_preferences.dart`, settings under `lib/ui/features/settings/` |
 | Keyboard shortcuts (defaults + overrides) | `lib/domain/models/keyboard_shortcuts.dart`, `lib/domain/use_cases/shortcut_resolver.dart` |
 | Shortcuts persist / VM / settings UI | `keyboard-shortcuts.json`, `KeyboardShortcutsViewModel`, `shortcuts_settings_page.dart` (nested under settings Navigator) |
-| Nested settings / drawer system back | `nested_back_navigator.dart` (PopScope → nested pop before host); swipe drawer + tools drawer also PopScope |
-| Word boundaries | `lib/domain/use_cases/text_word_boundaries.dart` |
+| Nested settings / drawer system back | `packages/flutter_primitives/lib/nested_back_navigator.dart` (PopScope → nested pop before host); swipe drawer + tools drawer also PopScope |
+| Word boundaries | `packages/text_editor_foundation/lib/text/text_word_boundaries.dart` |
 
 ## Startup & temporary library
 
@@ -56,7 +58,7 @@ Zephyr is a Flutter local-first plain-text editor. The document library is a **P
 
 ## Paired punctuation wrap
 
-- Domain: resolve/detect/remap/orphan in `paired_punctuation.dart`; tests in `tests/domain/paired_punctuation_test.dart`.
+- Reusable editor rules: resolve/detect/remap/orphan in `packages/plain_text_editor/lib/text/paired_punctuation.dart`; tests in `tests/domain/paired_punctuation_test.dart`.
 - Typing: IME client expands opener → full pair and pins caret between; short caret lock resists IME yanking to glyphs; redundant closer inserts skipped.
 - Toolbar / editor: `_beginPairSession` in `workspace_editor.dart`; one-shot interior highlight via `TextSpanDecoration` (empty slot centered between opener/closer anchors).
 - Exit when selection leaves the interior (after brief post-insert snap window); Enter exits after the closer; empty-open delete removes orphan closer.

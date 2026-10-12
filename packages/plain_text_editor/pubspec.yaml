@@ -1,0 +1,13 @@
+name: plain_text_editor
+description: Reusable plain-text editing, input, layout, and rendering primitives.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.13.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  text_editor_foundation:
+    path: ../text_editor_foundation

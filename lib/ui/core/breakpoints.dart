@@ -1,7 +1,8 @@
-/// Shared layout thresholds so workspace and settings do not invent
-/// platform-specific shells.
-abstract final class ZephyrBreakpoints {
-  static const compact = 720.0;
+import 'package:flutter_primitives/adaptive_breakpoints.dart';
 
-  static bool isCompact(double width) => width < compact;
+/// Zephyr's compatibility API for the shared layout threshold.
+abstract final class ZephyrBreakpoints {
+  static const compact = AdaptiveBreakpoints.compact;
+
+  static bool isCompact(double width) => AdaptiveBreakpoints.isCompact(width);
 }

@@ -1,4 +1,4 @@
-import 'paragraph_indentation.dart';
+import 'package:text_editor_foundation/text/paragraph_indentation.dart';
 
 /// One-tap format: normalize first-line indent and collapse extra blank lines.
 String formatPlainTextDocument(String text, int firstLineIndent) {

@@ -1,0 +1,11 @@
+name: flutter_primitives
+description: Reusable Flutter layout and navigation components.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.13.4
+
+dependencies:
+  flutter:
+    sdk: flutter

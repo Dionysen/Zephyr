@@ -52,9 +52,16 @@ dependencies:
   http: ^1.6.0
   flutter_secure_storage: ^11.2.0
   qr_flutter: ^4.1.0
+  plain_text_editor:
+    path: packages/plain_text_editor
+  text_editor_foundation:
+    path: packages/text_editor_foundation
+  flutter_primitives:
+    path: packages/flutter_primitives
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  fake_async: ^1.3.3
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -111,4 +118,3 @@ flutter_launcher_icons:
     generate: true
   adaptive_icon_background: "#0E0E0E"
   adaptive_icon_foreground: branding/app_icon_square.png
-

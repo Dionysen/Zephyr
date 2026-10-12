@@ -588,7 +588,7 @@ void main() {
 }
 
 AppLocalizations _l10n(WidgetTester tester) =>
-    AppLocalizations.of(tester.element(find.byType(WorkspacePage)))!;
+    AppLocalizations.of(tester.element(find.byType(WorkspacePage)));
 
 Widget _app({LibraryViewModel? library, bool needsLibrarySetup = false}) {
   library ??= LibraryViewModel(

@@ -1,8 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:plain_text_editor/input/plain_text_editing_controller.dart';
 
 import '../../../../domain/use_cases/plain_text_format.dart';
-import '../plain_text/input/plain_text_editing_controller.dart';
 import '../plain_text/zephyr_plain_text_editor.dart';
 
 /// Actions and focus state the IME quick toolbar needs from [WorkspaceEditor].

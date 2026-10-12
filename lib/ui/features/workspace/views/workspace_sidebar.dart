@@ -2961,7 +2961,7 @@ class _ChapterRow extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (divider != null) divider,
+          ?divider,
           body,
         ],
       ),

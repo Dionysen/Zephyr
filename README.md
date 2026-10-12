@@ -1,108 +1,36 @@
 # Zephyr
 
-Zephyr is a local-first, cross-platform plain-text editor. Its document library is a PureWriter-compatible SQLite `App/Room.db`, rather than a directory of application-managed text files.
+Zephyr 是本地优先的跨平台纯文本编辑器。书库存储为兼容纯纯写作的 `App/Room.db`，不是由应用管理的一组 `.txt` 文件。
 
-The application uses a layered Flutter architecture: `domain` defines the platform-independent library contracts, `data` owns the PureWriter v27 storage protocol, and `ui` uses MVVM. Future backup and sync adapters must use the repository boundary rather than writing through the UI.
+- [用户指南](docs/USER_GUIDE.md)：书库、编辑、备份和恢复。
+- [开发指南](docs/DEVELOPMENT.md)：运行、测试和常见改动入口。
+- [架构说明](docs/ARCHITECTURE.md)：模块边界、可复用包和数据安全约束。
+- [AI 协作约定](AGENTS.md)：修改代码时必须遵守的仓库规则。
 
-## Prerequisites
+## 快速开始
 
-- Flutter SDK compatible with Dart `^3.13.4`.
-- Run `flutter doctor` and address items relevant to the target platform.
-- Windows development needs Visual Studio with the **Desktop development with C++** workload.
-- Android development needs Android Studio, an Android SDK, and a device or emulator.
-- iOS and macOS development require macOS with Xcode. iOS cannot be built on Windows.
-- Linux development needs the Flutter Linux desktop toolchain; follow `flutter doctor` for the missing packages on the target distribution.
+安装与 Dart `^3.13.4` 兼容的 Flutter SDK，在仓库根目录运行：
 
-Verify the setup and list detected targets:
-
-```powershell
+```sh
 flutter doctor
-flutter devices
-```
-
-## Install dependencies
-
-Run all commands from the repository root:
-
-```powershell
-cd C:\Users\zhaoys-c\Documents\Zephyr
 flutter pub get
+flutter devices
+flutter run -d <device-id>
 ```
 
-Run `flutter pub get` again whenever `pubspec.yaml` or `pubspec.lock` changes. Do not manually edit `pubspec.lock`.
+Windows 桌面需要 Visual Studio 的 Desktop development with C++ 工作负载；Android 需要 Android SDK；iOS 和 macOS 需要 Xcode；Linux 需要对应的 Flutter 桌面工具链。
 
-## Run and debug
+## 质量检查
 
-Use `flutter devices` to obtain a device identifier. The common commands are:
+测试目录是 `tests/`：
 
-```powershell
-# Windows desktop
-flutter run -d windows
-
-# Android device or running emulator
-flutter run -d <android-device-id>
-
-# iOS simulator or device, from macOS only
-flutter run -d <ios-device-id>
-
-# macOS desktop, from macOS only
-flutter run -d macos
-
-# Linux desktop, from Linux only
-flutter run -d linux
-```
-
-For editor-based debugging, open the repository root in VS Code or Android Studio, select the intended Flutter device, and start `lib/main.dart` in Debug mode. Breakpoints work in Dart code for all supported native targets.
-
-## Hot reload and restart
-
-When the app is running through `flutter run`, focus the terminal and use:
-
-- `r`: hot reloads changed Dart code while retaining in-memory state where possible.
-- `R`: hot restarts the Flutter isolate and recreates application state. Local `Room.db` data is retained.
-- `q`: stops the application.
-
-Native host changes, dependency changes, and some plugin changes need a full stop followed by `flutter run`; hot reload cannot apply them.
-
-## Tests and quality checks
-
-The project keeps tests in `tests/`.
-
-```powershell
-# Run all unit and widget tests
+```sh
 flutter test tests
-
-# Run one test file
-flutter test tests\data\purewriter_database_test.dart
-
-# Static analysis
-flutter analyze
-
-# Apply standard Dart formatting
-dart format lib tests
+flutter analyze lib packages tests
 ```
 
-Before handing off a change, run at least:
+纯 Dart 文本规则位于 `packages/text_editor_foundation`，Flutter 编辑引擎位于 `packages/plain_text_editor`，通用组件位于 `packages/flutter_primitives`。Zephyr 的书库、同步、主题和业务界面留在 `lib/`。
 
-```powershell
-flutter analyze
-flutter test tests
-```
+## 书库安全
 
-## Build artifacts
-
-Debug builds are normally produced automatically by `flutter run`. To produce a distributable build, use the platform-specific Flutter command on that platform, for example:
-
-```powershell
-# Windows
-flutter build windows
-
-# Android APK
-flutter build apk
-```
-
-Build outputs live under `build/` and are intentionally not committed.
-
-## PureWriter library safety
-
-Zephyr can open a library root containing `App/Room.db`. It checks the v27 Room fingerprint before enabling writes; unknown schemas open read-only. Never edit the same library in PureWriter and Zephyr at the same time. Zephyr uses `.zephyr-lock` to prevent multiple Zephyr writers, but PureWriter does not participate in that lock protocol.
+Zephyr 只允许写入已识别 PureWriter v27 Room 指纹的书库；未知 schema 以只读方式打开。不要同时在纯纯写作和 Zephyr 中编辑同一书库。Zephyr 的 `.zephyr-lock` 只能阻止其他 Zephyr 实例写入，纯纯写作不参与此锁协议。

@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_primitives/nested_back_navigator.dart';
 
-import '../../../core/nested_back_navigator.dart';
 import '../../../core/zephyr_floating_chrome.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_scope.dart';

@@ -1,15 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:plain_text_editor/plain_text_editor.dart';
 
-import '../../../../domain/models/editor_margins.dart';
 import '../../../../domain/models/editor_preferences.dart';
-import '../../../../domain/use_cases/paired_punctuation.dart';
-import '../../../../domain/use_cases/paragraph_indentation.dart';
 import '../../../../domain/use_cases/plain_text_word_count.dart';
-import '../../editor/plain_text/decoration/text_decoration_model.dart';
-import '../../editor/plain_text/input/plain_text_editing_controller.dart';
-import '../../editor/plain_text/layout/editor_typography.dart';
 import '../../editor/plain_text/zephyr_plain_text_editor.dart';
 import '../../editor/quick_toolbar/quick_toolbar_host.dart';
 import '../../editor/quick_toolbar/workspace_editor_bridge.dart';
