@@ -48,6 +48,9 @@ class _ZephyrEditorScrollbarState extends State<ZephyrEditorScrollbar>
   Timer? _fadeTimer;
   bool _dragging = false;
   double _dragThumbTop = 0;
+  /// Thumb top and global Y at drag start — cumulative, not per-frame delta.
+  double _dragThumbTopAtStart = 0;
+  double? _dragOriginGlobalY;
 
   @override
   void initState() {
@@ -186,29 +189,34 @@ class _ZephyrEditorScrollbarState extends State<ZephyrEditorScrollbar>
                     ),
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
-                      onVerticalDragStart: (_) {
+                      onVerticalDragStart: (details) {
                         _dragging = true;
                         _dragThumbTop = thumbTop;
+                        _dragThumbTopAtStart = thumbTop;
+                        _dragOriginGlobalY = details.globalPosition.dy;
                         _fadeTimer?.cancel();
                         _fade.forward();
                       },
                       onVerticalDragUpdate: (details) {
+                        final origin = _dragOriginGlobalY;
+                        if (origin == null) return;
                         final min = _trackMin(viewport);
                         final track = _trackExtent(viewport);
-                        final next = (_dragThumbTop + details.delta.dy).clamp(
-                          min,
-                          min + track,
-                        );
+                        final next = (_dragThumbTopAtStart +
+                                (details.globalPosition.dy - origin))
+                            .clamp(min, min + track);
                         _dragThumbTop = next;
                         _jumpThumbTo(next, viewport);
                         setState(() {});
                       },
                       onVerticalDragEnd: (_) {
                         _dragging = false;
+                        _dragOriginGlobalY = null;
                         _showThumb();
                       },
                       onVerticalDragCancel: () {
                         _dragging = false;
+                        _dragOriginGlobalY = null;
                         _showThumb();
                       },
                       child: Align(

@@ -3110,7 +3110,7 @@ class _LibraryDock extends StatelessWidget {
   }
 }
 
-class SidebarResizeHandle extends StatelessWidget {
+class SidebarResizeHandle extends StatefulWidget {
   const SidebarResizeHandle({
     super.key,
     required this.model,
@@ -3123,15 +3123,27 @@ class SidebarResizeHandle extends StatelessWidget {
   final double maxWidth;
 
   @override
+  State<SidebarResizeHandle> createState() => _SidebarResizeHandleState();
+}
+
+class _SidebarResizeHandleState extends State<SidebarResizeHandle> {
+  /// Width at drag start — pair with cumulative dx so clamping does not
+  /// desync the pointer from the sidebar edge.
+  double _widthAtDragStart = 0;
+
+  @override
   Widget build(BuildContext context) => ZephyrResizeHandle(
-    onDragStart: () => model.setSidebarResizing(true),
-    onDragUpdate: (delta) => model.resizeSidebar(
-      (model.sidebarWidth + delta).clamp(
+    onDragStart: () {
+      _widthAtDragStart = widget.model.sidebarWidth;
+      widget.model.setSidebarResizing(true);
+    },
+    onDragUpdate: (dxFromOrigin) => widget.model.resizeSidebar(
+      (_widthAtDragStart + dxFromOrigin).clamp(
         LibraryViewModel.minSidebarWidth,
-        maxWidth,
+        widget.maxWidth,
       ),
     ),
-    onDragEnd: () => model.setSidebarResizing(false),
-    onDragCancel: () => model.setSidebarResizing(false),
+    onDragEnd: () => widget.model.setSidebarResizing(false),
+    onDragCancel: () => widget.model.setSidebarResizing(false),
   );
 }

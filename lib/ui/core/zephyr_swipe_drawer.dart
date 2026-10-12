@@ -81,6 +81,9 @@ class _ZephyrSwipeDrawerState extends State<ZephyrSwipeDrawer>
   late final AnimationController _progress;
   late final ZephyrSwipeDrawerController _controller;
   double _dragStartProgress = 0;
+  /// Global X at drag start — pair with [_dragStartProgress] so clamping at
+  /// open/closed does not desync the finger from drawer progress.
+  double? _dragOriginGlobalX;
   bool _dragBlocked = false;
   bool _ignoreActiveDrag = false;
 
@@ -144,6 +147,7 @@ class _ZephyrSwipeDrawerState extends State<ZephyrSwipeDrawer>
     _ignoreActiveDrag = false;
     _progress.stop();
     _dragStartProgress = _progress.value;
+    _dragOriginGlobalX = details.globalPosition.dx;
     // Hide the IME as soon as the user starts pulling the drawer open.
     if (_dragStartProgress < 0.05) {
       _dismissKeyboard();
@@ -152,13 +156,16 @@ class _ZephyrSwipeDrawerState extends State<ZephyrSwipeDrawer>
 
   void _onDragUpdate(DragUpdateDetails details) {
     if (_ignoreActiveDrag || _dragBlocked) return;
-    final delta = details.primaryDelta ?? 0;
-    if (delta == 0) return;
-    final next = (_progress.value + delta / widget.drawerWidth).clamp(0.0, 1.0);
+    final origin = _dragOriginGlobalX;
+    if (origin == null) return;
+    final dx = details.globalPosition.dx - origin;
+    final next =
+        (_dragStartProgress + dx / widget.drawerWidth).clamp(0.0, 1.0);
     _progress.value = next;
   }
 
   void _onDragEnd(DragEndDetails details) {
+    _dragOriginGlobalX = null;
     if (_ignoreActiveDrag || _dragBlocked) {
       _ignoreActiveDrag = false;
       // Undo any accidental reveal from the same pointer.
@@ -208,6 +215,7 @@ class _ZephyrSwipeDrawerState extends State<ZephyrSwipeDrawer>
   }
 
   void _onDragCancel() {
+    _dragOriginGlobalX = null;
     if (_ignoreActiveDrag || _dragBlocked) {
       _ignoreActiveDrag = false;
       if (!_isOpen && _progress.value > 0) {
