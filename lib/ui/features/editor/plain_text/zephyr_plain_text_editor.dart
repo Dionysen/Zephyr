@@ -250,12 +250,13 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     if (widget.readOnly) return;
     _suppressImeAttach = false;
     if (!_focusNode.hasPrimaryFocus) {
-      // Focus callback will [attach]; still mark dirty for the next sync.
+      // requestFocus applies on a microtask; attach once primary focus lands.
       _focusNode.requestFocus();
+      _scheduleAttachIme();
       return;
     }
     // Same path as a short tap on the caret: re-show without re-focus churn.
-    _inputClient?.attach();
+    _attachIme();
   }
 
   Future<void> paste() => _paste();
@@ -294,7 +295,9 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
         !_focusNode.hasPrimaryFocus) {
       return;
     }
-    _inputClient?.attach();
+    // Windows (and multi-view desktop) reject setClient without viewId.
+    final viewId = View.maybeOf(context)?.viewId;
+    _inputClient?.attach(viewId: viewId);
     _inputClient?.markImeDirty();
     _inputClient?.syncImeIfNeeded();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -302,6 +305,21 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
         _ensureCaretVisible();
       }
     });
+  }
+
+  /// [FocusNode.requestFocus] only becomes primary on a microtask — schedule
+  /// attach so desktop keystrokes are not dropped before TextInput is live.
+  void _scheduleAttachIme() {
+    if (widget.readOnly || _suppressImeAttach) return;
+    final focus = _focusNode;
+    void tryAttach() {
+      if (!mounted || _suppressImeAttach) return;
+      if (!focus.hasPrimaryFocus) return;
+      _attachIme();
+    }
+
+    Future<void>.microtask(tryAttach);
+    WidgetsBinding.instance.addPostFrameCallback((_) => tryAttach());
   }
 
   /// Confirmed short tap: place caret and open the IME. Scroll drags cancel
@@ -312,8 +330,10 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     _suppressImeAttach = false;
     _focusNode.requestFocus();
     // Always re-show IME: focus may already be true after the user dismissed
-    // the soft keyboard.
+    // the soft keyboard. When focus is still settling, [_scheduleAttachIme]
+    // waits for primary focus (critical on Windows desktop).
     _attachIme();
+    _scheduleAttachIme();
     _gestures.handleTapDown(details, details.localPosition);
   }
 
@@ -325,6 +345,7 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     widget.controller.setSelection(TextSelection.collapsed(offset: end));
     _focusNode.requestFocus();
     _attachIme();
+    _scheduleAttachIme();
   }
 
   void _onControllerTick() {
@@ -723,8 +744,10 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                                     if (event.kind == PointerDeviceKind.mouse &&
                                         event.buttons == kPrimaryButton) {
                                       _selecting = true;
+                                      _suppressImeAttach = false;
                                       _focusNode.requestFocus();
                                       _attachIme();
+                                      _scheduleAttachIme();
                                       _gestures.handleDragStart(
                                         event.localPosition,
                                       );

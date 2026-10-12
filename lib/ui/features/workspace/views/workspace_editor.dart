@@ -296,6 +296,11 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   /// here we only activate the one-shot highlight session (synchronously).
   bool _maybeAutoPairTypedOpener() {
     if (_suppressAutoPair || _pairSession != null) return false;
+    // Composing Latin (e.g. Pinyin) must not trigger pair rewrite/sessions.
+    final composing = _controller.composing;
+    if (composing != null && composing.isValid && !composing.isCollapsed) {
+      return false;
+    }
     final before = _pairTrackText;
     final after = _controller.text;
     final typed = detectTypedPairedPunctuation(before: before, after: after);
@@ -633,7 +638,15 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   void _setDocumentTitleObscured(bool obscured, {bool forceNotify = false}) {
     if (!forceNotify && obscured == _documentTitleObscured) return;
     _documentTitleObscured = obscured;
-    widget.onDocumentTitleObscured?.call(obscured);
+    final notify = widget.onDocumentTitleObscured;
+    if (notify == null) return;
+    // Parent may call setState; never invoke synchronously from initState /
+    // build / layout (that asserts and can leave desktop focus/IME broken).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_documentTitleObscured != obscured) return;
+      notify(obscured);
+    });
   }
 
   void _jumpToEnd() {

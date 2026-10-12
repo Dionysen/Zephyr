@@ -43,18 +43,34 @@ class PlainTextInputClient with TextInputClient, DeltaTextInputClient {
   bool Function()? consumeNewline;
 
   TextInputConnection? _connection;
+  int? _viewId;
   bool _imeDirty = true;
+  /// Mirrors [EditableText]: only [setEditingState] when local ≠ remote.
+  /// Echoing every IME compose update breaks Chinese IMEs on Windows.
+  TextEditingValue? _lastKnownRemoteValue;
   _PairCaretLock? _pairCaretLock;
 
   bool get attached => _connection?.attached ?? false;
 
-  void attach() {
+  /// Opens (or re-shows) the platform text client.
+  ///
+  /// [viewId] is required on recent Flutter Windows/macOS embeds; without it
+  /// `TextInput.setClient` fails and keystrokes never reach the editor.
+  void attach({int? viewId}) {
     // Keep an existing connection; the soft keyboard can be dismissed while
     // focus remains, so every attach must call [show] again.
-    if (!attached) {
+    final viewChanged = viewId != null && viewId != _viewId;
+    if (!attached || viewChanged) {
+      if (attached) {
+        _connection?.close();
+        _connection = null;
+      }
+      _viewId = viewId;
+      _lastKnownRemoteValue = null;
       _connection = TextInput.attach(
         this,
-        const TextInputConfiguration(
+        TextInputConfiguration(
+          viewId: viewId,
           inputType: TextInputType.multiline,
           inputAction: TextInputAction.newline,
           keyboardAppearance: Brightness.light,
@@ -68,6 +84,8 @@ class PlainTextInputClient with TextInputClient, DeltaTextInputClient {
   void detach() {
     _connection?.close();
     _connection = null;
+    _viewId = null;
+    _lastKnownRemoteValue = null;
   }
 
   /// Hides the soft keyboard without closing the text-input connection.
@@ -89,11 +107,23 @@ class PlainTextInputClient with TextInputClient, DeltaTextInputClient {
 
   void syncImeIfNeeded() {
     if (!_imeDirty || !attached) return;
-    _connection!.setEditingState(controller.editingValue);
-    final caret = engine.caretRectForOffset(controller.selection.extentOffset);
+    final local = controller.editingValue;
+    // Same guard as EditableText._updateRemoteEditingValueIfNeeded.
+    if (local == _lastKnownRemoteValue) {
+      _imeDirty = false;
+      return;
+    }
+    _connection!.setEditingState(local);
+    _lastKnownRemoteValue = local;
+    final caret = engine.caretRectForOffset(local.selection.extentOffset);
     if (caret != null) {
       _connection!.setCaretRect(caret);
     }
+    _imeDirty = false;
+  }
+
+  void _acknowledgeRemoteValue(TextEditingValue value) {
+    _lastKnownRemoteValue = value;
     _imeDirty = false;
   }
 
@@ -157,6 +187,7 @@ class PlainTextInputClient with TextInputClient, DeltaTextInputClient {
     if (value.text == controller.text &&
         value.selection == controller.selection &&
         value.composing == controller.composing) {
+      _acknowledgeRemoteValue(controller.editingValue);
       return;
     }
     if (_rejectImeSelectionEcho(value)) return;
@@ -166,39 +197,55 @@ class PlainTextInputClient with TextInputClient, DeltaTextInputClient {
         value.selection.isCollapsed &&
         value.selection.extentOffset > 0 &&
         value.text[value.selection.extentOffset - 1] == '\n';
+    var locallyAltered = false;
     if (isNewline) {
       if (consumeNewline?.call() == true) {
         // Keep editing state in sync without inserting a break.
         markImeDirty();
         syncImeIfNeeded();
+        onRemoteEdit();
         return;
       }
       _pairCaretLock = null;
       controller.insertNewlineWithIndent();
+      locallyAltered = true;
+    } else if (_isComposing(value)) {
+      // Never rewrite composing updates (Chinese/Japanese IME).
+      controller.applyEditingValue(value, coalesce: true);
     } else {
-      controller.applyEditingValue(
-        _expandPairedOpenerValue(controller.text, value),
-        coalesce: false,
-      );
+      final before = controller.text;
+      final next = _expandPairedOpenerValue(before, value);
+      locallyAltered = next.text != value.text || next.selection != value.selection;
+      controller.applyEditingValue(next, coalesce: false);
     }
-    markImeDirty();
-    syncImeIfNeeded();
-    onRemoteEdit();
+    _finishRemoteEdit(locallyAltered: locallyAltered);
   }
 
   @override
   void updateEditingValueWithDeltas(List<TextEditingDelta> textEditingDeltas) {
     var value = controller.editingValue;
+    var locallyAltered = false;
     for (final delta in textEditingDeltas) {
       if (delta is TextEditingDeltaInsertion && delta.textInserted == '\n') {
         // Do not apply delta.selection: it is post-insert against IME-local
         // text and can clamp to the document end before we insert.
         if (consumeNewline?.call() == true) {
           value = controller.editingValue;
+          locallyAltered = true;
           continue;
         }
         _pairCaretLock = null;
         controller.insertNewlineWithIndent();
+        value = controller.editingValue;
+        locallyAltered = true;
+        continue;
+      }
+
+      // During IME composing, apply deltas verbatim — pair rewrite / caret
+      // pinning corrupts the platform compose session (caret → doc start).
+      if (_deltaInvolvesComposing(delta) || _isComposing(value)) {
+        value = delta.apply(value);
+        controller.applyEditingValue(value, coalesce: true);
         value = controller.editingValue;
         continue;
       }
@@ -217,9 +264,11 @@ class PlainTextInputClient with TextInputClient, DeltaTextInputClient {
         value = TextEditingValue(
           text: value.text,
           selection: TextSelection.collapsed(offset: pin),
+          composing: value.composing,
         );
         controller.applyEditingValue(value, coalesce: false);
         value = controller.editingValue;
+        locallyAltered = true;
         continue;
       }
 
@@ -247,17 +296,35 @@ class PlainTextInputClient with TextInputClient, DeltaTextInputClient {
           highlightEnd: highlightEnd,
         );
         value = controller.editingValue;
+        locallyAltered = true;
         continue;
       }
       final beforeApply = value.text;
       value = delta.apply(value);
-      // Platform may leave the caret after a full pair; pin between glyphs.
-      value = _pinCaretBetweenPair(beforeApply, value);
+      final pinned = _pinCaretBetweenPair(beforeApply, value);
+      if (pinned != value) locallyAltered = true;
+      value = pinned;
       controller.applyEditingValue(value);
       value = controller.editingValue;
     }
-    markImeDirty();
-    syncImeIfNeeded();
+    _finishRemoteEdit(locallyAltered: locallyAltered);
+  }
+
+  bool _isComposing(TextEditingValue value) =>
+      value.composing.isValid && !value.composing.isCollapsed;
+
+  bool _deltaInvolvesComposing(TextEditingDelta delta) =>
+      delta.composing.isValid && !delta.composing.isCollapsed;
+
+  /// After an IME-driven edit: acknowledge remote state, or push only when we
+  /// changed text/selection beyond what the platform sent.
+  void _finishRemoteEdit({required bool locallyAltered}) {
+    if (locallyAltered) {
+      markImeDirty();
+      syncImeIfNeeded();
+    } else {
+      _acknowledgeRemoteValue(controller.editingValue);
+    }
     onRemoteEdit();
   }
 
@@ -400,6 +467,8 @@ class PlainTextInputClient with TextInputClient, DeltaTextInputClient {
   @override
   void connectionClosed() {
     _connection = null;
+    _viewId = null;
+    _lastKnownRemoteValue = null;
   }
 
   @override
