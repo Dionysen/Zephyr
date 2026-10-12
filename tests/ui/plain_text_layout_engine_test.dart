@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/painting.dart';
+import 'package:flutter/services.dart' show TextSelection;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/domain/models/editor_margins.dart';
 import 'package:zephyr/ui/features/editor/plain_text/document/plain_text_document.dart';
@@ -167,6 +170,51 @@ void main() {
     );
     expect(margins.contentWidth, 120);
     expect(margins.left / margins.right, closeTo(2, 1e-9));
+  });
+
+  test('selection boxes fill line leading and paragraph gaps', () {
+    final engine = PlainTextLayoutEngine();
+    addTearDown(engine.dispose);
+    // Wide enough that each paragraph is one line; spacing creates clear gaps.
+    engine.update(
+      document: const PlainTextDocument('第一行文字\n第二行文字'),
+      typography: typography,
+      viewportWidth: 400,
+    );
+    final selection = const TextSelection(baseOffset: 0, extentOffset: 11);
+    final boxes = engine.boxesForSelection(selection);
+    expect(boxes, isNotEmpty);
+
+    // Sorted by top; consecutive boxes in the selection band should abut
+    // (no visible gutter between wrapped lines or paragraphs).
+    final ordered = [...boxes]..sort((a, b) => a.top.compareTo(b.top));
+    for (var i = 1; i < ordered.length; i++) {
+      final prev = ordered[i - 1];
+      final next = ordered[i];
+      // Only assert vertical continuity when the bands overlap horizontally
+      // (same selection column), not for unrelated side-by-side boxes.
+      final overlap =
+          math.min(prev.right, next.right) - math.max(prev.left, next.left);
+      if (overlap <= 0) continue;
+      expect(
+        next.top,
+        lessThanOrEqualTo(prev.bottom + 0.5),
+        reason: 'gap between selection boxes at index $i',
+      );
+    }
+
+    final spanTop = ordered.first.top;
+    final spanBottom = ordered.fold<double>(
+      ordered.first.bottom,
+      (max, box) => box.bottom > max ? box.bottom : max,
+    );
+    // Full selection should cover from first paragraph top through the
+    // paragraph gap into the second paragraph.
+    expect(spanTop, closeTo(engine.metrics[0].yOffset, 0.5));
+    expect(
+      spanBottom,
+      greaterThanOrEqualTo(engine.metrics[1].yOffset + 1),
+    );
   });
 
   test('visibleParagraphRange returns a band around the viewport', () {

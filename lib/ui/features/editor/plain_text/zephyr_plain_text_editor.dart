@@ -95,6 +95,14 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   /// True while a post-frame IME geometry pump is scheduled (avoid stacking).
   bool _imeGeometryPumpActive = false;
 
+  /// Pointer id for an in-progress drag-select (mouse or long-press).
+  int? _selectPointer;
+  /// Last global position while drag-selecting (for edge auto-scroll).
+  Offset? _selectGlobal;
+  bool _selectAutoScrollScheduled = false;
+  static const double _selectEdgeZone = 48;
+  static const double _selectAutoScrollMaxPerFrame = 28;
+
   @override
   void initState() {
     super.initState();
@@ -172,6 +180,7 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
 
   @override
   void dispose() {
+    _stopSelectionDrag();
     if (_draggingHandle && context.mounted) {
       ZephyrDrawerDragBlockNotification(blocked: false).dispatch(context);
     }
@@ -422,6 +431,8 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   }
 
   void _ensureCaretVisible() {
+    // Drag-select owns scrolling via edge auto-scroll; jumping here fights it.
+    if (_selecting || _draggingHandle) return;
     if (!_scrollController.hasClients) return;
     final caret = _engine.caretRectForOffset(
       widget.controller.selection.extentOffset,
@@ -445,6 +456,135 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     } else if (bottom > viewBottom - bottomMargin) {
       final target = bottom - (viewport - keyboard) + bottomMargin;
       _scrollController.jumpTo(target.clamp(0.0, max));
+    }
+  }
+
+  /// Begin drag-select and route subsequent moves even outside the editor.
+  void _beginSelectionDrag(PointerEvent event, {required bool fromMouse}) {
+    if (widget.readOnly) return;
+    if (fromMouse &&
+        (event.kind != PointerDeviceKind.mouse ||
+            event.buttons != kPrimaryButton)) {
+      return;
+    }
+    _stopSelectionDrag();
+    _selecting = true;
+    _selectPointer = event.pointer;
+    _selectGlobal = event.position;
+    GestureBinding.instance.pointerRouter
+        .addRoute(event.pointer, _handleSelectPointerRoute);
+    final local = _documentLocalForGlobal(event.position);
+    if (local != null) {
+      _gestures.handleDragStart(local);
+    }
+    _scheduleSelectAutoScroll();
+  }
+
+  void _handleSelectPointerRoute(PointerEvent event) {
+    if (!_selecting || event.pointer != _selectPointer) return;
+    if (event is PointerMoveEvent) {
+      // Mouse may release without a clean up if the window loses focus.
+      if (event.kind == PointerDeviceKind.mouse &&
+          event.buttons != kPrimaryButton) {
+        _stopSelectionDrag();
+        return;
+      }
+      _selectGlobal = event.position;
+      _applySelectionAtGlobal(event.position);
+      _scheduleSelectAutoScroll();
+      return;
+    }
+    if (event is PointerUpEvent || event is PointerCancelEvent) {
+      _stopSelectionDrag();
+    }
+  }
+
+  void _stopSelectionDrag() {
+    final pointer = _selectPointer;
+    if (pointer != null) {
+      GestureBinding.instance.pointerRouter
+          .removeRoute(pointer, _handleSelectPointerRoute);
+    }
+    _selectPointer = null;
+    _selectGlobal = null;
+    _selecting = false;
+    _selectAutoScrollScheduled = false;
+  }
+
+  Offset? _documentLocalForGlobal(Offset global) {
+    final box =
+        _documentStackKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return null;
+    return box.globalToLocal(global);
+  }
+
+  void _applySelectionAtGlobal(Offset global, {bool selecting = true}) {
+    final local = _documentLocalForGlobal(global);
+    if (local == null) return;
+    _gestures.handleDragUpdate(local, selecting: selecting);
+  }
+
+  Rect? _scrollViewportGlobalRect() {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return null;
+    final origin = box.localToGlobal(Offset.zero);
+    return origin & box.size;
+  }
+
+  /// Scroll delta for a pointer near/outside the viewport edge (px / frame).
+  double _selectAutoScrollDelta(Offset global) {
+    final viewport = _scrollViewportGlobalRect();
+    if (viewport == null) return 0;
+    final keyboard = _effectiveBottomInset(context);
+    final top = viewport.top;
+    final bottom = viewport.bottom - keyboard;
+    if (bottom <= top) return 0;
+    if (global.dy < top + _selectEdgeZone) {
+      final over = (top + _selectEdgeZone) - global.dy;
+      return -_selectAutoScrollSpeed(over);
+    }
+    if (global.dy > bottom - _selectEdgeZone) {
+      final over = global.dy - (bottom - _selectEdgeZone);
+      return _selectAutoScrollSpeed(over);
+    }
+    return 0;
+  }
+
+  double _selectAutoScrollSpeed(double overscroll) {
+    // Ramp with distance past the edge zone so far drags scroll faster.
+    final t = (overscroll / _selectEdgeZone).clamp(0.25, 3.0);
+    return (_selectAutoScrollMaxPerFrame * t)
+        .clamp(2.0, _selectAutoScrollMaxPerFrame * 3);
+  }
+
+  void _scheduleSelectAutoScroll() {
+    if (_selectAutoScrollScheduled) return;
+    if (!_selecting || _selectGlobal == null) return;
+    if (_selectAutoScrollDelta(_selectGlobal!) == 0) return;
+    _selectAutoScrollScheduled = true;
+    WidgetsBinding.instance.scheduleFrameCallback(_pumpSelectAutoScroll);
+    WidgetsBinding.instance.scheduleFrame();
+  }
+
+  void _pumpSelectAutoScroll(Duration _) {
+    _selectAutoScrollScheduled = false;
+    if (!mounted || !_selecting) return;
+    final global = _selectGlobal;
+    if (global == null || !_scrollController.hasClients) return;
+    final delta = _selectAutoScrollDelta(global);
+    if (delta == 0) return;
+    final position = _scrollController.position;
+    final next = (position.pixels + delta).clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    );
+    if ((next - position.pixels).abs() > 0.5) {
+      _scrollController.jumpTo(next);
+      // Document moves under a stationary pointer — re-hit selection.
+      _applySelectionAtGlobal(global);
+    }
+    if (_selecting && _selectAutoScrollDelta(global) != 0) {
+      _scheduleSelectAutoScroll();
     }
   }
 
@@ -772,35 +912,24 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                           cursor: SystemMouseCursors.text,
                           child: Listener(
                             behavior: HitTestBehavior.translucent,
+                            // Moves/ups are routed globally from
+                            // [_beginSelectionDrag] so drag-select continues
+                            // (and auto-scrolls) outside the editor bounds.
                             onPointerDown: widget.readOnly
                                 ? null
                                 : (event) {
                                     if (event.kind == PointerDeviceKind.mouse &&
                                         event.buttons == kPrimaryButton) {
-                                      _selecting = true;
                                       _suppressImeAttach = false;
                                       _focusNode.requestFocus();
                                       _attachIme();
                                       _scheduleAttachIme();
-                                      _gestures.handleDragStart(
-                                        event.localPosition,
+                                      _beginSelectionDrag(
+                                        event,
+                                        fromMouse: true,
                                       );
                                     }
                                   },
-                            onPointerMove: widget.readOnly
-                                ? null
-                                : (event) {
-                                    if (!_selecting) return;
-                                    if (event.kind == PointerDeviceKind.mouse &&
-                                        event.buttons == kPrimaryButton) {
-                                      _gestures.handleDragUpdate(
-                                        event.localPosition,
-                                        selecting: true,
-                                      );
-                                    }
-                                  },
-                            onPointerUp: (_) => _selecting = false,
-                            onPointerCancel: (_) => _selecting = false,
                             child: GestureDetector(
                               behavior: HitTestBehavior.translucent,
                               onTapDown: (details) {
@@ -813,27 +942,33 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                               onLongPressStart: widget.readOnly
                                   ? null
                                   : (details) {
-                                      _selecting = true;
                                       // Selection without popping the IME until
                                       // the press ends (or a short tap follows).
                                       _suppressImeAttach = true;
                                       _focusNode.requestFocus();
+                                      _selecting = true;
+                                      _selectGlobal = details.globalPosition;
                                       _gestures.handleDragStart(
                                         details.localPosition,
                                       );
+                                      _scheduleSelectAutoScroll();
                                     },
                               onLongPressMoveUpdate: widget.readOnly
                                   ? null
                                   : (details) {
-                                      _gestures.handleDragUpdate(
-                                        details.localPosition,
-                                        selecting: true,
+                                      if (!_selecting) return;
+                                      _selectGlobal = details.globalPosition;
+                                      _applySelectionAtGlobal(
+                                        details.globalPosition,
                                       );
+                                      _scheduleSelectAutoScroll();
                                     },
                               onLongPressEnd: widget.readOnly
                                   ? null
                                   : (_) {
+                                      _selectGlobal = null;
                                       _selecting = false;
+                                      _selectAutoScrollScheduled = false;
                                       _suppressImeAttach = false;
                                       if (_focusNode.hasPrimaryFocus) {
                                         _attachIme();

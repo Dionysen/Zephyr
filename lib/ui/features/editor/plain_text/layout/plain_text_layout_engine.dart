@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' show BoxHeightStyle;
 
 import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart' show TextSelection;
@@ -217,35 +218,74 @@ class PlainTextLayoutEngine {
       final paraEnd = m.endOffset;
       final selStart = math.max(start, paraStart);
       final selEnd = math.min(end, paraEnd);
-      if (selStart >= selEnd && !(m.text.isEmpty && start <= paraStart && end > paraStart)) {
-        // Selection covering the newline after this paragraph still paints nothing here.
-        continue;
-      }
-      if (m.text.isEmpty) {
-        if (start <= paraStart && end > paraStart) {
+      final coversEmpty =
+          m.text.isEmpty && start <= paraStart && end > paraStart;
+      if (selStart >= selEnd && !coversEmpty) {
+        // Selection covering only the trailing newline still needs the gap.
+        if (end > paraEnd && m.gapAfter > 0 && start <= paraEnd) {
           boxes.add(
             Rect.fromLTWH(
               contentLeft,
-              m.yOffset,
-              4,
-              m.contentHeight,
+              m.yOffset + m.contentHeight,
+              math.max(4.0, _contentWidth),
+              m.gapAfter,
             ),
           );
         }
         continue;
       }
-      final localStart = selStart - paraStart;
-      final localEnd = selEnd - paraStart;
-      final textBoxes = m.painter.getBoxesForSelection(
-        TextSelection(baseOffset: localStart, extentOffset: localEnd),
-      );
-      for (final box in textBoxes) {
+
+      final paraBoxes = <Rect>[];
+      if (m.text.isEmpty) {
+        paraBoxes.add(
+          Rect.fromLTWH(
+            contentLeft,
+            m.yOffset,
+            4,
+            m.contentHeight,
+          ),
+        );
+      } else {
+        final localStart = selStart - paraStart;
+        final localEnd = selEnd - paraStart;
+        // Strut height matches forced line height so line leading is filled
+        // (tight boxes leave visible gaps between wrapped lines).
+        final textBoxes = m.painter.getBoxesForSelection(
+          TextSelection(baseOffset: localStart, extentOffset: localEnd),
+          boxHeightStyle: BoxHeightStyle.strut,
+        );
+        for (final box in textBoxes) {
+          paraBoxes.add(
+            Rect.fromLTRB(
+              contentLeft + box.left,
+              m.yOffset + box.top,
+              contentLeft + box.right,
+              m.yOffset + box.bottom,
+            ),
+          );
+        }
+      }
+      boxes.addAll(paraBoxes);
+
+      // Selection that continues past this paragraph's newline also owns the
+      // paragraph gap — otherwise a solid band splits between paragraphs.
+      if (end > paraEnd && m.gapAfter > 0) {
+        var left = contentLeft;
+        var right = contentLeft + 4;
+        if (paraBoxes.isNotEmpty) {
+          left = paraBoxes.first.left;
+          right = paraBoxes.first.right;
+          for (final box in paraBoxes) {
+            left = math.min(left, box.left);
+            right = math.max(right, box.right);
+          }
+        }
         boxes.add(
           Rect.fromLTRB(
-            contentLeft + box.left,
-            m.yOffset + box.top,
-            contentLeft + box.right,
-            m.yOffset + box.bottom,
+            left,
+            m.yOffset + m.contentHeight,
+            right,
+            m.yOffset + m.contentHeight + m.gapAfter,
           ),
         );
       }
