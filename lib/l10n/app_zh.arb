@@ -28,7 +28,60 @@
   "settingsComingSoonSubtitle": "此分组的设置项稍后加入",
   "settingsPlaceholderBody": "此设置分组将用于对应功能的选项",
   "settingsSectionGeneral": "通用",
-  "settingsSectionCloud": "备份",
+  "settingsSectionCloud": "备份与同步",
+  "backupGroupLocalTitle": "本地备份",
+  "backupGroupCloudTitle": "云同步",
+  "cloudSyncSubtitleSignedOut": "登录阿里云盘后即可云备份与多端同步",
+  "cloudSyncSubtitleSignedIn": "已登录：{name}",
+  "@cloudSyncSubtitleSignedIn": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncLoginTitle": "登录阿里云盘",
+  "cloudSyncLoginSubtitle": "扫码授权，无需 Zephyr 账号",
+  "cloudSyncLogoutTitle": "退出登录",
+  "cloudSyncLogoutSubtitle": "退出后停止云备份与自动同步",
+  "cloudSyncBackupNowTitle": "立即云备份",
+  "cloudSyncBackupNowSubtitle": "将当前书库上传到阿里云盘（保留历史备份）",
+  "cloudSyncBackupNowSuccess": "云备份已完成",
+  "cloudSyncRestoreTitle": "云备份恢复",
+  "cloudSyncRestoreSubtitle": "从阿里云盘选择备份，可覆盖或合并",
+  "cloudSyncRestoreEmpty": "云盘中尚未找到备份",
+  "cloudSyncRestoreSuccess": "已从云备份恢复",
+  "cloudSyncFailed": "云同步失败：{error}",
+  "@cloudSyncFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncAutoTitle": "自动同步",
+  "cloudSyncAutoSubtitle": "进入后台或回到前台时自动拉取合并并上传",
+  "cloudSyncLastSync": "上次同步：{time}",
+  "@cloudSyncLastSync": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncLastSyncNever": "尚未同步",
+  "cloudSyncQrTitle": "阿里云盘扫码登录",
+  "cloudSyncQrHint": "请使用阿里云盘 App 扫码并确认授权",
+  "cloudSyncQrWaiting": "等待扫码…",
+  "cloudSyncQrScanned": "已扫码，请在手机上确认",
+  "cloudSyncOpenInBrowser": "在浏览器打开",
+  "cloudSyncCredentialsTitle": "开放平台凭证",
+  "cloudSyncCredentialsSubtitle": "审核通过后填写 AppId / AppSecret（仅保存在本机）",
+  "cloudSyncCredentialsSave": "保存凭证",
+  "cloudSyncCredentialsSaved": "凭证已保存",
+  "cloudSyncCredentialsMissing": "请先填写阿里云盘开放平台 AppId 与 AppSecret",
+  "cloudSyncClientIdLabel": "AppId",
+  "cloudSyncClientSecretLabel": "AppSecret",
   "backupAutoTitle": "自动备份",
   "backupAutoSubtitle": "内容有变更且离开应用时写入 Backups/Auto，保留最近 50 份",
   "backupNowTitle": "立即备份",

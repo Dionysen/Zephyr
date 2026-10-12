@@ -94,7 +94,110 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsSectionGeneral => '通用';
 
   @override
-  String get settingsSectionCloud => '备份';
+  String get settingsSectionCloud => '备份与同步';
+
+  @override
+  String get backupGroupLocalTitle => '本地备份';
+
+  @override
+  String get backupGroupCloudTitle => '云同步';
+
+  @override
+  String get cloudSyncSubtitleSignedOut => '登录阿里云盘后即可云备份与多端同步';
+
+  @override
+  String cloudSyncSubtitleSignedIn(String name) {
+    return '已登录：$name';
+  }
+
+  @override
+  String get cloudSyncLoginTitle => '登录阿里云盘';
+
+  @override
+  String get cloudSyncLoginSubtitle => '扫码授权，无需 Zephyr 账号';
+
+  @override
+  String get cloudSyncLogoutTitle => '退出登录';
+
+  @override
+  String get cloudSyncLogoutSubtitle => '退出后停止云备份与自动同步';
+
+  @override
+  String get cloudSyncBackupNowTitle => '立即云备份';
+
+  @override
+  String get cloudSyncBackupNowSubtitle => '将当前书库上传到阿里云盘（保留历史备份）';
+
+  @override
+  String get cloudSyncBackupNowSuccess => '云备份已完成';
+
+  @override
+  String get cloudSyncRestoreTitle => '云备份恢复';
+
+  @override
+  String get cloudSyncRestoreSubtitle => '从阿里云盘选择备份，可覆盖或合并';
+
+  @override
+  String get cloudSyncRestoreEmpty => '云盘中尚未找到备份';
+
+  @override
+  String get cloudSyncRestoreSuccess => '已从云备份恢复';
+
+  @override
+  String cloudSyncFailed(String error) {
+    return '云同步失败：$error';
+  }
+
+  @override
+  String get cloudSyncAutoTitle => '自动同步';
+
+  @override
+  String get cloudSyncAutoSubtitle => '进入后台或回到前台时自动拉取合并并上传';
+
+  @override
+  String cloudSyncLastSync(String time) {
+    return '上次同步：$time';
+  }
+
+  @override
+  String get cloudSyncLastSyncNever => '尚未同步';
+
+  @override
+  String get cloudSyncQrTitle => '阿里云盘扫码登录';
+
+  @override
+  String get cloudSyncQrHint => '请使用阿里云盘 App 扫码并确认授权';
+
+  @override
+  String get cloudSyncQrWaiting => '等待扫码…';
+
+  @override
+  String get cloudSyncQrScanned => '已扫码，请在手机上确认';
+
+  @override
+  String get cloudSyncOpenInBrowser => '在浏览器打开';
+
+  @override
+  String get cloudSyncCredentialsTitle => '开放平台凭证';
+
+  @override
+  String get cloudSyncCredentialsSubtitle =>
+      '审核通过后填写 AppId / AppSecret（仅保存在本机）';
+
+  @override
+  String get cloudSyncCredentialsSave => '保存凭证';
+
+  @override
+  String get cloudSyncCredentialsSaved => '凭证已保存';
+
+  @override
+  String get cloudSyncCredentialsMissing => '请先填写阿里云盘开放平台 AppId 与 AppSecret';
+
+  @override
+  String get cloudSyncClientIdLabel => 'AppId';
+
+  @override
+  String get cloudSyncClientSecretLabel => 'AppSecret';
 
   @override
   String get backupAutoTitle => '自动备份';

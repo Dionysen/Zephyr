@@ -941,6 +941,9 @@ class FakeLibraryRepository implements WritingLibraryRepository {
   }) async {}
   @override
   Future<void> pruneAutomaticBackups({int keep = 50}) async {}
+
+  @override
+  Future<String> ensureCloudLibraryId() async => 'test-cloud-library-id';
 }
 
 class FakeLayoutRepository implements WorkspaceLayoutRepository {

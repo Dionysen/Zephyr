@@ -1296,6 +1296,30 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     await _store.backups.pruneAutomaticBackups(_libraryRoot, keep: keep);
   }
 
+  static const _cloudLibraryIdKey = 'cloud_library_id';
+
+  @override
+  Future<String> ensureCloudLibraryId() async {
+    final db = _store.database;
+    final rows = await db.query(
+      'ZephyrMeta',
+      columns: ['value'],
+      where: 'key = ?',
+      whereArgs: [_cloudLibraryIdKey],
+      limit: 1,
+    );
+    if (rows.isNotEmpty) {
+      final value = rows.first['value'] as String?;
+      if (value != null && value.isNotEmpty) return value;
+    }
+    final id = _uuid.v4();
+    await db.insert('ZephyrMeta', {
+      'key': _cloudLibraryIdKey,
+      'value': id,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    return id;
+  }
+
   @override
   Future<void> restoreBackup({
     required BackupEntry entry,

@@ -122,8 +122,12 @@ class _WorkspacePageState extends State<WorkspacePage>
       // Auto-backup only on paused (not inactive) to avoid double work and
       // competing with the system transition animation.
       if (mounted && state == AppLifecycleState.paused) {
-        unawaited(ZephyrScope.of(context).backup.maybeAutoBackupOnLeave());
+        final scope = ZephyrScope.of(context);
+        unawaited(scope.backup.maybeAutoBackupOnLeave());
+        unawaited(scope.cloudSync.maybeAutoSync());
       }
+    } else if (mounted && state == AppLifecycleState.resumed) {
+      unawaited(ZephyrScope.of(context).cloudSync.maybeAutoSync());
     }
   }
 

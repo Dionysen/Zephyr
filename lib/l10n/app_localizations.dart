@@ -269,8 +269,200 @@ abstract class AppLocalizations {
   /// No description provided for @settingsSectionCloud.
   ///
   /// In en, this message translates to:
-  /// **'Backup'**
+  /// **'Backup & sync'**
   String get settingsSectionCloud;
+
+  /// No description provided for @backupGroupLocalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local backup'**
+  String get backupGroupLocalTitle;
+
+  /// No description provided for @backupGroupCloudTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud sync'**
+  String get backupGroupCloudTitle;
+
+  /// No description provided for @cloudSyncSubtitleSignedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with Aliyun Drive for cloud backup and sync'**
+  String get cloudSyncSubtitleSignedOut;
+
+  /// No description provided for @cloudSyncSubtitleSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in as {name}'**
+  String cloudSyncSubtitleSignedIn(String name);
+
+  /// No description provided for @cloudSyncLoginTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to Aliyun Drive'**
+  String get cloudSyncLoginTitle;
+
+  /// No description provided for @cloudSyncLoginSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan to authorize — no Zephyr account'**
+  String get cloudSyncLoginSubtitle;
+
+  /// No description provided for @cloudSyncLogoutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get cloudSyncLogoutTitle;
+
+  /// No description provided for @cloudSyncLogoutSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stops cloud backup and automatic sync'**
+  String get cloudSyncLogoutSubtitle;
+
+  /// No description provided for @cloudSyncBackupNowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Back up to cloud now'**
+  String get cloudSyncBackupNowTitle;
+
+  /// No description provided for @cloudSyncBackupNowSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload this library to Aliyun Drive (keeps history)'**
+  String get cloudSyncBackupNowSubtitle;
+
+  /// No description provided for @cloudSyncBackupNowSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud backup completed.'**
+  String get cloudSyncBackupNowSuccess;
+
+  /// No description provided for @cloudSyncRestoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore from cloud'**
+  String get cloudSyncRestoreTitle;
+
+  /// No description provided for @cloudSyncRestoreSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a backup from Aliyun Drive — overwrite or merge'**
+  String get cloudSyncRestoreSubtitle;
+
+  /// No description provided for @cloudSyncRestoreEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No cloud backups found.'**
+  String get cloudSyncRestoreEmpty;
+
+  /// No description provided for @cloudSyncRestoreSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Library restored from cloud backup.'**
+  String get cloudSyncRestoreSuccess;
+
+  /// No description provided for @cloudSyncFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud sync failed: {error}'**
+  String cloudSyncFailed(String error);
+
+  /// No description provided for @cloudSyncAutoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic sync'**
+  String get cloudSyncAutoTitle;
+
+  /// No description provided for @cloudSyncAutoSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'On pause or resume, merge newer cloud changes then upload'**
+  String get cloudSyncAutoSubtitle;
+
+  /// No description provided for @cloudSyncLastSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Last sync: {time}'**
+  String cloudSyncLastSync(String time);
+
+  /// No description provided for @cloudSyncLastSyncNever.
+  ///
+  /// In en, this message translates to:
+  /// **'Not synced yet'**
+  String get cloudSyncLastSyncNever;
+
+  /// No description provided for @cloudSyncQrTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan to sign in'**
+  String get cloudSyncQrTitle;
+
+  /// No description provided for @cloudSyncQrHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the Aliyun Drive app to scan and confirm'**
+  String get cloudSyncQrHint;
+
+  /// No description provided for @cloudSyncQrWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for scan…'**
+  String get cloudSyncQrWaiting;
+
+  /// No description provided for @cloudSyncQrScanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Scanned — confirm on your phone'**
+  String get cloudSyncQrScanned;
+
+  /// No description provided for @cloudSyncOpenInBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in browser'**
+  String get cloudSyncOpenInBrowser;
+
+  /// No description provided for @cloudSyncCredentialsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open platform credentials'**
+  String get cloudSyncCredentialsTitle;
+
+  /// No description provided for @cloudSyncCredentialsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'After approval, paste AppId / AppSecret (stored on this device only)'**
+  String get cloudSyncCredentialsSubtitle;
+
+  /// No description provided for @cloudSyncCredentialsSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save credentials'**
+  String get cloudSyncCredentialsSave;
+
+  /// No description provided for @cloudSyncCredentialsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Credentials saved'**
+  String get cloudSyncCredentialsSaved;
+
+  /// No description provided for @cloudSyncCredentialsMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Aliyun Drive AppId and AppSecret first'**
+  String get cloudSyncCredentialsMissing;
+
+  /// No description provided for @cloudSyncClientIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'AppId'**
+  String get cloudSyncClientIdLabel;
+
+  /// No description provided for @cloudSyncClientSecretLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'AppSecret'**
+  String get cloudSyncClientSecretLabel;
 
   /// No description provided for @backupAutoTitle.
   ///

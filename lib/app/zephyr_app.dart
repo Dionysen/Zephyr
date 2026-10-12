@@ -37,6 +37,7 @@ import '../ui/features/editor/view_models/library_view_model.dart';
 import '../ui/features/editor/view_models/quick_toolbar_view_model.dart';
 import '../ui/features/settings/view_models/backup_view_model.dart';
 import '../ui/features/settings/view_models/background_image_library.dart';
+import '../ui/features/settings/view_models/cloud_sync_view_model.dart';
 import '../ui/features/settings/view_models/font_library.dart';
 import '../ui/features/settings/view_models/keyboard_shortcuts_view_model.dart';
 import '../ui/features/settings/view_models/settings_view_model.dart';
@@ -87,6 +88,7 @@ void runZephyr(
           BackupPreferencesFileStorage(),
         ),
       )..load(),
+      cloudSync: CloudSyncViewModel(library: library)..load(),
     ),
   );
 }
@@ -101,6 +103,7 @@ class ZephyrApp extends StatelessWidget {
     required this.keyboardShortcuts,
     required this.settings,
     required this.backup,
+    required this.cloudSync,
   });
 
   final LibraryViewModel library;
@@ -110,6 +113,7 @@ class ZephyrApp extends StatelessWidget {
   final KeyboardShortcutsViewModel keyboardShortcuts;
   final SettingsViewModel settings;
   final BackupViewModel backup;
+  final CloudSyncViewModel cloudSync;
 
   @override
   Widget build(BuildContext context) => ZephyrScope(
@@ -120,6 +124,7 @@ class ZephyrApp extends StatelessWidget {
     keyboardShortcuts: keyboardShortcuts,
     settings: settings,
     backup: backup,
+    cloudSync: cloudSync,
     child: ListenableBuilder(
       listenable: theme,
       builder: (context, _) => MaterialApp(

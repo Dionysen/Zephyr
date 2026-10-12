@@ -126,4 +126,7 @@ abstract interface class WritingLibraryRepository {
     required RestoreMode mode,
   });
   Future<void> pruneAutomaticBackups({int keep = 50});
+
+  /// Stable id for cloud sync folders, stored in ZephyrMeta (created once).
+  Future<String> ensureCloudLibraryId();
 }

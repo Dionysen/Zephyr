@@ -491,6 +491,14 @@ void main() {
     expect(listed.any((item) => item.path == entry.path), isTrue);
   });
 
+  test('ensureCloudLibraryId is stable across calls', () async {
+    final repository = PureWriterWritingLibraryRepository(database);
+    final first = await repository.ensureCloudLibraryId();
+    final second = await repository.ensureCloudLibraryId();
+    expect(first, isNotEmpty);
+    expect(second, first);
+  });
+
   test('restoreHistory rewrites article content from History', () async {
     final repository = PureWriterWritingLibraryRepository(database);
     final article = await repository.createArticle(

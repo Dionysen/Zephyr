@@ -96,7 +96,115 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSectionGeneral => 'General';
 
   @override
-  String get settingsSectionCloud => 'Backup';
+  String get settingsSectionCloud => 'Backup & sync';
+
+  @override
+  String get backupGroupLocalTitle => 'Local backup';
+
+  @override
+  String get backupGroupCloudTitle => 'Cloud sync';
+
+  @override
+  String get cloudSyncSubtitleSignedOut =>
+      'Sign in with Aliyun Drive for cloud backup and sync';
+
+  @override
+  String cloudSyncSubtitleSignedIn(String name) {
+    return 'Signed in as $name';
+  }
+
+  @override
+  String get cloudSyncLoginTitle => 'Sign in to Aliyun Drive';
+
+  @override
+  String get cloudSyncLoginSubtitle => 'Scan to authorize — no Zephyr account';
+
+  @override
+  String get cloudSyncLogoutTitle => 'Sign out';
+
+  @override
+  String get cloudSyncLogoutSubtitle => 'Stops cloud backup and automatic sync';
+
+  @override
+  String get cloudSyncBackupNowTitle => 'Back up to cloud now';
+
+  @override
+  String get cloudSyncBackupNowSubtitle =>
+      'Upload this library to Aliyun Drive (keeps history)';
+
+  @override
+  String get cloudSyncBackupNowSuccess => 'Cloud backup completed.';
+
+  @override
+  String get cloudSyncRestoreTitle => 'Restore from cloud';
+
+  @override
+  String get cloudSyncRestoreSubtitle =>
+      'Pick a backup from Aliyun Drive — overwrite or merge';
+
+  @override
+  String get cloudSyncRestoreEmpty => 'No cloud backups found.';
+
+  @override
+  String get cloudSyncRestoreSuccess => 'Library restored from cloud backup.';
+
+  @override
+  String cloudSyncFailed(String error) {
+    return 'Cloud sync failed: $error';
+  }
+
+  @override
+  String get cloudSyncAutoTitle => 'Automatic sync';
+
+  @override
+  String get cloudSyncAutoSubtitle =>
+      'On pause or resume, merge newer cloud changes then upload';
+
+  @override
+  String cloudSyncLastSync(String time) {
+    return 'Last sync: $time';
+  }
+
+  @override
+  String get cloudSyncLastSyncNever => 'Not synced yet';
+
+  @override
+  String get cloudSyncQrTitle => 'Scan to sign in';
+
+  @override
+  String get cloudSyncQrHint => 'Use the Aliyun Drive app to scan and confirm';
+
+  @override
+  String get cloudSyncQrWaiting => 'Waiting for scan…';
+
+  @override
+  String get cloudSyncQrScanned => 'Scanned — confirm on your phone';
+
+  @override
+  String get cloudSyncOpenInBrowser => 'Open in browser';
+
+  @override
+  String get cloudSyncCredentialsTitle => 'Open platform credentials';
+
+  @override
+  String get cloudSyncCredentialsSubtitle =>
+      'After approval, paste AppId / AppSecret (stored on this device only)';
+
+  @override
+  String get cloudSyncCredentialsSave => 'Save credentials';
+
+  @override
+  String get cloudSyncCredentialsSaved => 'Credentials saved';
+
+  @override
+  String get cloudSyncCredentialsMissing =>
+      'Add Aliyun Drive AppId and AppSecret first';
+
+  @override
+  String get cloudSyncClientIdLabel => 'AppId';
+
+  @override
+  String get cloudSyncClientSecretLabel => 'AppSecret';
 
   @override
   String get backupAutoTitle => 'Automatic backup';

@@ -25,6 +25,7 @@ import 'package:zephyr/ui/features/editor/view_models/editor_preferences_view_mo
 import 'package:zephyr/ui/features/editor/view_models/library_view_model.dart';
 import 'package:zephyr/ui/features/editor/view_models/quick_toolbar_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/backup_view_model.dart';
+import 'package:zephyr/ui/features/settings/view_models/cloud_sync_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/font_library.dart';
 import 'package:zephyr/ui/features/settings/view_models/keyboard_shortcuts_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/settings_view_model.dart';
@@ -609,6 +610,7 @@ Widget _app({LibraryViewModel? library, bool needsLibrarySetup = false}) {
     library: library,
     preferencesRepository: _BackupPreferencesRepository(),
   );
+  final cloudSync = CloudSyncViewModel(library: library);
   return ZephyrScope(
     library: library,
     theme: theme,
@@ -617,6 +619,7 @@ Widget _app({LibraryViewModel? library, bool needsLibrarySetup = false}) {
     keyboardShortcuts: keyboardShortcuts,
     settings: settings,
     backup: backup,
+    cloudSync: cloudSync,
     child: MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -967,6 +970,9 @@ class _LibraryRepository implements WritingLibraryRepository {
 
   @override
   Future<void> pruneAutomaticBackups({int keep = 50}) async {}
+
+  @override
+  Future<String> ensureCloudLibraryId() async => 'test-cloud-library-id';
 }
 
 class _ThemeRepository implements ThemePreferencesRepository {
