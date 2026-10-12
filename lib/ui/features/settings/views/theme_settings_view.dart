@@ -282,6 +282,13 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
               icon: Icons.image_outlined,
               title: l10n.editorBackgroundSectionTitle,
               children: [
+                ZephyrSettingsSwitchTile(
+                  icon: Icons.wallpaper_outlined,
+                  title: l10n.editorBackgroundEnabledTitle,
+                  subtitle: l10n.editorBackgroundEnabledSubtitle,
+                  value: viewModel.ui.editorBackgroundEnabled,
+                  onChanged: viewModel.updateEditorBackgroundEnabled,
+                ),
                 _EditorBackgroundTile(
                   title: l10n.editorBackgroundLightTitle,
                   config: viewModel.ui.lightEditorBackground,
@@ -478,6 +485,13 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
+          ZephyrSettingsSwitchTile(
+            icon: Icons.wallpaper_outlined,
+            title: l10n.editorBackgroundEnabledTitle,
+            subtitle: l10n.editorBackgroundEnabledSubtitle,
+            value: viewModel.ui.editorBackgroundEnabled,
+            onChanged: viewModel.updateEditorBackgroundEnabled,
+          ),
           _EditorBackgroundTile(
             title: l10n.editorBackgroundLightTitle,
             config: viewModel.ui.lightEditorBackground,

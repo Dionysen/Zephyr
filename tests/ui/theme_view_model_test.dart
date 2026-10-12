@@ -259,6 +259,35 @@ void main() {
     expect(model.ui.darkEditorBackground, dark);
   });
 
+  test('editor background master switch hides without clearing configs', () {
+    final model = ThemeViewModel(_ThemeRepository());
+    const dark = EditorBackgroundConfig(
+      imagePath: '/tmp/dark.jpg',
+      fit: EditorBackgroundFit.cover,
+      opacity: 1,
+    );
+    model.updateEditorBackground(dark: true, config: dark);
+    expect(model.ui.editorBackgroundEnabled, isTrue);
+    expect(
+      model.ui.activeEditorBackgroundFor(dark: true),
+      dark,
+    );
+
+    model.updateEditorBackgroundEnabled(false);
+    expect(model.ui.editorBackgroundEnabled, isFalse);
+    expect(model.ui.darkEditorBackground, dark);
+    expect(
+      model.ui.activeEditorBackgroundFor(dark: true),
+      EditorBackgroundConfig.defaults,
+    );
+
+    model.updateEditorBackgroundEnabled(true);
+    expect(
+      model.ui.activeEditorBackgroundFor(dark: true),
+      dark,
+    );
+  });
+
   test('deleting a background image clears modes that reference it', () async {
     final backgrounds = BackgroundImageLibrary(_MemoryBackgroundRepository());
     final model = ThemeViewModel(

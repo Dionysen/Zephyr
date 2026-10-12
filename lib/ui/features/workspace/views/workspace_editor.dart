@@ -997,7 +997,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
             return empty;
           }
           return EditorBackgroundLayer(
-            config: themeVm.ui.editorBackgroundFor(
+            config: themeVm.ui.activeEditorBackgroundFor(
               dark: themeVm.isEffectivelyDark,
             ),
             child: empty,
@@ -1054,7 +1054,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
                 return editor;
               }
               return EditorBackgroundLayer(
-                config: themeVm.ui.editorBackgroundFor(
+                config: themeVm.ui.activeEditorBackgroundFor(
                   dark: themeVm.isEffectivelyDark,
                 ),
                 child: editor,

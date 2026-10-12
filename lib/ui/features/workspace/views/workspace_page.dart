@@ -181,7 +181,8 @@ class _WorkspacePageState extends State<WorkspacePage>
                 constraints.maxWidth * 0.88,
               );
               final immersive = immersiveStatusBar;
-              final editorBackground = scope.theme.ui.editorBackgroundFor(
+              final editorBackground =
+                  scope.theme.ui.activeEditorBackgroundFor(
                 dark: scope.theme.isEffectivelyDark,
               );
               final bleedEditorBackground = editorBackground.hasImage;
@@ -261,7 +262,8 @@ class _WorkspacePageState extends State<WorkspacePage>
               );
             }
 
-            final editorBackground = scope.theme.ui.editorBackgroundFor(
+            final editorBackground =
+                scope.theme.ui.activeEditorBackgroundFor(
               dark: scope.theme.isEffectivelyDark,
             );
             // Desktop: paint the writing-column image behind the title bar and
@@ -299,7 +301,7 @@ class _WorkspacePageState extends State<WorkspacePage>
                         ListenableBuilder(
                           listenable: scope.theme,
                           builder: (context, _) => EditorBackgroundLayer(
-                            config: scope.theme.ui.editorBackgroundFor(
+                            config: scope.theme.ui.activeEditorBackgroundFor(
                               dark: scope.theme.isEffectivelyDark,
                             ),
                             child: const SizedBox.expand(),
@@ -702,7 +704,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                   child: ListenableBuilder(
                     listenable: themeVm,
                     builder: (context, _) => EditorBackgroundLayer(
-                      config: themeVm.ui.editorBackgroundFor(
+                      config: themeVm.ui.activeEditorBackgroundFor(
                         dark: themeVm.isEffectivelyDark,
                       ),
                       child: const SizedBox.expand(),

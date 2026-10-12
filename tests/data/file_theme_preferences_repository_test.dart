@@ -65,6 +65,7 @@ void main() {
           immersiveStatusBar: true,
           hideStatusBarIcons: false,
           hideQuickToolbar: true,
+          editorBackgroundEnabled: false,
           localePreference: AppLocalePreference.system,
           mobileToolsOrder: ['settings', 'search'],
           lightEditorBackground: EditorBackgroundConfig(
@@ -110,6 +111,10 @@ void main() {
       expect(actual.ui.immersiveStatusBar, expected.ui.immersiveStatusBar);
       expect(actual.ui.hideStatusBarIcons, expected.ui.hideStatusBarIcons);
       expect(actual.ui.hideQuickToolbar, expected.ui.hideQuickToolbar);
+      expect(
+        actual.ui.editorBackgroundEnabled,
+        expected.ui.editorBackgroundEnabled,
+      );
       expect(actual.ui.localePreference, expected.ui.localePreference);
       expect(actual.ui.mobileToolsOrder, expected.ui.mobileToolsOrder);
       expect(
@@ -165,6 +170,10 @@ void main() {
     expect(
       appearance.ui.hideQuickToolbar,
       UiPreferences.defaults.hideQuickToolbar,
+    );
+    expect(
+      appearance.ui.editorBackgroundEnabled,
+      UiPreferences.defaults.editorBackgroundEnabled,
     );
     expect(appearance.ui.localePreference, UiPreferences.defaults.localePreference);
     expect(appearance.ui.fontFamily, UiPreferences.defaults.fontFamily);

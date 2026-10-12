@@ -1706,6 +1706,18 @@ abstract class AppLocalizations {
   /// **'Editor background image'**
   String get editorBackgroundSectionTitle;
 
+  /// No description provided for @editorBackgroundEnabledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use background image'**
+  String get editorBackgroundEnabledTitle;
+
+  /// No description provided for @editorBackgroundEnabledSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off to hide without clearing your picks'**
+  String get editorBackgroundEnabledSubtitle;
+
   /// No description provided for @themeColorsSectionTitle.
   ///
   /// In en, this message translates to:

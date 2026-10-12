@@ -298,6 +298,11 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
         'uiHideQuickToolbar',
         UiPreferences.defaults.hideQuickToolbar,
       ),
+      editorBackgroundEnabled: _bool(
+        values,
+        'uiEditorBackgroundEnabled',
+        UiPreferences.defaults.editorBackgroundEnabled,
+      ),
       localePreference: AppLocalePreference.fromStorage(
         values['uiLocale'] as String?,
       ),
@@ -319,6 +324,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'uiImmersiveStatusBar': ui.immersiveStatusBar,
     'uiHideStatusBarIcons': ui.hideStatusBarIcons,
     'uiHideQuickToolbar': ui.hideQuickToolbar,
+    'uiEditorBackgroundEnabled': ui.editorBackgroundEnabled,
     'uiLocale': ui.localePreference.storageValue,
     'uiMobileToolsOrder': ui.mobileToolsOrder,
     ..._writeEditorBackground(ui.lightEditorBackground, 'light'),

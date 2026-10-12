@@ -840,6 +840,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get editorBackgroundSectionTitle => '编辑器背景图片';
 
   @override
+  String get editorBackgroundEnabledTitle => '使用背景图片';
+
+  @override
+  String get editorBackgroundEnabledSubtitle => '关闭后暂不显示，已选图片会保留';
+
+  @override
   String get themeColorsSectionTitle => '主题颜色';
 
   @override

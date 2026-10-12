@@ -34,6 +34,7 @@ class UiPreferences {
     required this.immersiveStatusBar,
     required this.hideStatusBarIcons,
     required this.hideQuickToolbar,
+    required this.editorBackgroundEnabled,
     required this.localePreference,
     this.mobileToolsOrder = const [],
     this.lightEditorBackground = EditorBackgroundConfig.defaults,
@@ -54,6 +55,7 @@ class UiPreferences {
     immersiveStatusBar: true,
     hideStatusBarIcons: true,
     hideQuickToolbar: false,
+    editorBackgroundEnabled: true,
     localePreference: AppLocalePreference.system,
     mobileToolsOrder: [],
   );
@@ -101,6 +103,10 @@ class UiPreferences {
   /// When true, the IME quick input toolbar above the soft keyboard is hidden.
   final bool hideQuickToolbar;
 
+  /// Master switch for writing-column background images. When false, stored
+  /// light/dark configs are kept but not painted.
+  final bool editorBackgroundEnabled;
+
   /// App UI language: system, Simplified Chinese, or English.
   final AppLocalePreference localePreference;
 
@@ -117,8 +123,17 @@ class UiPreferences {
 
   double get scale => fontSize / referenceFontSize;
 
+  /// Stored config for [dark] (ignores [editorBackgroundEnabled]).
   EditorBackgroundConfig editorBackgroundFor({required bool dark}) =>
       dark ? darkEditorBackground : lightEditorBackground;
+
+  /// Config the workspace should paint — empty when the master switch is off.
+  EditorBackgroundConfig activeEditorBackgroundFor({required bool dark}) {
+    if (!editorBackgroundEnabled) {
+      return EditorBackgroundConfig.defaults;
+    }
+    return editorBackgroundFor(dark: dark);
+  }
 
   UiPreferences copyWith({
     String? fontFamily,
@@ -133,6 +148,7 @@ class UiPreferences {
     bool? immersiveStatusBar,
     bool? hideStatusBarIcons,
     bool? hideQuickToolbar,
+    bool? editorBackgroundEnabled,
     AppLocalePreference? localePreference,
     List<String>? mobileToolsOrder,
     EditorBackgroundConfig? lightEditorBackground,
@@ -151,6 +167,8 @@ class UiPreferences {
     immersiveStatusBar: immersiveStatusBar ?? this.immersiveStatusBar,
     hideStatusBarIcons: hideStatusBarIcons ?? this.hideStatusBarIcons,
     hideQuickToolbar: hideQuickToolbar ?? this.hideQuickToolbar,
+    editorBackgroundEnabled:
+        editorBackgroundEnabled ?? this.editorBackgroundEnabled,
     localePreference: localePreference ?? this.localePreference,
     mobileToolsOrder: mobileToolsOrder ?? this.mobileToolsOrder,
     lightEditorBackground:

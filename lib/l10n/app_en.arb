@@ -352,6 +352,8 @@
   },
   "fontDeleteDialogBodyCompact": "Remove it from the app font library to free space?",
   "editorBackgroundSectionTitle": "Editor background image",
+  "editorBackgroundEnabledTitle": "Use background image",
+  "editorBackgroundEnabledSubtitle": "Turn off to hide without clearing your picks",
   "themeColorsSectionTitle": "Theme colors",
   "editorBackgroundLightTitle": "Light background",
   "editorBackgroundDarkTitle": "Dark background",

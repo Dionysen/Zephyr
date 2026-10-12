@@ -889,6 +889,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editorBackgroundSectionTitle => 'Editor background image';
 
   @override
+  String get editorBackgroundEnabledTitle => 'Use background image';
+
+  @override
+  String get editorBackgroundEnabledSubtitle =>
+      'Turn off to hide without clearing your picks';
+
+  @override
   String get themeColorsSectionTitle => 'Theme colors';
 
   @override

@@ -354,6 +354,9 @@ class ThemeViewModel extends ChangeNotifier {
   void updateHideQuickToolbar(bool value) =>
       _updateUi(_ui.copyWith(hideQuickToolbar: value));
 
+  void updateEditorBackgroundEnabled(bool value) =>
+      _updateUi(_ui.copyWith(editorBackgroundEnabled: value));
+
   void updateLocalePreference(AppLocalePreference value) =>
       _updateUi(_ui.copyWith(localePreference: value));
 

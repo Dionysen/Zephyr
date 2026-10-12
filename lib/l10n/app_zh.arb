@@ -331,6 +331,8 @@
   "fontDeleteDialogBody": "从应用字体库中移除“{family}”以释放空间？",
   "fontDeleteDialogBodyCompact": "从应用字体库中移除以释放空间？",
   "editorBackgroundSectionTitle": "编辑器背景图片",
+  "editorBackgroundEnabledTitle": "使用背景图片",
+  "editorBackgroundEnabledSubtitle": "关闭后暂不显示，已选图片会保留",
   "themeColorsSectionTitle": "主题颜色",
   "editorBackgroundLightTitle": "亮色背景",
   "editorBackgroundDarkTitle": "暗色背景",
