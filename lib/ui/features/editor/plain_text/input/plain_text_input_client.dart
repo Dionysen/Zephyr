@@ -49,6 +49,9 @@ class PlainTextInputClient with TextInputClient, DeltaTextInputClient {
   /// Echoing every IME compose update breaks Chinese IMEs on Windows.
   TextEditingValue? _lastKnownRemoteValue;
   _PairCaretLock? _pairCaretLock;
+  /// Last size/transform pushed to the platform (avoids redundant channel spam).
+  Size? _lastEditableSize;
+  Matrix4? _lastEditableTransform;
 
   bool get attached => _connection?.attached ?? false;
 
@@ -86,6 +89,8 @@ class PlainTextInputClient with TextInputClient, DeltaTextInputClient {
     _connection = null;
     _viewId = null;
     _lastKnownRemoteValue = null;
+    _lastEditableSize = null;
+    _lastEditableTransform = null;
   }
 
   /// Hides the soft keyboard without closing the text-input connection.
@@ -101,6 +106,7 @@ class PlainTextInputClient with TextInputClient, DeltaTextInputClient {
     _connection!.show();
     markImeDirty();
     syncImeIfNeeded();
+    syncImeGeometry();
   }
 
   void markImeDirty() => _imeDirty = true;
@@ -109,17 +115,14 @@ class PlainTextInputClient with TextInputClient, DeltaTextInputClient {
     if (!_imeDirty || !attached) return;
     final local = controller.editingValue;
     // Same guard as EditableText._updateRemoteEditingValueIfNeeded.
-    if (local == _lastKnownRemoteValue) {
-      _imeDirty = false;
-      return;
-    }
-    _connection!.setEditingState(local);
-    _lastKnownRemoteValue = local;
-    final caret = engine.caretRectForOffset(local.selection.extentOffset);
-    if (caret != null) {
-      _connection!.setCaretRect(caret);
+    if (local != _lastKnownRemoteValue) {
+      _connection!.setEditingState(local);
+      _lastKnownRemoteValue = local;
     }
     _imeDirty = false;
+    // Editing-state equality must not skip geometry: Chinese IMEs place the
+    // candidate window from caret/composing rects, which move on scroll.
+    syncImeGeometry();
   }
 
   void _acknowledgeRemoteValue(TextEditingValue value) {
@@ -127,9 +130,63 @@ class PlainTextInputClient with TextInputClient, DeltaTextInputClient {
     _imeDirty = false;
   }
 
+  /// Push editable size/transform in the same local space as caret rects.
+  ///
+  /// Prefer the document body [RenderBox] (not the outer scroll viewport):
+  /// [PlainTextLayoutEngine.caretRectForOffset] is document-local, and the
+  /// body's transform already includes scroll + header translation.
   void updateSizeAndTransform(Size size, Matrix4 transform) {
     if (!attached) return;
+    if (_lastEditableSize == size &&
+        _lastEditableTransform != null &&
+        _matrixAlmostEqual(_lastEditableTransform!, transform)) {
+      return;
+    }
+    _lastEditableSize = size;
+    _lastEditableTransform = Matrix4.copy(transform);
     _connection!.setEditableSizeAndTransform(size, transform);
+  }
+
+  /// Report caret + composing rects so the platform IME candidate window
+  /// tracks the insertion point (required for Chinese/Japanese IMEs).
+  void syncImeGeometry() {
+    if (!attached) return;
+    final local = controller.editingValue;
+    final selection = local.selection;
+    if (!selection.isValid) return;
+
+    // Match EditableText: use selection.start so directional selections still
+    // anchor the candidate menu at the next insertion point.
+    final caretOffset = selection.start;
+    final caret = engine.caretRectForOffset(caretOffset);
+    if (caret != null) {
+      _connection!.setCaretRect(caret);
+    }
+
+    final composing = local.composing;
+    Rect? composingRect;
+    if (composing.isValid && !composing.isCollapsed) {
+      final boxes = engine.boxesForRange(composing.start, composing.end);
+      if (boxes.isNotEmpty) {
+        composingRect = boxes.reduce((a, b) => a.expandToInclude(b));
+      }
+    }
+    // Fallback to caret (EditableText does the same before marked text exists).
+    composingRect ??= caret ?? engine.caretRectForOffset(
+          composing.isValid ? composing.start : caretOffset,
+        );
+    if (composingRect != null) {
+      _connection!.setComposingRect(composingRect);
+    }
+  }
+
+  static bool _matrixAlmostEqual(Matrix4 a, Matrix4 b) {
+    final aa = a.storage;
+    final bb = b.storage;
+    for (var i = 0; i < 16; i++) {
+      if ((aa[i] - bb[i]).abs() > 0.01) return false;
+    }
+    return true;
   }
 
   /// Hold the caret between a just-inserted pair so the IME cannot yank it
@@ -469,6 +526,8 @@ class PlainTextInputClient with TextInputClient, DeltaTextInputClient {
     _connection = null;
     _viewId = null;
     _lastKnownRemoteValue = null;
+    _lastEditableSize = null;
+    _lastEditableTransform = null;
   }
 
   @override

@@ -1470,6 +1470,7 @@ class WorkspaceHeader extends StatelessWidget {
     this.showSidebarToggle = false,
     this.onOpenMenu,
     this.showDocumentTitle = true,
+    this.transparent = false,
   });
 
   static double get height => WindowChrome.titleBarHeight;
@@ -1485,6 +1486,10 @@ class WorkspaceHeader extends StatelessWidget {
   /// chrome copy. When true, animate it into the title bar.
   final bool showDocumentTitle;
 
+  /// When true, let a host-painted editor background show through (desktop
+  /// full-bleed under the title bar).
+  final bool transparent;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -1495,7 +1500,7 @@ class WorkspaceHeader extends StatelessWidget {
         ? WindowChrome.leadingChromeInset
         : 0.0;
     return Material(
-      color: theme.colorScheme.surface,
+      color: transparent ? Colors.transparent : theme.colorScheme.surface,
       child: SizedBox(
         height: height,
         child: Stack(

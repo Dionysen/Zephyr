@@ -92,6 +92,8 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   TextSelection _lastSelection = const TextSelection.collapsed(offset: 0);
   double _lastKeyboardInset = 0;
   double _lastEffectiveBottomInset = 0;
+  /// True while a post-frame IME geometry pump is scheduled (avoid stacking).
+  bool _imeGeometryPumpActive = false;
 
   @override
   void initState() {
@@ -263,8 +265,24 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
 
   void _onScroll() {
     setState(() {});
-    _inputClient?.markImeDirty();
-    _inputClient?.syncImeIfNeeded();
+    // Scroll moves the document body transform; push IME geometry immediately
+    // so Chinese candidate windows track the caret while composing.
+    _syncImeGeometryToPlatform();
+  }
+
+  /// Report document-body size/transform + caret/composing rects to the IME.
+  ///
+  /// Must use the body stack (same space as [PlainTextLayoutEngine] caret
+  /// rects), not the outer viewport — otherwise the candidate window sits at
+  /// the wrong place (ignores header/scroll).
+  void _syncImeGeometryToPlatform() {
+    final client = _inputClient;
+    if (client == null || !client.attached) return;
+    final box =
+        _documentStackKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    client.updateSizeAndTransform(box.size, box.getTransformTo(null));
+    client.syncImeGeometry();
   }
 
   void _onFocusChange() {
@@ -301,10 +319,32 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     _inputClient?.markImeDirty();
     _inputClient?.syncImeIfNeeded();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _focusNode.hasPrimaryFocus) {
-        _ensureCaretVisible();
-      }
+      if (!mounted || !_focusNode.hasPrimaryFocus) return;
+      _syncImeGeometryToPlatform();
+      _ensureCaretVisible();
+      // EditableText keeps pushing composing/caret rects every frame while
+      // attached — needed so CJK candidate windows stay on the caret.
+      _scheduleImeGeometryPump();
     });
+  }
+
+  /// While the body IME is attached, refresh geometry each frame (scroll,
+  /// keyboard inset, and compose updates all move the candidate anchor).
+  void _scheduleImeGeometryPump() {
+    if (_imeGeometryPumpActive) return;
+    _imeGeometryPumpActive = true;
+    void pump(Duration _) {
+      if (!mounted ||
+          !_focusNode.hasPrimaryFocus ||
+          _inputClient?.attached != true) {
+        _imeGeometryPumpActive = false;
+        return;
+      }
+      _syncImeGeometryToPlatform();
+      WidgetsBinding.instance.addPostFrameCallback(pump);
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback(pump);
   }
 
   /// [FocusNode.requestFocus] only becomes primary on a microtask — schedule
@@ -655,14 +695,8 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _measureHeader();
           if (!bodyFocused) return;
-          final box = context.findRenderObject() as RenderBox?;
-          if (box != null && box.hasSize) {
-            _inputClient?.updateSizeAndTransform(
-              box.size,
-              box.getTransformTo(null),
-            );
-            _inputClient?.syncImeIfNeeded();
-          }
+          _inputClient?.syncImeIfNeeded();
+          _syncImeGeometryToPlatform();
         });
 
         final selection = widget.controller.selection;

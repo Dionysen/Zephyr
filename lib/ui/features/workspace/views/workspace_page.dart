@@ -261,6 +261,13 @@ class _WorkspacePageState extends State<WorkspacePage>
               );
             }
 
+            final editorBackground = scope.theme.ui.editorBackgroundFor(
+              dark: scope.theme.isEffectivelyDark,
+            );
+            // Desktop: paint the writing-column image behind the title bar and
+            // under the resize grip so expanding the sidebar does not leave a
+            // solid strip beside the photo.
+            final bleedEditorBackground = editorBackground.hasImage;
             final workspace = Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -284,30 +291,60 @@ class _WorkspacePageState extends State<WorkspacePage>
                     ),
                   ),
                 ),
-                if (model.isSidebarExpanded)
-                  SidebarResizeHandle(
-                    model: model,
-                    maxWidth: _maxSidebarWidth(constraints.maxWidth),
-                  ),
                 Expanded(
-                  child: Column(
+                  child: Stack(
+                    fit: StackFit.expand,
                     children: [
-                      if (model.needsLibrarySetup)
-                        _LibrarySetupBanner(openLibrary: _openLibrary),
-                      WorkspaceHeader(
-                        model: model,
-                        showSidebarToggle: !model.isSidebarExpanded,
-                        showDocumentTitle: _showTitleInChrome,
-                      ),
-                      Expanded(
-                        child: WorkspaceEditor(
-                          model: model,
-                          preferences: scope.editorPreferences,
-                          onDocumentTitleObscured: (obscured) {
-                            if (_showTitleInChrome == obscured) return;
-                            setState(() => _showTitleInChrome = obscured);
-                          },
+                      if (bleedEditorBackground)
+                        ListenableBuilder(
+                          listenable: scope.theme,
+                          builder: (context, _) => EditorBackgroundLayer(
+                            config: scope.theme.ui.editorBackgroundFor(
+                              dark: scope.theme.isEffectivelyDark,
+                            ),
+                            child: const SizedBox.expand(),
+                          ),
                         ),
+                      Column(
+                        children: [
+                          if (model.needsLibrarySetup)
+                            _LibrarySetupBanner(openLibrary: _openLibrary),
+                          WorkspaceHeader(
+                            model: model,
+                            showSidebarToggle: !model.isSidebarExpanded,
+                            showDocumentTitle: _showTitleInChrome,
+                            transparent: bleedEditorBackground,
+                          ),
+                          Expanded(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (model.isSidebarExpanded)
+                                  SidebarResizeHandle(
+                                    model: model,
+                                    maxWidth: _maxSidebarWidth(
+                                      constraints.maxWidth,
+                                    ),
+                                  ),
+                                Expanded(
+                                  child: WorkspaceEditor(
+                                    model: model,
+                                    preferences: scope.editorPreferences,
+                                    showBackground: !bleedEditorBackground,
+                                    onDocumentTitleObscured: (obscured) {
+                                      if (_showTitleInChrome == obscured) {
+                                        return;
+                                      }
+                                      setState(
+                                        () => _showTitleInChrome = obscured,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
