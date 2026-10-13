@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as path;
 import 'package:zephyr/data/services/purewriter_backup.dart';
 import 'package:zephyr/domain/models/library_backup.dart';
 
@@ -12,11 +13,11 @@ void main() {
   });
 
   test('backup listing separates manual and automatic files and sorts newest first', () async {
-    final backups = Directory('${directory.path}/Backups');
-    final auto = Directory('${backups.path}/Auto');
+    final backups = Directory(path.join(directory.path, 'Backups'));
+    final auto = Directory(path.join(backups.path, 'Auto'));
     await auto.create(recursive: true);
-    final manual = File('${backups.path}/manual.pwb');
-    final automatic = File('${auto.path}/automatic.PWB');
+    final manual = File(path.join(backups.path, 'manual.pwb'));
+    final automatic = File(path.join(auto.path, 'automatic.PWB'));
     await manual.writeAsString('manual');
     await automatic.writeAsString('auto');
     await File('${auto.path}/ignore.txt').writeAsString('ignore');

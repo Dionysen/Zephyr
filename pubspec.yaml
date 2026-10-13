@@ -51,7 +51,7 @@ dependencies:
   flutter_svg: ^2.3.0
   http: ^1.6.0
   flutter_secure_storage: ^11.2.0
-  qr_flutter: ^4.1.0
+  xml: ^7.0.1
   plain_text_editor:
     path: packages/plain_text_editor
   text_editor_foundation:

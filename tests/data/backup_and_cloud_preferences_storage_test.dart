@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zephyr/data/services/aliyun_drive_config.dart';
 import 'package:zephyr/data/services/backup_preferences_file_storage.dart';
 import 'package:zephyr/data/services/cloud_sync_preferences_storage.dart';
 import 'package:zephyr/domain/models/library_backup.dart';
@@ -51,23 +50,6 @@ void main() {
           .writeAsString('[]');
       final recovered = await storage.load();
       expect(recovered.toJson(), CloudSyncPreferences.defaults.toJson());
-    },
-  );
-
-  test(
-    'stored Aliyun credentials override configured fallback independently',
-    () {
-      const config = AliyunDriveConfig(
-        dartDefineClientId: 'defined-id',
-        dartDefineClientSecret: 'defined-secret',
-      );
-      final actual = config.fromStored(
-        storedClientId: 'stored-id',
-        storedClientSecret: '',
-      );
-      expect(actual.clientId, 'stored-id');
-      expect(actual.clientSecret, 'defined-secret');
-      expect(actual.isConfigured, isTrue);
     },
   );
 }

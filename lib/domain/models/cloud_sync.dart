@@ -1,68 +1,38 @@
-/// Aliyun Drive (or future provider) session used for cloud sync.
+/// WebDAV credentials kept in secure storage on this device.
 class CloudSyncSession {
   const CloudSyncSession({
-    required this.accessToken,
-    required this.refreshToken,
-    required this.expiresAt,
-    required this.driveId,
-    this.displayName = '',
-    this.avatarUrl = '',
+    required this.serverUrl,
+    required this.username,
+    required this.appPassword,
   });
 
-  final String accessToken;
-  final String refreshToken;
-  final DateTime expiresAt;
-  final String driveId;
-  final String displayName;
-  final String avatarUrl;
-
-  bool get isAccessTokenFresh =>
-      DateTime.now().isBefore(expiresAt.subtract(const Duration(minutes: 2)));
-
-  CloudSyncSession copyWith({
-    String? accessToken,
-    String? refreshToken,
-    DateTime? expiresAt,
-    String? driveId,
-    String? displayName,
-    String? avatarUrl,
-  }) => CloudSyncSession(
-    accessToken: accessToken ?? this.accessToken,
-    refreshToken: refreshToken ?? this.refreshToken,
-    expiresAt: expiresAt ?? this.expiresAt,
-    driveId: driveId ?? this.driveId,
-    displayName: displayName ?? this.displayName,
-    avatarUrl: avatarUrl ?? this.avatarUrl,
-  );
+  final String serverUrl;
+  final String username;
+  final String appPassword;
 
   Map<String, Object?> toJson() => {
-    'accessToken': accessToken,
-    'refreshToken': refreshToken,
-    'expiresAt': expiresAt.millisecondsSinceEpoch,
-    'driveId': driveId,
-    'displayName': displayName,
-    'avatarUrl': avatarUrl,
+    'serverUrl': serverUrl,
+    'username': username,
+    'appPassword': appPassword,
   };
 
   static CloudSyncSession? fromJson(Map<String, dynamic>? map) {
     if (map == null) return null;
-    final access = map['accessToken'] as String?;
-    final refresh = map['refreshToken'] as String?;
-    final expires = map['expiresAt'];
-    final driveId = map['driveId'] as String?;
-    if (access == null ||
-        refresh == null ||
-        driveId == null ||
-        expires is! int) {
+    final url = map['serverUrl'] as String?;
+    final username = map['username'] as String?;
+    final password = map['appPassword'] as String?;
+    if (url == null ||
+        username == null ||
+        password == null ||
+        url.isEmpty ||
+        username.isEmpty ||
+        password.isEmpty) {
       return null;
     }
     return CloudSyncSession(
-      accessToken: access,
-      refreshToken: refresh,
-      expiresAt: DateTime.fromMillisecondsSinceEpoch(expires),
-      driveId: driveId,
-      displayName: map['displayName'] as String? ?? '',
-      avatarUrl: map['avatarUrl'] as String? ?? '',
+      serverUrl: url,
+      username: username,
+      appPassword: password,
     );
   }
 }
@@ -112,7 +82,9 @@ class CloudSyncPreferences {
     final remote = map['lastRemoteUpdatedAt'];
     return CloudSyncPreferences(
       autoSyncEnabled: map['autoSyncEnabled'] as bool? ?? true,
-      lastSyncAt: last is int ? DateTime.fromMillisecondsSinceEpoch(last) : null,
+      lastSyncAt: last is int
+          ? DateTime.fromMillisecondsSinceEpoch(last)
+          : null,
       lastSyncLibraryId: map['lastSyncLibraryId'] as String?,
       lastRemoteUpdatedAt: remote is int
           ? DateTime.fromMillisecondsSinceEpoch(remote)
@@ -121,7 +93,7 @@ class CloudSyncPreferences {
   }
 }
 
-/// Manifest stored next to `library.pwb` on the user's Aliyun Drive.
+/// Manifest stored next to `library.pwb` on WebDAV.
 class CloudSyncManifest {
   const CloudSyncManifest({
     required this.libraryId,
@@ -173,34 +145,4 @@ class CloudBackupEntry {
   final String fileName;
   final DateTime modified;
   final int sizeBytes;
-}
-
-/// Open-platform AppId/Secret used by the Aliyun Drive client.
-class AliyunDriveAppCredentials {
-  const AliyunDriveAppCredentials({
-    required this.clientId,
-    required this.clientSecret,
-  });
-
-  final String clientId;
-  final String clientSecret;
-
-  bool get isConfigured => clientId.isNotEmpty && clientSecret.isNotEmpty;
-}
-
-/// QR login challenge returned by Aliyun Drive OpenAPI.
-class AliyunDriveQrChallenge {
-  const AliyunDriveQrChallenge({required this.sid, required this.qrCodeUrl});
-
-  final String sid;
-  final String qrCodeUrl;
-}
-
-enum AliyunDriveQrStatus { waiting, scanned, success, expired, failed }
-
-class AliyunDriveQrPollResult {
-  const AliyunDriveQrPollResult({required this.status, this.authCode});
-
-  final AliyunDriveQrStatus status;
-  final String? authCode;
 }

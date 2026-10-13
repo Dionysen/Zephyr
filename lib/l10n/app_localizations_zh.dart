@@ -103,7 +103,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupGroupCloudTitle => '云同步';
 
   @override
-  String get cloudSyncSubtitleSignedOut => '登录阿里云盘后即可云备份与多端同步';
+  String get cloudSyncSubtitleSignedOut => '连接坚果云 WebDAV 后即可使用云备份与同步';
 
   @override
   String cloudSyncSubtitleSignedIn(String name) {
@@ -111,22 +111,22 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get cloudSyncLoginTitle => '登录阿里云盘';
+  String get cloudSyncLoginTitle => '连接坚果云';
 
   @override
-  String get cloudSyncLoginSubtitle => '扫码授权，无需 Zephyr 账号';
+  String get cloudSyncLoginSubtitle => '输入坚果云账号、WebDAV 网址和应用密码';
 
   @override
-  String get cloudSyncLogoutTitle => '退出登录';
+  String get cloudSyncLogoutTitle => '断开连接';
 
   @override
-  String get cloudSyncLogoutSubtitle => '退出后停止云备份与自动同步';
+  String get cloudSyncLogoutSubtitle => '断开后停止云备份和自动同步';
 
   @override
   String get cloudSyncBackupNowTitle => '立即云备份';
 
   @override
-  String get cloudSyncBackupNowSubtitle => '将当前书库上传到阿里云盘（保留历史备份）';
+  String get cloudSyncBackupNowSubtitle => '上传当前书库到坚果云根目录的 PureWriter，并保留历史备份';
 
   @override
   String get cloudSyncBackupNowSuccess => '云备份已完成';
@@ -135,7 +135,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncRestoreTitle => '云备份恢复';
 
   @override
-  String get cloudSyncRestoreSubtitle => '从阿里云盘选择备份，可覆盖或合并';
+  String get cloudSyncRestoreSubtitle => '从坚果云选择备份，可覆盖或合并';
 
   @override
   String get cloudSyncRestoreEmpty => '云盘中尚未找到备份';
@@ -163,41 +163,26 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncLastSyncNever => '尚未同步';
 
   @override
-  String get cloudSyncQrTitle => '阿里云盘扫码登录';
-
-  @override
-  String get cloudSyncQrHint => '请使用阿里云盘 App 扫码并确认授权';
-
-  @override
-  String get cloudSyncQrWaiting => '等待扫码…';
-
-  @override
-  String get cloudSyncQrScanned => '已扫码，请在手机上确认';
-
-  @override
-  String get cloudSyncOpenInBrowser => '在浏览器打开';
-
-  @override
-  String get cloudSyncCredentialsTitle => '开放平台凭证';
+  String get cloudSyncCredentialsTitle => '连接坚果云 WebDAV';
 
   @override
   String get cloudSyncCredentialsSubtitle =>
-      '审核通过后填写 AppId / AppSecret（仅保存在本机）';
+      '请使用坚果云第三方应用密码，而非账号登录密码。凭据安全保存在本机。';
 
   @override
-  String get cloudSyncCredentialsSave => '保存凭证';
+  String get cloudSyncCredentialsSave => '连接';
 
   @override
-  String get cloudSyncCredentialsSaved => '凭证已保存';
+  String get cloudSyncCredentialsSaved => '坚果云已连接';
 
   @override
-  String get cloudSyncCredentialsMissing => '请先填写阿里云盘开放平台 AppId 与 AppSecret';
+  String get cloudSyncClientIdLabel => '坚果云账号';
 
   @override
-  String get cloudSyncClientIdLabel => 'AppId';
+  String get cloudSyncServerUrlLabel => 'WebDAV 网址';
 
   @override
-  String get cloudSyncClientSecretLabel => 'AppSecret';
+  String get cloudSyncClientSecretLabel => '应用密码';
 
   @override
   String get backupAutoTitle => '自动备份';

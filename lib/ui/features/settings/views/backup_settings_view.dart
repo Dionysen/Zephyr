@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:qr_flutter/qr_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../domain/models/cloud_sync.dart';
 import '../../../../domain/models/library_backup.dart';
@@ -125,7 +123,7 @@ class BackupSettingsView extends StatelessWidget {
   ) {
     final l10n = context.l10n;
     final signedIn = cloudSync.isSignedIn;
-    final name = cloudSync.session?.displayName.trim();
+    final name = cloudSync.session?.username.trim();
     final last = cloudSync.preferences.lastSyncAt;
     final lastLabel = last == null
         ? l10n.cloudSyncLastSyncNever
@@ -135,21 +133,13 @@ class BackupSettingsView extends StatelessWidget {
 
     if (!signedIn) {
       return [
-        if (!cloudSync.isAppConfigured)
-          ZephyrSettingsListTile(
-            icon: Icons.key_outlined,
-            title: l10n.cloudSyncCredentialsTitle,
-            subtitle: l10n.cloudSyncCredentialsSubtitle,
-            enabled: !cloudSync.busy,
-            onTap: () => _showCredentialsDialog(context, cloudSync),
-          ),
         ZephyrSettingsListTile(
           icon: Icons.login,
           title: l10n.cloudSyncLoginTitle,
           subtitle: l10n.cloudSyncLoginSubtitle,
           showDivider: false,
           enabled: !cloudSync.busy,
-          onTap: () => _startAliyunLogin(context, cloudSync),
+          onTap: () => _showCredentialsDialog(context, cloudSync),
           trailing: cloudSync.isLoggingIn
               ? const SizedBox(
                   width: 20,
@@ -221,7 +211,7 @@ class BackupSettingsView extends StatelessWidget {
         icon: Icons.logout,
         title: l10n.cloudSyncLogoutTitle,
         subtitle: l10n.cloudSyncSubtitleSignedIn(
-          (name == null || name.isEmpty) ? 'Aliyun Drive' : name,
+          (name == null || name.isEmpty) ? '坚果云' : name,
         ),
         showDivider: false,
         enabled: !cloudSync.busy,
@@ -231,39 +221,16 @@ class BackupSettingsView extends StatelessWidget {
   }
 }
 
-Future<void> _startAliyunLogin(
-  BuildContext context,
-  CloudSyncViewModel cloudSync,
-) async {
-  final l10n = context.l10n;
-  if (!cloudSync.isAppConfigured) {
-    ZephyrSnackBar.show(context, l10n.cloudSyncCredentialsMissing);
-    await _showCredentialsDialog(context, cloudSync);
-    if (!context.mounted || !cloudSync.isAppConfigured) return;
-  }
-  await cloudSync.beginLogin();
-  if (!context.mounted) return;
-  if (cloudSync.qrChallenge != null) {
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => _AliyunQrLoginDialog(viewModel: cloudSync),
-    );
-  } else if (cloudSync.error != null) {
-    ZephyrSnackBar.show(
-      context,
-      l10n.cloudSyncFailed(cloudSync.error.toString()),
-    );
-  }
-}
-
 Future<void> _showCredentialsDialog(
   BuildContext context,
   CloudSyncViewModel cloudSync,
 ) async {
   final l10n = context.l10n;
-  final idController = TextEditingController();
-  final secretController = TextEditingController();
+  final urlController = TextEditingController(
+    text: 'https://dav.jianguoyun.com/dav/',
+  );
+  final accountController = TextEditingController();
+  final passwordController = TextEditingController();
   final saved = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
@@ -274,14 +241,24 @@ Future<void> _showCredentialsDialog(
           Text(l10n.cloudSyncCredentialsSubtitle),
           const SizedBox(height: 12),
           TextField(
-            controller: idController,
+            controller: accountController,
             decoration: InputDecoration(labelText: l10n.cloudSyncClientIdLabel),
             autocorrect: false,
             enableSuggestions: false,
           ),
           const SizedBox(height: 8),
           TextField(
-            controller: secretController,
+            controller: urlController,
+            decoration: InputDecoration(
+              labelText: l10n.cloudSyncServerUrlLabel,
+            ),
+            autocorrect: false,
+            enableSuggestions: false,
+            keyboardType: TextInputType.url,
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: passwordController,
             decoration: InputDecoration(
               labelText: l10n.cloudSyncClientSecretLabel,
             ),
@@ -304,86 +281,26 @@ Future<void> _showCredentialsDialog(
     ),
   );
   if (saved != true) {
-    idController.dispose();
-    secretController.dispose();
+    urlController.dispose();
+    accountController.dispose();
+    passwordController.dispose();
     return;
   }
-  await cloudSync.saveAppCredentials(
-    clientId: idController.text,
-    clientSecret: secretController.text,
+  await cloudSync.connect(
+    serverUrl: urlController.text,
+    username: accountController.text,
+    appPassword: passwordController.text,
   );
-  idController.dispose();
-  secretController.dispose();
+  urlController.dispose();
+  accountController.dispose();
+  passwordController.dispose();
   if (!context.mounted) return;
-  ZephyrSnackBar.show(context, l10n.cloudSyncCredentialsSaved);
-}
-
-class _AliyunQrLoginDialog extends StatelessWidget {
-  const _AliyunQrLoginDialog({required this.viewModel});
-
-  final CloudSyncViewModel viewModel;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return ListenableBuilder(
-      listenable: viewModel,
-      builder: (context, _) {
-        final challenge = viewModel.qrChallenge;
-        if (challenge == null || viewModel.isSignedIn) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (context.mounted) Navigator.of(context).pop();
-          });
-        }
-        final statusText = switch (viewModel.qrStatus) {
-          AliyunDriveQrStatus.scanned => l10n.cloudSyncQrScanned,
-          _ => l10n.cloudSyncQrWaiting,
-        };
-        return AlertDialog(
-          title: Text(l10n.cloudSyncQrTitle),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(l10n.cloudSyncQrHint),
-              const SizedBox(height: 16),
-              if (challenge != null)
-                QrImageView(
-                  data: challenge.qrCodeUrl,
-                  size: 220,
-                  backgroundColor: Colors.white,
-                ),
-              const SizedBox(height: 12),
-              Text(statusText),
-              if (viewModel.error != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  viewModel.error.toString(),
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ],
-            ],
-          ),
-          actions: [
-            if (challenge != null)
-              TextButton(
-                onPressed: () => launchUrl(
-                  Uri.parse(challenge.qrCodeUrl),
-                  mode: LaunchMode.externalApplication,
-                ),
-                child: Text(l10n.cloudSyncOpenInBrowser),
-              ),
-            TextButton(
-              onPressed: () {
-                viewModel.cancelLogin();
-                Navigator.pop(context);
-              },
-              child: Text(l10n.actionCancel),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  ZephyrSnackBar.show(
+    context,
+    cloudSync.error == null
+        ? l10n.cloudSyncCredentialsSaved
+        : l10n.cloudSyncFailed(cloudSync.error.toString()),
+  );
 }
 
 /// Pick a cloud backup, choose merge/overwrite, confirm, then restore.
@@ -409,9 +326,8 @@ Future<void> showCloudBackupRestoreFlow(
   final entry = await showModalBottomSheet<CloudBackupEntry>(
     context: context,
     isScrollControlled: true,
-    builder: (context) => _CloudBackupListSheet(
-      backups: cloudSync.cloudBackups,
-    ),
+    builder: (context) =>
+        _CloudBackupListSheet(backups: cloudSync.cloudBackups),
   );
   if (entry == null || !context.mounted) return;
 

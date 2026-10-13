@@ -31,7 +31,7 @@
   "settingsSectionCloud": "Backup & sync",
   "backupGroupLocalTitle": "Local backup",
   "backupGroupCloudTitle": "Cloud sync",
-  "cloudSyncSubtitleSignedOut": "Sign in with Aliyun Drive for cloud backup and sync",
+  "cloudSyncSubtitleSignedOut": "Connect Nutstore WebDAV for cloud backup and sync",
   "cloudSyncSubtitleSignedIn": "Signed in as {name}",
   "@cloudSyncSubtitleSignedIn": {
     "placeholders": {
@@ -40,15 +40,15 @@
       }
     }
   },
-  "cloudSyncLoginTitle": "Sign in to Aliyun Drive",
-  "cloudSyncLoginSubtitle": "Scan to authorize — no Zephyr account",
+  "cloudSyncLoginTitle": "Connect Nutstore",
+  "cloudSyncLoginSubtitle": "Enter your account, WebDAV URL, and app password",
   "cloudSyncLogoutTitle": "Sign out",
   "cloudSyncLogoutSubtitle": "Stops cloud backup and automatic sync",
   "cloudSyncBackupNowTitle": "Back up to cloud now",
-  "cloudSyncBackupNowSubtitle": "Upload this library to Aliyun Drive (keeps history)",
+  "cloudSyncBackupNowSubtitle": "Upload this library to PureWriter on Nutstore (keeps history)",
   "cloudSyncBackupNowSuccess": "Cloud backup completed.",
   "cloudSyncRestoreTitle": "Restore from cloud",
-  "cloudSyncRestoreSubtitle": "Pick a backup from Aliyun Drive — overwrite or merge",
+  "cloudSyncRestoreSubtitle": "Pick a backup from Nutstore — overwrite or merge",
   "cloudSyncRestoreEmpty": "No cloud backups found.",
   "cloudSyncRestoreSuccess": "Library restored from cloud backup.",
   "cloudSyncFailed": "Cloud sync failed: {error}",
@@ -70,18 +70,13 @@
     }
   },
   "cloudSyncLastSyncNever": "Not synced yet",
-  "cloudSyncQrTitle": "Scan to sign in",
-  "cloudSyncQrHint": "Use the Aliyun Drive app to scan and confirm",
-  "cloudSyncQrWaiting": "Waiting for scan…",
-  "cloudSyncQrScanned": "Scanned — confirm on your phone",
-  "cloudSyncOpenInBrowser": "Open in browser",
-  "cloudSyncCredentialsTitle": "Open platform credentials",
-  "cloudSyncCredentialsSubtitle": "After approval, paste AppId / AppSecret (stored on this device only)",
-  "cloudSyncCredentialsSave": "Save credentials",
-  "cloudSyncCredentialsSaved": "Credentials saved",
-  "cloudSyncCredentialsMissing": "Add Aliyun Drive AppId and AppSecret first",
-  "cloudSyncClientIdLabel": "AppId",
-  "cloudSyncClientSecretLabel": "AppSecret",
+  "cloudSyncCredentialsTitle": "Connect Nutstore WebDAV",
+  "cloudSyncCredentialsSubtitle": "Use a Nutstore app password, not your account password. Stored securely on this device.",
+  "cloudSyncCredentialsSave": "Connect",
+  "cloudSyncCredentialsSaved": "Nutstore connected",
+  "cloudSyncClientIdLabel": "Nutstore account",
+  "cloudSyncServerUrlLabel": "WebDAV URL",
+  "cloudSyncClientSecretLabel": "App password",
   "backupAutoTitle": "Automatic backup",
   "backupAutoSubtitle": "After edits, back up to Backups/Auto when leaving the app. Keeps the newest 50.",
   "backupNowTitle": "Back up now",
@@ -391,18 +386,32 @@
   "editorBackgroundSummary": "{name} · {fit} · {opacity}%",
   "@editorBackgroundSummary": {
     "placeholders": {
-      "name": { "type": "String" },
-      "fit": { "type": "String" },
-      "opacity": { "type": "int" }
+      "name": {
+        "type": "String"
+      },
+      "fit": {
+        "type": "String"
+      },
+      "opacity": {
+        "type": "int"
+      }
     }
   },
   "editorBackgroundSummaryWithBlur": "{name} · {fit} · {opacity}% · blur {blur}",
   "@editorBackgroundSummaryWithBlur": {
     "placeholders": {
-      "name": { "type": "String" },
-      "fit": { "type": "String" },
-      "opacity": { "type": "int" },
-      "blur": { "type": "int" }
+      "name": {
+        "type": "String"
+      },
+      "fit": {
+        "type": "String"
+      },
+      "opacity": {
+        "type": "int"
+      },
+      "blur": {
+        "type": "int"
+      }
     }
   },
   "choiceDeleteTitle": "Delete?",
@@ -503,7 +512,9 @@
   "librarySwitcherRemoveBody": "“{name}” will be removed from the list. Files on disk are not deleted.",
   "@librarySwitcherRemoveBody": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "librarySwitcherRemoveAction": "Remove",

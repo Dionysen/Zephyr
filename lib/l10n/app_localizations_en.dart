@@ -106,7 +106,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cloudSyncSubtitleSignedOut =>
-      'Sign in with Aliyun Drive for cloud backup and sync';
+      'Connect Nutstore WebDAV for cloud backup and sync';
 
   @override
   String cloudSyncSubtitleSignedIn(String name) {
@@ -114,10 +114,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get cloudSyncLoginTitle => 'Sign in to Aliyun Drive';
+  String get cloudSyncLoginTitle => 'Connect Nutstore';
 
   @override
-  String get cloudSyncLoginSubtitle => 'Scan to authorize — no Zephyr account';
+  String get cloudSyncLoginSubtitle =>
+      'Enter your account, WebDAV URL, and app password';
 
   @override
   String get cloudSyncLogoutTitle => 'Sign out';
@@ -130,7 +131,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cloudSyncBackupNowSubtitle =>
-      'Upload this library to Aliyun Drive (keeps history)';
+      'Upload this library to PureWriter on Nutstore (keeps history)';
 
   @override
   String get cloudSyncBackupNowSuccess => 'Cloud backup completed.';
@@ -140,7 +141,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cloudSyncRestoreSubtitle =>
-      'Pick a backup from Aliyun Drive — overwrite or merge';
+      'Pick a backup from Nutstore — overwrite or merge';
 
   @override
   String get cloudSyncRestoreEmpty => 'No cloud backups found.';
@@ -169,42 +170,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudSyncLastSyncNever => 'Not synced yet';
 
   @override
-  String get cloudSyncQrTitle => 'Scan to sign in';
-
-  @override
-  String get cloudSyncQrHint => 'Use the Aliyun Drive app to scan and confirm';
-
-  @override
-  String get cloudSyncQrWaiting => 'Waiting for scan…';
-
-  @override
-  String get cloudSyncQrScanned => 'Scanned — confirm on your phone';
-
-  @override
-  String get cloudSyncOpenInBrowser => 'Open in browser';
-
-  @override
-  String get cloudSyncCredentialsTitle => 'Open platform credentials';
+  String get cloudSyncCredentialsTitle => 'Connect Nutstore WebDAV';
 
   @override
   String get cloudSyncCredentialsSubtitle =>
-      'After approval, paste AppId / AppSecret (stored on this device only)';
+      'Use a Nutstore app password, not your account password. Stored securely on this device.';
 
   @override
-  String get cloudSyncCredentialsSave => 'Save credentials';
+  String get cloudSyncCredentialsSave => 'Connect';
 
   @override
-  String get cloudSyncCredentialsSaved => 'Credentials saved';
+  String get cloudSyncCredentialsSaved => 'Nutstore connected';
 
   @override
-  String get cloudSyncCredentialsMissing =>
-      'Add Aliyun Drive AppId and AppSecret first';
+  String get cloudSyncClientIdLabel => 'Nutstore account';
 
   @override
-  String get cloudSyncClientIdLabel => 'AppId';
+  String get cloudSyncServerUrlLabel => 'WebDAV URL';
 
   @override
-  String get cloudSyncClientSecretLabel => 'AppSecret';
+  String get cloudSyncClientSecretLabel => 'App password';
 
   @override
   String get backupAutoTitle => 'Automatic backup';

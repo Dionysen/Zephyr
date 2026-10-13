@@ -2,8 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:zephyr/data/services/aliyun_drive_client.dart';
-import 'package:zephyr/data/services/aliyun_drive_config.dart';
+import 'package:zephyr/data/services/webdav_client.dart';
 import 'package:zephyr/data/services/cloud_auth_secure_store.dart';
 import 'package:zephyr/data/services/cloud_sync_preferences_storage.dart';
 import 'package:zephyr/data/services/cloud_sync_service.dart';
@@ -28,89 +27,99 @@ void main() {
     );
   });
 
+  test('load restores stored WebDAV credentials', () async {
+    auth.session = _session();
+    final service = CloudSyncService(
+      authStore: auth,
+      preferencesStorage: preferences,
+    );
+    await service.load();
+    expect(service.isSignedIn, isTrue);
+    expect(service.session?.username, 'writer@example.com');
+  });
+
+  test('connect verifies credentials before saving them', () async {
+    final client = _WorkflowClient();
+    final service = CloudSyncService(
+      authStore: auth,
+      preferencesStorage: preferences,
+      clientFactory: () => client,
+    );
+    await service.connect(_session());
+    expect(
+      client.verifiedSession?.serverUrl,
+      'https://dav.jianguoyun.com/dav/',
+    );
+    expect(auth.session?.username, 'writer@example.com');
+    expect(client.closed, isTrue);
+  });
+
+  test('failed connection leaves existing credentials intact', () async {
+    auth.session = _session();
+    final client = _WorkflowClient()..failVerification = true;
+    final service = CloudSyncService(
+      authStore: auth,
+      preferencesStorage: preferences,
+      clientFactory: () => client,
+    );
+    await service.load();
+    await expectLater(
+      service.connect(
+        const CloudSyncSession(
+          serverUrl: 'https://invalid.example/dav/',
+          username: 'other',
+          appPassword: 'wrong',
+        ),
+      ),
+      throwsStateError,
+    );
+    expect(service.session?.username, 'writer@example.com');
+    expect(auth.session?.username, 'writer@example.com');
+  });
+
   test(
-    'load combines stored credentials with configured fallback and session',
+    'connecting another account clears the previous remote cursor',
     () async {
-      auth.credentials = const AliyunDriveAppCredentials(
-        clientId: 'stored-id',
-        clientSecret: 'stored-secret',
+      auth.session = _session();
+      preferences.value = CloudSyncPreferences(
+        lastSyncAt: DateTime.utc(2026, 9, 1),
+        lastSyncLibraryId: 'library-id',
+        lastRemoteUpdatedAt: DateTime.utc(2026, 9, 1),
       );
-      auth.session = _session(expiresIn: const Duration(hours: 1));
       final service = CloudSyncService(
         authStore: auth,
         preferencesStorage: preferences,
-        config: const AliyunDriveConfig(
-          dartDefineClientId: 'fallback-id',
-          dartDefineClientSecret: 'fallback-secret',
+        clientFactory: _WorkflowClient.new,
+      );
+      await service.load();
+      await service.connect(
+        const CloudSyncSession(
+          serverUrl: 'https://dav.jianguoyun.com/dav/',
+          username: 'other@example.com',
+          appPassword: 'other-password',
         ),
       );
-
-      await service.load();
-
-      expect(service.isAppConfigured, isTrue);
-      expect(service.isSignedIn, isTrue);
-      expect(service.session?.accessToken, 'access');
+      expect(service.preferences.lastSyncAt, isNull);
+      expect(service.preferences.lastRemoteUpdatedAt, isNull);
+      expect(auth.session?.username, 'other@example.com');
     },
   );
 
-  test('expired session refreshes and saves new tokens on load', () async {
-    auth.session = _session(expiresIn: const Duration(minutes: -1));
-    final refreshed = _session(expiresIn: const Duration(hours: 1))
-        .copyWith(accessToken: 'fresh');
-    final client = _RefreshingClient(refreshed);
+  test('auto sync preference saves through its store', () async {
     final service = CloudSyncService(
       authStore: auth,
       preferencesStorage: preferences,
-      clientFactory: (_) => client,
     );
-
     await service.load();
 
-    expect(client.refreshToken, 'refresh');
-    expect(client.closed, isTrue);
-    expect(service.session?.accessToken, 'fresh');
-    expect(auth.session?.accessToken, 'fresh');
+    await service.setAutoSyncEnabled(false);
+
+    expect(service.preferences.autoSyncEnabled, isFalse);
+    expect(preferences.value.autoSyncEnabled, isFalse);
   });
-
-  test('failed token refresh signs out the stale session', () async {
-    auth.session = _session(expiresIn: const Duration(minutes: -1));
-    final client = _RefreshingClient(null);
-    final service = CloudSyncService(
-      authStore: auth,
-      preferencesStorage: preferences,
-      clientFactory: (_) => client,
-    );
-
-    await service.load();
-
-    expect(service.isSignedIn, isFalse);
-    expect(auth.session, isNull);
-    expect(client.closed, isTrue);
-  });
-
-  test(
-    'auto sync preference and credentials save through their stores',
-    () async {
-      final service = CloudSyncService(
-        authStore: auth,
-        preferencesStorage: preferences,
-      );
-      await service.load();
-
-      await service.setAutoSyncEnabled(false);
-      await service.saveAppCredentials(
-        const AliyunDriveAppCredentials(clientId: 'id', clientSecret: 'secret'),
-      );
-
-      expect(service.preferences.autoSyncEnabled, isFalse);
-      expect(preferences.value.autoSyncEnabled, isFalse);
-      expect(service.isAppConfigured, isTrue);
-      expect(auth.credentials?.clientId, 'id');
-    },
-  );
 
   test('manual cloud backup flushes edits and uploads both copies', () async {
-    auth.session = _session(expiresIn: const Duration(hours: 1));
+    auth.session = _session();
     final directory = await Directory.systemTemp.createTemp(
       'zephyr-cloud-workflow-',
     );
@@ -120,7 +129,7 @@ void main() {
     final service = CloudSyncService(
       authStore: auth,
       preferencesStorage: preferences,
-      clientFactory: (_) => client,
+      clientFactory: () => client,
     );
     await service.load();
     var flushes = 0;
@@ -142,7 +151,7 @@ void main() {
   test(
     'sync merges a newer remote snapshot before uploading local data',
     () async {
-      auth.session = _session(expiresIn: const Duration(hours: 1));
+      auth.session = _session();
       final directory = await Directory.systemTemp.createTemp(
         'zephyr-cloud-sync-',
       );
@@ -158,7 +167,7 @@ void main() {
       final service = CloudSyncService(
         authStore: auth,
         preferencesStorage: preferences,
-        clientFactory: (_) => client,
+        clientFactory: () => client,
       );
       await service.load();
 
@@ -174,9 +183,42 @@ void main() {
   );
 
   test(
+    'sync rejects a snapshot from another library before uploading',
+    () async {
+      auth.session = _session();
+      final directory = await Directory.systemTemp.createTemp(
+        'zephyr-cloud-mismatch-',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      final library = _CloudLibraryRepository(directory);
+      final client = _WorkflowClient()
+        ..remoteManifest = CloudSyncManifest(
+          libraryId: 'another-library',
+          updatedAt: DateTime.utc(2026, 9, 1),
+          deviceName: 'other',
+          appVersion: '0.1.0',
+        );
+      final service = CloudSyncService(
+        authStore: auth,
+        preferencesStorage: preferences,
+        clientFactory: () => client,
+      );
+      await service.load();
+
+      await expectLater(
+        service.syncNow(library: library, flushPending: () async {}),
+        throwsStateError,
+      );
+      expect(client.snapshotUploads, 0);
+      expect(client.namedUploads, 0);
+      expect(client.closed, isTrue);
+    },
+  );
+
+  test(
     'cloud restore cleans its staging file after applying the backup',
     () async {
-      auth.session = _session(expiresIn: const Duration(hours: 1));
+      auth.session = _session();
       final directory = await Directory.systemTemp.createTemp(
         'zephyr-cloud-restore-',
       );
@@ -186,7 +228,7 @@ void main() {
       final service = CloudSyncService(
         authStore: auth,
         preferencesStorage: preferences,
-        clientFactory: (_) => client,
+        clientFactory: () => client,
       );
       await service.load();
       final entry = CloudBackupEntry(
@@ -211,16 +253,14 @@ void main() {
   );
 }
 
-CloudSyncSession _session({required Duration expiresIn}) => CloudSyncSession(
-  accessToken: 'access',
-  refreshToken: 'refresh',
-  expiresAt: DateTime.now().add(expiresIn),
-  driveId: 'drive',
+CloudSyncSession _session() => const CloudSyncSession(
+  serverUrl: 'https://dav.jianguoyun.com/dav/',
+  username: 'writer@example.com',
+  appPassword: 'app-password',
 );
 
 class _MemoryAuthStore extends CloudAuthSecureStore {
   CloudSyncSession? session;
-  AliyunDriveAppCredentials? credentials;
 
   @override
   Future<CloudSyncSession?> loadSession() async => session;
@@ -234,15 +274,6 @@ class _MemoryAuthStore extends CloudAuthSecureStore {
   Future<void> clearSession() async {
     session = null;
   }
-
-  @override
-  Future<AliyunDriveAppCredentials?> loadStoredAppCredentials() async =>
-      credentials;
-
-  @override
-  Future<void> saveStoredAppCredentials(AliyunDriveAppCredentials value) async {
-    credentials = value;
-  }
 }
 
 class _MemoryCloudPreferences extends CloudSyncPreferencesStorage {
@@ -254,33 +285,6 @@ class _MemoryCloudPreferences extends CloudSyncPreferencesStorage {
   @override
   Future<void> save(CloudSyncPreferences preferences) async {
     value = preferences;
-  }
-}
-
-class _RefreshingClient extends AliyunDriveClient {
-  _RefreshingClient(this.result)
-    : super(
-        credentials: const AliyunDriveAppCredentials(
-          clientId: 'id',
-          clientSecret: 'secret',
-        ),
-      );
-
-  final CloudSyncSession? result;
-  String? refreshToken;
-  bool closed = false;
-
-  @override
-  Future<CloudSyncSession> refresh(String refreshToken) async {
-    this.refreshToken = refreshToken;
-    if (result case final session?) return session;
-    throw StateError('refresh failed');
-  }
-
-  @override
-  void close() {
-    closed = true;
-    super.close();
   }
 }
 
@@ -324,14 +328,15 @@ class _CloudLibraryRepository implements WritingLibraryRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class _WorkflowClient extends AliyunDriveClient {
-  _WorkflowClient()
-    : super(
-        credentials: const AliyunDriveAppCredentials(
-          clientId: 'id',
-          clientSecret: 'secret',
-        ),
-      );
+class _WorkflowClient extends WebDavClient {
+  CloudSyncSession? verifiedSession;
+  bool failVerification = false;
+
+  @override
+  Future<void> verifyConnection(CloudSyncSession session) async {
+    if (failVerification) throw StateError('credentials rejected');
+    verifiedSession = session;
+  }
 
   int namedUploads = 0;
   int snapshotUploads = 0;

@@ -6,84 +6,50 @@ import 'package:path/path.dart' as path;
 import '../../domain/models/cloud_sync.dart';
 import '../../domain/models/library_backup.dart';
 import '../../domain/repositories/writing_library_repository.dart';
-import 'aliyun_drive_client.dart';
-import 'aliyun_drive_config.dart';
 import 'cloud_auth_secure_store.dart';
 import 'cloud_sync_preferences_storage.dart';
 import 'device_label.dart';
+import 'webdav_client.dart';
 
-/// Orchestrates Aliyun Drive login, cloud backups, and snapshot sync.
+/// Orchestrates WebDAV credentials, cloud backups, and snapshot sync.
 class CloudSyncService {
   CloudSyncService({
     CloudAuthSecureStore? authStore,
     CloudSyncPreferencesStorage? preferencesStorage,
-    AliyunDriveConfig? config,
-    AliyunDriveClient Function(AliyunDriveAppCredentials credentials)?
-    clientFactory,
+    WebDavClient Function()? clientFactory,
   }) : _authStore = authStore ?? CloudAuthSecureStore(),
        _preferencesStorage =
            preferencesStorage ?? CloudSyncPreferencesStorage(),
-       _config = config ?? const AliyunDriveConfig(),
-       _clientFactory =
-           clientFactory ??
-           ((credentials) => AliyunDriveClient(credentials: credentials));
+       _clientFactory = clientFactory ?? WebDavClient.new;
 
   final CloudAuthSecureStore _authStore;
   final CloudSyncPreferencesStorage _preferencesStorage;
-  final AliyunDriveConfig _config;
-  final AliyunDriveClient Function(AliyunDriveAppCredentials credentials)
-  _clientFactory;
+  final WebDavClient Function() _clientFactory;
 
   CloudSyncSession? _session;
   CloudSyncPreferences _preferences = CloudSyncPreferences.defaults;
-  AliyunDriveAppCredentials _credentials = const AliyunDriveAppCredentials(
-    clientId: '',
-    clientSecret: '',
-  );
 
   CloudSyncSession? get session => _session;
   CloudSyncPreferences get preferences => _preferences;
   bool get isSignedIn => _session != null;
-  bool get isAppConfigured => _credentials.isConfigured;
 
   Future<void> load() async {
-    final storedCreds = await _authStore.loadStoredAppCredentials();
-    _credentials = _config.fromStored(
-      storedClientId: storedCreds?.clientId,
-      storedClientSecret: storedCreds?.clientSecret,
-    );
     _preferences = await _preferencesStorage.load();
     _session = await _authStore.loadSession();
-    if (_session != null && !_session!.isAccessTokenFresh) {
-      try {
-        _session = await _withClient(
-          (client) => client.refresh(_session!.refreshToken),
-        );
-        await _authStore.saveSession(_session!);
-      } on Object {
-        await signOut();
-      }
+  }
+
+  Future<void> connect(CloudSyncSession session) async {
+    await _withClient((client) => client.verifyConnection(session));
+    if (_session?.serverUrl != session.serverUrl ||
+        _session?.username != session.username) {
+      _preferences = _preferences.copyWith(
+        clearLastSyncAt: true,
+        clearLastRemoteUpdatedAt: true,
+      );
+      await _preferencesStorage.save(_preferences);
     }
-  }
-
-  Future<void> saveAppCredentials(AliyunDriveAppCredentials credentials) async {
-    await _authStore.saveStoredAppCredentials(credentials);
-    _credentials = credentials;
-  }
-
-  Future<AliyunDriveQrChallenge> beginQrLogin() =>
-      _withClient((client) => client.createQrChallenge());
-
-  Future<AliyunDriveQrPollResult> pollQrLogin(String sid) =>
-      _withClient((client) => client.pollQrStatus(sid));
-
-  Future<CloudSyncSession> completeQrLogin(String authCode) async {
-    final session = await _withClient(
-      (client) => client.exchangeAuthCode(authCode),
-    );
     _session = session;
     await _authStore.saveSession(session);
-    return session;
   }
 
   Future<void> signOut() async {
@@ -102,11 +68,11 @@ class CloudSyncService {
     required WritingLibraryRepository library,
     required Future<void> Function() flushPending,
   }) async {
-    final session = await _ensureFreshSession();
+    final session = _requireSession();
     await flushPending();
     final libraryId = await library.ensureCloudLibraryId();
     final entry = await library.createBackup(kind: BackupKind.manual);
-    final client = _clientFactory(_credentials);
+    final client = _clientFactory();
     try {
       final folderId = await client.ensureLibraryFolder(
         session: session,
@@ -152,7 +118,7 @@ class CloudSyncService {
   Future<List<CloudBackupEntry>> listCloudBackups({
     required WritingLibraryRepository library,
   }) async {
-    final session = await _ensureFreshSession();
+    final session = _requireSession();
     final libraryId = await library.ensureCloudLibraryId();
     return _withClient((client) async {
       final folderId = await client.ensureLibraryFolder(
@@ -172,10 +138,12 @@ class CloudSyncService {
     required RestoreMode mode,
     required Future<void> Function() flushPending,
   }) async {
-    final session = await _ensureFreshSession();
+    final session = _requireSession();
     await flushPending();
-    final staging = await Directory.systemTemp.createTemp('zephyr-cloud-restore-');
-    final client = _clientFactory(_credentials);
+    final staging = await Directory.systemTemp.createTemp(
+      'zephyr-cloud-restore-',
+    );
+    final client = _clientFactory();
     try {
       final pwb = await client.downloadBackupFile(
         session: session,
@@ -205,10 +173,10 @@ class CloudSyncService {
     required WritingLibraryRepository library,
     required Future<void> Function() flushPending,
   }) async {
-    final session = await _ensureFreshSession();
+    final session = _requireSession();
     await flushPending();
     final libraryId = await library.ensureCloudLibraryId();
-    final client = _clientFactory(_credentials);
+    final client = _clientFactory();
     try {
       final folderId = await client.ensureLibraryFolder(
         session: session,
@@ -218,9 +186,13 @@ class CloudSyncService {
         session: session,
         parentFileId: folderId,
       );
+      if (remoteManifest != null && remoteManifest.libraryId != libraryId) {
+        throw StateError('Cloud snapshot belongs to another library.');
+      }
       final shouldPull =
           remoteManifest != null &&
-          (_preferences.lastRemoteUpdatedAt == null ||
+          (_preferences.lastSyncLibraryId != libraryId ||
+              _preferences.lastRemoteUpdatedAt == null ||
               remoteManifest.updatedAt.isAfter(
                 _preferences.lastRemoteUpdatedAt!,
               ));
@@ -234,18 +206,19 @@ class CloudSyncService {
             parentFileId: folderId,
             staging: staging,
           );
-          if (pwb != null) {
-            await library.restoreBackup(
-              entry: BackupEntry(
-                path: pwb.path,
-                fileName: path.basename(pwb.path),
-                modified: remoteManifest.updatedAt,
-                sizeBytes: await pwb.length(),
-                kind: BackupKind.manual,
-              ),
-              mode: RestoreMode.merge,
-            );
+          if (pwb == null) {
+            throw StateError('Cloud manifest exists without library.pwb.');
           }
+          await library.restoreBackup(
+            entry: BackupEntry(
+              path: pwb.path,
+              fileName: path.basename(pwb.path),
+              modified: remoteManifest.updatedAt,
+              sizeBytes: await pwb.length(),
+              kind: BackupKind.manual,
+            ),
+            mode: RestoreMode.merge,
+          );
         } finally {
           if (await staging.exists()) {
             await staging.delete(recursive: true);
@@ -287,25 +260,18 @@ class CloudSyncService {
     }
   }
 
-  Future<CloudSyncSession> _ensureFreshSession() async {
-    var session = _session;
+  CloudSyncSession _requireSession() {
+    final session = _session;
     if (session == null) {
-      throw StateError('Not signed in to Aliyun Drive.');
-    }
-    if (!session.isAccessTokenFresh) {
-      session = await _withClient(
-        (client) => client.refresh(session!.refreshToken),
-      );
-      _session = session;
-      await _authStore.saveSession(session);
+      throw StateError('WebDAV account is not connected.');
     }
     return session;
   }
 
   Future<T> _withClient<T>(
-    Future<T> Function(AliyunDriveClient client) action,
+    Future<T> Function(WebDavClient client) action,
   ) async {
-    final client = _clientFactory(_credentials);
+    final client = _clientFactory();
     try {
       return await action(client);
     } finally {

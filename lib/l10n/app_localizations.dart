@@ -287,7 +287,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncSubtitleSignedOut.
   ///
   /// In en, this message translates to:
-  /// **'Sign in with Aliyun Drive for cloud backup and sync'**
+  /// **'Connect Nutstore WebDAV for cloud backup and sync'**
   String get cloudSyncSubtitleSignedOut;
 
   /// No description provided for @cloudSyncSubtitleSignedIn.
@@ -299,13 +299,13 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncLoginTitle.
   ///
   /// In en, this message translates to:
-  /// **'Sign in to Aliyun Drive'**
+  /// **'Connect Nutstore'**
   String get cloudSyncLoginTitle;
 
   /// No description provided for @cloudSyncLoginSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Scan to authorize — no Zephyr account'**
+  /// **'Enter your account, WebDAV URL, and app password'**
   String get cloudSyncLoginSubtitle;
 
   /// No description provided for @cloudSyncLogoutTitle.
@@ -329,7 +329,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncBackupNowSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Upload this library to Aliyun Drive (keeps history)'**
+  /// **'Upload this library to PureWriter on Nutstore (keeps history)'**
   String get cloudSyncBackupNowSubtitle;
 
   /// No description provided for @cloudSyncBackupNowSuccess.
@@ -347,7 +347,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncRestoreSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Pick a backup from Aliyun Drive — overwrite or merge'**
+  /// **'Pick a backup from Nutstore — overwrite or merge'**
   String get cloudSyncRestoreSubtitle;
 
   /// No description provided for @cloudSyncRestoreEmpty.
@@ -392,76 +392,46 @@ abstract class AppLocalizations {
   /// **'Not synced yet'**
   String get cloudSyncLastSyncNever;
 
-  /// No description provided for @cloudSyncQrTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Scan to sign in'**
-  String get cloudSyncQrTitle;
-
-  /// No description provided for @cloudSyncQrHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Use the Aliyun Drive app to scan and confirm'**
-  String get cloudSyncQrHint;
-
-  /// No description provided for @cloudSyncQrWaiting.
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for scan…'**
-  String get cloudSyncQrWaiting;
-
-  /// No description provided for @cloudSyncQrScanned.
-  ///
-  /// In en, this message translates to:
-  /// **'Scanned — confirm on your phone'**
-  String get cloudSyncQrScanned;
-
-  /// No description provided for @cloudSyncOpenInBrowser.
-  ///
-  /// In en, this message translates to:
-  /// **'Open in browser'**
-  String get cloudSyncOpenInBrowser;
-
   /// No description provided for @cloudSyncCredentialsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Open platform credentials'**
+  /// **'Connect Nutstore WebDAV'**
   String get cloudSyncCredentialsTitle;
 
   /// No description provided for @cloudSyncCredentialsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'After approval, paste AppId / AppSecret (stored on this device only)'**
+  /// **'Use a Nutstore app password, not your account password. Stored securely on this device.'**
   String get cloudSyncCredentialsSubtitle;
 
   /// No description provided for @cloudSyncCredentialsSave.
   ///
   /// In en, this message translates to:
-  /// **'Save credentials'**
+  /// **'Connect'**
   String get cloudSyncCredentialsSave;
 
   /// No description provided for @cloudSyncCredentialsSaved.
   ///
   /// In en, this message translates to:
-  /// **'Credentials saved'**
+  /// **'Nutstore connected'**
   String get cloudSyncCredentialsSaved;
-
-  /// No description provided for @cloudSyncCredentialsMissing.
-  ///
-  /// In en, this message translates to:
-  /// **'Add Aliyun Drive AppId and AppSecret first'**
-  String get cloudSyncCredentialsMissing;
 
   /// No description provided for @cloudSyncClientIdLabel.
   ///
   /// In en, this message translates to:
-  /// **'AppId'**
+  /// **'Nutstore account'**
   String get cloudSyncClientIdLabel;
+
+  /// No description provided for @cloudSyncServerUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'WebDAV URL'**
+  String get cloudSyncServerUrlLabel;
 
   /// No description provided for @cloudSyncClientSecretLabel.
   ///
   /// In en, this message translates to:
-  /// **'AppSecret'**
+  /// **'App password'**
   String get cloudSyncClientSecretLabel;
 
   /// No description provided for @backupAutoTitle.

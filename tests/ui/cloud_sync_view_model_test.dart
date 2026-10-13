@@ -69,29 +69,17 @@ void main() {
     },
   );
 
-  test('login challenge can be cancelled before the next poll', () async {
-    await model.beginLogin();
-    expect(model.isLoggingIn, isTrue);
-    expect(model.qrChallenge?.sid, 'sid');
-    expect(model.qrStatus, AliyunDriveQrStatus.waiting);
+  test('connecting saves WebDAV credentials and clears busy state', () async {
+    await model.connect(
+      serverUrl: 'https://dav.jianguoyun.com/dav/',
+      username: 'writer@example.com',
+      appPassword: 'app-password',
+    );
 
-    model.cancelLogin();
-    expect(model.busy, isFalse);
-    expect(model.qrChallenge, isNull);
-    expect(model.qrStatus, isNull);
-  });
-
-  testWidgets('successful QR poll completes login and dismisses challenge', (
-    tester,
-  ) async {
-    await model.beginLogin();
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pump();
-
-    expect(service.completedCode, 'auth-code');
+    expect(service.connectedSession?.username, 'writer@example.com');
     expect(model.isSignedIn, isTrue);
     expect(model.busy, isFalse);
-    expect(model.qrChallenge, isNull);
+    expect(model.error, isNull);
   });
 }
 
@@ -112,7 +100,7 @@ class _CloudService extends CloudSyncService {
   int syncCalls = 0;
   int backupCalls = 0;
   int listCalls = 0;
-  String? completedCode;
+  CloudSyncSession? connectedSession;
 
   @override
   bool get isSignedIn => signedIn;
@@ -126,29 +114,9 @@ class _CloudService extends CloudSyncService {
   }
 
   @override
-  Future<AliyunDriveQrChallenge> beginQrLogin() async =>
-      const AliyunDriveQrChallenge(
-        sid: 'sid',
-        qrCodeUrl: 'https://example.test/qr',
-      );
-
-  @override
-  Future<AliyunDriveQrPollResult> pollQrLogin(String sid) async =>
-      const AliyunDriveQrPollResult(
-        status: AliyunDriveQrStatus.success,
-        authCode: 'auth-code',
-      );
-
-  @override
-  Future<CloudSyncSession> completeQrLogin(String authCode) async {
-    completedCode = authCode;
+  Future<void> connect(CloudSyncSession session) async {
+    connectedSession = session;
     signedIn = true;
-    return CloudSyncSession(
-      accessToken: 'access',
-      refreshToken: 'refresh',
-      expiresAt: DateTime.now().add(const Duration(hours: 1)),
-      driveId: 'drive',
-    );
   }
 
   @override

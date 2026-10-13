@@ -31,7 +31,7 @@
   "settingsSectionCloud": "备份与同步",
   "backupGroupLocalTitle": "本地备份",
   "backupGroupCloudTitle": "云同步",
-  "cloudSyncSubtitleSignedOut": "登录阿里云盘后即可云备份与多端同步",
+  "cloudSyncSubtitleSignedOut": "连接坚果云 WebDAV 后即可使用云备份与同步",
   "cloudSyncSubtitleSignedIn": "已登录：{name}",
   "@cloudSyncSubtitleSignedIn": {
     "placeholders": {
@@ -40,15 +40,15 @@
       }
     }
   },
-  "cloudSyncLoginTitle": "登录阿里云盘",
-  "cloudSyncLoginSubtitle": "扫码授权，无需 Zephyr 账号",
-  "cloudSyncLogoutTitle": "退出登录",
-  "cloudSyncLogoutSubtitle": "退出后停止云备份与自动同步",
+  "cloudSyncLoginTitle": "连接坚果云",
+  "cloudSyncLoginSubtitle": "输入坚果云账号、WebDAV 网址和应用密码",
+  "cloudSyncLogoutTitle": "断开连接",
+  "cloudSyncLogoutSubtitle": "断开后停止云备份和自动同步",
   "cloudSyncBackupNowTitle": "立即云备份",
-  "cloudSyncBackupNowSubtitle": "将当前书库上传到阿里云盘（保留历史备份）",
+  "cloudSyncBackupNowSubtitle": "上传当前书库到坚果云根目录的 PureWriter，并保留历史备份",
   "cloudSyncBackupNowSuccess": "云备份已完成",
   "cloudSyncRestoreTitle": "云备份恢复",
-  "cloudSyncRestoreSubtitle": "从阿里云盘选择备份，可覆盖或合并",
+  "cloudSyncRestoreSubtitle": "从坚果云选择备份，可覆盖或合并",
   "cloudSyncRestoreEmpty": "云盘中尚未找到备份",
   "cloudSyncRestoreSuccess": "已从云备份恢复",
   "cloudSyncFailed": "云同步失败：{error}",
@@ -70,18 +70,12 @@
     }
   },
   "cloudSyncLastSyncNever": "尚未同步",
-  "cloudSyncQrTitle": "阿里云盘扫码登录",
-  "cloudSyncQrHint": "请使用阿里云盘 App 扫码并确认授权",
-  "cloudSyncQrWaiting": "等待扫码…",
-  "cloudSyncQrScanned": "已扫码，请在手机上确认",
-  "cloudSyncOpenInBrowser": "在浏览器打开",
-  "cloudSyncCredentialsTitle": "开放平台凭证",
-  "cloudSyncCredentialsSubtitle": "审核通过后填写 AppId / AppSecret（仅保存在本机）",
-  "cloudSyncCredentialsSave": "保存凭证",
-  "cloudSyncCredentialsSaved": "凭证已保存",
-  "cloudSyncCredentialsMissing": "请先填写阿里云盘开放平台 AppId 与 AppSecret",
-  "cloudSyncClientIdLabel": "AppId",
-  "cloudSyncClientSecretLabel": "AppSecret",
+  "cloudSyncCredentialsTitle": "连接坚果云 WebDAV",
+  "cloudSyncCredentialsSubtitle": "请使用坚果云第三方应用密码，而非账号登录密码。凭据安全保存在本机。",
+  "cloudSyncCredentialsSave": "连接",
+  "cloudSyncCredentialsSaved": "坚果云已连接",
+  "cloudSyncClientIdLabel": "坚果云账号",
+  "cloudSyncClientSecretLabel": "应用密码",
   "backupAutoTitle": "自动备份",
   "backupAutoSubtitle": "内容有变更且离开应用时写入 Backups/Auto，保留最近 50 份",
   "backupNowTitle": "立即备份",
@@ -370,18 +364,32 @@
   "editorBackgroundSummary": "{name} · {fit} · {opacity}%",
   "@editorBackgroundSummary": {
     "placeholders": {
-      "name": { "type": "String" },
-      "fit": { "type": "String" },
-      "opacity": { "type": "int" }
+      "name": {
+        "type": "String"
+      },
+      "fit": {
+        "type": "String"
+      },
+      "opacity": {
+        "type": "int"
+      }
     }
   },
   "editorBackgroundSummaryWithBlur": "{name} · {fit} · {opacity}% · 模糊 {blur}",
   "@editorBackgroundSummaryWithBlur": {
     "placeholders": {
-      "name": { "type": "String" },
-      "fit": { "type": "String" },
-      "opacity": { "type": "int" },
-      "blur": { "type": "int" }
+      "name": {
+        "type": "String"
+      },
+      "fit": {
+        "type": "String"
+      },
+      "opacity": {
+        "type": "int"
+      },
+      "blur": {
+        "type": "int"
+      }
     }
   },
   "choiceDeleteTitle": "删除？",
@@ -454,7 +462,9 @@
   "librarySwitcherRemoveBody": "将从列表中移除“{name}”。不会删除磁盘上的文件。",
   "@librarySwitcherRemoveBody": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "librarySwitcherRemoveAction": "移除",
@@ -508,5 +518,6 @@
   "quickToolbarPhraseContent": "插入内容",
   "quickToolbarMoveToPinned": "移到固定栏",
   "quickToolbarMoveToCustom": "移到自定义栏",
-  "quickToolbarDrawerEmpty": "工具面板内容将稍后加入"
+  "quickToolbarDrawerEmpty": "工具面板内容将稍后加入",
+  "cloudSyncServerUrlLabel": "WebDAV 网址"
 }
