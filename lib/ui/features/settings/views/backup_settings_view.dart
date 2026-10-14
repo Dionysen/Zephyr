@@ -240,17 +240,125 @@ Future<void> showNutstoreCredentialsDialog(
   bool editing = false,
 }) async {
   final l10n = context.l10n;
-  final session = cloudSync.session;
-  final urlController = TextEditingController(
-    text: session?.serverUrl ?? 'https://dav.jianguoyun.com/dav/',
-  );
-  final accountController = TextEditingController(
-    text: session?.username ?? '',
-  );
-  final passwordController = TextEditingController();
-  final result = await showDialog<String>(
+  // Connect / unbind inside the dialog before pop so TextFields are not
+  // disposed mid-exit while ListenableBuilder rebuilds the page underneath.
+  final result = await showDialog<_NutstoreCredentialsResult>(
     context: context,
-    builder: (context) => AlertDialog(
+    barrierDismissible: false,
+    builder: (context) => _NutstoreCredentialsDialog(
+      cloudSync: cloudSync,
+      editing: editing,
+    ),
+  );
+  if (!context.mounted ||
+      result == null ||
+      result == _NutstoreCredentialsResult.cancelled ||
+      result == _NutstoreCredentialsResult.unbound) {
+    return;
+  }
+  // Wait until the dialog route has left the tree before touching scaffold.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!context.mounted) return;
+    ZephyrSnackBar.show(
+      context,
+      editing
+          ? l10n.cloudSyncCredentialsUpdated
+          : l10n.cloudSyncCredentialsSaved,
+    );
+  });
+}
+
+enum _NutstoreCredentialsResult { cancelled, connected, unbound }
+
+class _NutstoreCredentialsDialog extends StatefulWidget {
+  const _NutstoreCredentialsDialog({
+    required this.cloudSync,
+    required this.editing,
+  });
+
+  final CloudSyncViewModel cloudSync;
+  final bool editing;
+
+  @override
+  State<_NutstoreCredentialsDialog> createState() =>
+      _NutstoreCredentialsDialogState();
+}
+
+class _NutstoreCredentialsDialogState extends State<_NutstoreCredentialsDialog> {
+  late final TextEditingController _urlController;
+  late final TextEditingController _accountController;
+  late final TextEditingController _passwordController;
+  var _submitting = false;
+  String? _inlineError;
+
+  @override
+  void initState() {
+    super.initState();
+    final session = widget.cloudSync.session;
+    _urlController = TextEditingController(
+      text: session?.serverUrl ?? 'https://dav.jianguoyun.com/dav/',
+    );
+    _accountController = TextEditingController(text: session?.username ?? '');
+    _passwordController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _urlController.dispose();
+    _accountController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_submitting) return;
+    final l10n = context.l10n;
+    final session = widget.cloudSync.session;
+    final password = _passwordController.text;
+    final appPassword = password.trim().isEmpty && widget.editing
+        ? (session?.appPassword ?? '')
+        : password;
+    if (appPassword.isEmpty) {
+      setState(() => _inlineError = l10n.cloudSyncLoginSubtitle);
+      return;
+    }
+    setState(() {
+      _submitting = true;
+      _inlineError = null;
+    });
+    await widget.cloudSync.connect(
+      serverUrl: _urlController.text,
+      username: _accountController.text,
+      appPassword: appPassword,
+    );
+    if (!mounted) return;
+    final error = widget.cloudSync.error;
+    if (error != null) {
+      setState(() {
+        _submitting = false;
+        _inlineError = widget.cloudSync.errorMessage(l10n);
+      });
+      return;
+    }
+    Navigator.of(context).pop(_NutstoreCredentialsResult.connected);
+  }
+
+  Future<void> _unbind() async {
+    if (_submitting) return;
+    setState(() {
+      _submitting = true;
+      _inlineError = null;
+    });
+    await widget.cloudSync.signOut();
+    if (!mounted) return;
+    Navigator.of(context).pop(_NutstoreCredentialsResult.unbound);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final editing = widget.editing;
+    return AlertDialog(
       title: Text(
         editing
             ? l10n.cloudSyncCredentialsEditTitle
@@ -258,18 +366,21 @@ Future<void> showNutstoreCredentialsDialog(
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(l10n.cloudSyncCredentialsSubtitle),
           const SizedBox(height: 12),
           TextField(
-            controller: accountController,
+            controller: _accountController,
+            enabled: !_submitting,
             decoration: InputDecoration(labelText: l10n.cloudSyncClientIdLabel),
             autocorrect: false,
             enableSuggestions: false,
           ),
           const SizedBox(height: 8),
           TextField(
-            controller: urlController,
+            controller: _urlController,
+            enabled: !_submitting,
             decoration: InputDecoration(
               labelText: l10n.cloudSyncServerUrlLabel,
             ),
@@ -279,7 +390,8 @@ Future<void> showNutstoreCredentialsDialog(
           ),
           const SizedBox(height: 8),
           TextField(
-            controller: passwordController,
+            controller: _passwordController,
+            enabled: !_submitting,
             decoration: InputDecoration(
               labelText: l10n.cloudSyncClientSecretLabel,
               hintText: editing ? l10n.cloudSyncCredentialsPasswordHint : null,
@@ -287,66 +399,48 @@ Future<void> showNutstoreCredentialsDialog(
             obscureText: true,
             autocorrect: false,
             enableSuggestions: false,
+            onSubmitted: (_) => _save(),
           ),
+          if (_inlineError != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              _inlineError!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
         ],
       ),
       actions: [
         if (editing)
           TextButton(
-            onPressed: () => Navigator.pop(context, 'unbind'),
+            onPressed: _submitting ? null : _unbind,
             child: Text(l10n.cloudSyncUnbindTitle),
           ),
         TextButton(
-          onPressed: () => Navigator.pop(context, 'cancel'),
+          onPressed: _submitting
+              ? null
+              : () => Navigator.of(context).pop(
+                    _NutstoreCredentialsResult.cancelled,
+                  ),
           child: Text(l10n.actionCancel),
         ),
         FilledButton(
-          onPressed: () => Navigator.pop(context, 'save'),
-          child: Text(
-            editing
-                ? l10n.cloudSyncCredentialsSaveEdit
-                : l10n.cloudSyncCredentialsSave,
-          ),
+          onPressed: _submitting ? null : _save,
+          child: _submitting
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(
+                  editing
+                      ? l10n.cloudSyncCredentialsSaveEdit
+                      : l10n.cloudSyncCredentialsSave,
+                ),
         ),
       ],
-    ),
-  );
-  final serverUrl = urlController.text;
-  final username = accountController.text;
-  final password = passwordController.text;
-  urlController.dispose();
-  accountController.dispose();
-  passwordController.dispose();
-  if (result == null || result == 'cancel') return;
-
-  if (result == 'unbind') {
-    await cloudSync.signOut();
-    if (!context.mounted) return;
-    return;
+    );
   }
-
-  final appPassword = password.trim().isEmpty && editing
-      ? (session?.appPassword ?? '')
-      : password;
-  if (appPassword.isEmpty) {
-    if (!context.mounted) return;
-    ZephyrSnackBar.show(context, l10n.cloudSyncLoginSubtitle);
-    return;
-  }
-  await cloudSync.connect(
-    serverUrl: serverUrl,
-    username: username,
-    appPassword: appPassword,
-  );
-  if (!context.mounted) return;
-  ZephyrSnackBar.show(
-    context,
-    cloudSync.error == null
-        ? (editing
-              ? l10n.cloudSyncCredentialsUpdated
-              : l10n.cloudSyncCredentialsSaved)
-        : cloudSync.errorMessage(l10n)!,
-  );
 }
 
 /// Pick a cloud backup, choose merge/overwrite, confirm, then restore.
