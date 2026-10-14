@@ -19,6 +19,7 @@ class CloudSyncViewModel extends ChangeNotifier {
   Object? _error;
   var _busyKind = CloudSyncBusyKind.none;
   List<CloudBackupEntry> _cloudBackups = const [];
+  CloudPullResult? _lastPullResult;
 
   Object? get error => _error;
   String? errorMessage(AppLocalizations l10n) {
@@ -46,6 +47,7 @@ class CloudSyncViewModel extends ChangeNotifier {
   CloudSyncPreferences get preferences => _service.preferences;
   bool get autoSyncEnabled => _service.preferences.autoSyncEnabled;
   List<CloudBackupEntry> get cloudBackups => _cloudBackups;
+  CloudPullResult? get lastPullResult => _lastPullResult;
 
   Future<void> load() async {
     try {
@@ -174,26 +176,31 @@ class CloudSyncViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> syncNow() async {
-    if (busy) return;
+  Future<CloudPullResult?> syncNow() async {
+    if (busy) return null;
     if (!cloudBackupEnabled || !isSignedIn) {
       _error = StateError('Cloud backup is not ready.');
       notifyListeners();
-      return;
+      return null;
     }
     _busyKind = CloudSyncBusyKind.sync;
     _error = null;
     notifyListeners();
     await Future<void>.delayed(Duration.zero);
     try {
-      await _service.pullIfNewer(
+      final result = await _service.pullIfNewer(
         library: library.repository,
         flushPending: library.flushPending,
       );
-      await library.load();
+      _lastPullResult = result;
+      if (result.pulled) {
+        await library.load();
+      }
       _error = null;
+      return result;
     } on Object catch (error) {
       _error = error;
+      return null;
     } finally {
       _busyKind = CloudSyncBusyKind.none;
       notifyListeners();
@@ -201,12 +208,12 @@ class CloudSyncViewModel extends ChangeNotifier {
   }
 
   /// Open / resume: pull-merge newer cloud snapshot only (no upload).
-  Future<void> maybeAutoSync() async {
-    if (!cloudBackupEnabled) return;
-    if (!autoSyncEnabled) return;
-    if (!isSignedIn) return;
-    if (library.isReadOnly) return;
-    if (busy) return;
-    await syncNow();
+  Future<CloudPullResult?> maybeAutoSync() async {
+    if (!cloudBackupEnabled) return null;
+    if (!autoSyncEnabled) return null;
+    if (!isSignedIn) return null;
+    if (library.isReadOnly) return null;
+    if (busy) return null;
+    return syncNow();
   }
 }

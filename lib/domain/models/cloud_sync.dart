@@ -1,3 +1,5 @@
+import 'library_backup.dart';
+
 enum CloudLibraryConflictReason { anotherLibrary, missingManifest }
 
 /// A remote Zephyr folder cannot safely accept the current local library.
@@ -163,4 +165,17 @@ class CloudBackupEntry {
   final String fileName;
   final DateTime modified;
   final int sizeBytes;
+}
+
+/// Result of [CloudSyncService.pullIfNewer].
+class CloudPullResult {
+  const CloudPullResult({
+    this.pulled = false,
+    this.mergeStats = LibraryMergeStats.empty,
+  });
+
+  static const skipped = CloudPullResult();
+
+  final bool pulled;
+  final LibraryMergeStats mergeStats;
 }

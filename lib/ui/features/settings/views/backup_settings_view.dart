@@ -145,7 +145,7 @@ class BackupSettingsView extends StatelessWidget {
           subtitle: l10n.cloudSyncLoginSubtitle,
           showDivider: false,
           enabled: !cloudSync.busy,
-          onTap: () => _showCredentialsDialog(context, cloudSync),
+          onTap: () => showNutstoreCredentialsDialog(context, cloudSync),
           trailing: cloudSync.isLoggingIn
               ? const SizedBox(
                   width: 20,
@@ -220,7 +220,8 @@ class BackupSettingsView extends StatelessWidget {
         subtitle: l10n.cloudSyncSettingsSubtitle(displayName),
         showDivider: false,
         enabled: !cloudSync.busy,
-        onTap: () => _showCredentialsDialog(context, cloudSync, editing: true),
+        onTap: () =>
+            showNutstoreCredentialsDialog(context, cloudSync, editing: true),
         trailing: Icon(
           Icons.chevron_right,
           size: 20,
@@ -232,7 +233,7 @@ class BackupSettingsView extends StatelessWidget {
   }
 }
 
-Future<void> _showCredentialsDialog(
+Future<void> showNutstoreCredentialsDialog(
   BuildContext context,
   CloudSyncViewModel cloudSync, {
   bool editing = false,

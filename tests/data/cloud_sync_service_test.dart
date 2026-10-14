@@ -165,7 +165,8 @@ void main() {
         flushPending: () async {},
       );
 
-      expect(pulled, isNotNull);
+      expect(pulled.pulled, isTrue);
+      expect(pulled.mergeStats.articlesAdded, 1);
       expect(library.restoredMode, RestoreMode.merge);
       expect(library.createdKind, isNull);
       expect(client.snapshotUploads, 0);
@@ -206,7 +207,7 @@ void main() {
       flushPending: () async {},
     );
 
-    expect(pulled, isNull);
+    expect(pulled.pulled, isFalse);
     expect(library.restoredMode, isNull);
     expect(client.snapshotUploads, 0);
   });
@@ -606,13 +607,14 @@ class _CloudLibraryRepository implements WritingLibraryRepository {
   }
 
   @override
-  Future<void> restoreBackup({
+  Future<LibraryMergeStats> restoreBackup({
     required BackupEntry entry,
     required RestoreMode mode,
   }) async {
     restoredMode = mode;
     restoredPath = entry.path;
     restoredFileExisted = await File(entry.path).exists();
+    return const LibraryMergeStats(articlesAdded: 1);
   }
 
   @override

@@ -296,6 +296,30 @@ abstract class AppLocalizations {
   /// **'Signed in as {name}'**
   String cloudSyncSubtitleSignedIn(String name);
 
+  /// No description provided for @cloudBackupQuickTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud backup'**
+  String get cloudBackupQuickTooltip;
+
+  /// No description provided for @cloudBackupQuickTooltipUnconfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect Nutstore for cloud backup'**
+  String get cloudBackupQuickTooltipUnconfigured;
+
+  /// No description provided for @cloudSyncPullNoChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud sync finished — no chapter changes'**
+  String get cloudSyncPullNoChanges;
+
+  /// No description provided for @cloudSyncPullSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud sync: +{added} · updated {updated} · −{removed} chapters'**
+  String cloudSyncPullSummary(int added, int updated, int removed);
+
   /// No description provided for @cloudSyncEnableTitle.
   ///
   /// In en, this message translates to:

@@ -184,13 +184,13 @@ class _CloudService extends CloudSyncService {
   }
 
   @override
-  Future<CloudSyncManifest?> pullIfNewer({
+  Future<CloudPullResult> pullIfNewer({
     required WritingLibraryRepository library,
     required Future<void> Function() flushPending,
   }) async {
     pullCalls++;
     final failure = pullFailure;
     if (failure != null) throw failure;
-    return null;
+    return CloudPullResult.skipped;
   }
 }

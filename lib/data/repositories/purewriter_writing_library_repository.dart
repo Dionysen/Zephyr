@@ -1298,7 +1298,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   }
 
   @override
-  Future<void> restoreBackup({
+  Future<LibraryMergeStats> restoreBackup({
     required BackupEntry entry,
     required RestoreMode mode,
   }) async {
@@ -1309,8 +1309,9 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     switch (mode) {
       case RestoreMode.overwrite:
         await _restoreOverwrite(File(entry.path), rootPath);
+        return LibraryMergeStats.empty;
       case RestoreMode.merge:
-        await _restoreMerge(File(entry.path));
+        return _restoreMerge(File(entry.path));
     }
   }
 
@@ -1331,7 +1332,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     await _store.openLibrary(rootPath, createIfMissing: false);
   }
 
-  Future<void> _restoreMerge(File pwb) async {
+  Future<LibraryMergeStats> _restoreMerge(File pwb) async {
     File? extracted;
     Database? backupDb;
     try {
@@ -1349,14 +1350,16 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
         idColumn: 'id',
         timeColumn: 'updateTime',
       );
-      await _mergeTable(
+      final articleStats = await _mergeTable(
         backupDb: backupDb,
         table: 'Article',
         idColumn: 'id',
         timeColumn: 'updateTime',
+        trackArticleStats: true,
       );
       await _mergeHistory(backupDb);
       await _mergeZephyrDrafts(backupDb);
+      return articleStats;
     } finally {
       await backupDb?.close();
       final parent = extracted?.parent;
@@ -1366,26 +1369,42 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     }
   }
 
-  Future<void> _mergeTable({
+  Future<LibraryMergeStats> _mergeTable({
     required Database backupDb,
     required String table,
     required String idColumn,
     required String timeColumn,
+    bool trackArticleStats = false,
   }) async {
     final localDb = _store.database;
     if (!await _hasTable(localDb, table) || !await _hasTable(backupDb, table)) {
-      return;
+      return LibraryMergeStats.empty;
     }
     final remoteRows = await backupDb.query(table);
-    if (remoteRows.isEmpty) return;
+    if (remoteRows.isEmpty) return LibraryMergeStats.empty;
+    final hasDeleted =
+        await _hasColumn(localDb, table, 'deleted') &&
+        await _hasColumn(backupDb, table, 'deleted');
     final localRows = await localDb.query(
       table,
-      columns: [idColumn, timeColumn],
+      columns: [
+        idColumn,
+        timeColumn,
+        if (trackArticleStats && hasDeleted) 'deleted',
+      ],
     );
     final localTimes = <Object?, int>{
       for (final row in localRows)
         row[idColumn]: (row[timeColumn] as int?) ?? 0,
     };
+    final localDeleted = <Object?, int>{
+      if (trackArticleStats && hasDeleted)
+        for (final row in localRows)
+          row[idColumn]: (row['deleted'] as int?) ?? 0,
+    };
+    var added = 0;
+    var updated = 0;
+    var removed = 0;
     await localDb.transaction((txn) async {
       final batch = txn.batch();
       for (final remote in remoteRows) {
@@ -1393,14 +1412,38 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
         if (id == null) continue;
         final remoteTime = (remote[timeColumn] as int?) ?? 0;
         final localTime = localTimes[id];
+        final remoteDeleted = hasDeleted
+            ? ((remote['deleted'] as int?) ?? 0)
+            : 0;
         if (localTime == null) {
           batch.insert(table, remote);
+          if (trackArticleStats) {
+            if (remoteDeleted == 1) {
+              removed++;
+            } else {
+              added++;
+            }
+          }
         } else if (remoteTime >= localTime) {
           batch.update(table, remote, where: '$idColumn = ?', whereArgs: [id]);
+          if (trackArticleStats) {
+            final wasDeleted = localDeleted[id] ?? 0;
+            if (remoteDeleted == 1 && wasDeleted != 1) {
+              removed++;
+            } else if (remoteDeleted != 1) {
+              updated++;
+            }
+          }
         }
       }
       await batch.commit(noResult: true);
     });
+    if (!trackArticleStats) return LibraryMergeStats.empty;
+    return LibraryMergeStats(
+      articlesAdded: added,
+      articlesUpdated: updated,
+      articlesRemoved: removed,
+    );
   }
 
   Future<void> _mergeHistory(Database backupDb) async {
@@ -1484,4 +1527,12 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
         "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1",
         [name],
       )).isNotEmpty;
+
+  Future<bool> _hasColumn(
+    DatabaseExecutor database,
+    String table,
+    String column,
+  ) async =>
+      (await database.rawQuery('PRAGMA table_info($table)'))
+          .any((row) => row['name'] == column);
 }

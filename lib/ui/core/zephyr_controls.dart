@@ -43,6 +43,9 @@ abstract final class ZephyrControls {
   static const double fieldHeight = 36;
   static const double menuInsets = 4;
 
+  /// Popup / MenuAnchor rows match [ZephyrDropdown] list rows ([fieldHeight]).
+  static const double menuItemHeight = fieldHeight;
+
   /// Material [Switch] track is ~52×32; scale down for denser settings rows.
   static const double settingsSwitchScale = 0.82;
 

@@ -40,6 +40,23 @@
       }
     }
   },
+  "cloudBackupQuickTooltip": "云备份",
+  "cloudBackupQuickTooltipUnconfigured": "绑定坚果云以使用云备份",
+  "cloudSyncPullNoChanges": "云同步完成，章节无变化",
+  "cloudSyncPullSummary": "已从云端同步：新增 {added}，更新 {updated}，删除 {removed} 章",
+  "@cloudSyncPullSummary": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "updated": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
   "cloudSyncEnableTitle": "开启云备份",
   "cloudSyncEnableSubtitle": "将本地备份上传到坚果云，并在打开软件时拉取较新的云端快照",
   "cloudSyncLoginTitle": "绑定坚果云",

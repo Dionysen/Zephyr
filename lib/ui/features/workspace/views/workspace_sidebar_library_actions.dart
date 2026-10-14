@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../domain/models/purewriter_models.dart';
 import '../../../core/breakpoints.dart';
 import '../../../core/zephyr_bottom_sheet.dart';
+import '../../../core/zephyr_controls.dart';
 import '../../../core/zephyr_dialog.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_snackbar.dart';
@@ -67,6 +68,7 @@ Future<String?> showSidebarLibraryMenu(
         Offset.zero & const Size(1, 1),
         Offset.zero & overlay.size,
       );
+  final scheme = Theme.of(context).colorScheme;
   return showMenu<String>(
     context: context,
     position: rect,
@@ -74,21 +76,24 @@ Future<String?> showSidebarLibraryMenu(
       for (final action in actions)
         PopupMenuItem<String>(
           value: action.id,
-          child: ListTile(
-            contentPadding: EdgeInsets.zero,
-            dense: true,
-            leading: Icon(
-              action.icon,
-              color: action.isDestructive
-                  ? Theme.of(context).colorScheme.error
-                  : null,
-            ),
-            title: Text(
-              action.label,
-              style: action.isDestructive
-                  ? TextStyle(color: Theme.of(context).colorScheme.error)
-                  : null,
-            ),
+          height: ZephyrControls.menuItemHeight,
+          child: Row(
+            children: [
+              Icon(
+                action.icon,
+                size: 18,
+                color: action.isDestructive ? scheme.error : null,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  action.label,
+                  style: action.isDestructive
+                      ? TextStyle(color: scheme.error)
+                      : null,
+                ),
+              ),
+            ],
           ),
         ),
     ],

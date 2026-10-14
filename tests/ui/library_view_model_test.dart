@@ -950,10 +950,11 @@ class FakeLibraryRepository implements WritingLibraryRepository {
         kind: kind,
       );
   @override
-  Future<void> restoreBackup({
+  Future<LibraryMergeStats> restoreBackup({
     required BackupEntry entry,
     required RestoreMode mode,
-  }) async {}
+  }) async => LibraryMergeStats.empty;
+
   @override
   Future<void> pruneBackups({int keep = 25}) async {}
 

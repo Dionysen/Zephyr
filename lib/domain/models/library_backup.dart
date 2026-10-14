@@ -4,6 +4,32 @@ enum BackupKind { manual, automatic }
 /// How to apply a selected `.pwb` onto the open library.
 enum RestoreMode { overwrite, merge }
 
+/// Chapter-level outcome of a merge restore (Article table).
+class LibraryMergeStats {
+  const LibraryMergeStats({
+    this.articlesAdded = 0,
+    this.articlesUpdated = 0,
+    this.articlesRemoved = 0,
+  });
+
+  static const empty = LibraryMergeStats();
+
+  final int articlesAdded;
+  final int articlesUpdated;
+
+  /// Remote rows applied that mark an article deleted (or newly deleted).
+  final int articlesRemoved;
+
+  bool get hasArticleChanges =>
+      articlesAdded > 0 || articlesUpdated > 0 || articlesRemoved > 0;
+
+  LibraryMergeStats operator +(LibraryMergeStats other) => LibraryMergeStats(
+    articlesAdded: articlesAdded + other.articlesAdded,
+    articlesUpdated: articlesUpdated + other.articlesUpdated,
+    articlesRemoved: articlesRemoved + other.articlesRemoved,
+  );
+}
+
 /// One `.pwb` file discovered under `Backups/` (including `Auto/`).
 class BackupEntry {
   const BackupEntry({

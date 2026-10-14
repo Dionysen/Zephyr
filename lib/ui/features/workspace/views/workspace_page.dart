@@ -31,6 +31,7 @@ import '../../editor/view_models/library_view_model.dart';
 import '../../settings/view_models/theme_view_model.dart';
 import '../../settings/views/backup_settings_view.dart';
 import '../../settings/views/settings_page.dart';
+import 'cloud_backup_quick_button.dart';
 import 'library_search_sheet.dart';
 import 'workspace_editor.dart';
 import 'workspace_settings_panel.dart';
@@ -148,9 +149,25 @@ class _WorkspacePageState extends State<WorkspacePage>
         cloudSync.library.isReadOnly) {
       return;
     }
-    await cloudSync.maybeAutoSync();
-    if (!mounted || cloudSync.error is! CloudLibraryConflictException) return;
-    ZephyrSnackBar.show(context, cloudSync.errorMessage(context.l10n)!);
+    final result = await cloudSync.maybeAutoSync();
+    if (!mounted) return;
+    if (cloudSync.error is CloudLibraryConflictException) {
+      ZephyrSnackBar.show(context, cloudSync.errorMessage(context.l10n)!);
+      return;
+    }
+    if (result == null || !result.pulled || cloudSync.error != null) return;
+    final l10n = context.l10n;
+    final stats = result.mergeStats;
+    ZephyrSnackBar.show(
+      context,
+      stats.hasArticleChanges
+          ? l10n.cloudSyncPullSummary(
+              stats.articlesAdded,
+              stats.articlesUpdated,
+              stats.articlesRemoved,
+            )
+          : l10n.cloudSyncPullNoChanges,
+    );
   }
 
   @override
@@ -368,6 +385,14 @@ class _WorkspacePageState extends State<WorkspacePage>
                             ),
                           ),
                         ],
+                      ),
+                      Positioned(
+                        left: 12,
+                        bottom: 12,
+                        child: const CloudBackupQuickButton(
+                          iconSize: 16,
+                          hoverBorder: true,
+                        ),
                       ),
                     ],
                   ),

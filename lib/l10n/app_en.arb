@@ -40,6 +40,23 @@
       }
     }
   },
+  "cloudBackupQuickTooltip": "Cloud backup",
+  "cloudBackupQuickTooltipUnconfigured": "Connect Nutstore for cloud backup",
+  "cloudSyncPullNoChanges": "Cloud sync finished — no chapter changes",
+  "cloudSyncPullSummary": "Cloud sync: +{added} · updated {updated} · −{removed} chapters",
+  "@cloudSyncPullSummary": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "updated": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
   "cloudSyncEnableTitle": "Enable cloud backup",
   "cloudSyncEnableSubtitle": "Upload local backups to Nutstore and pull newer snapshots when opening the app",
   "cloudSyncLoginTitle": "Connect Nutstore",

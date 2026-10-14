@@ -984,10 +984,10 @@ class _LibraryRepository implements WritingLibraryRepository {
       );
 
   @override
-  Future<void> restoreBackup({
+  Future<LibraryMergeStats> restoreBackup({
     required BackupEntry entry,
     required RestoreMode mode,
-  }) async {}
+  }) async => LibraryMergeStats.empty;
 
   @override
   Future<void> pruneBackups({int keep = 25}) async {}

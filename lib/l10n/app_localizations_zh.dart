@@ -111,6 +111,20 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get cloudBackupQuickTooltip => '云备份';
+
+  @override
+  String get cloudBackupQuickTooltipUnconfigured => '绑定坚果云以使用云备份';
+
+  @override
+  String get cloudSyncPullNoChanges => '云同步完成，章节无变化';
+
+  @override
+  String cloudSyncPullSummary(int added, int updated, int removed) {
+    return '已从云端同步：新增 $added，更新 $updated，删除 $removed 章';
+  }
+
+  @override
   String get cloudSyncEnableTitle => '开启云备份';
 
   @override

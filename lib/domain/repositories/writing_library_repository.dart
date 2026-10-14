@@ -122,7 +122,8 @@ abstract interface class WritingLibraryRepository {
 
   Future<List<BackupEntry>> listBackups();
   Future<BackupEntry> createBackup({required BackupKind kind});
-  Future<void> restoreBackup({
+  /// Returns merge chapter stats when [mode] is [RestoreMode.merge].
+  Future<LibraryMergeStats> restoreBackup({
     required BackupEntry entry,
     required RestoreMode mode,
   });

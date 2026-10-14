@@ -22,6 +22,7 @@ import '../../../core/zephyr_swipe_drawer.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_theme.dart';
 import '../../editor/view_models/library_view_model.dart';
+import 'cloud_backup_quick_button.dart';
 import 'library_search_sheet.dart';
 import 'library_switcher_menu.dart';
 import 'workspace_sidebar_library_actions.dart';
@@ -114,7 +115,9 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
     final drawer = widget.mode == SidebarMode.drawer;
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border(right: BorderSide(color: Theme.of(context).dividerColor)),
+        border: Border(
+          right: BorderSide(color: Theme.of(context).dividerColor),
+        ),
       ),
       child: Material(
         color: Theme.of(context).colorScheme.surfaceContainerLowest,
@@ -129,7 +132,7 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                 onLocateCurrent: model.article == null
                     ? null
                     : () => _chapterTreeKey.currentState
-                        ?.scrollToCurrentArticle(),
+                          ?.scrollToCurrentArticle(),
                 canReorder: _canReorder,
               )
             else ...[
@@ -173,7 +176,7 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                           IconButton(
                             onPressed: model.hasVolumes
                                 ? () => _chapterTreeKey.currentState
-                                    ?.toggleAllVolumes()
+                                      ?.toggleAllVolumes()
                                 : null,
                             icon: Icon(
                               model.areAllVolumesExpanded
@@ -188,7 +191,7 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                             onPressed: model.article == null
                                 ? null
                                 : () => _chapterTreeKey.currentState
-                                    ?.scrollToCurrentArticle(),
+                                      ?.scrollToCurrentArticle(),
                             icon: const Icon(Icons.my_location_outlined),
                             tooltip: l10n.tooltipLocateCurrentChapter,
                           ),
@@ -257,7 +260,10 @@ class _ChapterSortMenuButton extends StatelessWidget {
     final bookOk =
         model.selectedBook != null && model.selectedBook?.isTrash != true;
 
-    RadioMenuButton<ChapterSortMode> modeItem(ChapterSortMode value, String label) {
+    RadioMenuButton<ChapterSortMode> modeItem(
+      ChapterSortMode value,
+      String label,
+    ) {
       return RadioMenuButton<ChapterSortMode>(
         value: value,
         groupValue: mode,
@@ -286,13 +292,8 @@ class _ChapterSortMenuButton extends StatelessWidget {
                 },
           isSelected: adjusting,
           icon: Icon(adjusting ? Icons.swap_vert : Icons.sort),
-          selectedIcon: Icon(
-            Icons.swap_vert,
-            color: theme.colorScheme.primary,
-          ),
-          tooltip: adjusting
-              ? l10n.tooltipDoneReordering
-              : l10n.tooltipReorder,
+          selectedIcon: Icon(Icons.swap_vert, color: theme.colorScheme.primary),
+          tooltip: adjusting ? l10n.tooltipDoneReordering : l10n.tooltipReorder,
         );
       },
       menuChildren: [
@@ -441,9 +442,8 @@ class _DrawerSidebarHeader extends StatelessWidget {
           ),
           IconButton(
             style: toolStyle,
-            onPressed: () => unawaited(
-              showLibrarySearchSheet(context, model: model),
-            ),
+            onPressed: () =>
+                unawaited(showLibrarySearchSheet(context, model: model)),
             icon: const Icon(Icons.search),
             tooltip: l10n.tooltipSearchChapters,
           ),
@@ -625,6 +625,12 @@ class WorkspaceMobileBookBar extends StatelessWidget {
                 ),
               ),
               Center(
+                child: CloudBackupQuickButton(
+                  iconSize: _iconSize,
+                  style: _mobileBarIconStyle(context),
+                ),
+              ),
+              Center(
                 child: IconButton(
                   style: _mobileBarIconStyle(context),
                   onPressed: () => _showToolsSheet(context),
@@ -705,10 +711,8 @@ Future<void> showWorkspaceMobileToolsSheet(
   return showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
-    builder: (sheetContext) => _MobileToolsSheet(
-      tools: tools,
-      onReorder: onReorder,
-    ),
+    builder: (sheetContext) =>
+        _MobileToolsSheet(tools: tools, onReorder: onReorder),
   );
 }
 
@@ -769,9 +773,7 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
                     ),
                     if (filterTags.isNotEmpty) ...[
                       const SizedBox(width: 10),
-                      Expanded(
-                        child: _buildTagFilters(context, filterTags),
-                      ),
+                      Expanded(child: _buildTagFilters(context, filterTags)),
                     ] else
                       const Spacer(),
                     IconButton(
@@ -841,7 +843,8 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
   Widget _buildTagFilters(BuildContext context, List<String> tags) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
-    final shape = theme.extension<ZephyrShapeTheme>()?.labeledButtonShape ??
+    final shape =
+        theme.extension<ZephyrShapeTheme>()?.labeledButtonShape ??
         ZephyrControls.labeledButtonShape;
     final selectedBg = theme.colorScheme.primary.withValues(alpha: 0.18);
     final idleBg = theme.colorScheme.onSurface.withValues(alpha: 0.06);
@@ -1027,11 +1030,7 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
         : books;
     final rowCount = (items.length + 1) ~/ 2;
 
-    Widget cell(
-      Widget child, {
-      required bool right,
-      required bool bottom,
-    }) {
+    Widget cell(Widget child, {required bool right, required bool bottom}) {
       // Paint borders in the foreground so ListTile's Material does not cover
       // the hairlines.
       return Container(
@@ -1077,7 +1076,9 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
     }
 
     return ListView.builder(
-      key: ValueKey(_reorderMode ? 'book-sheet-grid-reorder' : 'book-sheet-grid'),
+      key: ValueKey(
+        _reorderMode ? 'book-sheet-grid-reorder' : 'book-sheet-grid',
+      ),
       controller: _scrollController,
       padding: const EdgeInsets.only(bottom: 8),
       itemCount: rowCount,
@@ -1124,10 +1125,12 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
     final selected = book.id == model.selectedBook?.id;
     final isTrash = book.isTrash;
     final stats = model.bookStats(book.id);
-    final subtitle = _mobileBookSubtitle(book) ??
+    final subtitle =
+        _mobileBookSubtitle(book) ??
         l10n.bookStatsMeta(stats.volumes, stats.chapters);
     final accent = isTrash ? theme.colorScheme.error : null;
-    final showDelete = !isTrash &&
+    final showDelete =
+        !isTrash &&
         !_reorderMode &&
         _armedDeleteBookId == book.id &&
         !model.isReadOnly;
@@ -1137,10 +1140,7 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
         IconButton(
           tooltip: l10n.tooltipDeleteBook,
           onPressed: () => _onDeleteBook(context, book),
-          icon: Icon(
-            Icons.delete_outline,
-            color: theme.colorScheme.error,
-          ),
+          icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
         ),
       if (!isTrash && !_reorderMode)
         IconButton(
@@ -1150,11 +1150,7 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
               : () async {
                   Navigator.of(context).pop();
                   if (!widget.hostContext.mounted) return;
-                  await _editBook(
-                    widget.hostContext,
-                    model: model,
-                    book: book,
-                  );
+                  await _editBook(widget.hostContext, model: model, book: book);
                 },
           icon: const Icon(Icons.edit_outlined),
         ),
@@ -1205,8 +1201,9 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
             ? null
             : () {
                 setState(() {
-                  _armedDeleteBookId =
-                      _armedDeleteBookId == book.id ? null : book.id;
+                  _armedDeleteBookId = _armedDeleteBookId == book.id
+                      ? null
+                      : book.id;
                 });
               },
         onTap: () async {
@@ -1265,10 +1262,7 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
 }
 
 class _MobileToolsSheet extends StatefulWidget {
-  const _MobileToolsSheet({
-    required this.tools,
-    this.onReorder,
-  });
+  const _MobileToolsSheet({required this.tools, this.onReorder});
 
   static const _columns = 5;
   static const _iconSize = 26.0;
@@ -1368,15 +1362,13 @@ class _MobileToolsSheetState extends State<_MobileToolsSheet> {
                       shadowColor: Colors.black54,
                       borderRadius: radius,
                       child: SizedBox(
-                        width: (MediaQuery.sizeOf(context).width - 24) /
+                        width:
+                            (MediaQuery.sizeOf(context).width - 24) /
                             _MobileToolsSheet._columns,
                         child: tile(),
                       ),
                     ),
-                    childWhenDragging: Opacity(
-                      opacity: 0.28,
-                      child: tile(),
-                    ),
+                    childWhenDragging: Opacity(opacity: 0.28, child: tile()),
                     child: DragTarget<int>(
                       onWillAcceptWithDetails: (details) =>
                           details.data != index,
@@ -1388,8 +1380,9 @@ class _MobileToolsSheetState extends State<_MobileToolsSheet> {
                           decoration: BoxDecoration(
                             borderRadius: radius,
                             color: highlight
-                                ? theme.colorScheme.primary
-                                    .withValues(alpha: 0.10)
+                                ? theme.colorScheme.primary.withValues(
+                                    alpha: 0.10,
+                                  )
                                 : null,
                           ),
                           child: tile(onTap: onTap),
@@ -1519,7 +1512,8 @@ class WorkspaceHeader extends StatelessWidget {
                       children: [
                         if (showMenuButton)
                           IconButton(
-                            onPressed: onOpenMenu ??
+                            onPressed:
+                                onOpenMenu ??
                                 () => Scaffold.maybeOf(context)?.openDrawer(),
                             icon: const Icon(Icons.menu),
                             tooltip: l10n.tooltipOpenLibrary,
@@ -1602,9 +1596,7 @@ class WorkspaceBookPicker extends StatelessWidget {
       hint: l10n.selectBook,
       // Non-dense: parent [ZephyrFloatingChrome] owns fill / shadow / radius.
       color: dense ? null : Colors.transparent,
-      shape: dense
-          ? null
-          : RoundedRectangleBorder(borderRadius: barRadius),
+      shape: dense ? null : RoundedRectangleBorder(borderRadius: barRadius),
       showOutline: dense,
       floatingMenu: !dense,
       items: [
@@ -1617,174 +1609,172 @@ class WorkspaceBookPicker extends StatelessWidget {
       ],
       onChanged: model.selectBook,
       triggerBuilder: (context, {required selected, required isOpen}) {
-          final book = selected == null ? null : bookById[selected.value];
-          final stats = book == null ? null : model.bookStats(book.id);
-          final meta = stats == null
-              ? null
-              : l10n.bookStatsMeta(stats.volumes, stats.chapters);
-          final theme = Theme.of(context);
-          final isTrash = book?.isTrash == true;
-          return Padding(
-            padding: EdgeInsets.symmetric(horizontal: dense ? 4 : 10),
-            child: Row(
-              children: [
-                if (isTrash) ...[
-                  Icon(
-                    Icons.delete_outline,
-                    size: ZephyrControls.iconSize,
-                    color: theme.colorScheme.error,
+        final book = selected == null ? null : bookById[selected.value];
+        final stats = book == null ? null : model.bookStats(book.id);
+        final meta = stats == null
+            ? null
+            : l10n.bookStatsMeta(stats.volumes, stats.chapters);
+        final theme = Theme.of(context);
+        final isTrash = book?.isTrash == true;
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: dense ? 4 : 10),
+          child: Row(
+            children: [
+              if (isTrash) ...[
+                Icon(
+                  Icons.delete_outline,
+                  size: ZephyrControls.iconSize,
+                  color: theme.colorScheme.error,
+                ),
+                const SizedBox(width: 8),
+              ],
+              Expanded(
+                child: Text(
+                  selected?.label ?? l10n.selectBook,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: isTrash ? theme.colorScheme.error : null,
                   ),
-                  const SizedBox(width: 8),
-                ],
-                Expanded(
+                ),
+              ),
+              if (meta != null) ...[
+                const SizedBox(width: 8),
+                // Non-flex trailing: sits flush before the chevron. Cap width
+                // so long English meta ellipsizes instead of overflowing.
+                // (Flexible + textAlign does not right-align — the Text
+                // shrink-wraps and stays at the start of the flex slot.)
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 140),
                   child: Text(
-                    selected?.label ?? l10n.selectBook,
+                    meta,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: isTrash ? theme.colorScheme.error : null,
+                    textAlign: TextAlign.right,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: isTrash
+                          ? theme.colorScheme.error
+                          : theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                ),
-                if (meta != null) ...[
-                  const SizedBox(width: 8),
-                  // Non-flex trailing: sits flush before the chevron. Cap width
-                  // so long English meta ellipsizes instead of overflowing.
-                  // (Flexible + textAlign does not right-align — the Text
-                  // shrink-wraps and stays at the start of the flex slot.)
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 140),
-                    child: Text(
-                      meta,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: isTrash
-                            ? theme.colorScheme.error
-                            : theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ],
-                const SizedBox(width: 4),
-                Icon(
-                  isOpen ? Icons.expand_less : Icons.expand_more,
-                  size: ZephyrControls.iconSize,
                 ),
               ],
-            ),
-          );
-        },
-        itemBuilder:
-            (
-              context, {
-              required item,
-              required selected,
-              required highlighted,
-              required onSelect,
-              required onDismiss,
-            }) {
-              final book = bookById[item.value];
-              final subtitle = item.subtitle;
-              final theme = Theme.of(context);
-              final isTrash = book?.isTrash == true;
-              final trashColor = theme.colorScheme.error;
-              return Stack(
-                fit: StackFit.expand,
-                children: [
-                  InkWell(
-                    onTap: onSelect,
-                    child: Padding(
-                      padding: const EdgeInsets.only(
-                        left: 8,
-                        right: ZephyrControls.buttonSize + 4,
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            isTrash
-                                ? Icons.delete_outline
-                                : Icons.book_outlined,
-                            size: ZephyrControls.iconSize,
-                            color: isTrash ? trashColor : null,
+              const SizedBox(width: 4),
+              Icon(
+                isOpen ? Icons.expand_less : Icons.expand_more,
+                size: ZephyrControls.iconSize,
+              ),
+            ],
+          ),
+        );
+      },
+      itemBuilder:
+          (
+            context, {
+            required item,
+            required selected,
+            required highlighted,
+            required onSelect,
+            required onDismiss,
+          }) {
+            final book = bookById[item.value];
+            final subtitle = item.subtitle;
+            final theme = Theme.of(context);
+            final isTrash = book?.isTrash == true;
+            final trashColor = theme.colorScheme.error;
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                InkWell(
+                  onTap: onSelect,
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      left: 8,
+                      right: ZephyrControls.buttonSize + 4,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isTrash ? Icons.delete_outline : Icons.book_outlined,
+                          size: ZephyrControls.iconSize,
+                          color: isTrash ? trashColor : null,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            item.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: isTrash ? trashColor : null,
+                            ),
                           ),
+                        ),
+                        if (subtitle != null && subtitle.isNotEmpty) ...[
                           const SizedBox(width: 8),
-                          Expanded(
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 140),
                             child: Text(
-                              item.label,
+                              subtitle,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                color: isTrash ? trashColor : null,
+                              textAlign: TextAlign.right,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: isTrash
+                                    ? trashColor
+                                    : theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
-                          if (subtitle != null && subtitle.isNotEmpty) ...[
-                            const SizedBox(width: 8),
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 140),
-                              child: Text(
-                                subtitle,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.right,
-                                style: theme.textTheme.labelMedium?.copyWith(
-                                  color: isTrash
-                                      ? trashColor
-                                      : theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                          ],
+                          const SizedBox(width: 6),
                         ],
-                      ),
+                      ],
                     ),
                   ),
-                  if (!isTrash)
-                    Positioned(
-                      top:
-                          (ZephyrControls.fieldHeight -
-                              ZephyrControls.buttonSize) /
-                          2,
-                      right: 4,
-                      width: ZephyrControls.buttonSize,
-                      height: ZephyrControls.buttonSize,
-                      child: Material(
-                        type: MaterialType.transparency,
-                        child: InkWell(
-                          customBorder: hostContext.zephyrShape.iconButtonShape,
-                          onTap: model.isReadOnly || book == null
-                              ? null
-                              : () {
-                                  final editing = book;
-                                  onDismiss();
-                                  WidgetsBinding.instance.addPostFrameCallback((
-                                    _,
-                                  ) {
-                                    if (!hostContext.mounted) {
-                                      return;
-                                    }
-                                    unawaited(
-                                      _editBook(
-                                        hostContext,
-                                        model: model,
-                                        book: editing,
-                                      ),
-                                    );
-                                  });
-                                },
-                          child: Icon(
-                            Icons.edit_outlined,
-                            size: ZephyrControls.iconSize,
-                          ),
+                ),
+                if (!isTrash)
+                  Positioned(
+                    top:
+                        (ZephyrControls.fieldHeight -
+                            ZephyrControls.buttonSize) /
+                        2,
+                    right: 4,
+                    width: ZephyrControls.buttonSize,
+                    height: ZephyrControls.buttonSize,
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: InkWell(
+                        customBorder: hostContext.zephyrShape.iconButtonShape,
+                        onTap: model.isReadOnly || book == null
+                            ? null
+                            : () {
+                                final editing = book;
+                                onDismiss();
+                                WidgetsBinding.instance.addPostFrameCallback((
+                                  _,
+                                ) {
+                                  if (!hostContext.mounted) {
+                                    return;
+                                  }
+                                  unawaited(
+                                    _editBook(
+                                      hostContext,
+                                      model: model,
+                                      book: editing,
+                                    ),
+                                  );
+                                });
+                              },
+                        child: Icon(
+                          Icons.edit_outlined,
+                          size: ZephyrControls.iconSize,
                         ),
                       ),
                     ),
-                ],
-              );
-            },
+                  ),
+              ],
+            );
+          },
     );
     if (dense) {
       return Padding(
@@ -1795,10 +1785,7 @@ class WorkspaceBookPicker extends StatelessWidget {
     // Match the library dock: surface fill, soft shadow, floating-bar radius.
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-      child: ZephyrFloatingChrome(
-        borderRadius: barRadius,
-        child: dropdown,
-      ),
+      child: ZephyrFloatingChrome(borderRadius: barRadius, child: dropdown),
     );
   }
 
@@ -2083,8 +2070,10 @@ class _ChapterTreeState extends State<_ChapterTree> {
     if (estimated == null) return;
     final position = _scrollController.position;
     final destination =
-        (estimated - position.viewportDimension * _locateAlignment)
-            .clamp(0.0, position.maxScrollExtent);
+        (estimated - position.viewportDimension * _locateAlignment).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
     final distance = (destination - position.pixels).abs();
     if (distance >= 1) {
       await _scrollController.animateTo(
@@ -2137,8 +2126,10 @@ class _ChapterTreeState extends State<_ChapterTree> {
     for (final alignment in const [0.25, -0.65, 1.15]) {
       if (!_scrollController.hasClients) return;
       final position = _scrollController.position;
-      final offset = (estimated - position.viewportDimension * alignment)
-          .clamp(0.0, position.maxScrollExtent);
+      final offset = (estimated - position.viewportDimension * alignment).clamp(
+        0.0,
+        position.maxScrollExtent,
+      );
       _scrollController.jumpTo(offset);
       await WidgetsBinding.instance.endOfFrame;
       if (!mounted) return;
@@ -2229,11 +2220,7 @@ class _ChapterTreeState extends State<_ChapterTree> {
   /// Scroll offset of [object] inside its parent [RenderSliverMultiBoxAdaptor].
   double? _sliverChildScrollOffset(RenderObject object) {
     var current = object;
-    for (
-      var parent = current.parent;
-      parent != null;
-      parent = current.parent
-    ) {
+    for (var parent = current.parent; parent != null; parent = current.parent) {
       if (parent is RenderSliverMultiBoxAdaptor) {
         return parent.childScrollOffset(current);
       }
@@ -2243,9 +2230,8 @@ class _ChapterTreeState extends State<_ChapterTree> {
   }
 
   RenderSliver? _volumeSliver(String volumeId) {
-    final renderObject = _volumeKeyFor(
-      volumeId,
-    ).currentContext?.findRenderObject();
+    final renderObject = _volumeKeyFor(volumeId).currentContext
+        ?.findRenderObject();
     return renderObject is RenderSliver ? renderObject : null;
   }
 
@@ -2309,7 +2295,9 @@ class _ChapterTreeState extends State<_ChapterTree> {
 
   void _toggleVolume(String volumeId) {
     final collapsing = widget.model.isVolumeExpanded(volumeId);
-    final target = collapsing ? _collapseTargetOffset(volumeId: volumeId) : null;
+    final target = collapsing
+        ? _collapseTargetOffset(volumeId: volumeId)
+        : null;
     widget.model.toggleVolume(volumeId);
     if (target != null) _jumpToAfterLayout(target);
   }
@@ -2335,9 +2323,9 @@ class _ChapterTreeState extends State<_ChapterTree> {
     final sortMode = model.chapterSortMode;
     final showDragHandles =
         canManage && model.isReorderMode && sortMode.isManual;
-    final pinnedBackground = Theme.of(
-      context,
-    ).colorScheme.surfaceContainerLowest;
+    final pinnedBackground = Theme.of(context)
+        .colorScheme
+        .surfaceContainerLowest;
     final volumes = library.categories
         .where((item) => !isTrash && item.folderId == bookId)
         .toList(growable: false);
@@ -2380,8 +2368,9 @@ class _ChapterTreeState extends State<_ChapterTree> {
             .toList(growable: false),
         sortMode,
       );
-      final chapterIds =
-          volumeChapters.map((item) => item.id).toList(growable: false);
+      final chapterIds = volumeChapters
+          .map((item) => item.id)
+          .toList(growable: false);
       final header = _VolumeRow(
         volume: volume,
         model: model,
@@ -2399,10 +2388,7 @@ class _ChapterTreeState extends State<_ChapterTree> {
           key: _volumeKeyFor(volume.id),
           slivers: [
             PinnedHeaderSliver(
-              child: ColoredBox(
-                color: pinnedBackground,
-                child: header,
-              ),
+              child: ColoredBox(color: pinnedBackground, child: header),
             ),
             if (model.isVolumeExpanded(volume.id) && volumeChapters.isNotEmpty)
               SliverList.builder(
@@ -2427,9 +2413,7 @@ class _ChapterTreeState extends State<_ChapterTree> {
       );
     }
     slivers.add(
-      SliverToBoxAdapter(
-        child: SizedBox(height: 12 + widget.bottomInset),
-      ),
+      SliverToBoxAdapter(child: SizedBox(height: 12 + widget.bottomInset)),
     );
     return CustomScrollView(controller: _scrollController, slivers: slivers);
   }
@@ -2481,7 +2465,8 @@ class _BookGridReorderTargetState extends State<_BookGridReorderTarget> {
   @override
   Widget build(BuildContext context) {
     return DragTarget<_BookDragData>(
-      onWillAcceptWithDetails: (details) => details.data.bookId != widget.bookId,
+      onWillAcceptWithDetails: (details) =>
+          details.data.bookId != widget.bookId,
       onMove: (details) {
         final after = _isAfter(details.offset);
         if (after != _insertAfter) setState(() => _insertAfter = after);
@@ -2644,10 +2629,7 @@ class _VolumeRow extends StatelessWidget {
   final bool isFirst;
   final VoidCallback onToggle;
 
-  Future<void> _openMenu(
-    BuildContext context, {
-    RelativeRect? position,
-  }) async {
+  Future<void> _openMenu(BuildContext context, {RelativeRect? position}) async {
     if (!canManage) return;
     final actionId = await showSidebarLibraryMenu(
       context,
@@ -2684,7 +2666,9 @@ class _VolumeRow extends StatelessWidget {
     final radius = context.zephyrBorderRadius;
     final listInset = context.zephyrSidebarItemInset;
     final volumeGap = context.zephyrSidebarVolumeGap;
-    final compact = ZephyrBreakpoints.isCompact(MediaQuery.sizeOf(context).width);
+    final compact = ZephyrBreakpoints.isCompact(
+      MediaQuery.sizeOf(context).width,
+    );
     final body = Padding(
       padding: EdgeInsets.symmetric(horizontal: listInset),
       child: Material(
@@ -2701,9 +2685,9 @@ class _VolumeRow extends StatelessWidget {
               : null,
           onSecondaryTapDown: !compact
               ? (details) => _openMenu(
-                    context,
-                    position: secondaryMenuPosition(context, details),
-                  )
+                  context,
+                  position: secondaryMenuPosition(context, details),
+                )
               : null,
           child: Padding(
             padding: EdgeInsets.fromLTRB(
@@ -2780,10 +2764,7 @@ class _ChapterRow extends StatelessWidget {
   final bool showDragHandle;
   final bool isFirst;
 
-  Future<void> _openMenu(
-    BuildContext context, {
-    RelativeRect? position,
-  }) async {
+  Future<void> _openMenu(BuildContext context, {RelativeRect? position}) async {
     if (!canManage) return;
     final actionId = await showSidebarLibraryMenu(
       context,
@@ -2811,10 +2792,7 @@ class _ChapterRow extends StatelessWidget {
       insertAfter: insertAfter,
     );
     if (ids == null) return;
-    await model.reorderChapters(
-      volumeId: chapter.categoryId,
-      orderedIds: ids,
-    );
+    await model.reorderChapters(volumeId: chapter.categoryId, orderedIds: ids);
   }
 
   @override
@@ -2822,8 +2800,12 @@ class _ChapterRow extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = context.l10n;
     final radius = context.zephyrBorderRadius;
-    final compact = ZephyrBreakpoints.isCompact(MediaQuery.sizeOf(context).width);
-    final activeArticle = model.article?.id == chapter.id ? model.article : null;
+    final compact = ZephyrBreakpoints.isCompact(
+      MediaQuery.sizeOf(context).width,
+    );
+    final activeArticle = model.article?.id == chapter.id
+        ? model.article
+        : null;
     final selected = activeArticle != null;
     final metaText = l10n.chapterMeta(
       _formatDate(chapter.createdAt),
@@ -2871,9 +2853,9 @@ class _ChapterRow extends StatelessWidget {
               : null,
           onSecondaryTapDown: !compact
               ? (details) => _openMenu(
-                    context,
-                    position: secondaryMenuPosition(context, details),
-                  )
+                  context,
+                  position: secondaryMenuPosition(context, details),
+                )
               : null,
           child: Padding(
             padding: EdgeInsets.fromLTRB(
@@ -2953,17 +2935,13 @@ class _ChapterRow extends StatelessWidget {
       gap: 0,
       horizontalInset: listInset,
       canAccept: (data) =>
-          data.articleId != chapter.id &&
-          data.categoryId == chapter.categoryId,
+          data.articleId != chapter.id && data.categoryId == chapter.categoryId,
       onAcceptBefore: (data) => _acceptChapterDrop(data, insertAfter: false),
       onAcceptAfter: (data) => _acceptChapterDrop(data, insertAfter: true),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ?divider,
-          body,
-        ],
+        children: [?divider, body],
       ),
     );
   }
@@ -3008,10 +2986,7 @@ class _SidebarDragHandle<T extends Object> extends StatelessWidget {
         color: theme.colorScheme.surfaceContainerHigh,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Text(
-            feedbackLabel,
-            style: theme.textTheme.labelLarge,
-          ),
+          child: Text(feedbackLabel, style: theme.textTheme.labelLarge),
         ),
       ),
       childWhenDragging: Icon(
@@ -3086,18 +3061,14 @@ class _LibraryDock extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: LibrarySwitcherButton(model: model),
-                ),
+                Expanded(child: LibrarySwitcherButton(model: model)),
                 Tooltip(
                   message: l10n.tooltipSettings,
                   child: InkWell(
                     onTap: openSettings,
                     child: const SizedBox(
                       width: 48,
-                      child: Center(
-                        child: Icon(Icons.settings_outlined),
-                      ),
+                      child: Center(child: Icon(Icons.settings_outlined)),
                     ),
                   ),
                 ),

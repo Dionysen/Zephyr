@@ -377,6 +377,36 @@ ThemeData zephyrTheme(
         visualDensity: VisualDensity.compact,
       ),
     ),
+    // Match [ZephyrDropdown] rows ([fieldHeight]). Avoid compact density —
+    // it shrinks below the declared size and no longer matches the book picker.
+    menuButtonTheme: MenuButtonThemeData(
+      style: ButtonStyle(
+        minimumSize: const WidgetStatePropertyAll(
+          Size(64, ZephyrControls.menuItemHeight),
+        ),
+        fixedSize: const WidgetStatePropertyAll(
+          Size.fromHeight(ZephyrControls.menuItemHeight),
+        ),
+        maximumSize: const WidgetStatePropertyAll(
+          Size(double.infinity, ZephyrControls.menuItemHeight),
+        ),
+        padding: const WidgetStatePropertyAll(
+          EdgeInsets.symmetric(horizontal: 12),
+        ),
+        iconSize: const WidgetStatePropertyAll(ZephyrControls.iconSize),
+        visualDensity: VisualDensity.standard,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    ),
+    popupMenuTheme: PopupMenuThemeData(
+      color: control,
+      surfaceTintColor: Colors.transparent,
+      elevation: 6,
+      shape: shape.menuShape.copyWith(side: hairline),
+      menuPadding: const EdgeInsets.symmetric(
+        vertical: ZephyrControls.menuInsets,
+      ),
+    ),
     splashFactory: InkRipple.splashFactory,
     splashColor: accent.withValues(alpha: .14),
     highlightColor: accent.withValues(alpha: .08),

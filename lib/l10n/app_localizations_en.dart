@@ -114,6 +114,22 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get cloudBackupQuickTooltip => 'Cloud backup';
+
+  @override
+  String get cloudBackupQuickTooltipUnconfigured =>
+      'Connect Nutstore for cloud backup';
+
+  @override
+  String get cloudSyncPullNoChanges =>
+      'Cloud sync finished — no chapter changes';
+
+  @override
+  String cloudSyncPullSummary(int added, int updated, int removed) {
+    return 'Cloud sync: +$added · updated $updated · −$removed chapters';
+  }
+
+  @override
   String get cloudSyncEnableTitle => 'Enable cloud backup';
 
   @override

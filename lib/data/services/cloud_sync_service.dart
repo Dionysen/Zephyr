@@ -190,9 +190,7 @@ class CloudSyncService {
   }
 
   /// Pull remote latest snapshot when newer and merge; never upload.
-  ///
-  /// Returns the remote manifest when a merge ran, otherwise null.
-  Future<CloudSyncManifest?> pullIfNewer({
+  Future<CloudPullResult> pullIfNewer({
     required WritingLibraryRepository library,
     required Future<void> Function() flushPending,
   }) async {
@@ -209,13 +207,14 @@ class CloudSyncService {
         folderId,
         libraryId,
       );
-      if (remoteManifest == null) return null;
+      if (remoteManifest == null) return CloudPullResult.skipped;
       final shouldPull =
           _preferences.lastSyncLibraryId != libraryId ||
           _preferences.lastRemoteUpdatedAt == null ||
           remoteManifest.updatedAt.isAfter(_preferences.lastRemoteUpdatedAt!);
-      if (!shouldPull) return null;
+      if (!shouldPull) return CloudPullResult.skipped;
 
+      late final LibraryMergeStats mergeStats;
       final staging = await Directory.systemTemp.createTemp(
         'zephyr-cloud-pull-',
       );
@@ -228,7 +227,7 @@ class CloudSyncService {
         if (pwb == null) {
           throw StateError('Cloud manifest exists without library.pwb.');
         }
-        await library.restoreBackup(
+        mergeStats = await library.restoreBackup(
           entry: BackupEntry(
             path: pwb.path,
             fileName: path.basename(pwb.path),
@@ -250,7 +249,7 @@ class CloudSyncService {
         lastRemoteUpdatedAt: remoteManifest.updatedAt,
       );
       await _preferencesStorage.save(_preferences);
-      return remoteManifest;
+      return CloudPullResult(pulled: true, mergeStats: mergeStats);
     } finally {
       client.close();
     }
