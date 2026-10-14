@@ -557,6 +557,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get hideQuickToolbarSubtitle => '开启后，键盘上方不再显示快捷工具栏';
 
   @override
+  String get showChapterDetailsTitle => '显示章节详细信息';
+
+  @override
+  String get showChapterDetailsSubtitle => '关闭后侧边栏只显示章节名，不显示预览与时间、字数等信息';
+
+  @override
   String get editorSectionTitle => '编辑器';
 
   @override

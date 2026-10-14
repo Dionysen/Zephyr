@@ -495,16 +495,13 @@ class _CompactSheetTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final foreground = selected ? theme.colorScheme.primary : null;
     return ZephyrBottomSheet.withRowDivider(
       context: context,
       showDivider: showDivider,
       child: SizedBox(
         height: ZephyrBottomSheet.rowHeight,
         child: Material(
-          color: selected
-              ? theme.colorScheme.primary.withValues(alpha: 0.08)
-              : Colors.transparent,
+          color: Colors.transparent,
           child: InkWell(
             onTap: onTap,
             child: Padding(
@@ -514,7 +511,7 @@ class _CompactSheetTile extends StatelessWidget {
                   Icon(
                     icon,
                     size: ZephyrBottomSheet.rowIconSize,
-                    color: iconColor ?? foreground,
+                    color: iconColor ?? labelColor,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -524,10 +521,16 @@ class _CompactSheetTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: ZephyrBottomSheet.rowTitleStyle(
                         theme,
-                        color: labelColor ?? foreground,
+                        color: labelColor,
                       ),
                     ),
                   ),
+                  if (selected)
+                    Icon(
+                      Icons.check,
+                      size: ZephyrControls.iconSize,
+                      color: theme.colorScheme.onSurface,
+                    ),
                 ],
               ),
             ),

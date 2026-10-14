@@ -65,6 +65,7 @@ void main() {
           immersiveStatusBar: true,
           hideStatusBarIcons: false,
           hideQuickToolbar: true,
+          showChapterDetails: false,
           editorBackgroundEnabled: false,
           localePreference: AppLocalePreference.system,
           mobileToolsOrder: ['settings', 'search'],
@@ -111,6 +112,7 @@ void main() {
       expect(actual.ui.immersiveStatusBar, expected.ui.immersiveStatusBar);
       expect(actual.ui.hideStatusBarIcons, expected.ui.hideStatusBarIcons);
       expect(actual.ui.hideQuickToolbar, expected.ui.hideQuickToolbar);
+      expect(actual.ui.showChapterDetails, expected.ui.showChapterDetails);
       expect(
         actual.ui.editorBackgroundEnabled,
         expected.ui.editorBackgroundEnabled,
@@ -170,6 +172,10 @@ void main() {
     expect(
       appearance.ui.hideQuickToolbar,
       UiPreferences.defaults.hideQuickToolbar,
+    );
+    expect(
+      appearance.ui.showChapterDetails,
+      UiPreferences.defaults.showChapterDetails,
     );
     expect(
       appearance.ui.editorBackgroundEnabled,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../zephyr_bottom_sheet.dart';
+import '../zephyr_controls.dart';
 import '../zephyr_l10n.dart';
 import '../zephyr_theme.dart';
 import 'zephyr_settings_value_tile.dart';
@@ -187,7 +188,8 @@ class _ZephyrSettingsChoiceSheetState<T>
                                 if (isSelected)
                                   Icon(
                                     Icons.check,
-                                    color: theme.colorScheme.primary,
+                                    size: ZephyrControls.iconSize,
+                                    color: theme.colorScheme.onSurface,
                                   ),
                                 if (showDelete)
                                   IconButton(
@@ -200,7 +202,6 @@ class _ZephyrSettingsChoiceSheetState<T>
                                   ),
                               ],
                             ),
-                            selected: isSelected,
                             onTap: () =>
                                 Navigator.of(context).pop(choice.value),
                           ),

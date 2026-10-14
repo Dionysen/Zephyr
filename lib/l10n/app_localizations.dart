@@ -1154,6 +1154,18 @@ abstract class AppLocalizations {
   /// **'When on, the accessory toolbar above the keyboard is hidden.'**
   String get hideQuickToolbarSubtitle;
 
+  /// No description provided for @showChapterDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show chapter details'**
+  String get showChapterDetailsTitle;
+
+  /// No description provided for @showChapterDetailsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When off, the sidebar shows chapter titles only—no preview or meta.'**
+  String get showChapterDetailsSubtitle;
+
   /// No description provided for @editorSectionTitle.
   ///
   /// In en, this message translates to:

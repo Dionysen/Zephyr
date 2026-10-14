@@ -20,6 +20,7 @@ import '../../../core/zephyr_snackbar.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
 import '../../../core/zephyr_l10n.dart';
+import '../../../core/zephyr_menu.dart';
 import '../../../core/zephyr_theme.dart';
 import '../../editor/view_models/library_view_model.dart';
 import 'cloud_backup_quick_button.dart';
@@ -266,20 +267,14 @@ class _ChapterSortMenuButton extends StatelessWidget {
     final bookOk =
         model.selectedBook != null && model.selectedBook?.isTrash != true;
 
-    RadioMenuButton<ChapterSortMode> modeItem(
-      ChapterSortMode value,
-      String label,
-    ) {
-      return RadioMenuButton<ChapterSortMode>(
-        value: value,
-        groupValue: mode,
-        onChanged: !bookOk
+    Widget modeItem(ChapterSortMode value, String label) {
+      return ZephyrMenu.selectableItem(
+        context: context,
+        label: label,
+        selected: mode == value,
+        onPressed: !bookOk
             ? null
-            : (next) {
-                if (next == null) return;
-                model.setChapterSortMode(next);
-              },
-        child: Text(label),
+            : () => model.setChapterSortMode(value),
       );
     }
 
@@ -494,10 +489,27 @@ abstract final class WorkspaceMobileToolId {
   static const settings = 'settings';
 }
 
-/// One overflow action for the mobile editor “more” sheet.
+/// One choice inside a desktop overflow submenu (radio-style).
+class WorkspaceOverflowSubmenuChoice {
+  const WorkspaceOverflowSubmenuChoice({
+    required this.id,
+    required this.label,
+    required this.onSelected,
+    this.selected = false,
+  });
+
+  final String id;
+  final String label;
+  final VoidCallback onSelected;
+  final bool selected;
+}
+
+/// One overflow action for the editor “more” menu.
 ///
 /// Pass tools via [WorkspaceMobileBookBar.tools] (or [toolsBuilder]) so future
-/// settings/actions can plug in without changing the bar layout.
+/// settings/actions can plug in without changing the bar layout. On desktop,
+/// a non-empty [submenu] becomes a cascading [SubmenuButton]; mobile keeps
+/// using [onTap] (e.g. a picker sheet).
 class WorkspaceMobileTool {
   const WorkspaceMobileTool({
     required this.id,
@@ -505,6 +517,7 @@ class WorkspaceMobileTool {
     required this.onTap,
     this.icon,
     this.enabled = true,
+    this.submenu,
   });
 
   final String id;
@@ -512,6 +525,7 @@ class WorkspaceMobileTool {
   final VoidCallback onTap;
   final IconData? icon;
   final bool enabled;
+  final List<WorkspaceOverflowSubmenuChoice>? submenu;
 }
 
 /// Apply a saved id order; unknown ids are dropped, new tools append in
@@ -702,8 +716,10 @@ List<WorkspaceMobileTool> resolveWorkspaceOverflowTools(
   );
 }
 
-/// More button that opens an icon+label popup, right-aligned to the button
-/// (same density as chapter sort / sidebar context menus).
+/// More button that opens an icon+label menu, right-aligned to the button.
+///
+/// Desktop uses [MenuAnchor] (cascading submenus, same chrome as chapter
+/// sort). Compact / test builds keep a flat [showMenu] and honor [onTap].
 class WorkspaceOverflowToolsButton extends StatelessWidget {
   const WorkspaceOverflowToolsButton({
     super.key,
@@ -713,12 +729,18 @@ class WorkspaceOverflowToolsButton extends StatelessWidget {
     this.iconSize,
   });
 
+  static const _itemStyle = ButtonStyle(
+    minimumSize: WidgetStatePropertyAll(
+      Size(ZephyrControls.menuMinWidth, ZephyrControls.menuItemHeight),
+    ),
+  );
+
   final List<WorkspaceMobileTool> tools;
   final List<WorkspaceMobileTool> Function(BuildContext context)? toolsBuilder;
   final ButtonStyle? style;
   final double? iconSize;
 
-  Future<void> _open(BuildContext buttonContext) async {
+  Future<void> _openFlatMenu(BuildContext buttonContext) async {
     FocusManager.instance.primaryFocus?.unfocus();
     final items = resolveWorkspaceOverflowTools(
       buttonContext,
@@ -771,21 +793,109 @@ class WorkspaceOverflowToolsButton extends StatelessWidget {
     selected.onTap();
   }
 
+  List<Widget> _desktopMenuChildren(
+    BuildContext context,
+    List<WorkspaceMobileTool> items,
+  ) {
+    return [
+      for (final tool in items)
+        if (tool.submenu case final submenu?
+            when submenu.isNotEmpty && tool.enabled)
+          SubmenuButton(
+            style: _itemStyle,
+            leadingIcon: Icon(tool.icon ?? Icons.circle_outlined),
+            menuChildren: [
+              for (final choice in submenu)
+                ZephyrMenu.selectableItem(
+                  context: context,
+                  label: choice.label,
+                  selected: choice.selected,
+                  onPressed: choice.onSelected,
+                ),
+            ],
+            child: Text(tool.label),
+          )
+        else
+          MenuItemButton(
+            style: _itemStyle,
+            leadingIcon: Icon(tool.icon ?? Icons.circle_outlined),
+            onPressed: !tool.enabled ? null : tool.onTap,
+            child: Text(tool.label),
+          ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return Builder(
-      builder: (buttonContext) {
+    if (!WindowChrome.isDesktop) {
+      return Builder(
+        builder: (buttonContext) {
+          final items = resolveWorkspaceOverflowTools(
+            buttonContext,
+            tools: tools,
+            toolsBuilder: toolsBuilder,
+          );
+          return IconButton(
+            style: style,
+            onPressed: items.isEmpty
+                ? null
+                : () => unawaited(_openFlatMenu(buttonContext)),
+            icon: Icon(Icons.more_vert, size: iconSize),
+            tooltip: l10n.tooltipMore,
+          );
+        },
+      );
+    }
+
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        ZephyrScope.maybeOf(context)?.theme,
+        ZephyrScope.maybeOf(context)?.backup,
+      ].whereType<Listenable>()),
+      builder: (context, _) {
         final items = resolveWorkspaceOverflowTools(
-          buttonContext,
+          context,
           tools: tools,
           toolsBuilder: toolsBuilder,
         );
-        return IconButton(
-          style: style,
-          onPressed: items.isEmpty ? null : () => unawaited(_open(buttonContext)),
-          icon: Icon(Icons.more_vert, size: iconSize),
-          tooltip: l10n.tooltipMore,
+        return MenuAnchor(
+          style: const MenuStyle(
+            minimumSize: WidgetStatePropertyAll(
+              Size(ZephyrControls.menuMinWidth, 0),
+            ),
+          ),
+          builder: (context, controller, _) {
+            return IconButton(
+              style: style,
+              onPressed: items.isEmpty
+                  ? null
+                  : () {
+                      if (controller.isOpen) {
+                        controller.close();
+                      } else {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                        final box = context.findRenderObject() as RenderBox?;
+                        final size = box?.size ??
+                            const Size(
+                              ZephyrControls.buttonSize,
+                              ZephyrControls.buttonSize,
+                            );
+                        // Top under the button; right edges aligned when the
+                        // panel is at least [menuMinWidth] wide.
+                        controller.open(
+                          position: Offset(
+                            size.width - ZephyrControls.menuMinWidth,
+                            size.height,
+                          ),
+                        );
+                      }
+                    },
+              icon: Icon(Icons.more_vert, size: iconSize),
+              tooltip: l10n.tooltipMore,
+            );
+          },
+          menuChildren: _desktopMenuChildren(context, items),
         );
       },
     );
@@ -2701,6 +2811,8 @@ class _ChapterRow extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = context.l10n;
     final radius = context.zephyrBorderRadius;
+    final showDetails =
+        ZephyrScope.maybeOf(context)?.theme.ui.showChapterDetails ?? true;
     final compact = ZephyrBreakpoints.isCompact(
       MediaQuery.sizeOf(context).width,
     );
@@ -2708,15 +2820,12 @@ class _ChapterRow extends StatelessWidget {
         ? model.article
         : null;
     final selected = activeArticle != null;
-    final metaText = l10n.chapterMeta(
-      _formatDate(chapter.createdAt),
-      _formatDate(activeArticle?.updatedAt ?? chapter.updatedAt),
-      activeArticle?.wordCount ?? chapter.wordCount,
-    );
-    final preview = chapter.summary
-        .replaceAll(RegExp(r'[\r\n]+'), ' ')
-        .replaceAll('\u3000', '')
-        .trim();
+    final preview = showDetails
+        ? chapter.summary
+              .replaceAll(RegExp(r'[\r\n]+'), ' ')
+              .replaceAll('\u3000', '')
+              .trim()
+        : '';
     final title = chapter.title.isEmpty ? l10n.untitled : chapter.title;
     final listInset = context.zephyrSidebarItemInset;
     final divider = isFirst
@@ -2780,27 +2889,35 @@ class _ChapterRow extends StatelessWidget {
                           height: _textHeight,
                         ),
                       ),
-                      if (preview.isNotEmpty) ...[
-                        const SizedBox(height: _lineGap),
+                      if (showDetails) ...[
+                        if (preview.isNotEmpty) ...[
+                          const SizedBox(height: _lineGap),
+                          Text(
+                            preview,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              height: _textHeight,
+                            ),
+                          ),
+                          const SizedBox(height: _previewDateGap),
+                        ] else
+                          const SizedBox(height: _lineGap),
                         Text(
-                          preview,
-                          maxLines: 2,
+                          l10n.chapterMeta(
+                            _formatDate(chapter.createdAt),
+                            _formatDate(
+                              activeArticle?.updatedAt ?? chapter.updatedAt,
+                            ),
+                            activeArticle?.wordCount ?? chapter.wordCount,
+                          ),
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.labelSmall?.copyWith(
                             height: _textHeight,
                           ),
                         ),
-                        const SizedBox(height: _previewDateGap),
-                      ] else
-                        const SizedBox(height: _lineGap),
-                      Text(
-                        metaText,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          height: _textHeight,
-                        ),
-                      ),
+                      ],
                     ],
                   ),
                 ),

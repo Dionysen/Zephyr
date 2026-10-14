@@ -34,6 +34,7 @@ class UiPreferences {
     required this.immersiveStatusBar,
     required this.hideStatusBarIcons,
     required this.hideQuickToolbar,
+    required this.showChapterDetails,
     required this.editorBackgroundEnabled,
     required this.localePreference,
     this.mobileToolsOrder = const [],
@@ -55,6 +56,7 @@ class UiPreferences {
     immersiveStatusBar: true,
     hideStatusBarIcons: true,
     hideQuickToolbar: false,
+    showChapterDetails: true,
     editorBackgroundEnabled: true,
     localePreference: AppLocalePreference.system,
     mobileToolsOrder: [],
@@ -103,6 +105,10 @@ class UiPreferences {
   /// When true, the IME quick input toolbar above the soft keyboard is hidden.
   final bool hideQuickToolbar;
 
+  /// When true, sidebar chapter rows show preview text and meta (dates / words).
+  /// When false, only the chapter title is shown.
+  final bool showChapterDetails;
+
   /// Master switch for writing-column background images. When false, stored
   /// light/dark configs are kept but not painted.
   final bool editorBackgroundEnabled;
@@ -148,6 +154,7 @@ class UiPreferences {
     bool? immersiveStatusBar,
     bool? hideStatusBarIcons,
     bool? hideQuickToolbar,
+    bool? showChapterDetails,
     bool? editorBackgroundEnabled,
     AppLocalePreference? localePreference,
     List<String>? mobileToolsOrder,
@@ -167,6 +174,7 @@ class UiPreferences {
     immersiveStatusBar: immersiveStatusBar ?? this.immersiveStatusBar,
     hideStatusBarIcons: hideStatusBarIcons ?? this.hideStatusBarIcons,
     hideQuickToolbar: hideQuickToolbar ?? this.hideQuickToolbar,
+    showChapterDetails: showChapterDetails ?? this.showChapterDetails,
     editorBackgroundEnabled:
         editorBackgroundEnabled ?? this.editorBackgroundEnabled,
     localePreference: localePreference ?? this.localePreference,

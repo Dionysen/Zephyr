@@ -227,6 +227,17 @@ void main() {
     expect(model.lightTokens, ThemeTokens.presets[ThemePreset.light]);
   });
 
+  test('show chapter details defaults on and updates independently', () {
+    final model = ThemeViewModel(_ThemeRepository());
+
+    expect(model.ui.showChapterDetails, isTrue);
+    model.updateShowChapterDetails(false);
+    expect(model.ui.showChapterDetails, isFalse);
+    model.updateShowChapterDetails(true);
+    expect(model.ui.showChapterDetails, isTrue);
+    expect(model.lightTokens, ThemeTokens.presets[ThemePreset.light]);
+  });
+
   test('editor background defaults are full opacity and no blur', () {
     expect(EditorBackgroundConfig.defaultOpacity, 1.0);
     expect(EditorBackgroundConfig.defaults.opacity, 1.0);

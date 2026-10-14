@@ -54,8 +54,15 @@ class GeneralSettingsView extends StatelessWidget {
           title: l10n.hideQuickToolbarTitle,
           subtitle: l10n.hideQuickToolbarSubtitle,
           value: viewModel.ui.hideQuickToolbar,
-          showDivider: showStatusBarSettings,
           onChanged: viewModel.updateHideQuickToolbar,
+        ),
+        ZephyrSettingsSwitchTile(
+          icon: Icons.notes_outlined,
+          title: l10n.showChapterDetailsTitle,
+          subtitle: l10n.showChapterDetailsSubtitle,
+          value: viewModel.ui.showChapterDetails,
+          showDivider: showStatusBarSettings,
+          onChanged: viewModel.updateShowChapterDetails,
         ),
         if (showStatusBarSettings) ...[
           ZephyrSettingsSwitchTile(

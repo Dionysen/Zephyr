@@ -237,6 +237,8 @@
   "hideStatusBarIconsSubtitle": "仅在沉浸式通知栏开启时生效，图标自动隐藏，边缘滑动可临时显示",
   "hideQuickToolbarTitle": "隐藏快捷输入栏",
   "hideQuickToolbarSubtitle": "开启后，键盘上方不再显示快捷工具栏",
+  "showChapterDetailsTitle": "显示章节详细信息",
+  "showChapterDetailsSubtitle": "关闭后侧边栏只显示章节名，不显示预览与时间、字数等信息",
   "editorSectionTitle": "编辑器",
   "editorSectionIntro": "字体与阅读栏偏好会立即生效",
   "editorSectionFooter": "更改会立即应用到写作区",

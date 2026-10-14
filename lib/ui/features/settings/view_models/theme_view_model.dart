@@ -354,6 +354,9 @@ class ThemeViewModel extends ChangeNotifier {
   void updateHideQuickToolbar(bool value) =>
       _updateUi(_ui.copyWith(hideQuickToolbar: value));
 
+  void updateShowChapterDetails(bool value) =>
+      _updateUi(_ui.copyWith(showChapterDetails: value));
+
   void updateEditorBackgroundEnabled(bool value) =>
       _updateUi(_ui.copyWith(editorBackgroundEnabled: value));
 

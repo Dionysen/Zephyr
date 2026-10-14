@@ -1026,12 +1026,41 @@ List<WorkspaceMobileTool> buildWorkspaceOverflowTools(
       icon: Icons.brightness_6_outlined,
       label: l10n.mobileToolThemeMode,
       onTap: () => unawaited(_pickMobileThemeMode(context, themeVm)),
+      submenu: [
+        WorkspaceOverflowSubmenuChoice(
+          id: AppThemeMode.system.name,
+          label: l10n.themeModeSystem,
+          selected: themeVm.themeMode == AppThemeMode.system,
+          onSelected: () => themeVm.setThemeMode(AppThemeMode.system),
+        ),
+        WorkspaceOverflowSubmenuChoice(
+          id: AppThemeMode.light.name,
+          label: l10n.themeModeLight,
+          selected: themeVm.themeMode == AppThemeMode.light,
+          onSelected: () => themeVm.setThemeMode(AppThemeMode.light),
+        ),
+        WorkspaceOverflowSubmenuChoice(
+          id: AppThemeMode.dark.name,
+          label: l10n.themeModeDark,
+          selected: themeVm.themeMode == AppThemeMode.dark,
+          onSelected: () => themeVm.setThemeMode(AppThemeMode.dark),
+        ),
+      ],
     ),
     WorkspaceMobileTool(
       id: WorkspaceMobileToolId.switchTheme,
       icon: Icons.palette_outlined,
       label: l10n.mobileToolSwitchTheme,
       onTap: () => unawaited(_pickMobileThemePack(context, themeVm)),
+      submenu: [
+        for (final pack in themeVm.colorPacks)
+          WorkspaceOverflowSubmenuChoice(
+            id: pack.id,
+            label: _mobileThemePackTitle(l10n, pack),
+            selected: themeVm.activePackId == pack.id,
+            onSelected: () => themeVm.applyPack(pack.id),
+          ),
+      ],
     ),
     WorkspaceMobileTool(
       id: WorkspaceMobileToolId.backup,

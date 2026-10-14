@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'zephyr_controls.dart';
 import 'zephyr_floating_chrome.dart';
 import 'zephyr_l10n.dart';
+import 'zephyr_menu.dart';
 import 'zephyr_theme.dart';
 
 class ZephyrDropdownItem<T> {
@@ -397,27 +398,49 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
                                           width: ZephyrControls.iconSize,
                                         ),
                                         label: item.label,
+                                        trailing: selected
+                                            ? Icon(
+                                                Icons.check,
+                                                size: ZephyrControls.iconSize,
+                                                color: theme
+                                                    .colorScheme.onSurface,
+                                              )
+                                            : null,
                                       );
                                   // Custom rows own their hit targets (e.g. an
                                   // edit control) so they are not wrapped in a
                                   // parent InkWell that would steal taps.
-                                  return Material(
-                                    color: highlighted || selected
-                                        ? theme.colorScheme.secondaryContainer
-                                        : Colors.transparent,
-                                    child: custom != null
-                                        ? SizedBox(
-                                            height: ZephyrControls.fieldHeight,
-                                            child: row,
-                                          )
-                                        : InkWell(
-                                            onTap: onSelect,
-                                            child: SizedBox(
-                                              height:
-                                                  ZephyrControls.fieldHeight,
+                                  final radius = BorderRadius.circular(
+                                    context.zephyrCornerRadius.clamp(2.0, 8.0),
+                                  );
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: ZephyrControls.menuInsets,
+                                    ),
+                                    child: Material(
+                                      // Hover / keyboard highlight only — selected
+                                      // rows stay flat and use the trailing check.
+                                      color: highlighted
+                                          ? ZephyrMenu.hoverFill(
+                                              theme.colorScheme,
+                                            )
+                                          : Colors.transparent,
+                                      borderRadius: radius,
+                                      child: custom != null
+                                          ? SizedBox(
+                                              height: ZephyrControls.fieldHeight,
                                               child: row,
+                                            )
+                                          : InkWell(
+                                              onTap: onSelect,
+                                              borderRadius: radius,
+                                              child: SizedBox(
+                                                height:
+                                                    ZephyrControls.fieldHeight,
+                                                child: row,
+                                              ),
                                             ),
-                                          ),
+                                    ),
                                   );
                                 },
                               ),
@@ -502,10 +525,15 @@ class _DropdownSearchField extends StatelessWidget {
 }
 
 class _DropdownRow extends StatelessWidget {
-  const _DropdownRow({required this.leading, required this.label});
+  const _DropdownRow({
+    required this.leading,
+    required this.label,
+    this.trailing,
+  });
 
   final Widget leading;
   final String label;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -522,6 +550,7 @@ class _DropdownRow extends StatelessWidget {
             style: Theme.of(context).textTheme.titleSmall,
           ),
         ),
+        if (trailing != null) ...[const SizedBox(width: 8), trailing!],
       ],
     ),
   );

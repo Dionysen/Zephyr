@@ -581,6 +581,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'When on, the accessory toolbar above the keyboard is hidden.';
 
   @override
+  String get showChapterDetailsTitle => 'Show chapter details';
+
+  @override
+  String get showChapterDetailsSubtitle =>
+      'When off, the sidebar shows chapter titles only—no preview or meta.';
+
+  @override
   String get editorSectionTitle => 'Editor';
 
   @override

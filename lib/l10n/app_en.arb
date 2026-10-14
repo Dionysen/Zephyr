@@ -238,6 +238,8 @@
   "hideStatusBarIconsSubtitle": "Only when immersive is on. Icons auto-hide; swipe from the edge to peek.",
   "hideQuickToolbarTitle": "Hide quick input bar",
   "hideQuickToolbarSubtitle": "When on, the accessory toolbar above the keyboard is hidden.",
+  "showChapterDetailsTitle": "Show chapter details",
+  "showChapterDetailsSubtitle": "When off, the sidebar shows chapter titles only—no preview or meta.",
   "editorSectionTitle": "Editor",
   "editorSectionIntro": "Typography and reading-column preferences apply immediately.",
   "editorSectionFooter": "Changes apply to the writing area immediately.",
