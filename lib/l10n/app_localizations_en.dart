@@ -114,11 +114,29 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get cloudSyncEnableTitle => 'Enable cloud backup';
+
+  @override
+  String get cloudSyncEnableSubtitle =>
+      'Upload local backups to Nutstore and pull newer snapshots when opening the app';
+
+  @override
   String get cloudSyncLoginTitle => 'Connect Nutstore';
 
   @override
   String get cloudSyncLoginSubtitle =>
       'Enter your account, WebDAV URL, and app password';
+
+  @override
+  String get cloudSyncSettingsTitle => 'Nutstore settings';
+
+  @override
+  String cloudSyncSettingsSubtitle(String name) {
+    return 'Signed in as $name';
+  }
+
+  @override
+  String get cloudSyncUnbindTitle => 'Disconnect';
 
   @override
   String get cloudSyncLogoutTitle => 'Sign out';
@@ -131,7 +149,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cloudSyncBackupNowSubtitle =>
-      'Upload this library to Zephyr on Nutstore (keeps history)';
+      'Create a local backup, then upload that file to Zephyr on Nutstore';
 
   @override
   String get cloudSyncBackupNowSuccess => 'Cloud backup completed.';
@@ -171,7 +189,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cloudSyncAutoSubtitle =>
-      'On pause or resume, merge newer cloud changes then upload';
+      'When opening the app, pull a newer cloud snapshot and merge by chapter update time';
 
   @override
   String cloudSyncLastSync(String time) {
@@ -185,14 +203,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudSyncCredentialsTitle => 'Connect Nutstore WebDAV';
 
   @override
+  String get cloudSyncCredentialsEditTitle => 'Nutstore settings';
+
+  @override
   String get cloudSyncCredentialsSubtitle =>
       'Use a Nutstore app password, not your account password. Stored securely on this device.';
+
+  @override
+  String get cloudSyncCredentialsPasswordHint =>
+      'Leave blank to keep the current app password';
 
   @override
   String get cloudSyncCredentialsSave => 'Connect';
 
   @override
+  String get cloudSyncCredentialsSaveEdit => 'Save';
+
+  @override
   String get cloudSyncCredentialsSaved => 'Nutstore connected';
+
+  @override
+  String get cloudSyncCredentialsUpdated => 'Nutstore settings saved';
 
   @override
   String get cloudSyncClientIdLabel => 'Nutstore account';

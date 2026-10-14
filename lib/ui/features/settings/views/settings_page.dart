@@ -95,13 +95,12 @@ class _SettingsHome extends StatelessWidget {
               bottom: false,
               child: ZephyrSettingsAppBar(
                 title: l10n.settingsTitle,
-                onBack: () => Navigator.of(context, rootNavigator: true).maybePop(),
+                onBack: () =>
+                    Navigator.of(context, rootNavigator: true).maybePop(),
               ),
             ),
           ),
-          const Expanded(
-            child: CompactSettingsList(),
-          ),
+          const Expanded(child: CompactSettingsList()),
         ],
       ),
     );
@@ -110,10 +109,7 @@ class _SettingsHome extends StatelessWidget {
 
 /// Tabbed settings body with a Material [NavigationBar] at the bottom.
 class CompactSettingsList extends StatelessWidget {
-  const CompactSettingsList({
-    super.key,
-    this.showStatusBarSettings = true,
-  });
+  const CompactSettingsList({super.key, this.showStatusBarSettings = true});
 
   /// When false, omits immersive / hide-icons toggles (desktop panel).
   final bool showStatusBarSettings;
@@ -194,14 +190,7 @@ class CompactSettingsList extends StatelessWidget {
         ),
       ],
       SettingsTab.backup => [
-        ZephyrSettingsCategoryHeader(
-          icon: SettingsSection.cloud.icon,
-          title: SettingsSection.cloud.title(l10n),
-        ),
-        BackupSettingsView(
-          viewModel: scope.backup,
-          compact: true,
-        ),
+        BackupSettingsView(viewModel: scope.backup, compact: true),
       ],
       SettingsTab.editor => [
         ZephyrSettingsCategoryHeader(
@@ -238,10 +227,7 @@ class CompactSettingsList extends StatelessWidget {
         ),
       ],
       SettingsTab.appearance => [
-        ThemeCatalog(
-          viewModel: scope.theme,
-          compact: true,
-        ),
+        ThemeCatalog(viewModel: scope.theme, compact: true),
       ],
       SettingsTab.about => [
         ZephyrSettingsCategoryHeader(

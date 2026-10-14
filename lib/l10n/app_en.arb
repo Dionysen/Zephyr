@@ -40,12 +40,24 @@
       }
     }
   },
+  "cloudSyncEnableTitle": "Enable cloud backup",
+  "cloudSyncEnableSubtitle": "Upload local backups to Nutstore and pull newer snapshots when opening the app",
   "cloudSyncLoginTitle": "Connect Nutstore",
   "cloudSyncLoginSubtitle": "Enter your account, WebDAV URL, and app password",
+  "cloudSyncSettingsTitle": "Nutstore settings",
+  "cloudSyncSettingsSubtitle": "Signed in as {name}",
+  "@cloudSyncSettingsSubtitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncUnbindTitle": "Disconnect",
   "cloudSyncLogoutTitle": "Sign out",
   "cloudSyncLogoutSubtitle": "Stops cloud backup and automatic sync",
   "cloudSyncBackupNowTitle": "Back up to cloud now",
-  "cloudSyncBackupNowSubtitle": "Upload this library to Zephyr on Nutstore (keeps history)",
+  "cloudSyncBackupNowSubtitle": "Create a local backup, then upload that file to Zephyr on Nutstore",
   "cloudSyncBackupNowSuccess": "Cloud backup completed.",
   "cloudSyncRestoreTitle": "Restore from cloud",
   "cloudSyncRestoreSubtitle": "Pick a backup from Nutstore — overwrite or merge",
@@ -63,7 +75,7 @@
     }
   },
   "cloudSyncAutoTitle": "Automatic sync",
-  "cloudSyncAutoSubtitle": "On pause or resume, merge newer cloud changes then upload",
+  "cloudSyncAutoSubtitle": "When opening the app, pull a newer cloud snapshot and merge by chapter update time",
   "cloudSyncLastSync": "Last sync: {time}",
   "@cloudSyncLastSync": {
     "placeholders": {
@@ -74,9 +86,13 @@
   },
   "cloudSyncLastSyncNever": "Not synced yet",
   "cloudSyncCredentialsTitle": "Connect Nutstore WebDAV",
+  "cloudSyncCredentialsEditTitle": "Nutstore settings",
   "cloudSyncCredentialsSubtitle": "Use a Nutstore app password, not your account password. Stored securely on this device.",
+  "cloudSyncCredentialsPasswordHint": "Leave blank to keep the current app password",
   "cloudSyncCredentialsSave": "Connect",
+  "cloudSyncCredentialsSaveEdit": "Save",
   "cloudSyncCredentialsSaved": "Nutstore connected",
+  "cloudSyncCredentialsUpdated": "Nutstore settings saved",
   "cloudSyncClientIdLabel": "Nutstore account",
   "cloudSyncServerUrlLabel": "WebDAV URL",
   "cloudSyncClientSecretLabel": "App password",

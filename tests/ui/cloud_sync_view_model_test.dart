@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/data/services/cloud_sync_service.dart';
 import 'package:zephyr/domain/models/cloud_sync.dart';
+import 'package:zephyr/domain/models/library_backup.dart';
 import 'package:zephyr/domain/models/purewriter_models.dart';
 import 'package:zephyr/l10n/app_localizations_en.dart';
 import 'package:zephyr/domain/repositories/writing_library_repository.dart';
@@ -35,18 +36,27 @@ void main() {
     },
   );
 
-  test('manual sync and backup require a signed-in session', () async {
-    await model.syncNow();
-    expect(model.error, isA<StateError>());
-    await model.backupNow();
-    expect(model.error, isA<StateError>());
-    expect(service.syncCalls, 0);
-    expect(service.backupCalls, 0);
-  });
+  test(
+    'manual sync and backup require cloud backup and a signed-in session',
+    () async {
+      await model.syncNow();
+      expect(model.error, isA<StateError>());
+      await model.backupNow();
+      expect(model.error, isA<StateError>());
+      expect(service.pullCalls, 0);
+      expect(service.backupCalls, 0);
+
+      service.signedIn = true;
+      await model.backupNow();
+      expect(model.error, isA<StateError>());
+      expect(service.backupCalls, 0);
+    },
+  );
 
   test(
     'cloud backup reports busy and clears it after the service returns',
     () async {
+      service.cloudBackupOn = true;
       service.signedIn = true;
       await model.backupNow();
 
@@ -59,6 +69,7 @@ void main() {
   test(
     'refresh returns no backups when signed out and clears stale results',
     () async {
+      service.cloudBackupOn = true;
       service.signedIn = true;
       await model.refreshCloudBackups();
       expect(model.cloudBackups, [_CloudService.entry]);
@@ -85,19 +96,27 @@ void main() {
   });
 
   test('explains a library conflict after automatic sync', () async {
+    service.cloudBackupOn = true;
     service.signedIn = true;
-    service.syncFailure = const CloudLibraryConflictException(
+    service.pullFailure = const CloudLibraryConflictException(
       CloudLibraryConflictReason.anotherLibrary,
     );
 
     await model.maybeAutoSync();
 
-    expect(service.syncCalls, 1);
+    expect(service.pullCalls, 1);
     expect(model.error, isA<CloudLibraryConflictException>());
     expect(
       model.errorMessage(AppLocalizationsEn()),
       contains('Choose the original local directory'),
     );
+  });
+
+  test('maybeAutoSync skips when cloud backup is disabled', () async {
+    service.signedIn = true;
+    service.cloudBackupOn = false;
+    await model.maybeAutoSync();
+    expect(service.pullCalls, 0);
   });
 }
 
@@ -117,18 +136,23 @@ class _CloudService extends CloudSyncService {
     sizeBytes: 10,
   );
   bool signedIn = false;
+  bool cloudBackupOn = false;
   bool failLoad = false;
-  int syncCalls = 0;
+  int pullCalls = 0;
   int backupCalls = 0;
   int listCalls = 0;
-  Object syncFailure = StateError('unexpected sync');
+  Object? pullFailure;
   CloudSyncSession? connectedSession;
 
   @override
   bool get isSignedIn => signedIn;
 
   @override
-  CloudSyncPreferences get preferences => CloudSyncPreferences.defaults;
+  bool get cloudBackupEnabled => cloudBackupOn;
+
+  @override
+  CloudSyncPreferences get preferences =>
+      CloudSyncPreferences(cloudBackupEnabled: cloudBackupOn);
 
   @override
   Future<void> load() async {
@@ -145,6 +169,7 @@ class _CloudService extends CloudSyncService {
   Future<CloudBackupEntry> backupNow({
     required WritingLibraryRepository library,
     required Future<void> Function() flushPending,
+    BackupKind kind = BackupKind.manual,
   }) async {
     backupCalls++;
     return entry;
@@ -159,11 +184,13 @@ class _CloudService extends CloudSyncService {
   }
 
   @override
-  Future<CloudSyncManifest> syncNow({
+  Future<CloudSyncManifest?> pullIfNewer({
     required WritingLibraryRepository library,
     required Future<void> Function() flushPending,
   }) async {
-    syncCalls++;
-    throw syncFailure;
+    pullCalls++;
+    final failure = pullFailure;
+    if (failure != null) throw failure;
+    return null;
   }
 }

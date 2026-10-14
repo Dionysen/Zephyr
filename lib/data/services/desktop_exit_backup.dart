@@ -26,6 +26,9 @@ abstract final class DesktopExitBackup {
 
   /// Runs without a Flutter frame. Credentials are loaded from secure storage;
   /// they are never passed on the process command line.
+  ///
+  /// Always creates one local automatic `.pwb` first, then uploads that same
+  /// file when cloud backup is enabled and Nutstore is connected.
   static Future<void> run(String expectedRoot) async {
     final notification = DesktopBackupNotification();
     final database = PureWriterDatabase();
@@ -42,9 +45,7 @@ abstract final class DesktopExitBackup {
       final local = await localStorage.load();
       final cloud = CloudSyncService();
       await cloud.load();
-      // Exit cloud backup runs whenever WebDAV is connected; the auto-sync
-      // preference only gates pause/resume sync while the app stays open.
-      final cloudEnabled = cloud.isSignedIn;
+      final cloudEnabled = cloud.cloudBackupEnabled && cloud.isSignedIn;
       if (!local.autoBackupEnabled && !cloudEnabled) return;
 
       await database.openLibrary(selected, createIfMissing: false);
@@ -52,11 +53,9 @@ abstract final class DesktopExitBackup {
         throw StateError('The selected library is read-only.');
       }
       final library = PureWriterWritingLibraryRepository(database);
+      final entry = await library.createBackup(kind: BackupKind.automatic);
       if (cloudEnabled) {
-        // Upload-only: do not pull/merge while the UI process has already exited.
-        await cloud.backupNow(library: library, flushPending: () async {});
-      } else {
-        await library.createBackup(kind: BackupKind.automatic);
+        await cloud.uploadLocalBackup(library: library, entry: entry);
       }
       if (local.autoBackupEnabled) {
         await localStorage.save(
@@ -66,7 +65,7 @@ abstract final class DesktopExitBackup {
       await notification.show(
         success: true,
         didCloud: cloudEnabled,
-        didLocal: local.autoBackupEnabled || cloudEnabled,
+        didLocal: true,
       );
     } on Object catch (error) {
       try {

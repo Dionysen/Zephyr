@@ -94,24 +94,14 @@ class BackupSettingsView extends StatelessWidget {
           children: _cloudSyncTiles(context, cloudSync),
         );
 
-        if (compact) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [localSection, cloudSection],
-          );
-        }
-
+        final body = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [localSection, cloudSection],
+        );
+        if (compact) return body;
         return ListView(
           padding: const EdgeInsets.fromLTRB(4, 8, 4, 24),
-          children: [
-            Text(
-              l10n.settingsSectionCloud,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            localSection,
-            cloudSection,
-          ],
+          children: [body],
         );
       },
     );
@@ -122,8 +112,10 @@ class BackupSettingsView extends StatelessWidget {
     CloudSyncViewModel cloudSync,
   ) {
     final l10n = context.l10n;
+    final enabled = cloudSync.cloudBackupEnabled;
     final signedIn = cloudSync.isSignedIn;
     final name = cloudSync.session?.username.trim();
+    final displayName = (name == null || name.isEmpty) ? 'Nutstore' : name;
     final last = cloudSync.preferences.lastSyncAt;
     final lastLabel = last == null
         ? l10n.cloudSyncLastSyncNever
@@ -131,10 +123,24 @@ class BackupSettingsView extends StatelessWidget {
             DateFormat.yMMMd().add_Hm().format(last.toLocal()),
           );
 
+    final tiles = <Widget>[
+      ZephyrSettingsSwitchTile(
+        icon: Icons.cloud_outlined,
+        title: l10n.cloudSyncEnableTitle,
+        subtitle: l10n.cloudSyncEnableSubtitle,
+        value: enabled,
+        showDivider: enabled,
+        onChanged: cloudSync.busy
+            ? null
+            : (value) => cloudSync.setCloudBackupEnabled(value),
+      ),
+    ];
+    if (!enabled) return tiles;
+
     if (!signedIn) {
-      return [
+      tiles.add(
         ZephyrSettingsListTile(
-          icon: Icons.login,
+          icon: Icons.link,
           title: l10n.cloudSyncLoginTitle,
           subtitle: l10n.cloudSyncLoginSubtitle,
           showDivider: false,
@@ -152,10 +158,11 @@ class BackupSettingsView extends StatelessWidget {
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
         ),
-      ];
+      );
+      return tiles;
     }
 
-    return [
+    tiles.addAll([
       ZephyrSettingsListTile(
         icon: Icons.cloud_upload_outlined,
         title: l10n.cloudSyncBackupNowTitle,
@@ -208,33 +215,45 @@ class BackupSettingsView extends StatelessWidget {
             : (value) => cloudSync.setAutoSyncEnabled(value),
       ),
       ZephyrSettingsListTile(
-        icon: Icons.logout,
-        title: l10n.cloudSyncLogoutTitle,
-        subtitle: l10n.cloudSyncSubtitleSignedIn(
-          (name == null || name.isEmpty) ? '坚果云' : name,
-        ),
+        icon: Icons.settings_outlined,
+        title: l10n.cloudSyncSettingsTitle,
+        subtitle: l10n.cloudSyncSettingsSubtitle(displayName),
         showDivider: false,
         enabled: !cloudSync.busy,
-        onTap: () => cloudSync.signOut(),
+        onTap: () => _showCredentialsDialog(context, cloudSync, editing: true),
+        trailing: Icon(
+          Icons.chevron_right,
+          size: 20,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       ),
-    ];
+    ]);
+    return tiles;
   }
 }
 
 Future<void> _showCredentialsDialog(
   BuildContext context,
-  CloudSyncViewModel cloudSync,
-) async {
+  CloudSyncViewModel cloudSync, {
+  bool editing = false,
+}) async {
   final l10n = context.l10n;
+  final session = cloudSync.session;
   final urlController = TextEditingController(
-    text: 'https://dav.jianguoyun.com/dav/',
+    text: session?.serverUrl ?? 'https://dav.jianguoyun.com/dav/',
   );
-  final accountController = TextEditingController();
+  final accountController = TextEditingController(
+    text: session?.username ?? '',
+  );
   final passwordController = TextEditingController();
-  final saved = await showDialog<bool>(
+  final result = await showDialog<String>(
     context: context,
     builder: (context) => AlertDialog(
-      title: Text(l10n.cloudSyncCredentialsTitle),
+      title: Text(
+        editing
+            ? l10n.cloudSyncCredentialsEditTitle
+            : l10n.cloudSyncCredentialsTitle,
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -261,6 +280,7 @@ Future<void> _showCredentialsDialog(
             controller: passwordController,
             decoration: InputDecoration(
               labelText: l10n.cloudSyncClientSecretLabel,
+              hintText: editing ? l10n.cloudSyncCredentialsPasswordHint : null,
             ),
             obscureText: true,
             autocorrect: false,
@@ -269,36 +289,60 @@ Future<void> _showCredentialsDialog(
         ],
       ),
       actions: [
+        if (editing)
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'unbind'),
+            child: Text(l10n.cloudSyncUnbindTitle),
+          ),
         TextButton(
-          onPressed: () => Navigator.pop(context, false),
+          onPressed: () => Navigator.pop(context, 'cancel'),
           child: Text(l10n.actionCancel),
         ),
         FilledButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: Text(l10n.cloudSyncCredentialsSave),
+          onPressed: () => Navigator.pop(context, 'save'),
+          child: Text(
+            editing
+                ? l10n.cloudSyncCredentialsSaveEdit
+                : l10n.cloudSyncCredentialsSave,
+          ),
         ),
       ],
     ),
   );
-  if (saved != true) {
-    urlController.dispose();
-    accountController.dispose();
-    passwordController.dispose();
-    return;
-  }
-  await cloudSync.connect(
-    serverUrl: urlController.text,
-    username: accountController.text,
-    appPassword: passwordController.text,
-  );
+  final serverUrl = urlController.text;
+  final username = accountController.text;
+  final password = passwordController.text;
   urlController.dispose();
   accountController.dispose();
   passwordController.dispose();
+  if (result == null || result == 'cancel') return;
+
+  if (result == 'unbind') {
+    await cloudSync.signOut();
+    if (!context.mounted) return;
+    return;
+  }
+
+  final appPassword = password.trim().isEmpty && editing
+      ? (session?.appPassword ?? '')
+      : password;
+  if (appPassword.isEmpty) {
+    if (!context.mounted) return;
+    ZephyrSnackBar.show(context, l10n.cloudSyncLoginSubtitle);
+    return;
+  }
+  await cloudSync.connect(
+    serverUrl: serverUrl,
+    username: username,
+    appPassword: appPassword,
+  );
   if (!context.mounted) return;
   ZephyrSnackBar.show(
     context,
     cloudSync.error == null
-        ? l10n.cloudSyncCredentialsSaved
+        ? (editing
+              ? l10n.cloudSyncCredentialsUpdated
+              : l10n.cloudSyncCredentialsSaved)
         : cloudSync.errorMessage(l10n)!,
   );
 }
@@ -312,10 +356,7 @@ Future<void> showCloudBackupRestoreFlow(
   await cloudSync.refreshCloudBackups();
   if (!context.mounted) return;
   if (cloudSync.error != null && cloudSync.cloudBackups.isEmpty) {
-    ZephyrSnackBar.show(
-      context,
-      cloudSync.errorMessage(l10n)!,
-    );
+    ZephyrSnackBar.show(context, cloudSync.errorMessage(l10n)!);
     return;
   }
   if (cloudSync.cloudBackups.isEmpty) {

@@ -40,12 +40,24 @@
       }
     }
   },
-  "cloudSyncLoginTitle": "连接坚果云",
+  "cloudSyncEnableTitle": "开启云备份",
+  "cloudSyncEnableSubtitle": "将本地备份上传到坚果云，并在打开软件时拉取较新的云端快照",
+  "cloudSyncLoginTitle": "绑定坚果云",
   "cloudSyncLoginSubtitle": "输入坚果云账号、WebDAV 网址和应用密码",
+  "cloudSyncSettingsTitle": "坚果云设置",
+  "cloudSyncSettingsSubtitle": "已登录：{name}",
+  "@cloudSyncSettingsSubtitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncUnbindTitle": "解除绑定",
   "cloudSyncLogoutTitle": "断开连接",
   "cloudSyncLogoutSubtitle": "断开后停止云备份和自动同步",
   "cloudSyncBackupNowTitle": "立即云备份",
-  "cloudSyncBackupNowSubtitle": "上传当前书库到坚果云根目录的 Zephyr，并保留历史备份",
+  "cloudSyncBackupNowSubtitle": "先创建本地备份，再将该文件上传到坚果云根目录的 Zephyr",
   "cloudSyncBackupNowSuccess": "云备份已完成",
   "cloudSyncRestoreTitle": "云备份恢复",
   "cloudSyncRestoreSubtitle": "从坚果云选择备份，可覆盖或合并",
@@ -63,7 +75,7 @@
     }
   },
   "cloudSyncAutoTitle": "自动同步",
-  "cloudSyncAutoSubtitle": "进入后台或回到前台时自动拉取合并并上传",
+  "cloudSyncAutoSubtitle": "打开软件时从云端拉取较新快照，并按章节更新时间合并",
   "cloudSyncLastSync": "上次同步：{time}",
   "@cloudSyncLastSync": {
     "placeholders": {
@@ -74,9 +86,13 @@
   },
   "cloudSyncLastSyncNever": "尚未同步",
   "cloudSyncCredentialsTitle": "连接坚果云 WebDAV",
+  "cloudSyncCredentialsEditTitle": "坚果云设置",
   "cloudSyncCredentialsSubtitle": "请使用坚果云第三方应用密码，而非账号登录密码。凭据安全保存在本机。",
+  "cloudSyncCredentialsPasswordHint": "留空则保持当前应用密码不变",
   "cloudSyncCredentialsSave": "连接",
+  "cloudSyncCredentialsSaveEdit": "保存",
   "cloudSyncCredentialsSaved": "坚果云已连接",
+  "cloudSyncCredentialsUpdated": "坚果云设置已保存",
   "cloudSyncClientIdLabel": "坚果云账号",
   "cloudSyncClientSecretLabel": "应用密码",
   "backupAutoTitle": "自动备份",

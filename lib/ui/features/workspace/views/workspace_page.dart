@@ -76,7 +76,10 @@ class _WorkspacePageState extends State<WorkspacePage>
     final library = _library;
     if (library == null) return;
     await library.load();
-    if (!mounted || _offeredDraftRecovery) return;
+    if (!mounted) return;
+    // Pull newer cloud snapshot after the library is ready (desktop + mobile).
+    unawaited(_autoSyncAndReport());
+    if (_offeredDraftRecovery) return;
     _offeredDraftRecovery = true;
     await _offerDraftRecovery(library);
   }
@@ -121,14 +124,13 @@ class _WorkspacePageState extends State<WorkspacePage>
       if (library != null) {
         unawaited(library.flushPending());
       }
-      // Auto-backup only on paused (not inactive) to avoid double work and
-      // competing with the system transition animation.
+      // Local auto-backup only on paused (not inactive). Cloud pull runs on
+      // open / resume, not on pause.
       if (mounted &&
           !WindowChrome.isDesktop &&
           state == AppLifecycleState.paused) {
         final scope = ZephyrScope.of(context);
         unawaited(scope.backup.maybeAutoBackupOnLeave());
-        unawaited(scope.cloudSync.maybeAutoSync());
       }
     } else if (mounted &&
         !WindowChrome.isDesktop &&
@@ -139,7 +141,8 @@ class _WorkspacePageState extends State<WorkspacePage>
 
   Future<void> _autoSyncAndReport() async {
     final cloudSync = ZephyrScope.of(context).cloudSync;
-    if (!cloudSync.autoSyncEnabled ||
+    if (!cloudSync.cloudBackupEnabled ||
+        !cloudSync.autoSyncEnabled ||
         !cloudSync.isSignedIn ||
         cloudSync.busy ||
         cloudSync.library.isReadOnly) {

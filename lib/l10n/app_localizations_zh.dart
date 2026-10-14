@@ -111,10 +111,27 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get cloudSyncLoginTitle => '连接坚果云';
+  String get cloudSyncEnableTitle => '开启云备份';
+
+  @override
+  String get cloudSyncEnableSubtitle => '将本地备份上传到坚果云，并在打开软件时拉取较新的云端快照';
+
+  @override
+  String get cloudSyncLoginTitle => '绑定坚果云';
 
   @override
   String get cloudSyncLoginSubtitle => '输入坚果云账号、WebDAV 网址和应用密码';
+
+  @override
+  String get cloudSyncSettingsTitle => '坚果云设置';
+
+  @override
+  String cloudSyncSettingsSubtitle(String name) {
+    return '已登录：$name';
+  }
+
+  @override
+  String get cloudSyncUnbindTitle => '解除绑定';
 
   @override
   String get cloudSyncLogoutTitle => '断开连接';
@@ -126,7 +143,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncBackupNowTitle => '立即云备份';
 
   @override
-  String get cloudSyncBackupNowSubtitle => '上传当前书库到坚果云根目录的 Zephyr，并保留历史备份';
+  String get cloudSyncBackupNowSubtitle => '先创建本地备份，再将该文件上传到坚果云根目录的 Zephyr';
 
   @override
   String get cloudSyncBackupNowSuccess => '云备份已完成';
@@ -163,7 +180,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncAutoTitle => '自动同步';
 
   @override
-  String get cloudSyncAutoSubtitle => '进入后台或回到前台时自动拉取合并并上传';
+  String get cloudSyncAutoSubtitle => '打开软件时从云端拉取较新快照，并按章节更新时间合并';
 
   @override
   String cloudSyncLastSync(String time) {
@@ -177,14 +194,26 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncCredentialsTitle => '连接坚果云 WebDAV';
 
   @override
+  String get cloudSyncCredentialsEditTitle => '坚果云设置';
+
+  @override
   String get cloudSyncCredentialsSubtitle =>
       '请使用坚果云第三方应用密码，而非账号登录密码。凭据安全保存在本机。';
+
+  @override
+  String get cloudSyncCredentialsPasswordHint => '留空则保持当前应用密码不变';
 
   @override
   String get cloudSyncCredentialsSave => '连接';
 
   @override
+  String get cloudSyncCredentialsSaveEdit => '保存';
+
+  @override
   String get cloudSyncCredentialsSaved => '坚果云已连接';
+
+  @override
+  String get cloudSyncCredentialsUpdated => '坚果云设置已保存';
 
   @override
   String get cloudSyncClientIdLabel => '坚果云账号';

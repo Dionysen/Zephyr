@@ -49,12 +49,17 @@ class CloudSyncSession {
 /// Non-secret preferences for cloud sync (app-support JSON).
 class CloudSyncPreferences {
   const CloudSyncPreferences({
+    this.cloudBackupEnabled = true,
     this.autoSyncEnabled = true,
     this.lastSyncAt,
     this.lastSyncLibraryId,
     this.lastRemoteUpdatedAt,
   });
 
+  /// Master switch for cloud backup UI and exit upload.
+  final bool cloudBackupEnabled;
+
+  /// When true, pull-merge newer cloud snapshot on app open / resume.
   final bool autoSyncEnabled;
   final DateTime? lastSyncAt;
   final String? lastSyncLibraryId;
@@ -63,6 +68,7 @@ class CloudSyncPreferences {
   static const defaults = CloudSyncPreferences();
 
   CloudSyncPreferences copyWith({
+    bool? cloudBackupEnabled,
     bool? autoSyncEnabled,
     DateTime? lastSyncAt,
     String? lastSyncLibraryId,
@@ -70,6 +76,7 @@ class CloudSyncPreferences {
     bool clearLastSyncAt = false,
     bool clearLastRemoteUpdatedAt = false,
   }) => CloudSyncPreferences(
+    cloudBackupEnabled: cloudBackupEnabled ?? this.cloudBackupEnabled,
     autoSyncEnabled: autoSyncEnabled ?? this.autoSyncEnabled,
     lastSyncAt: clearLastSyncAt ? null : (lastSyncAt ?? this.lastSyncAt),
     lastSyncLibraryId: lastSyncLibraryId ?? this.lastSyncLibraryId,
@@ -79,6 +86,7 @@ class CloudSyncPreferences {
   );
 
   Map<String, Object?> toJson() => {
+    'cloudBackupEnabled': cloudBackupEnabled,
     'autoSyncEnabled': autoSyncEnabled,
     if (lastSyncAt != null) 'lastSyncAt': lastSyncAt!.millisecondsSinceEpoch,
     if (lastSyncLibraryId != null) 'lastSyncLibraryId': lastSyncLibraryId,
@@ -90,6 +98,7 @@ class CloudSyncPreferences {
     final last = map['lastSyncAt'];
     final remote = map['lastRemoteUpdatedAt'];
     return CloudSyncPreferences(
+      cloudBackupEnabled: map['cloudBackupEnabled'] as bool? ?? true,
       autoSyncEnabled: map['autoSyncEnabled'] as bool? ?? true,
       lastSyncAt: last is int
           ? DateTime.fromMillisecondsSinceEpoch(last)

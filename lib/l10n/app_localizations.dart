@@ -296,6 +296,18 @@ abstract class AppLocalizations {
   /// **'Signed in as {name}'**
   String cloudSyncSubtitleSignedIn(String name);
 
+  /// No description provided for @cloudSyncEnableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable cloud backup'**
+  String get cloudSyncEnableTitle;
+
+  /// No description provided for @cloudSyncEnableSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload local backups to Nutstore and pull newer snapshots when opening the app'**
+  String get cloudSyncEnableSubtitle;
+
   /// No description provided for @cloudSyncLoginTitle.
   ///
   /// In en, this message translates to:
@@ -307,6 +319,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter your account, WebDAV URL, and app password'**
   String get cloudSyncLoginSubtitle;
+
+  /// No description provided for @cloudSyncSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nutstore settings'**
+  String get cloudSyncSettingsTitle;
+
+  /// No description provided for @cloudSyncSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in as {name}'**
+  String cloudSyncSettingsSubtitle(String name);
+
+  /// No description provided for @cloudSyncUnbindTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get cloudSyncUnbindTitle;
 
   /// No description provided for @cloudSyncLogoutTitle.
   ///
@@ -329,7 +359,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncBackupNowSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Upload this library to Zephyr on Nutstore (keeps history)'**
+  /// **'Create a local backup, then upload that file to Zephyr on Nutstore'**
   String get cloudSyncBackupNowSubtitle;
 
   /// No description provided for @cloudSyncBackupNowSuccess.
@@ -395,7 +425,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncAutoSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'On pause or resume, merge newer cloud changes then upload'**
+  /// **'When opening the app, pull a newer cloud snapshot and merge by chapter update time'**
   String get cloudSyncAutoSubtitle;
 
   /// No description provided for @cloudSyncLastSync.
@@ -416,11 +446,23 @@ abstract class AppLocalizations {
   /// **'Connect Nutstore WebDAV'**
   String get cloudSyncCredentialsTitle;
 
+  /// No description provided for @cloudSyncCredentialsEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nutstore settings'**
+  String get cloudSyncCredentialsEditTitle;
+
   /// No description provided for @cloudSyncCredentialsSubtitle.
   ///
   /// In en, this message translates to:
   /// **'Use a Nutstore app password, not your account password. Stored securely on this device.'**
   String get cloudSyncCredentialsSubtitle;
+
+  /// No description provided for @cloudSyncCredentialsPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank to keep the current app password'**
+  String get cloudSyncCredentialsPasswordHint;
 
   /// No description provided for @cloudSyncCredentialsSave.
   ///
@@ -428,11 +470,23 @@ abstract class AppLocalizations {
   /// **'Connect'**
   String get cloudSyncCredentialsSave;
 
+  /// No description provided for @cloudSyncCredentialsSaveEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get cloudSyncCredentialsSaveEdit;
+
   /// No description provided for @cloudSyncCredentialsSaved.
   ///
   /// In en, this message translates to:
   /// **'Nutstore connected'**
   String get cloudSyncCredentialsSaved;
+
+  /// No description provided for @cloudSyncCredentialsUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Nutstore settings saved'**
+  String get cloudSyncCredentialsUpdated;
 
   /// No description provided for @cloudSyncClientIdLabel.
   ///

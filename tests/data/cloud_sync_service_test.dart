@@ -17,6 +17,7 @@ void main() {
   setUp(() {
     auth = _MemoryAuthStore();
     preferences = _MemoryCloudPreferences();
+    preferences.value = const CloudSyncPreferences(cloudBackupEnabled: true);
     // ignore: invalid_use_of_visible_for_testing_member
     PackageInfo.setMockInitialValues(
       appName: 'Zephyr',
@@ -116,6 +117,147 @@ void main() {
 
     expect(service.preferences.autoSyncEnabled, isFalse);
     expect(preferences.value.autoSyncEnabled, isFalse);
+  });
+
+  test('cloud backup preference saves through its store', () async {
+    preferences.value = const CloudSyncPreferences(cloudBackupEnabled: true);
+    final service = CloudSyncService(
+      authStore: auth,
+      preferencesStorage: preferences,
+    );
+    await service.load();
+    expect(service.cloudBackupEnabled, isTrue);
+
+    await service.setCloudBackupEnabled(false);
+
+    expect(service.cloudBackupEnabled, isFalse);
+    expect(preferences.value.cloudBackupEnabled, isFalse);
+
+    await service.setCloudBackupEnabled(true);
+    expect(preferences.value.cloudBackupEnabled, isTrue);
+  });
+
+  test(
+    'pullIfNewer merges a newer remote snapshot without uploading',
+    () async {
+      auth.session = _session();
+      final directory = await Directory.systemTemp.createTemp(
+        'zephyr-cloud-pull-',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      final library = _CloudLibraryRepository(directory);
+      final client = _WorkflowClient()
+        ..remoteManifest = CloudSyncManifest(
+          libraryId: 'library-id',
+          updatedAt: DateTime.now().add(const Duration(minutes: 1)),
+          deviceName: 'other',
+          appVersion: '0.1.0',
+        );
+      final service = CloudSyncService(
+        authStore: auth,
+        preferencesStorage: preferences,
+        clientFactory: () => client,
+      );
+      await service.load();
+
+      final pulled = await service.pullIfNewer(
+        library: library,
+        flushPending: () async {},
+      );
+
+      expect(pulled, isNotNull);
+      expect(library.restoredMode, RestoreMode.merge);
+      expect(library.createdKind, isNull);
+      expect(client.snapshotUploads, 0);
+      expect(client.namedUploads, 0);
+      expect(client.closed, isTrue);
+    },
+  );
+
+  test('pullIfNewer skips when remote is not newer', () async {
+    auth.session = _session();
+    final remoteAt = DateTime.utc(2026, 1, 1);
+    preferences.value = CloudSyncPreferences(
+      cloudBackupEnabled: true,
+      lastSyncLibraryId: 'library-id',
+      lastRemoteUpdatedAt: remoteAt,
+    );
+    final directory = await Directory.systemTemp.createTemp(
+      'zephyr-cloud-pull-skip-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final library = _CloudLibraryRepository(directory);
+    final client = _WorkflowClient()
+      ..remoteManifest = CloudSyncManifest(
+        libraryId: 'library-id',
+        updatedAt: remoteAt,
+        deviceName: 'other',
+        appVersion: '0.1.0',
+      );
+    final service = CloudSyncService(
+      authStore: auth,
+      preferencesStorage: preferences,
+      clientFactory: () => client,
+    );
+    await service.load();
+
+    final pulled = await service.pullIfNewer(
+      library: library,
+      flushPending: () async {},
+    );
+
+    expect(pulled, isNull);
+    expect(library.restoredMode, isNull);
+    expect(client.snapshotUploads, 0);
+  });
+
+  test('uploadLocalBackup uploads an existing local file once', () async {
+    auth.session = _session();
+    final directory = await Directory.systemTemp.createTemp(
+      'zephyr-cloud-upload-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final library = _CloudLibraryRepository(directory);
+    final entry = await library.createBackup(kind: BackupKind.automatic);
+    final client = _WorkflowClient();
+    final service = CloudSyncService(
+      authStore: auth,
+      preferencesStorage: preferences,
+      clientFactory: () => client,
+    );
+    await service.load();
+
+    await service.uploadLocalBackup(library: library, entry: entry);
+
+    expect(library.createCalls, 1);
+    expect(client.snapshotUploads, 1);
+    expect(client.namedUploads, 1);
+    expect(client.uploadOrder, ['snapshot', 'backup']);
+  });
+
+  test('cloud operations fail when cloud backup is disabled', () async {
+    preferences.value = const CloudSyncPreferences(cloudBackupEnabled: false);
+    auth.session = _session();
+    final directory = await Directory.systemTemp.createTemp(
+      'zephyr-cloud-disabled-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final library = _CloudLibraryRepository(directory);
+    final service = CloudSyncService(
+      authStore: auth,
+      preferencesStorage: preferences,
+      clientFactory: _WorkflowClient.new,
+    );
+    await service.load();
+
+    await expectLater(
+      service.backupNow(library: library, flushPending: () async {}),
+      throwsStateError,
+    );
+    await expectLater(
+      service.pullIfNewer(library: library, flushPending: () async {}),
+      throwsStateError,
+    );
   });
 
   test('manual cloud backup flushes edits and uploads both copies', () async {
@@ -440,6 +582,7 @@ class _CloudLibraryRepository implements WritingLibraryRepository {
 
   final Directory directory;
   BackupKind? createdKind;
+  var createCalls = 0;
   RestoreMode? restoredMode;
   String? restoredPath;
   bool restoredFileExisted = false;
@@ -449,6 +592,7 @@ class _CloudLibraryRepository implements WritingLibraryRepository {
 
   @override
   Future<BackupEntry> createBackup({required BackupKind kind}) async {
+    createCalls++;
     createdKind = kind;
     final file = File('${directory.path}/backup.pwb');
     await file.writeAsString('pwb');

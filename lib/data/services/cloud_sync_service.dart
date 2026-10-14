@@ -33,6 +33,7 @@ class CloudSyncService {
   CloudSyncSession? get session => _session;
   CloudSyncPreferences get preferences => _preferences;
   bool get isSignedIn => _session != null;
+  bool get cloudBackupEnabled => _preferences.cloudBackupEnabled;
 
   Future<void> load() async {
     _preferences = await _preferencesStorage.load();
@@ -58,25 +59,42 @@ class CloudSyncService {
     await _authStore.clearSession();
   }
 
+  Future<void> setCloudBackupEnabled(bool enabled) async {
+    _preferences = _preferences.copyWith(cloudBackupEnabled: enabled);
+    await _preferencesStorage.save(_preferences);
+  }
+
   Future<void> setAutoSyncEnabled(bool enabled) async {
     _preferences = _preferences.copyWith(autoSyncEnabled: enabled);
     await _preferencesStorage.save(_preferences);
   }
 
-  /// Manual cloud backup: local `.pwb` + upload into cloud `Backups/`, and
-  /// refresh latest `library.pwb` for auto-sync peers.
+  /// Create a local `.pwb` then upload that same file to Nutstore.
   Future<CloudBackupEntry> backupNow({
     required WritingLibraryRepository library,
     required Future<void> Function() flushPending,
+    BackupKind kind = BackupKind.manual,
   }) async {
+    _requireCloudBackup();
     final session = _requireSession();
     await flushPending();
+    final entry = await library.createBackup(kind: kind);
+    return uploadLocalBackup(library: library, entry: entry, session: session);
+  }
+
+  /// Upload an existing local backup as the latest snapshot + history copy.
+  Future<CloudBackupEntry> uploadLocalBackup({
+    required WritingLibraryRepository library,
+    required BackupEntry entry,
+    CloudSyncSession? session,
+  }) async {
+    _requireCloudBackup();
+    final active = session ?? _requireSession();
     final libraryId = await library.ensureCloudLibraryId();
-    final entry = await library.createBackup(kind: BackupKind.manual);
     final client = _clientFactory();
     try {
-      final folderId = await client.ensureLibraryFolder(session: session);
-      await _checkRemoteLibrary(client, session, folderId, libraryId);
+      final folderId = await client.ensureLibraryFolder(session: active);
+      await _checkRemoteLibrary(client, active, folderId, libraryId);
       final package = await PackageInfo.fromPlatform();
       final device = await resolveDeviceLabel();
       final manifest = CloudSyncManifest(
@@ -86,13 +104,13 @@ class CloudSyncService {
         appVersion: package.version,
       );
       await client.uploadLibrarySnapshot(
-        session: session,
+        session: active,
         parentFileId: folderId,
         pwb: File(entry.path),
         manifest: manifest,
       );
       await client.uploadNamedBackup(
-        session: session,
+        session: active,
         libraryFolderId: folderId,
         pwb: File(entry.path),
         fileName: entry.fileName,
@@ -103,7 +121,7 @@ class CloudSyncService {
         lastRemoteUpdatedAt: manifest.updatedAt,
       );
       await _preferencesStorage.save(_preferences);
-      await _pruneCloudBackups(client, session, folderId);
+      await _pruneCloudBackups(client, active, folderId);
       return CloudBackupEntry(
         fileId: '',
         fileName: entry.fileName,
@@ -118,6 +136,7 @@ class CloudSyncService {
   Future<List<CloudBackupEntry>> listCloudBackups({
     required WritingLibraryRepository library,
   }) async {
+    _requireCloudBackup();
     final session = _requireSession();
     final libraryId = await library.ensureCloudLibraryId();
     return _withClient((client) async {
@@ -136,6 +155,7 @@ class CloudSyncService {
     required RestoreMode mode,
     required Future<void> Function() flushPending,
   }) async {
+    _requireCloudBackup();
     final session = _requireSession();
     await flushPending();
     final libraryId = await library.ensureCloudLibraryId();
@@ -169,11 +189,14 @@ class CloudSyncService {
     }
   }
 
-  /// Pull remote latest (if newer) with merge, then push local snapshot.
-  Future<CloudSyncManifest> syncNow({
+  /// Pull remote latest snapshot when newer and merge; never upload.
+  ///
+  /// Returns the remote manifest when a merge ran, otherwise null.
+  Future<CloudSyncManifest?> pullIfNewer({
     required WritingLibraryRepository library,
     required Future<void> Function() flushPending,
   }) async {
+    _requireCloudBackup();
     final session = _requireSession();
     await flushPending();
     final libraryId = await library.ensureCloudLibraryId();
@@ -186,75 +209,72 @@ class CloudSyncService {
         folderId,
         libraryId,
       );
+      if (remoteManifest == null) return null;
       final shouldPull =
-          remoteManifest != null &&
-          (_preferences.lastSyncLibraryId != libraryId ||
-              _preferences.lastRemoteUpdatedAt == null ||
-              remoteManifest.updatedAt.isAfter(
-                _preferences.lastRemoteUpdatedAt!,
-              ));
-      if (shouldPull) {
-        final staging = await Directory.systemTemp.createTemp(
-          'zephyr-cloud-pull-',
+          _preferences.lastSyncLibraryId != libraryId ||
+          _preferences.lastRemoteUpdatedAt == null ||
+          remoteManifest.updatedAt.isAfter(_preferences.lastRemoteUpdatedAt!);
+      if (!shouldPull) return null;
+
+      final staging = await Directory.systemTemp.createTemp(
+        'zephyr-cloud-pull-',
+      );
+      try {
+        final pwb = await client.downloadLibraryPwb(
+          session: session,
+          parentFileId: folderId,
+          staging: staging,
         );
-        try {
-          final pwb = await client.downloadLibraryPwb(
-            session: session,
-            parentFileId: folderId,
-            staging: staging,
-          );
-          if (pwb == null) {
-            throw StateError('Cloud manifest exists without library.pwb.');
-          }
-          await library.restoreBackup(
-            entry: BackupEntry(
-              path: pwb.path,
-              fileName: path.basename(pwb.path),
-              modified: remoteManifest.updatedAt,
-              sizeBytes: await pwb.length(),
-              kind: BackupKind.manual,
-            ),
-            mode: RestoreMode.merge,
-          );
-        } finally {
-          if (await staging.exists()) {
-            await staging.delete(recursive: true);
-          }
+        if (pwb == null) {
+          throw StateError('Cloud manifest exists without library.pwb.');
+        }
+        await library.restoreBackup(
+          entry: BackupEntry(
+            path: pwb.path,
+            fileName: path.basename(pwb.path),
+            modified: remoteManifest.updatedAt,
+            sizeBytes: await pwb.length(),
+            kind: BackupKind.manual,
+          ),
+          mode: RestoreMode.merge,
+        );
+      } finally {
+        if (await staging.exists()) {
+          await staging.delete(recursive: true);
         }
       }
 
-      final entry = await library.createBackup(kind: BackupKind.automatic);
-      final package = await PackageInfo.fromPlatform();
-      final device = await resolveDeviceLabel();
-      final manifest = CloudSyncManifest(
-        libraryId: libraryId,
-        updatedAt: DateTime.now(),
-        deviceName: device,
-        appVersion: package.version,
-      );
-      await client.uploadLibrarySnapshot(
-        session: session,
-        parentFileId: folderId,
-        pwb: File(entry.path),
-        manifest: manifest,
-      );
-      // Also keep a dated copy for the restore list.
-      await client.uploadNamedBackup(
-        session: session,
-        libraryFolderId: folderId,
-        pwb: File(entry.path),
-        fileName: entry.fileName,
-      );
       _preferences = _preferences.copyWith(
         lastSyncAt: DateTime.now(),
         lastSyncLibraryId: libraryId,
-        lastRemoteUpdatedAt: manifest.updatedAt,
+        lastRemoteUpdatedAt: remoteManifest.updatedAt,
       );
       await _preferencesStorage.save(_preferences);
-      await _pruneCloudBackups(client, session, folderId);
-      return manifest;
+      return remoteManifest;
     } finally {
       client.close();
+    }
+  }
+
+  /// Pull-merge then push (manual full sync). Prefer [pullIfNewer] + exit upload.
+  Future<CloudSyncManifest> syncNow({
+    required WritingLibraryRepository library,
+    required Future<void> Function() flushPending,
+  }) async {
+    await pullIfNewer(library: library, flushPending: flushPending);
+    final entry = await library.createBackup(kind: BackupKind.automatic);
+    await uploadLocalBackup(library: library, entry: entry);
+    return CloudSyncManifest(
+      libraryId: _preferences.lastSyncLibraryId ?? '',
+      updatedAt: _preferences.lastRemoteUpdatedAt ?? DateTime.now(),
+      deviceName: '',
+      appVersion: '',
+    );
+  }
+
+  void _requireCloudBackup() {
+    if (!_preferences.cloudBackupEnabled) {
+      throw StateError('Cloud backup is disabled.');
     }
   }
 

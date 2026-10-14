@@ -29,6 +29,19 @@ void main() {
     expect(restored.appVersion, '0.1.0');
   });
 
+  test('CloudSyncPreferences defaults enable cloud backup', () {
+    expect(CloudSyncPreferences.defaults.cloudBackupEnabled, isTrue);
+    final restored = CloudSyncPreferences.fromJson(const {});
+    expect(restored.cloudBackupEnabled, isTrue);
+    expect(restored.autoSyncEnabled, isTrue);
+  });
+
+  test('CloudSyncPreferences round-trips cloudBackupEnabled off', () {
+    final prefs = const CloudSyncPreferences(cloudBackupEnabled: false);
+    final restored = CloudSyncPreferences.fromJson(prefs.toJson());
+    expect(restored.cloudBackupEnabled, isFalse);
+  });
+
   test('CloudSyncSession rejects incomplete stored credentials', () {
     expect(
       CloudSyncSession.fromJson(const {

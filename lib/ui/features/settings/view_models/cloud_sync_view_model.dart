@@ -34,12 +34,14 @@ class CloudSyncViewModel extends ChangeNotifier {
     }
     return l10n.cloudSyncFailed(error.toString());
   }
+
   bool get busy => _busyKind != CloudSyncBusyKind.none;
   bool get isLoggingIn => _busyKind == CloudSyncBusyKind.login;
   bool get isSyncing => _busyKind == CloudSyncBusyKind.sync;
   bool get isBackingUp => _busyKind == CloudSyncBusyKind.backup;
   bool get isRestoring => _busyKind == CloudSyncBusyKind.restore;
   bool get isSignedIn => _service.isSignedIn;
+  bool get cloudBackupEnabled => _service.cloudBackupEnabled;
   CloudSyncSession? get session => _service.session;
   CloudSyncPreferences get preferences => _service.preferences;
   bool get autoSyncEnabled => _service.preferences.autoSyncEnabled;
@@ -52,6 +54,11 @@ class CloudSyncViewModel extends ChangeNotifier {
     } on Object catch (error) {
       _error = error;
     }
+    notifyListeners();
+  }
+
+  Future<void> setCloudBackupEnabled(bool enabled) async {
+    await _service.setCloudBackupEnabled(enabled);
     notifyListeners();
   }
 
@@ -93,8 +100,8 @@ class CloudSyncViewModel extends ChangeNotifier {
 
   Future<void> backupNow() async {
     if (busy) return;
-    if (!isSignedIn) {
-      _error = StateError('Not signed in.');
+    if (!cloudBackupEnabled || !isSignedIn) {
+      _error = StateError('Cloud backup is not ready.');
       notifyListeners();
       return;
     }
@@ -118,7 +125,7 @@ class CloudSyncViewModel extends ChangeNotifier {
   }
 
   Future<List<CloudBackupEntry>> refreshCloudBackups() async {
-    if (!isSignedIn) {
+    if (!cloudBackupEnabled || !isSignedIn) {
       _cloudBackups = const [];
       notifyListeners();
       return _cloudBackups;
@@ -141,6 +148,11 @@ class CloudSyncViewModel extends ChangeNotifier {
     required RestoreMode mode,
   }) async {
     if (busy) return;
+    if (!cloudBackupEnabled || !isSignedIn) {
+      _error = StateError('Cloud backup is not ready.');
+      notifyListeners();
+      return;
+    }
     _busyKind = CloudSyncBusyKind.restore;
     _error = null;
     notifyListeners();
@@ -164,8 +176,8 @@ class CloudSyncViewModel extends ChangeNotifier {
 
   Future<void> syncNow() async {
     if (busy) return;
-    if (!isSignedIn) {
-      _error = StateError('Not signed in.');
+    if (!cloudBackupEnabled || !isSignedIn) {
+      _error = StateError('Cloud backup is not ready.');
       notifyListeners();
       return;
     }
@@ -174,7 +186,7 @@ class CloudSyncViewModel extends ChangeNotifier {
     notifyListeners();
     await Future<void>.delayed(Duration.zero);
     try {
-      await _service.syncNow(
+      await _service.pullIfNewer(
         library: library.repository,
         flushPending: library.flushPending,
       );
@@ -188,8 +200,9 @@ class CloudSyncViewModel extends ChangeNotifier {
     }
   }
 
-  /// Call when the app resumes / pauses (fire-and-forget).
+  /// Open / resume: pull-merge newer cloud snapshot only (no upload).
   Future<void> maybeAutoSync() async {
+    if (!cloudBackupEnabled) return;
     if (!autoSyncEnabled) return;
     if (!isSignedIn) return;
     if (library.isReadOnly) return;

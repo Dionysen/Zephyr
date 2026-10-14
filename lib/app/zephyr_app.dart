@@ -84,7 +84,9 @@ void runZephyr(
         if (root == null || library.needsLibrarySetup || library.isReadOnly) {
           return true;
         }
-        final needsWorker = backup.autoBackupEnabled || cloudSync.isSignedIn;
+        final needsWorker =
+            backup.autoBackupEnabled ||
+            (cloudSync.cloudBackupEnabled && cloudSync.isSignedIn);
         if (!needsWorker) {
           return true;
         }

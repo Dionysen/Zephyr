@@ -45,11 +45,18 @@ void main() {
         supportDirectory: () async => directory,
       );
       expect(await storage.load(), isA<CloudSyncPreferences>());
+      expect((await storage.load()).cloudBackupEnabled, isTrue);
+
+      await storage.save(
+        const CloudSyncPreferences(cloudBackupEnabled: false),
+      );
+      expect((await storage.load()).cloudBackupEnabled, isFalse);
 
       await File('${directory.path}/zephyr/cloud_sync_preferences.json')
           .writeAsString('[]');
       final recovered = await storage.load();
       expect(recovered.toJson(), CloudSyncPreferences.defaults.toJson());
+      expect(recovered.cloudBackupEnabled, isTrue);
     },
   );
 }
