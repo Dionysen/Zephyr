@@ -81,9 +81,9 @@
   "cloudSyncServerUrlLabel": "WebDAV URL",
   "cloudSyncClientSecretLabel": "App password",
   "backupAutoTitle": "Automatic backup",
-  "backupAutoSubtitle": "After edits, back up to Backups/Auto when leaving the app. Keeps the newest 50.",
+  "backupAutoSubtitle": "Back up edited content hourly, and on mobile backgrounding. Keep the latest 25 local backups.",
   "backupNowTitle": "Back up now",
-  "backupNowSubtitle": "Write a manual .pwb under Backups (not auto-pruned).",
+  "backupNowSubtitle": "Write a manual .pwb under Backups. Manual and automatic backups share the 25-copy limit.",
   "backupNowSuccess": "Backup completed.",
   "backupFailed": "Backup failed: {error}",
   "@backupFailed": {

@@ -208,14 +208,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupAutoSubtitle =>
-      'After edits, back up to Backups/Auto when leaving the app. Keeps the newest 50.';
+      'Back up edited content hourly, and on mobile backgrounding. Keep the latest 25 local backups.';
 
   @override
   String get backupNowTitle => 'Back up now';
 
   @override
   String get backupNowSubtitle =>
-      'Write a manual .pwb under Backups (not auto-pruned).';
+      'Write a manual .pwb under Backups. Manual and automatic backups share the 25-copy limit.';
 
   @override
   String get backupNowSuccess => 'Backup completed.';

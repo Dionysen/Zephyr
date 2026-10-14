@@ -95,6 +95,55 @@ void main() {
       expect(model.statusMessage, isNull);
     },
   );
+
+  test('scheduled backup waits one hour and requires edited content', () async {
+    final edited = _EditedLibrary(repository);
+    final scheduled = BackupViewModel(
+      library: edited,
+      preferencesRepository: preferences,
+    );
+    addTearDown(() {
+      scheduled.dispose();
+      edited.dispose();
+    });
+    preferences.value = BackupPreferences(lastAutoBackupAt: DateTime.now());
+    await scheduled.load();
+    await scheduled.maybeAutoBackupOnSchedule();
+    expect(repository.createCalls, 0);
+
+    preferences.value = BackupPreferences(
+      lastAutoBackupAt: DateTime.now().subtract(const Duration(hours: 2)),
+    );
+    await scheduled.load();
+    edited.dirty = false;
+    await scheduled.maybeAutoBackupOnSchedule();
+    expect(repository.createCalls, 0);
+
+    edited.dirty = true;
+    await scheduled.maybeAutoBackupOnSchedule();
+    expect(repository.createCalls, 1);
+    expect(repository.lastKind, BackupKind.automatic);
+  });
+}
+
+class _EditedLibrary extends LibraryViewModel {
+  // LibraryViewModel's positional constructor parameter is library-private.
+  // ignore: use_super_parameters
+  _EditedLibrary(WritingLibraryRepository repository) : super(repository);
+
+  bool dirty = true;
+
+  @override
+  bool get contentDirtySinceBackup => dirty;
+
+  @override
+  bool get isReadOnly => false;
+
+  @override
+  Future<void> flushPending() async {}
+
+  @override
+  void markBackupCompleted() => dirty = false;
 }
 
 class _BackupPreferencesRepository implements BackupPreferencesRepository {

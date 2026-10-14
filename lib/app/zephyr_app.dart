@@ -15,6 +15,8 @@ import '../data/repositories/file_window_frame_repository.dart';
 import '../data/repositories/file_workspace_layout_repository.dart';
 import '../data/repositories/purewriter_writing_library_repository.dart';
 import '../data/services/backup_preferences_file_storage.dart';
+import '../data/services/desktop_backup_notification.dart';
+import '../data/services/desktop_exit_backup.dart';
 import '../data/services/editor_preferences_file_storage.dart';
 import '../data/services/keyboard_shortcuts_file_storage.dart';
 import '../data/services/purewriter_database.dart';
@@ -61,6 +63,51 @@ void runZephyr(
     initialError: startupError,
     layoutRepository: layout,
   );
+  final backup = BackupViewModel(
+    library: library,
+    preferencesRepository: FileBackupPreferencesRepository(
+      BackupPreferencesFileStorage(),
+    ),
+  )..load();
+  final cloudSync = CloudSyncViewModel(library: library)..load();
+  if (WindowChrome.isDesktop) {
+    WindowFrameTracker.active?.beforeClose = () async {
+      await windowManager.hide();
+      try {
+        // Existing manual operations must finish before the database lock moves
+        // to the detached worker process.
+        while (backup.busy || cloudSync.busy) {
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        }
+        await library.flushPending();
+        final root = database.location?.rootPath;
+        if (root == null || library.needsLibrarySetup || library.isReadOnly) {
+          return true;
+        }
+        final needsWorker = backup.autoBackupEnabled || cloudSync.isSignedIn;
+        if (!needsWorker) {
+          return true;
+        }
+        await database.close();
+        try {
+          await DesktopExitBackup.launch(root);
+        } on Object {
+          await database.openLibrary(root, createIfMissing: false);
+          rethrow;
+        }
+        return true;
+      } on Object catch (error) {
+        await windowManager.show();
+        await windowManager.focus();
+        try {
+          await DesktopBackupNotification().show(success: false, error: error);
+        } on Object {
+          // The visible editor remains open for a retry.
+        }
+        return false;
+      }
+    };
+  }
   runApp(
     ZephyrApp(
       library: library,
@@ -82,13 +129,8 @@ void runZephyr(
       settings: SettingsViewModel(
         FileSettingsNavigationRepository(SettingsNavigationFileStorage()),
       )..load(),
-      backup: BackupViewModel(
-        library: library,
-        preferencesRepository: FileBackupPreferencesRepository(
-          BackupPreferencesFileStorage(),
-        ),
-      )..load(),
-      cloudSync: CloudSyncViewModel(library: library)..load(),
+      backup: backup,
+      cloudSync: cloudSync,
     ),
   );
 }
@@ -163,8 +205,7 @@ Future<void> initializeDesktopWindow({
   }
   await windowManager.ensureInitialized();
   final repository =
-      frameRepository ??
-      FileWindowFrameRepository(WindowFrameFileStorage());
+      frameRepository ?? FileWindowFrameRepository(WindowFrameFileStorage());
   var frame = WindowFrame.defaults;
   try {
     frame = WindowFrameTracker.clamp(await repository.load());

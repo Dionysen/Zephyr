@@ -25,8 +25,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
       _store.openLibrary(rootPath, createIfMissing: true);
 
   @override
-  Future<LibraryLocation> openDefaultLibrary() =>
-      _store.openDefaultLibrary();
+  Future<LibraryLocation> openDefaultLibrary() => _store.openDefaultLibrary();
 
   @override
   Future<void> closeLibrary() => _store.close();
@@ -204,11 +203,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     final trimmed = title.trim().isEmpty ? 'Untitled' : title.trim();
     final updated = await _store.database.update(
       'Article',
-      {
-        'title': trimmed,
-        'titleUpdateTime': now,
-        'updateTime': now,
-      },
+      {'title': trimmed, 'titleUpdateTime': now, 'updateTime': now},
       where: 'id = ? AND deleted = 0',
       whereArgs: [articleId],
     );
@@ -354,10 +349,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     final trimmed = name.trim().isEmpty ? 'Untitled' : name.trim();
     final updated = await _store.database.update(
       'Category',
-      {
-        'name': trimmed,
-        'updateTime': now,
-      },
+      {'name': trimmed, 'updateTime': now},
       where: 'id = ? AND deleted = 0',
       whereArgs: [categoryId],
     );
@@ -970,21 +962,13 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     await db.transaction((txn) async {
       await txn.update(
         'Category',
-        {
-          'deleted': 1,
-          'deletedTime': now,
-          'updateTime': now,
-        },
+        {'deleted': 1, 'deletedTime': now, 'updateTime': now},
         where: 'folderId = ? AND deleted = 0',
         whereArgs: [folderId],
       );
       final updated = await txn.update(
         'Folder',
-        {
-          'deleted': 1,
-          'deletedTime': now,
-          'updateTime': now,
-        },
+        {'deleted': 1, 'deletedTime': now, 'updateTime': now},
         where: 'id = ? AND deleted = 0',
         whereArgs: [folderId],
       );
@@ -1015,22 +999,14 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
       for (var i = 0; i < orderedIds.length; i++) {
         await txn.update(
           'Folder',
-          {
-            'rank': i,
-            'rankUpdateTime': now,
-            'updateTime': now,
-          },
+          {'rank': i, 'rankUpdateTime': now, 'updateTime': now},
           where: 'id = ?',
           whereArgs: [orderedIds[i]],
         );
       }
       await txn.update(
         'Folder',
-        {
-          'rank': orderedIds.length,
-          'rankUpdateTime': now,
-          'updateTime': now,
-        },
+        {'rank': orderedIds.length, 'rankUpdateTime': now, 'updateTime': now},
         where: 'id = ? AND deleted = 0',
         whereArgs: [WritingFolder.trashId],
       );
@@ -1149,7 +1125,9 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     }
     final article = await getArticle(articleId);
     await saveArticle(
-      article.copyWith(content: rows.single['article_content'] as String? ?? ''),
+      article.copyWith(
+        content: rows.single['article_content'] as String? ?? '',
+      ),
     );
   }
 
@@ -1219,8 +1197,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
         final contentDiffers =
             (article['content'] as String? ?? '') != draft.content ||
             (article['title'] as String? ?? '') != draft.title;
-        if (contentDiffers &&
-            !draft.updatedAt.isBefore(articleUpdated)) {
+        if (contentDiffers && !draft.updatedAt.isBefore(articleUpdated)) {
           out.add(draft);
         }
       }
@@ -1292,8 +1269,8 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   }
 
   @override
-  Future<void> pruneAutomaticBackups({int keep = 50}) async {
-    await _store.backups.pruneAutomaticBackups(_libraryRoot, keep: keep);
+  Future<void> pruneBackups({int keep = 25}) async {
+    await _store.backups.pruneBackups(_libraryRoot, keep: keep);
   }
 
   static const _cloudLibraryIdKey = 'cloud_library_id';
@@ -1406,7 +1383,8 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
       columns: [idColumn, timeColumn],
     );
     final localTimes = <Object?, int>{
-      for (final row in localRows) row[idColumn]: (row[timeColumn] as int?) ?? 0,
+      for (final row in localRows)
+        row[idColumn]: (row[timeColumn] as int?) ?? 0,
     };
     await localDb.transaction((txn) async {
       final batch = txn.batch();
@@ -1418,12 +1396,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
         if (localTime == null) {
           batch.insert(table, remote);
         } else if (remoteTime >= localTime) {
-          batch.update(
-            table,
-            remote,
-            where: '$idColumn = ?',
-            whereArgs: [id],
-          );
+          batch.update(table, remote, where: '$idColumn = ?', whereArgs: [id]);
         }
       }
       await batch.commit(noResult: true);
@@ -1432,8 +1405,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
 
   Future<void> _mergeHistory(Database backupDb) async {
     final localDb = _store.database;
-    if (!await _hasHistoryTable(localDb) ||
-        !await _hasHistoryTable(backupDb)) {
+    if (!await _hasHistoryTable(localDb) || !await _hasHistoryTable(backupDb)) {
       return;
     }
     final remoteRows = await backupDb.query('History');

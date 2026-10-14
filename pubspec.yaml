@@ -58,6 +58,7 @@ dependencies:
     path: packages/text_editor_foundation
   flutter_primitives:
     path: packages/flutter_primitives
+  flutter_desktop_notifications: 1.1.2
 dev_dependencies:
   flutter_test:
     sdk: flutter

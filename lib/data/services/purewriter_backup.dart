@@ -16,7 +16,7 @@ import 'purewriter_database.dart';
 class PureWriterBackup {
   PureWriterBackup();
 
-  static const autoKeepCount = 50;
+  static const keepCount = 25;
   static const _dbEntryName = 'PureWriterBackup.db';
 
   /// Newest `.pwb` under `{root}/Backups` (including `Backups/Auto`).
@@ -49,9 +49,7 @@ class PureWriterBackup {
     final fileName = label.toFileName();
     final pwbPath = path.join(targetDir.path, fileName);
     await packRoomDbToPwb(roomDbPath: roomDb.path, pwbPath: pwbPath);
-    if (kind == BackupKind.automatic) {
-      await pruneAutomaticBackups(libraryRoot, keep: autoKeepCount);
-    }
+    await pruneBackups(libraryRoot);
     final kindIndex = kind.index;
     return Isolate.run(() {
       final pwb = File(pwbPath);
@@ -66,12 +64,9 @@ class PureWriterBackup {
     });
   }
 
-  Future<void> pruneAutomaticBackups(
-    Directory libraryRoot, {
-    int keep = autoKeepCount,
-  }) {
+  Future<void> pruneBackups(Directory libraryRoot, {int keep = keepCount}) {
     final rootPath = libraryRoot.path;
-    return Isolate.run(() => pruneAutomaticBackupsAtPath(rootPath, keep));
+    return Isolate.run(() => pruneBackupsAtPath(rootPath, keep));
   }
 
   /// Extracts the database from [pwb] into [destinationRoomDb].
@@ -88,7 +83,9 @@ class PureWriterBackup {
 
   /// Extracts the `.db` from [pwb] into a temp file and returns it.
   Future<File> extractRoomDbToTemp(File pwb) async {
-    final staging = await Directory.systemTemp.createTemp('zephyr-pwb-extract-');
+    final staging = await Directory.systemTemp.createTemp(
+      'zephyr-pwb-extract-',
+    );
     final destination = File(path.join(staging.path, 'Room.db'));
     await restoreRoomDb(pwb: pwb, destinationRoomDb: destination);
     return destination;
@@ -114,7 +111,7 @@ Future<void> _packRoomDbSync(String roomDbPath, String pwbPath) async {
   }
   final out = File(pwbPath);
   if (out.existsSync()) {
-    out.deleteSync();
+    throw FileSystemException('Backup already exists', pwbPath);
   }
   final size = room.lengthSync();
   final writer = await createArchiveFile(
@@ -170,28 +167,18 @@ List<BackupEntry> listBackupsAtPath(String libraryRootPath) {
   if (backups == null) return const [];
   final files = <File>[];
   _collectPwb(backups, files);
-  files.sort(
-    (a, b) => b.statSync().modified.compareTo(a.statSync().modified),
-  );
-  return [
-    for (final file in files) _backupEntryFor(file, backups),
-  ];
+  files.sort((a, b) => b.statSync().modified.compareTo(a.statSync().modified));
+  return [for (final file in files) _backupEntryFor(file, backups)];
 }
 
-void pruneAutomaticBackupsAtPath(String libraryRootPath, int keep) {
+void pruneBackupsAtPath(String libraryRootPath, int keep) {
   final backups =
       findChildDirectory(Directory(libraryRootPath), 'backups') ??
       Directory(path.join(libraryRootPath, 'Backups'));
-  final auto = findChildDirectory(backups, 'auto');
-  if (auto == null || !auto.existsSync()) return;
-  final files = auto
-      .listSync(followLinks: false)
-      .whereType<File>()
-      .where((f) => path.extension(f.path).toLowerCase() == '.pwb')
-      .toList()
-    ..sort(
-      (a, b) => b.statSync().modified.compareTo(a.statSync().modified),
-    );
+  final files = <File>[];
+  _collectPwb(backups, files);
+  files.removeWhere((file) => !path.basename(file.path).startsWith('Zephyr-'));
+  files.sort((a, b) => b.statSync().modified.compareTo(a.statSync().modified));
   for (var i = keep; i < files.length; i++) {
     try {
       files[i].deleteSync();

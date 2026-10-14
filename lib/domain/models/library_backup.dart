@@ -52,12 +52,14 @@ class BackupFileLabel {
   final String deviceName;
   final DateTime createdAt;
 
-  /// e.g. `Zephyr-2026-04-10-164530-Pixel-8-0.1.0-3books-12articles.pwb`
+  /// e.g. `Zephyr-2026-04-10-164530123456-Pixel-8-0.1.0-3books-12articles.pwb`
   String toFileName() {
     String two(int n) => n.toString().padLeft(2, '0');
     final stamp =
         '${createdAt.year}-${two(createdAt.month)}-${two(createdAt.day)}-'
-        '${two(createdAt.hour)}${two(createdAt.minute)}${two(createdAt.second)}';
+        '${two(createdAt.hour)}${two(createdAt.minute)}${two(createdAt.second)}'
+        '${createdAt.millisecond.toString().padLeft(3, '0')}'
+        '${createdAt.microsecond.toString().padLeft(3, '0')}';
     final device = sanitizeFileToken(deviceName, fallback: 'device');
     final version = sanitizeFileToken(appVersion, fallback: '0');
     return 'Zephyr-$stamp-$device-$version-'

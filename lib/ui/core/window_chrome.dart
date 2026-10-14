@@ -52,7 +52,9 @@ abstract final class WindowChrome {
       return;
     }
     try {
-      final metrics = await _channel.invokeMapMethod<String, dynamic>('metrics');
+      final metrics = await _channel.invokeMapMethod<String, dynamic>(
+        'metrics',
+      );
       if (metrics == null) {
         return;
       }
@@ -198,6 +200,9 @@ class WindowFrameTracker with WindowListener {
   /// Keeps the active tracker reachable for the process lifetime.
   static WindowFrameTracker? active;
 
+  /// Return false to keep the window open when pending edits could not be saved.
+  Future<bool> Function()? beforeClose;
+
   final WindowFrameRepository _repository;
   Timer? _debounce;
   WindowFrame _normalFrame;
@@ -267,9 +272,14 @@ class WindowFrameTracker with WindowListener {
     _debounce?.cancel();
     await _persist();
     try {
+      if (beforeClose != null && !await beforeClose!()) {
+        _closing = false;
+        return;
+      }
       await windowManager.destroy();
     } on Object {
-      // Native close is best-effort once the frame is persisted.
+      _closing = false;
+      await windowManager.show();
     }
   }
 

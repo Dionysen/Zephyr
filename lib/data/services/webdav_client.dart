@@ -273,6 +273,23 @@ class WebDavClient {
     return entries;
   }
 
+  /// Deletes a history file only when it belongs directly to this account's
+  /// `Zephyr/Backups` folder. The latest `library.pwb` is never targeted.
+  Future<void> deleteNamedBackup({
+    required CloudSyncSession session,
+    required CloudBackupEntry entry,
+  }) async {
+    final folder = _folder(_folder(_root(session), 'Zephyr'), 'Backups');
+    final expected = _child(folder, entry.fileName);
+    if (!entry.fileName.startsWith('Zephyr-') ||
+        !entry.fileName.toLowerCase().endsWith('.pwb') ||
+        entry.fileId != expected.toString()) {
+      throw const FormatException('Backup is outside this WebDAV account.');
+    }
+    final response = await _request(session, 'DELETE', expected);
+    _expect(response, {200, 202, 204, 404});
+  }
+
   String? _firstText(XmlElement root, String name) {
     for (final element in root.descendants.whereType<XmlElement>()) {
       if (element.name.local == name) return element.innerText;

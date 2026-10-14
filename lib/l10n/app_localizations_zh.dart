@@ -199,13 +199,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupAutoTitle => '自动备份';
 
   @override
-  String get backupAutoSubtitle => '内容有变更且离开应用时写入 Backups/Auto，保留最近 50 份';
+  String get backupAutoSubtitle => '内容有变更时每小时自动备份；移动端进入后台时也会备份。本地共保留最近 25 份';
 
   @override
   String get backupNowTitle => '立即备份';
 
   @override
-  String get backupNowSubtitle => '在 Backups 目录创建一份手动备份（不会被自动清理）';
+  String get backupNowSubtitle => '在 Backups 目录创建手动备份，与自动备份合计保留最近 25 份';
 
   @override
   String get backupNowSuccess => '备份已完成';

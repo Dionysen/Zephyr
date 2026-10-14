@@ -86,38 +86,41 @@ void main() {
     },
   );
 
-  test('detects an untracked backup folder before writing a manifest', () async {
-    var hasBackup = true;
-    final client = WebDavClient(
-      httpClient: MockClient((request) async {
-        expect(request.method, 'PROPFIND');
-        expect(request.url.path, '/dav/Zephyr/');
-        expect(request.headers['Depth'], '1');
-        return http.Response('''<?xml version="1.0"?>
+  test(
+    'detects an untracked backup folder before writing a manifest',
+    () async {
+      var hasBackup = true;
+      final client = WebDavClient(
+        httpClient: MockClient((request) async {
+          expect(request.method, 'PROPFIND');
+          expect(request.url.path, '/dav/Zephyr/');
+          expect(request.headers['Depth'], '1');
+          return http.Response('''<?xml version="1.0"?>
 <d:multistatus xmlns:d="DAV:">
   <d:response><d:href>/dav/Zephyr/</d:href></d:response>
   ${hasBackup ? '<d:response><d:href>/dav/Zephyr/Backups/</d:href></d:response>' : ''}
 </d:multistatus>''', 207);
-      }),
-    );
-    addTearDown(client.close);
+        }),
+      );
+      addTearDown(client.close);
 
-    expect(
-      await client.hasUntrackedContent(
-        session: session,
-        parentFileId: 'https://dav.jianguoyun.com/dav/Zephyr/',
-      ),
-      isTrue,
-    );
-    hasBackup = false;
-    expect(
-      await client.hasUntrackedContent(
-        session: session,
-        parentFileId: 'https://dav.jianguoyun.com/dav/Zephyr/',
-      ),
-      isFalse,
-    );
-  });
+      expect(
+        await client.hasUntrackedContent(
+          session: session,
+          parentFileId: 'https://dav.jianguoyun.com/dav/Zephyr/',
+        ),
+        isTrue,
+      );
+      hasBackup = false;
+      expect(
+        await client.hasUntrackedContent(
+          session: session,
+          parentFileId: 'https://dav.jianguoyun.com/dav/Zephyr/',
+        ),
+        isFalse,
+      );
+    },
+  );
 
   test('lists remote backups from a WebDAV multistatus response', () async {
     final client = WebDavClient(
@@ -235,6 +238,42 @@ void main() {
       'GET /dav/Zephyr/Backups/backup.pwb',
     ]);
   });
+
+  test(
+    'deletes only a named Zephyr backup in the configured account',
+    () async {
+      final requests = <String>[];
+      final client = WebDavClient(
+        httpClient: MockClient((request) async {
+          requests.add('${request.method} ${request.url}');
+          return http.Response('', 204);
+        }),
+      );
+      addTearDown(client.close);
+      final valid = CloudBackupEntry(
+        fileId: '${session.serverUrl}Zephyr/Backups/Zephyr-old.pwb',
+        fileName: 'Zephyr-old.pwb',
+        modified: DateTime.utc(2026),
+        sizeBytes: 1,
+      );
+      await client.deleteNamedBackup(session: session, entry: valid);
+      await expectLater(
+        client.deleteNamedBackup(
+          session: session,
+          entry: CloudBackupEntry(
+            fileId: '${session.serverUrl}Zephyr/library.pwb',
+            fileName: 'library.pwb',
+            modified: DateTime.utc(2026),
+            sizeBytes: 1,
+          ),
+        ),
+        throwsFormatException,
+      );
+      expect(requests, [
+        'DELETE ${session.serverUrl}Zephyr/Backups/Zephyr-old.pwb',
+      ]);
+    },
+  );
 
   test(
     'refuses to download a backup outside the configured WebDAV root',

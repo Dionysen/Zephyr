@@ -12,7 +12,7 @@ void main() {
     );
     expect(
       label.toFileName(),
-      'Zephyr-2026-04-10-164530-Pixel-8-Pro-0.1.0-3books-12articles.pwb',
+      'Zephyr-2026-04-10-164530000000-Pixel-8-Pro-0.1.0-3books-12articles.pwb',
     );
   });
 

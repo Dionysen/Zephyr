@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 本地自动备份增加每小时检查；桌面端退出后由独立进程完成后台备份（已连接坚果云则上传云备份）并用系统通知报告结果；本地和云端历史备份各保留最近 25 份。
 - 移除阿里云盘开放平台和扫码登录，改用坚果云 WebDAV 账号、网址和应用密码；云备份与自动同步存放在根目录的 Zephyr 下。
 - 暂时改为单文库目录；文库菜单可重新选择目录，云端书库 ID 不匹配时阻止同步与备份。
 - Keep each volume header pinned while its chapters scroll, then release it at the end of that volume.

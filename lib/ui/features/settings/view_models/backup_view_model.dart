@@ -21,6 +21,9 @@ class BackupViewModel extends ChangeNotifier {
 
   final LibraryViewModel _library;
   final BackupPreferencesRepository _preferencesRepository;
+  static const autoBackupInterval = Duration(hours: 1);
+  static const _scheduleCheckInterval = Duration(minutes: 1);
+  Timer? _schedule;
 
   BackupPreferences _preferences = BackupPreferences.defaults;
   List<BackupEntry> _backups = const [];
@@ -42,7 +45,17 @@ class BackupViewModel extends ChangeNotifier {
   Future<void> load() async {
     _preferences = await _preferencesRepository.load();
     await refreshBackups();
+    _schedule ??= Timer.periodic(
+      _scheduleCheckInterval,
+      (_) => unawaited(maybeAutoBackupOnSchedule()),
+    );
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _schedule?.cancel();
+    super.dispose();
   }
 
   Future<void> refreshBackups() async {
@@ -118,7 +131,15 @@ class BackupViewModel extends ChangeNotifier {
     if (!_library.contentDirtySinceBackup) return;
     if (_library.isReadOnly) return;
     if (busy) return;
-    // Do not await from lifecycle — keeps pause animation smooth.
-    unawaited(backupNow(kind: BackupKind.automatic));
+    await backupNow(kind: BackupKind.automatic);
+  }
+
+  /// Back up edited content after the configured interval while the app stays open.
+  Future<void> maybeAutoBackupOnSchedule() async {
+    final last = _preferences.lastAutoBackupAt;
+    if (last != null && DateTime.now().difference(last) < autoBackupInterval) {
+      return;
+    }
+    await maybeAutoBackupOnLeave();
   }
 }

@@ -80,9 +80,9 @@
   "cloudSyncClientIdLabel": "坚果云账号",
   "cloudSyncClientSecretLabel": "应用密码",
   "backupAutoTitle": "自动备份",
-  "backupAutoSubtitle": "内容有变更且离开应用时写入 Backups/Auto，保留最近 50 份",
+  "backupAutoSubtitle": "内容有变更时每小时自动备份；移动端进入后台时也会备份。本地共保留最近 25 份",
   "backupNowTitle": "立即备份",
-  "backupNowSubtitle": "在 Backups 目录创建一份手动备份（不会被自动清理）",
+  "backupNowSubtitle": "在 Backups 目录创建手动备份，与自动备份合计保留最近 25 份",
   "backupNowSuccess": "备份已完成",
   "backupFailed": "备份失败：{error}",
   "@backupFailed": {

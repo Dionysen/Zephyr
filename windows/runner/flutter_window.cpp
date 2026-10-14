@@ -4,8 +4,9 @@
 
 #include "flutter/generated_plugin_registrant.h"
 
-FlutterWindow::FlutterWindow(const flutter::DartProject& project)
-    : project_(project) {}
+FlutterWindow::FlutterWindow(const flutter::DartProject& project,
+                             bool background_worker)
+    : project_(project), background_worker_(background_worker) {}
 
 FlutterWindow::~FlutterWindow() {}
 
@@ -28,7 +29,9 @@ bool FlutterWindow::OnCreate() {
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
-    this->Show();
+    if (!background_worker_) {
+      this->Show();
+    }
   });
 
   // Flutter can complete the first frame before the "show window" callback is

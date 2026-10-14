@@ -13,6 +13,7 @@ import 'webdav_client.dart';
 
 /// Orchestrates WebDAV credentials, cloud backups, and snapshot sync.
 class CloudSyncService {
+  static const cloudBackupKeepCount = 25;
   CloudSyncService({
     CloudAuthSecureStore? authStore,
     CloudSyncPreferencesStorage? preferencesStorage,
@@ -102,6 +103,7 @@ class CloudSyncService {
         lastRemoteUpdatedAt: manifest.updatedAt,
       );
       await _preferencesStorage.save(_preferences);
+      await _pruneCloudBackups(client, session, folderId);
       return CloudBackupEntry(
         fileId: '',
         fileName: entry.fileName,
@@ -249,6 +251,7 @@ class CloudSyncService {
         lastRemoteUpdatedAt: manifest.updatedAt,
       );
       await _preferencesStorage.save(_preferences);
+      await _pruneCloudBackups(client, session, folderId);
       return manifest;
     } finally {
       client.close();
@@ -261,6 +264,23 @@ class CloudSyncService {
       throw StateError('WebDAV account is not connected.');
     }
     return session;
+  }
+
+  Future<void> _pruneCloudBackups(
+    WebDavClient client,
+    CloudSyncSession session,
+    String folderId,
+  ) async {
+    final backups = await client.listNamedBackups(
+      session: session,
+      libraryFolderId: folderId,
+    );
+    final owned = backups
+        .where((entry) => entry.fileName.startsWith('Zephyr-'))
+        .toList();
+    for (final entry in owned.skip(cloudBackupKeepCount)) {
+      await client.deleteNamedBackup(session: session, entry: entry);
+    }
   }
 
   Future<CloudSyncManifest?> _checkRemoteLibrary(

@@ -461,7 +461,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupAutoSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'After edits, back up to Backups/Auto when leaving the app. Keeps the newest 50.'**
+  /// **'Back up edited content hourly, and on mobile backgrounding. Keep the latest 25 local backups.'**
   String get backupAutoSubtitle;
 
   /// No description provided for @backupNowTitle.
@@ -473,7 +473,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupNowSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Write a manual .pwb under Backups (not auto-pruned).'**
+  /// **'Write a manual .pwb under Backups. Manual and automatic backups share the 25-copy limit.'**
   String get backupNowSubtitle;
 
   /// No description provided for @backupNowSuccess.

@@ -40,21 +40,26 @@ void main() {
     );
   });
 
-  test('automatic backup pruning keeps the newest requested count', () async {
+  test('pruning keeps the newest Zephyr backups across manual and automatic folders', () async {
     final auto = Directory('${directory.path}/Backups/Auto');
     await auto.create(recursive: true);
     for (var day = 1; day <= 4; day++) {
-      final file = File('${auto.path}/$day.pwb');
+      final folder = day.isEven ? auto : auto.parent;
+      final file = File('${folder.path}/Zephyr-$day.pwb');
       await file.writeAsString('$day');
       await file.setLastModified(DateTime.utc(2026, 1, day));
     }
+    final foreign = File('${auto.path}/PureWriter.pwb');
+    await foreign.writeAsString('foreign');
+    await foreign.setLastModified(DateTime.utc(2025, 1, 1));
 
-    await PureWriterBackup().pruneAutomaticBackups(directory, keep: 2);
+    await PureWriterBackup().pruneBackups(directory, keep: 2);
 
-    expect(await File('${auto.path}/1.pwb').exists(), isFalse);
-    expect(await File('${auto.path}/2.pwb').exists(), isFalse);
-    expect(await File('${auto.path}/3.pwb').exists(), isTrue);
-    expect(await File('${auto.path}/4.pwb').exists(), isTrue);
+    expect(await File('${auto.parent.path}/Zephyr-1.pwb').exists(), isFalse);
+    expect(await File('${auto.path}/Zephyr-2.pwb').exists(), isFalse);
+    expect(await File('${auto.parent.path}/Zephyr-3.pwb').exists(), isTrue);
+    expect(await File('${auto.path}/Zephyr-4.pwb').exists(), isTrue);
+    expect(await foreign.exists(), isTrue);
   });
 
   test('packed database can be restored without changing its bytes', () async {

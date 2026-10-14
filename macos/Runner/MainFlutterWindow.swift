@@ -27,6 +27,15 @@ class MainFlutterWindow: NSWindow {
     registerSystemFontsChannel(flutterViewController)
 
     super.awakeFromNib()
+    if CommandLine.arguments.contains("--zephyr-exit-backup") {
+      NSApp.setActivationPolicy(.accessory)
+      orderOut(nil)
+    }
+  }
+
+  override func makeKeyAndOrderFront(_ sender: Any?) {
+    guard !CommandLine.arguments.contains("--zephyr-exit-backup") else { return }
+    super.makeKeyAndOrderFront(sender)
   }
 
   /// window_manager maximizes via `zoom(_:)`; the system title bar double-click

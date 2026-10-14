@@ -955,7 +955,7 @@ class FakeLibraryRepository implements WritingLibraryRepository {
     required RestoreMode mode,
   }) async {}
   @override
-  Future<void> pruneAutomaticBackups({int keep = 50}) async {}
+  Future<void> pruneBackups({int keep = 25}) async {}
 
   @override
   Future<String> ensureCloudLibraryId() async => 'test-cloud-library-id';

@@ -51,6 +51,7 @@ class _WorkspacePageState extends State<WorkspacePage>
   var _started = false;
   var _settingsOpen = false;
   var _offeredDraftRecovery = false;
+
   /// Chrome title when the in-editor chapter title has scrolled away.
   var _showTitleInChrome = false;
 
@@ -122,12 +123,16 @@ class _WorkspacePageState extends State<WorkspacePage>
       }
       // Auto-backup only on paused (not inactive) to avoid double work and
       // competing with the system transition animation.
-      if (mounted && state == AppLifecycleState.paused) {
+      if (mounted &&
+          !WindowChrome.isDesktop &&
+          state == AppLifecycleState.paused) {
         final scope = ZephyrScope.of(context);
         unawaited(scope.backup.maybeAutoBackupOnLeave());
         unawaited(scope.cloudSync.maybeAutoSync());
       }
-    } else if (mounted && state == AppLifecycleState.resumed) {
+    } else if (mounted &&
+        !WindowChrome.isDesktop &&
+        state == AppLifecycleState.resumed) {
       unawaited(_autoSyncAndReport());
     }
   }
@@ -195,16 +200,16 @@ class _WorkspacePageState extends State<WorkspacePage>
                 constraints.maxWidth * 0.88,
               );
               final immersive = immersiveStatusBar;
-              final editorBackground =
-                  scope.theme.ui.activeEditorBackgroundFor(
+              final editorBackground = scope.theme.ui.activeEditorBackgroundFor(
                 dark: scope.theme.isEffectivelyDark,
               );
               final bleedEditorBackground = editorBackground.hasImage;
               // Bleed under the status band when immersive or a writing-column
               // background is active so the image fills above the book bar.
               final invadeStatusBand = immersive || bleedEditorBackground;
-              final sidebarColor =
-                  Theme.of(context).colorScheme.surfaceContainerLowest;
+              final sidebarColor = Theme.of(context)
+                  .colorScheme
+                  .surfaceContainerLowest;
               // Immersive: full-bleed under a transparent status bar; pad chrome
               // only. Off: keep the same edge-to-edge surface, but pad the shell.
               return Theme(
@@ -276,8 +281,7 @@ class _WorkspacePageState extends State<WorkspacePage>
               );
             }
 
-            final editorBackground =
-                scope.theme.ui.activeEditorBackgroundFor(
+            final editorBackground = scope.theme.ui.activeEditorBackgroundFor(
               dark: scope.theme.isEffectivelyDark,
             );
             // Desktop: paint the writing-column image behind the title bar and
@@ -369,8 +373,7 @@ class _WorkspacePageState extends State<WorkspacePage>
             );
             // Floating settings: overlays the workspace without resizing the
             // sidebar slot or the editor.
-            final settingsInset =
-                WorkspaceLibraryDockMetrics.horizontalInset;
+            final settingsInset = WorkspaceLibraryDockMetrics.horizontalInset;
             final settingsPanelWidth = math.max(
               WorkspaceSettingsPanel.preferredWidth,
               model.sidebarWidth - 2 * settingsInset,
@@ -390,8 +393,9 @@ class _WorkspacePageState extends State<WorkspacePage>
                   Focus(
                     autofocus: true,
                     onKeyEvent: (node, event) {
-                      final action = scope.keyboardShortcuts
-                          .actionForKeyEvent(event);
+                      final action = scope.keyboardShortcuts.actionForKeyEvent(
+                        event,
+                      );
                       if (action == ShortcutActionId.closeSettings) {
                         _closeSettings();
                         return KeyEventResult.handled;
@@ -411,8 +415,8 @@ class _WorkspacePageState extends State<WorkspacePage>
                           left: settingsInset,
                           bottom:
                               WorkspaceLibraryDockMetrics.settingsBottomInset(
-                            context,
-                          ),
+                                context,
+                              ),
                           width: settingsPanelWidth,
                           height: settingsPanelHeight,
                           child: WorkspaceSettingsSlideIn(
@@ -436,10 +440,7 @@ class _WorkspacePageState extends State<WorkspacePage>
                     ? SafeArea(top: false, child: shell)
                     : ColoredBox(
                         color: surface,
-                        child: ZephyrTopSafeArea(
-                          bottom: false,
-                          child: shell,
-                        ),
+                        child: ZephyrTopSafeArea(bottom: false, child: shell),
                       ),
               ),
             );
@@ -687,10 +688,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
         final t = _hide.value;
         return IgnorePointer(
           ignoring: true,
-          child: Opacity(
-            opacity: (1.0 - t).clamp(0.0, 1.0),
-            child: child,
-          ),
+          child: Opacity(opacity: (1.0 - t).clamp(0.0, 1.0), child: child),
         );
       },
       child: child,
@@ -704,8 +702,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
       _articleId = articleId;
       _showBar(immediate: true);
     }
-    final statusTop =
-        widget.invadeStatusBar ? zephyrTopInset(context) : 0.0;
+    final statusTop = widget.invadeStatusBar ? zephyrTopInset(context) : 0.0;
     // Keep scroll padding stable — bar show/hide must not reflow the editor.
     final contentTop = statusTop + _barTravel;
     final barBottom = statusTop + _barInset + WorkspaceMobileBookBar.height;
@@ -723,8 +720,9 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
         builder: (context, _) {
           // Match the opaque-band fade: while the bar is visible, hide text
           // above its bottom edge; as it hides, release the clip.
-          final textClipTop =
-              widget.transparentTopBar ? barBottom * (1.0 - _hide.value) : 0.0;
+          final textClipTop = widget.transparentTopBar
+              ? barBottom * (1.0 - _hide.value)
+              : 0.0;
           return Stack(
             children: [
               if (widget.transparentTopBar)
@@ -745,16 +743,12 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                       ? _TopExcludeClipper(textClipTop)
                       : null,
                   child: ListenableBuilder(
-                    listenable: Listenable.merge([
-                      widget.preferences,
-                      themeVm,
-                    ]),
+                    listenable: Listenable.merge([widget.preferences, themeVm]),
                     builder: (context, _) => QuickToolbarHost(
                       toolbar: quickToolbar,
                       bridge: _editorBridge,
                       foreground: foreground,
-                      bodyFontFamily:
-                          widget.preferences.preferences.fontFamily,
+                      bodyFontFamily: widget.preferences.preferences.fontFamily,
                       hidden: themeVm.ui.hideQuickToolbar,
                       child: WorkspaceEditor(
                         model: widget.model,
@@ -828,9 +822,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                           icon: Icons.backup_outlined,
                           label: l10n.quickToolbarBackupTooltip,
                           enabled: !backup.busy,
-                          onTap: () => unawaited(
-                            _mobileBackupNow(barContext),
-                          ),
+                          onTap: () => unawaited(_mobileBackupNow(barContext)),
                         ),
                         WorkspaceMobileTool(
                           id: WorkspaceMobileToolId.restore,
@@ -963,10 +955,7 @@ class _LibrarySetupBanner extends StatelessWidget {
 }
 
 class _LibrarySetupPage extends StatelessWidget {
-  const _LibrarySetupPage({
-    required this.openLibrary,
-    this.error,
-  });
+  const _LibrarySetupPage({required this.openLibrary, this.error});
 
   final Object? error;
   final Future<void> Function() openLibrary;
@@ -1038,9 +1027,7 @@ Future<void> _mobileBackupNow(BuildContext context) async {
   final error = backup.error;
   ZephyrSnackBar.show(
     context,
-    error == null
-        ? l10n.backupNowSuccess
-        : l10n.backupFailed(error.toString()),
+    error == null ? l10n.backupNowSuccess : l10n.backupFailed(error.toString()),
   );
 }
 
@@ -1062,10 +1049,7 @@ Future<void> _pickMobileThemeMode(
         value: AppThemeMode.light,
         label: l10n.themeModeLight,
       ),
-      ZephyrSettingsChoice(
-        value: AppThemeMode.dark,
-        label: l10n.themeModeDark,
-      ),
+      ZephyrSettingsChoice(value: AppThemeMode.dark, label: l10n.themeModeDark),
     ],
   );
   if (next == null) return;
@@ -1108,4 +1092,3 @@ String _mobileThemePackTitle(AppLocalizations l10n, ThemeColorPack pack) {
     ThemePreset.darkModern => l10n.themePresetDarkModern,
   };
 }
-

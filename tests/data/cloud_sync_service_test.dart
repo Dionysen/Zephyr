@@ -150,6 +150,51 @@ void main() {
   });
 
   test(
+    'cloud backup deletes only Zephyr history older than 25 copies',
+    () async {
+      auth.session = _session();
+      final directory = await Directory.systemTemp.createTemp(
+        'zephyr-cloud-prune-',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      final client = _WorkflowClient();
+      client.backups.addAll([
+        for (var day = 1; day <= 27; day++)
+          CloudBackupEntry(
+            fileId:
+                'https://dav.jianguoyun.com/dav/Zephyr/Backups/Zephyr-$day.pwb',
+            fileName: 'Zephyr-$day.pwb',
+            modified: DateTime.utc(2026, 1, day),
+            sizeBytes: day,
+          ),
+        CloudBackupEntry(
+          fileId: 'foreign',
+          fileName: 'PureWriter.pwb',
+          modified: DateTime.utc(2025),
+          sizeBytes: 1,
+        ),
+      ]);
+      final service = CloudSyncService(
+        authStore: auth,
+        preferencesStorage: preferences,
+        clientFactory: () => client,
+      );
+      await service.load();
+
+      await service.syncNow(
+        library: _CloudLibraryRepository(directory),
+        flushPending: () async {},
+      );
+
+      expect(client.deleted.map((entry) => entry.fileName), [
+        'Zephyr-2.pwb',
+        'Zephyr-1.pwb',
+      ]);
+      expect(client.snapshotUploads, 1);
+    },
+  );
+
+  test(
     'sync merges a newer remote snapshot before uploading local data',
     () async {
       auth.session = _session();
@@ -208,11 +253,13 @@ void main() {
 
       await expectLater(
         service.syncNow(library: library, flushPending: () async {}),
-        throwsA(isA<CloudLibraryConflictException>().having(
-          (error) => error.reason,
-          'reason',
-          CloudLibraryConflictReason.anotherLibrary,
-        )),
+        throwsA(
+          isA<CloudLibraryConflictException>().having(
+            (error) => error.reason,
+            'reason',
+            CloudLibraryConflictReason.anotherLibrary,
+          ),
+        ),
       );
       expect(client.snapshotUploads, 0);
       expect(client.namedUploads, 0);
@@ -303,11 +350,13 @@ void main() {
 
     await expectLater(
       service.syncNow(library: library, flushPending: () async {}),
-      throwsA(isA<CloudLibraryConflictException>().having(
-        (error) => error.reason,
-        'reason',
-        CloudLibraryConflictReason.missingManifest,
-      )),
+      throwsA(
+        isA<CloudLibraryConflictException>().having(
+          (error) => error.reason,
+          'reason',
+          CloudLibraryConflictReason.missingManifest,
+        ),
+      ),
     );
     expect(client.snapshotUploads, 0);
     expect(client.namedUploads, 0);
@@ -442,6 +491,22 @@ class _WorkflowClient extends WebDavClient {
   bool closed = false;
   bool untrackedContent = false;
   CloudSyncManifest? remoteManifest;
+  final backups = <CloudBackupEntry>[];
+  final deleted = <CloudBackupEntry>[];
+
+  @override
+  Future<List<CloudBackupEntry>> listNamedBackups({
+    required CloudSyncSession session,
+    required String libraryFolderId,
+  }) async => [...backups]..sort((a, b) => b.modified.compareTo(a.modified));
+
+  @override
+  Future<void> deleteNamedBackup({
+    required CloudSyncSession session,
+    required CloudBackupEntry entry,
+  }) async {
+    deleted.add(entry);
+  }
 
   @override
   Future<String> ensureLibraryFolder({

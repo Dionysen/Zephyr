@@ -34,7 +34,10 @@ abstract interface class WritingLibraryRepository {
     String? afterArticleId,
   });
   Future<void> saveArticle(WritingArticle article);
-  Future<void> renameArticle({required String articleId, required String title});
+  Future<void> renameArticle({
+    required String articleId,
+    required String title,
+  });
   Future<WritingCategory> createCategory({
     required String folderId,
     required String name,
@@ -67,9 +70,7 @@ abstract interface class WritingLibraryRepository {
 
   /// Turns a volume into a new book: creates a folder named after the volume,
   /// moves its chapters in as unfiled, and soft-deletes the volume.
-  Future<WritingFolder> convertCategoryToFolder({
-    required String categoryId,
-  });
+  Future<WritingFolder> convertCategoryToFolder({required String categoryId});
 
   Future<void> reorderCategories({
     required String folderId,
@@ -125,7 +126,7 @@ abstract interface class WritingLibraryRepository {
     required BackupEntry entry,
     required RestoreMode mode,
   });
-  Future<void> pruneAutomaticBackups({int keep = 50});
+  Future<void> pruneBackups({int keep = 25});
 
   /// Stable id for cloud sync folders, stored in ZephyrMeta (created once).
   Future<String> ensureCloudLibraryId();

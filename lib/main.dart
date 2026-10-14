@@ -7,12 +7,17 @@ import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'app/zephyr_app.dart';
 import 'data/repositories/file_workspace_layout_repository.dart';
 import 'data/services/folder_bookmark.dart';
+import 'data/services/desktop_exit_backup.dart';
 import 'data/services/purewriter_database.dart';
 import 'data/services/startup_library.dart';
 import 'data/services/workspace_layout_file_storage.dart';
 
 Future<void> main(List<String> arguments) async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (arguments.length == 2 && arguments.first == DesktopExitBackup.argument) {
+    await DesktopExitBackup.run(arguments.last);
+    exit(0);
+  }
   await _enableHighRefreshRate();
   await initializeDesktopWindow();
   final database = PureWriterDatabase();
@@ -33,11 +38,7 @@ Future<void> main(List<String> arguments) async {
       startupError = error;
     }
   }
-  runZephyr(
-    database,
-    startupError: startupError,
-    layoutRepository: layout,
-  );
+  runZephyr(database, startupError: startupError, layoutRepository: layout);
 }
 
 /// Prefer the display's highest refresh rate (90/120Hz when available).
