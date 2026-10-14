@@ -76,6 +76,10 @@ class WorkspaceLayout {
   static const minSidebarWidth = 280.0;
   static const maxSidebarWidth = 520.0;
   static const defaultSidebarWidth = 334.0;
+
+  /// Compact swipe-drawer width. Independent of desktop [sidebarWidth] so a
+  /// resized dock (or a desktop cloud settings restore) cannot shrink mobile.
+  static const mobileDrawerWidth = defaultSidebarWidth;
   static const defaults = WorkspaceLayout(sidebarWidth: defaultSidebarWidth);
 
   final double sidebarWidth;

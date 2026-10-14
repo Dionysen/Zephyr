@@ -201,12 +201,13 @@ class WebDavClient {
   Future<void> uploadSettingsBundle({
     required CloudSyncSession session,
     required String parentFileId,
+    required String fileName,
     required List<int> bytes,
   }) async {
     final response = await _request(
       session,
       'PUT',
-      _child(Uri.parse(parentFileId), 'settings.json'),
+      _child(Uri.parse(parentFileId), fileName),
       headers: const {'Content-Type': 'application/json; charset=utf-8'},
       body: bytes,
     );
@@ -214,18 +215,33 @@ class WebDavClient {
   }
 
   /// Returns null when the remote settings file is missing.
+  ///
+  /// When [fallbackFileName] is set (desktop legacy `settings.json`), try it
+  /// only if [fileName] is absent.
   Future<List<int>?> downloadSettingsBundle({
     required CloudSyncSession session,
     required String parentFileId,
+    required String fileName,
+    String? fallbackFileName,
   }) async {
-    final response = await _request(
+    final primary = await _request(
       session,
       'GET',
-      _child(Uri.parse(parentFileId), 'settings.json'),
+      _child(Uri.parse(parentFileId), fileName),
     );
-    if (response.statusCode == 404) return null;
-    _expect(response, {200});
-    return response.bodyBytes;
+    if (primary.statusCode == 200) return primary.bodyBytes;
+    if (primary.statusCode != 404) {
+      _expect(primary, {200});
+    }
+    if (fallbackFileName == null || fallbackFileName.isEmpty) return null;
+    final legacy = await _request(
+      session,
+      'GET',
+      _child(Uri.parse(parentFileId), fallbackFileName),
+    );
+    if (legacy.statusCode == 404) return null;
+    _expect(legacy, {200});
+    return legacy.bodyBytes;
   }
 
   Future<void> uploadNamedBackup({

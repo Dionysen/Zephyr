@@ -137,6 +137,7 @@ class CloudSyncService {
       await client.uploadSettingsBundle(
         session: active,
         parentFileId: folderId,
+        fileName: _settingsBundle.cloudFileName,
         bytes: await _settingsBundle.exportBytes(),
       );
       _preferences = _preferences.copyWith(
@@ -391,6 +392,8 @@ class CloudSyncService {
     final bytes = await client.downloadSettingsBundle(
       session: session,
       parentFileId: folderId,
+      fileName: _settingsBundle.cloudFileName,
+      fallbackFileName: _settingsBundle.legacyCloudFileNameFallback,
     );
     if (bytes == null || bytes.isEmpty) return;
     await _settingsBundle.importBytes(bytes);

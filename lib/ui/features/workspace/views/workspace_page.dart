@@ -13,6 +13,7 @@ import '../../../../domain/models/keyboard_shortcuts.dart';
 import '../../../../domain/models/library_backup.dart';
 import '../../../../domain/models/theme_color_pack.dart';
 import '../../../../domain/models/theme_tokens.dart';
+import '../../../../domain/models/workspace_layout.dart';
 
 import '../../../core/breakpoints.dart';
 import '../../../core/editor_background_layer.dart';
@@ -219,7 +220,7 @@ class _WorkspacePageState extends State<WorkspacePage>
           builder: (context, constraints) {
             final compact = ZephyrBreakpoints.isCompact(constraints.maxWidth);
             if (compact) {
-              final drawerWidth = model.sidebarWidth.clamp(
+              final drawerWidth = WorkspaceLayout.mobileDrawerWidth.clamp(
                 260.0,
                 constraints.maxWidth * 0.88,
               );

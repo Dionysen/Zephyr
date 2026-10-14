@@ -13,10 +13,16 @@ void main() {
     await theme.parent.create(recursive: true);
     await theme.writeAsString('{"uiLocalePreference":"zh"}');
 
-    final bundle = CloudSettingsBundle(supportDirectory: () async => root);
+    final bundle = CloudSettingsBundle(
+      supportDirectory: () async => root,
+      platform: CloudSettingsPlatform.mobile,
+    );
     final bytes = await bundle.exportBytes();
     final decoded = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
     expect(decoded['schema'], CloudSettingsBundle.schema);
+    expect(decoded['platform'], 'mobile');
+    expect(bundle.cloudFileName, 'settings-mobile.json');
+    expect(bundle.legacyCloudFileNameFallback, isNull);
     expect(
       (decoded['files'] as Map)['zephyr/theme-tokens.json'],
       '{"uiLocalePreference":"zh"}',
@@ -35,10 +41,25 @@ void main() {
     );
   });
 
+  test('desktop platform uses settings-desktop with legacy fallback name', () {
+    final bundle = CloudSettingsBundle(
+      supportDirectory: () async => Directory.systemTemp,
+      platform: CloudSettingsPlatform.desktop,
+    );
+    expect(bundle.cloudFileName, 'settings-desktop.json');
+    expect(
+      bundle.legacyCloudFileNameFallback,
+      CloudSettingsPlatform.legacyCloudFileName,
+    );
+  });
+
   test('ignores path escape attempts in import', () async {
     final root = await Directory.systemTemp.createTemp('zephyr-settings-safe-');
     addTearDown(() => root.delete(recursive: true));
-    final bundle = CloudSettingsBundle(supportDirectory: () async => root);
+    final bundle = CloudSettingsBundle(
+      supportDirectory: () async => root,
+      platform: CloudSettingsPlatform.desktop,
+    );
     final written = await bundle.importJson({
       'schema': 1,
       'files': {

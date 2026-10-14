@@ -1,21 +1,50 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+
+/// Which device class owns a cloud settings artifact.
+enum CloudSettingsPlatform {
+  desktop,
+  mobile;
+
+  static CloudSettingsPlatform detect() {
+    if (kIsWeb) return CloudSettingsPlatform.desktop;
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.android || TargetPlatform.iOS =>
+        CloudSettingsPlatform.mobile,
+      _ => CloudSettingsPlatform.desktop,
+    };
+  }
+
+  /// Remote file under `Zephyr/` for this platform.
+  String get cloudFileName => switch (this) {
+    CloudSettingsPlatform.desktop => 'settings-desktop.json',
+    CloudSettingsPlatform.mobile => 'settings-mobile.json',
+  };
+
+  /// Pre-split shared name. Desktop may read once for migration; mobile never.
+  static const legacyCloudFileName = 'settings.json';
+}
 
 /// Packs / restores Zephyr app-support JSON prefs for cloud sync.
 ///
 /// Kept separate from PureWriter `.pwb` so Room snapshots stay compatible.
-/// Relative paths are under the application support directory.
+/// Desktop and mobile upload different remote files so layout / chrome prefs
+/// do not cross-contaminate.
 class CloudSettingsBundle {
-  CloudSettingsBundle({Future<Directory> Function()? supportDirectory})
-    : _supportDirectory = supportDirectory ?? getApplicationSupportDirectory;
+  CloudSettingsBundle({
+    Future<Directory> Function()? supportDirectory,
+    CloudSettingsPlatform? platform,
+  }) : _supportDirectory = supportDirectory ?? getApplicationSupportDirectory,
+       platform = platform ?? CloudSettingsPlatform.detect();
 
   final Future<Directory> Function() _supportDirectory;
+  final CloudSettingsPlatform platform;
 
   static const schema = 1;
-  static const cloudFileName = 'settings.json';
 
   /// Pref files included in cloud settings (Nutstore credentials excluded).
   static const relativePaths = <String>[
@@ -28,6 +57,14 @@ class CloudSettingsBundle {
     'zephyr/window-frame.json',
   ];
 
+  String get cloudFileName => platform.cloudFileName;
+
+  /// Desktop may fall back to the pre-split remote file; mobile must not.
+  String? get legacyCloudFileNameFallback =>
+      platform == CloudSettingsPlatform.desktop
+      ? CloudSettingsPlatform.legacyCloudFileName
+      : null;
+
   /// Build a JSON document of existing preference files.
   Future<Map<String, Object?>> exportJson() async {
     final root = await _supportDirectory();
@@ -39,6 +76,7 @@ class CloudSettingsBundle {
     }
     return {
       'schema': schema,
+      'platform': platform.name,
       'updatedAt': DateTime.now().millisecondsSinceEpoch,
       'files': files,
     };

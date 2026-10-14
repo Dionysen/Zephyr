@@ -749,9 +749,11 @@ class _WorkflowClient extends WebDavClient {
   Future<void> uploadSettingsBundle({
     required CloudSyncSession session,
     required String parentFileId,
+    required String fileName,
     required List<int> bytes,
   }) async {
     expect(bytes, isNotEmpty);
+    expect(fileName, isNotEmpty);
     settingsUploads++;
     uploadOrder.add('settings');
   }
@@ -760,7 +762,10 @@ class _WorkflowClient extends WebDavClient {
   Future<List<int>?> downloadSettingsBundle({
     required CloudSyncSession session,
     required String parentFileId,
+    required String fileName,
+    String? fallbackFileName,
   }) async {
+    expect(fileName, isNotEmpty);
     settingsDownloads++;
     return utf8.encode('{"schema":1,"files":{}}');
   }
