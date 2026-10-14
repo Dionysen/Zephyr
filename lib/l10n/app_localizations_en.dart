@@ -61,7 +61,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageSystem => 'System default';
 
   @override
-  String get languageChinese => '简体中文';
+  String get languageChinese => 'ç®ä½ä¸­æ';
 
   @override
   String get languageEnglish => 'English';
@@ -122,11 +122,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cloudSyncPullNoChanges =>
-      'Cloud sync finished — no chapter changes';
+      'Cloud sync finished â no chapter changes';
 
   @override
   String cloudSyncPullSummary(int added, int updated, int removed) {
-    return 'Cloud sync: +$added · updated $updated · −$removed chapters';
+    return 'Cloud sync: +$added Â· updated $updated Â· â$removed chapters';
   }
 
   @override
@@ -175,7 +175,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cloudSyncRestoreSubtitle =>
-      'Pick a backup from Nutstore — overwrite or merge';
+      'Pick a backup from Nutstore â overwrite or merge';
 
   @override
   String get cloudSyncRestoreEmpty => 'No cloud backups found.';
@@ -277,7 +277,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String backupRestoreSubtitle(int count) {
-    return '$count backups available — overwrite or merge.';
+    return '$count backups available â overwrite or merge.';
   }
 
   @override
@@ -383,7 +383,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shortcutsRecordTitle => 'Press a new shortcut';
 
   @override
-  String get shortcutsRecordHint => 'Esc to cancel · Backspace to clear';
+  String get shortcutsRecordHint => 'Esc to cancel Â· Backspace to clear';
 
   @override
   String get shortcutsUnbound => 'Unbound';
@@ -585,7 +585,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get showChapterDetailsSubtitle =>
-      'When off, the sidebar shows chapter titles only—no preview or meta.';
+      'When off, the sidebar shows chapter titles onlyâno preview or meta.';
 
   @override
   String get editorSectionTitle => 'Editor';
@@ -625,6 +625,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get editorTitleCenteredSubtitle =>
       'When on, center the title in the reading column; when off, align it to the body left edge.';
+
+  @override
+  String get editorTypewriterModeTitle => 'Typewriter mode';
+
+  @override
+  String get editorTypewriterModeSubtitle =>
+      'Keeps the editing line centered; dims other paragraphs and the unfocused title.';
 
   @override
   String get editorLineHeightTitle => 'Line height';
@@ -759,7 +766,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String themePackDeleteBody(String name) {
-    return '“$name” will be removed permanently.';
+    return 'â$nameâ will be removed permanently.';
   }
 
   @override
@@ -919,7 +926,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fontDeleteFailure => 'Could not delete that font.';
 
   @override
-  String get fontImportFromFile => 'Choose font file…';
+  String get fontImportFromFile => 'Choose font fileâ¦';
 
   @override
   String get fontDeleteFromLibrary => 'Delete from library';
@@ -929,7 +936,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String fontDeleteDialogBody(String family) {
-    return 'Remove “$family” from the app font library to free space?';
+    return 'Remove â$familyâ from the app font library to free space?';
   }
 
   @override
@@ -971,7 +978,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editorBackgroundSelectTitle => 'Choose background';
 
   @override
-  String get editorBackgroundAddFromFile => 'Add from file…';
+  String get editorBackgroundAddFromFile => 'Add from fileâ¦';
 
   @override
   String get editorBackgroundEmptyLibrary =>
@@ -1029,12 +1036,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String editorBackgroundDeleteBody(String name) {
-    return 'Delete “$name”? Modes using it will reset to no background.';
+    return 'Delete â$nameâ? Modes using it will reset to no background.';
   }
 
   @override
   String editorBackgroundSummary(String name, String fit, int opacity) {
-    return '$name · $fit · $opacity%';
+    return '$name Â· $fit Â· $opacity%';
   }
 
   @override
@@ -1044,7 +1051,7 @@ class AppLocalizationsEn extends AppLocalizations {
     int opacity,
     int blur,
   ) {
-    return '$name · $fit · $opacity% · blur $blur';
+    return '$name Â· $fit Â· $opacity% Â· blur $blur';
   }
 
   @override
@@ -1130,7 +1137,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String deleteChapterBody(String name) {
-    return 'Move “$name” to the trash?';
+    return 'Move â$nameâ to the trash?';
   }
 
   @override
@@ -1138,7 +1145,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String deleteVolumeBody(String name) {
-    return 'When deleting “$name”, choose what to do with its chapters.';
+    return 'When deleting â$nameâ, choose what to do with its chapters.';
   }
 
   @override
@@ -1217,22 +1224,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chapterSortAdjustOrder => 'Adjust order';
 
   @override
-  String get chapterSortCreatedAsc => 'Created · Oldest first';
+  String get chapterSortCreatedAsc => 'Created Â· Oldest first';
 
   @override
-  String get chapterSortCreatedDesc => 'Created · Newest first';
+  String get chapterSortCreatedDesc => 'Created Â· Newest first';
 
   @override
-  String get chapterSortUpdatedAsc => 'Modified · Oldest first';
+  String get chapterSortUpdatedAsc => 'Modified Â· Oldest first';
 
   @override
-  String get chapterSortUpdatedDesc => 'Modified · Newest first';
+  String get chapterSortUpdatedDesc => 'Modified Â· Newest first';
 
   @override
-  String get chapterSortTitleAsc => 'Name · A→Z';
+  String get chapterSortTitleAsc => 'Name Â· AâZ';
 
   @override
-  String get chapterSortTitleDesc => 'Name · Z→A';
+  String get chapterSortTitleDesc => 'Name Â· ZâA';
 
   @override
   String get tooltipOpenLibrary => 'Open library';
@@ -1318,12 +1325,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String bookStatsMeta(int volumes, int chapters) {
-    return '$volumes volumes · $chapters chapters';
+    return '$volumes volumes Â· $chapters chapters';
   }
 
   @override
   String chapterMeta(String created, String modified, int wordCount) {
-    return 'Created $created · Edited $modified · $wordCount words';
+    return 'Created $created Â· Edited $modified Â· $wordCount words';
   }
 
   @override

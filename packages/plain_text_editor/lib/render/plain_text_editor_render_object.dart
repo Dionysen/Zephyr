@@ -19,6 +19,7 @@ class PlainTextEditorRenderObject extends RenderBox {
     required Color selectionColor,
     required bool showCaret,
     required bool readOnly,
+    required bool typewriterMode,
     required List<TextSpanDecoration> decorations,
     required double viewportHeight,
     required double scrollOffset,
@@ -29,9 +30,13 @@ class PlainTextEditorRenderObject extends RenderBox {
        _selectionColor = selectionColor,
        _showCaret = showCaret,
        _readOnly = readOnly,
+       _typewriterMode = typewriterMode,
        _decorations = decorations,
        _viewportHeight = viewportHeight,
        _scrollOffset = scrollOffset;
+
+  /// Opacity for paragraphs other than the caret paragraph in Typewriter mode.
+  static const dimmedParagraphOpacity = 0.35;
 
   PlainTextEditingController _controller;
   PlainTextLayoutEngine _engine;
@@ -40,6 +45,7 @@ class PlainTextEditorRenderObject extends RenderBox {
   Color _selectionColor;
   bool _showCaret;
   bool _readOnly;
+  bool _typewriterMode;
   List<TextSpanDecoration> _decorations;
   double _viewportHeight;
   double _scrollOffset;
@@ -80,6 +86,12 @@ class PlainTextEditorRenderObject extends RenderBox {
   }
 
   set readOnly(bool value) => _readOnly = value;
+
+  set typewriterMode(bool value) {
+    if (_typewriterMode == value) return;
+    _typewriterMode = value;
+    markNeedsPaint();
+  }
 
   set decorations(List<TextSpanDecoration> value) {
     _decorations = value;
@@ -143,9 +155,31 @@ class PlainTextEditorRenderObject extends RenderBox {
     }
 
     if (first <= last) {
+      final activeParagraph = _typewriterMode
+          ? _controller.document.paragraphIndexForOffset(
+              selection.extentOffset,
+            )
+          : null;
       for (var i = first; i <= last; i++) {
         final m = _engine.metrics[i];
-        m.painter.paint(canvas, Offset(_engine.contentLeft, m.yOffset));
+        final origin = Offset(_engine.contentLeft, m.yOffset);
+        final dim = activeParagraph != null && i != activeParagraph;
+        if (dim) {
+          canvas.saveLayer(
+            origin & Size(size.width, m.totalHeight),
+            Paint()
+              ..color = const Color.fromRGBO(
+                255,
+                255,
+                255,
+                dimmedParagraphOpacity,
+              ),
+          );
+          m.painter.paint(canvas, origin);
+          canvas.restore();
+        } else {
+          m.painter.paint(canvas, origin);
+        }
       }
     }
 
@@ -197,6 +231,7 @@ class PlainTextEditorRenderWidget extends LeafRenderObjectWidget {
     required this.selectionColor,
     required this.showCaret,
     required this.readOnly,
+    this.typewriterMode = false,
     required this.decorations,
     required this.viewportHeight,
     required this.scrollOffset,
@@ -209,6 +244,7 @@ class PlainTextEditorRenderWidget extends LeafRenderObjectWidget {
   final Color selectionColor;
   final bool showCaret;
   final bool readOnly;
+  final bool typewriterMode;
   final List<TextSpanDecoration> decorations;
   final double viewportHeight;
   final double scrollOffset;
@@ -223,6 +259,7 @@ class PlainTextEditorRenderWidget extends LeafRenderObjectWidget {
       selectionColor: selectionColor,
       showCaret: showCaret,
       readOnly: readOnly,
+      typewriterMode: typewriterMode,
       decorations: decorations,
       viewportHeight: viewportHeight,
       scrollOffset: scrollOffset,
@@ -242,6 +279,7 @@ class PlainTextEditorRenderWidget extends LeafRenderObjectWidget {
       ..selectionColor = selectionColor
       ..showCaret = showCaret
       ..readOnly = readOnly
+      ..typewriterMode = typewriterMode
       ..decorations = decorations
       ..viewportHeight = viewportHeight
       ..scrollOffset = scrollOffset;

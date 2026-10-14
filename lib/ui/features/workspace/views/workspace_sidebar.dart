@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:plain_text_editor/plain_text_editor.dart';
 
 import '../../../../domain/models/chapter_sort_mode.dart';
 import '../../../../domain/models/purewriter_models.dart';
@@ -1455,6 +1456,7 @@ class WorkspaceHeader extends StatelessWidget {
     this.showSidebarToggle = false,
     this.onOpenMenu,
     this.showDocumentTitle = true,
+    this.dimDocumentTitle = false,
     this.transparent = false,
     this.tools = const [],
     this.toolsBuilder,
@@ -1472,6 +1474,9 @@ class WorkspaceHeader extends StatelessWidget {
   /// When false, the in-editor chapter title is still on screen — hide the
   /// chrome copy. When true, animate it into the title bar.
   final bool showDocumentTitle;
+
+  /// When true (typewriter mode), paint the chrome title at reduced opacity.
+  final bool dimDocumentTitle;
 
   /// When true, let a host-painted editor background show through (desktop
   /// full-bleed under the title bar).
@@ -1564,7 +1569,14 @@ class WorkspaceHeader extends StatelessWidget {
                           label,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: dimDocumentTitle
+                                  ? PlainTextEditorRenderObject
+                                      .dimmedParagraphOpacity
+                                  : 1,
+                            ),
+                          ),
                         ),
                       ),
                     ),

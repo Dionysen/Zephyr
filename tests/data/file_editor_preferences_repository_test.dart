@@ -27,6 +27,7 @@ void main() {
     expect(actual.fontFamily, EditorPreferences.defaults.fontFamily);
     expect(actual.fontSize, EditorPreferences.defaults.fontSize);
     expect(actual.titleCentered, isTrue);
+    expect(actual.typewriterMode, isFalse);
   });
 
   test('all editor preferences survive a file round trip', () async {
@@ -42,6 +43,7 @@ void main() {
       editorWidth: 800,
       titleFontSize: 30,
       titleCentered: false,
+      typewriterMode: true,
     );
     await repository.save(expected);
 
@@ -57,6 +59,7 @@ void main() {
     expect(actual.editorWidth, expected.editorWidth);
     expect(actual.titleFontSize, expected.titleFontSize);
     expect(actual.titleCentered, expected.titleCentered);
+    expect(actual.typewriterMode, expected.typewriterMode);
   });
 
   test(

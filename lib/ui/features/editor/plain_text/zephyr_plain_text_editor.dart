@@ -27,6 +27,7 @@ class ZephyrPlainTextEditor extends StatefulWidget {
     this.header,
     this.scrollbarPadding = EdgeInsets.zero,
     this.bottomObstruction = 0,
+    this.typewriterMode = false,
     this.consumeNewline,
     this.shortcuts,
   });
@@ -51,6 +52,9 @@ class ZephyrPlainTextEditor extends StatefulWidget {
   /// Extra bottom chrome (quick toolbar + tools drawer) above the soft keyboard
   /// or replacing it. Used for caret visibility.
   final double bottomObstruction;
+
+  /// When true, centers the caret line and dims other paragraphs.
+  final bool typewriterMode;
 
   /// When this returns true, Enter / IME newline is swallowed.
   final bool Function()? consumeNewline;
@@ -169,6 +173,13 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     widget.controller.firstLineIndent = widget.typography.firstLineIndent;
     if ((oldWidget.bottomObstruction - widget.bottomObstruction).abs() > 0.5) {
       _maybeEnsureCaretForBottomInset();
+    }
+    if (widget.typewriterMode != oldWidget.typewriterMode &&
+        widget.typewriterMode &&
+        _focusNode.hasPrimaryFocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _ensureCaretVisible();
+      });
     }
   }
 
@@ -394,16 +405,21 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   void _onControllerTick() {
     final text = widget.controller.text;
     final selection = widget.controller.selection;
-    if (text != _lastText) {
+    final textChanged = text != _lastText;
+    final selectionChanged = selection != _lastSelection;
+    if (textChanged) {
       _lastText = text;
       widget.onTextChanged(text);
     }
-    if (selection != _lastSelection) {
+    if (selectionChanged) {
       _lastSelection = selection;
       widget.onSelectionChanged(selection);
-      if (_focusNode.hasPrimaryFocus) {
-        _ensureCaretVisible();
-      }
+    }
+    // Typewriter mode recenters on text layout shifts even when the caret
+    // offset is unchanged (e.g. soft wrap from a style change).
+    if (_focusNode.hasPrimaryFocus &&
+        (selectionChanged || (widget.typewriterMode && textChanged))) {
+      _ensureCaretVisible();
     }
     if (_focusNode.hasPrimaryFocus) {
       _inputClient?.markImeDirty();
@@ -432,25 +448,41 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
       widget.controller.selection.extentOffset,
     );
     if (caret == null) return;
-    // Document y is relative to the body stack; scroll offset includes [header].
-    final top = caret.top + _headerExtent;
-    final bottom = caret.bottom + _headerExtent;
-    final viewTop = _scrollController.offset;
+    // Document y is relative to the body stack; scroll offset includes top pad
+    // and [header].
+    final leading = _typewriterModeLeadingPad;
+    final top = caret.top + leading + _headerExtent;
+    final bottom = caret.bottom + leading + _headerExtent;
     final viewport = _scrollController.position.viewportDimension;
     final keyboard = _effectiveBottomInset(context);
+    final max = _scrollController.position.maxScrollExtent;
+    if (widget.typewriterMode) {
+      final mid = (top + bottom) / 2;
+      final visibleHeight = (viewport - keyboard).clamp(1.0, double.infinity);
+      final target = mid - visibleHeight / 2;
+      _scrollController.jumpTo(target.clamp(0.0, max));
+      return;
+    }
+    final viewTop = _scrollController.offset;
     final viewBottom = viewTop + viewport - keyboard;
     final line =
         widget.typography.fontSize * widget.typography.lineHeight;
     // Keep the caret about two lines above the keyboard / visible bottom.
     final bottomMargin = line * 2;
     final topMargin = line;
-    final max = _scrollController.position.maxScrollExtent;
     if (top < viewTop + topMargin) {
       _scrollController.jumpTo((top - topMargin).clamp(0.0, max));
     } else if (bottom > viewBottom - bottomMargin) {
       final target = bottom - (viewport - keyboard) + bottomMargin;
       _scrollController.jumpTo(target.clamp(0.0, max));
     }
+  }
+
+  /// Half-viewport pad above content so the first lines can sit at mid-screen.
+  double get _typewriterModeLeadingPad {
+    if (!widget.typewriterMode) return 0;
+    if (!_scrollController.hasClients) return 0;
+    return _scrollController.position.viewportDimension * 0.5;
   }
 
   /// Begin drag-select and route subsequent moves even outside the editor.
@@ -818,12 +850,15 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
         );
         final scrollOffset =
             _scrollController.hasClients ? _scrollController.offset : 0.0;
-        // Culling is document-local; subtract the scrolled header extent.
-        final documentScrollOffset =
-            (scrollOffset - _headerExtent).clamp(0.0, double.infinity);
         final viewportHeight = constraints.maxHeight.isFinite
             ? constraints.maxHeight
             : MediaQuery.sizeOf(context).height;
+        final typewriterLeading =
+            widget.typewriterMode ? viewportHeight * 0.5 : 0.0;
+        // Culling is document-local; subtract top pad and scrolled header.
+        final documentScrollOffset =
+            (scrollOffset - typewriterLeading - _headerExtent)
+                .clamp(0.0, double.infinity);
         final bodyFocused = _focusNode.hasPrimaryFocus;
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -856,10 +891,14 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
         final naturalColumnH = _headerExtent + docHeight;
         // If real text still fits in the band above that reserve, do not
         // attach trailing room — otherwise a short chapter can be scrolled
-        // until the text leaves the screen.
+        // until the text leaves the screen. Typewriter mode always keeps a
+        // half-viewport pad so the caret line can sit at mid-screen.
         final fitsAboveImeReserve =
+            !widget.typewriterMode &&
             naturalColumnH <= viewportH - imeReserve + 0.5;
-        final endScrollRoom = fitsAboveImeReserve ? 0.0 : imeReserve;
+        final endScrollRoom = widget.typewriterMode
+            ? (viewportH * 0.5 > imeReserve ? viewportH * 0.5 : imeReserve)
+            : (fitsAboveImeReserve ? 0.0 : imeReserve);
         // Short chapters: fill the viewport so taps below the last line work.
         // Longer chapters: body is just the document height.
         final minBodyHeight = fitsAboveImeReserve
@@ -887,6 +926,7 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (typewriterLeading > 0) SizedBox(height: typewriterLeading),
                 if (widget.header != null)
                   KeyedSubtree(key: _headerKey, child: widget.header!),
                 Focus(
@@ -984,6 +1024,7 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                                     selectionColor: widget.selectionColor,
                                     showCaret: bodyFocused && _showCaret,
                                     readOnly: widget.readOnly,
+                                    typewriterMode: widget.typewriterMode,
                                     decorations: widget.decorations,
                                     viewportHeight: viewportHeight,
                                     scrollOffset: documentScrollOffset,

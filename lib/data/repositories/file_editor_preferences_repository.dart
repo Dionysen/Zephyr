@@ -35,6 +35,9 @@ class FileEditorPreferencesRepository implements EditorPreferencesRepository {
           defaults.titleFontSize,
       titleCentered:
           _optionalBool(values, 'titleCentered') ?? defaults.titleCentered,
+      typewriterMode: _optionalBool(values, 'typewriterMode') ??
+          _optionalBool(values, 'typingMode') ??
+          defaults.typewriterMode,
     );
   }
 
@@ -59,6 +62,7 @@ class FileEditorPreferencesRepository implements EditorPreferencesRepository {
     'editorWidth': value.editorWidth,
     'titleFontSize': value.titleFontSize,
     'titleCentered': value.titleCentered,
+    'typewriterMode': value.typewriterMode,
   });
 
   double _double(Map<String, Object?> values, String key) {

@@ -115,6 +115,9 @@ class EditorPreferencesViewModel extends ChangeNotifier {
   void updateTitleCentered(bool value) =>
       _update(_preferences.copyWith(titleCentered: value));
 
+  void updateTypewriterMode(bool value) =>
+      _update(_preferences.copyWith(typewriterMode: value));
+
   void _update(EditorPreferences value) {
     _preferences = value;
     _pendingSave?.cancel();

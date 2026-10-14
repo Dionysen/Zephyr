@@ -285,7 +285,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     }
   }
 
-  /// Keyboard / IME typed an opener (or a full pair) — same wrap as toolbar.
+  /// Keyboard / IME typed an opener (or a full pair) â same wrap as toolbar.
   ///
   /// The IME client expands a lone opener to a full pair in the same edit;
   /// here we only activate the one-shot highlight session (synchronously).
@@ -540,7 +540,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
 
   /// Offer the chip when the document end is still off-screen.
   ///
-  /// [ignoreCaret]: used on chapter open — restored/default caret is often at
+  /// [ignoreCaret]: used on chapter open â restored/default caret is often at
   /// EOF even when the viewport is still at the top; only hide for caret-at-end
   /// after the user moves the selection.
   bool _isImeVisible() {
@@ -602,7 +602,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     final notify = widget.onDocumentTitleObscured;
     if (notify == null) return;
 
-    // No in-document title — keep the chrome label visible.
+    // No in-document title â keep the chrome label visible.
     if (widget.model.article == null) {
       _setDocumentTitleObscured(true, forceNotify: forceNotify);
       return;
@@ -750,7 +750,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
 
     if (switching) {
       // Decide after layout: show when the chapter opens away from the end.
-      // Ignore caret here — setText defaults / restored carets are often at EOF.
+      // Ignore caret here â setText defaults / restored carets are often at EOF.
       _showJumpToEnd = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || _articleId != article.id) return;
@@ -823,6 +823,8 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   }
 
   void _onTitleFocusChanged() {
+    // Rebuild so typewriter-mode title opacity tracks focus.
+    setState(() {});
     if (_titleFocusNode.hasFocus) {
       // Ensure the body editor releases primary focus / IME.
       if (_focusNode.hasFocus) {
@@ -889,6 +891,13 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   Widget _titleHeader(BuildContext context, EditorPreferences prefs) {
     final theme = Theme.of(context);
     final top = 20 + widget.contentTopInset;
+    final dimTitle =
+        prefs.typewriterMode && !_titleFocusNode.hasFocus;
+    final titleColor = theme.colorScheme.onSurface.withValues(
+      alpha: dimTitle
+          ? PlainTextEditorRenderObject.dimmedParagraphOpacity
+          : 1,
+    );
 
     return KeyedSubtree(
       key: _titleHeaderKey,
@@ -914,7 +923,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
                     fontFamily: prefs.fontFamily,
                     fontWeight: FontWeight.w600,
                     height: 1.3,
-                    color: theme.colorScheme.onSurface,
+                    color: titleColor,
                   ),
                   cursorColor:
                       theme.textSelectionTheme.cursorColor ??
@@ -1039,6 +1048,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
                     vertical: widget.contentTopInset,
                   ),
                   bottomObstruction: quickToolbarBottomObstructionOf(context),
+                  typewriterMode: preferences.typewriterMode,
                   consumeNewline: _consumePairNewline,
                   shortcuts: ZephyrScope.of(context).keyboardShortcuts,
                   onTextChanged: (_) {},

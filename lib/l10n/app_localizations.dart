@@ -203,7 +203,7 @@ abstract class AppLocalizations {
   /// No description provided for @languageChinese.
   ///
   /// In en, this message translates to:
-  /// **'简体中文'**
+  /// **'ç®ä½ä¸­æ'**
   String get languageChinese;
 
   /// No description provided for @languageEnglish.
@@ -311,13 +311,13 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncPullNoChanges.
   ///
   /// In en, this message translates to:
-  /// **'Cloud sync finished — no chapter changes'**
+  /// **'Cloud sync finished â no chapter changes'**
   String get cloudSyncPullNoChanges;
 
   /// No description provided for @cloudSyncPullSummary.
   ///
   /// In en, this message translates to:
-  /// **'Cloud sync: +{added} · updated {updated} · −{removed} chapters'**
+  /// **'Cloud sync: +{added} Â· updated {updated} Â· â{removed} chapters'**
   String cloudSyncPullSummary(int added, int updated, int removed);
 
   /// No description provided for @cloudSyncEnableTitle.
@@ -401,7 +401,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncRestoreSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Pick a backup from Nutstore — overwrite or merge'**
+  /// **'Pick a backup from Nutstore â overwrite or merge'**
   String get cloudSyncRestoreSubtitle;
 
   /// No description provided for @cloudSyncRestoreEmpty.
@@ -575,7 +575,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupRestoreSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'{count} backups available — overwrite or merge.'**
+  /// **'{count} backups available â overwrite or merge.'**
   String backupRestoreSubtitle(int count);
 
   /// No description provided for @backupRestoreEmpty.
@@ -773,7 +773,7 @@ abstract class AppLocalizations {
   /// No description provided for @shortcutsRecordHint.
   ///
   /// In en, this message translates to:
-  /// **'Esc to cancel · Backspace to clear'**
+  /// **'Esc to cancel Â· Backspace to clear'**
   String get shortcutsRecordHint;
 
   /// No description provided for @shortcutsUnbound.
@@ -1163,7 +1163,7 @@ abstract class AppLocalizations {
   /// No description provided for @showChapterDetailsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'When off, the sidebar shows chapter titles only—no preview or meta.'**
+  /// **'When off, the sidebar shows chapter titles onlyâno preview or meta.'**
   String get showChapterDetailsSubtitle;
 
   /// No description provided for @editorSectionTitle.
@@ -1231,6 +1231,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'When on, center the title in the reading column; when off, align it to the body left edge.'**
   String get editorTitleCenteredSubtitle;
+
+  /// No description provided for @editorTypewriterModeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Typewriter mode'**
+  String get editorTypewriterModeTitle;
+
+  /// No description provided for @editorTypewriterModeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps the editing line centered; dims other paragraphs and the unfocused title.'**
+  String get editorTypewriterModeSubtitle;
 
   /// No description provided for @editorLineHeightTitle.
   ///
@@ -1463,7 +1475,7 @@ abstract class AppLocalizations {
   /// No description provided for @themePackDeleteBody.
   ///
   /// In en, this message translates to:
-  /// **'“{name}” will be removed permanently.'**
+  /// **'â{name}â will be removed permanently.'**
   String themePackDeleteBody(String name);
 
   /// No description provided for @themeCurrentCustom.
@@ -1751,7 +1763,7 @@ abstract class AppLocalizations {
   /// No description provided for @fontImportFromFile.
   ///
   /// In en, this message translates to:
-  /// **'Choose font file…'**
+  /// **'Choose font fileâ¦'**
   String get fontImportFromFile;
 
   /// No description provided for @fontDeleteFromLibrary.
@@ -1769,7 +1781,7 @@ abstract class AppLocalizations {
   /// No description provided for @fontDeleteDialogBody.
   ///
   /// In en, this message translates to:
-  /// **'Remove “{family}” from the app font library to free space?'**
+  /// **'Remove â{family}â from the app font library to free space?'**
   String fontDeleteDialogBody(String family);
 
   /// No description provided for @fontDeleteDialogBodyCompact.
@@ -1847,7 +1859,7 @@ abstract class AppLocalizations {
   /// No description provided for @editorBackgroundAddFromFile.
   ///
   /// In en, this message translates to:
-  /// **'Add from file…'**
+  /// **'Add from fileâ¦'**
   String get editorBackgroundAddFromFile;
 
   /// No description provided for @editorBackgroundEmptyLibrary.
@@ -1955,19 +1967,19 @@ abstract class AppLocalizations {
   /// No description provided for @editorBackgroundDeleteBody.
   ///
   /// In en, this message translates to:
-  /// **'Delete “{name}”? Modes using it will reset to no background.'**
+  /// **'Delete â{name}â? Modes using it will reset to no background.'**
   String editorBackgroundDeleteBody(String name);
 
   /// No description provided for @editorBackgroundSummary.
   ///
   /// In en, this message translates to:
-  /// **'{name} · {fit} · {opacity}%'**
+  /// **'{name} Â· {fit} Â· {opacity}%'**
   String editorBackgroundSummary(String name, String fit, int opacity);
 
   /// No description provided for @editorBackgroundSummaryWithBlur.
   ///
   /// In en, this message translates to:
-  /// **'{name} · {fit} · {opacity}% · blur {blur}'**
+  /// **'{name} Â· {fit} Â· {opacity}% Â· blur {blur}'**
   String editorBackgroundSummaryWithBlur(
     String name,
     String fit,
@@ -2128,7 +2140,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteChapterBody.
   ///
   /// In en, this message translates to:
-  /// **'Move “{name}” to the trash?'**
+  /// **'Move â{name}â to the trash?'**
   String deleteChapterBody(String name);
 
   /// No description provided for @deleteVolumeTitle.
@@ -2140,7 +2152,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteVolumeBody.
   ///
   /// In en, this message translates to:
-  /// **'When deleting “{name}”, choose what to do with its chapters.'**
+  /// **'When deleting â{name}â, choose what to do with its chapters.'**
   String deleteVolumeBody(String name);
 
   /// No description provided for @deleteVolumeOnly.
@@ -2296,37 +2308,37 @@ abstract class AppLocalizations {
   /// No description provided for @chapterSortCreatedAsc.
   ///
   /// In en, this message translates to:
-  /// **'Created · Oldest first'**
+  /// **'Created Â· Oldest first'**
   String get chapterSortCreatedAsc;
 
   /// No description provided for @chapterSortCreatedDesc.
   ///
   /// In en, this message translates to:
-  /// **'Created · Newest first'**
+  /// **'Created Â· Newest first'**
   String get chapterSortCreatedDesc;
 
   /// No description provided for @chapterSortUpdatedAsc.
   ///
   /// In en, this message translates to:
-  /// **'Modified · Oldest first'**
+  /// **'Modified Â· Oldest first'**
   String get chapterSortUpdatedAsc;
 
   /// No description provided for @chapterSortUpdatedDesc.
   ///
   /// In en, this message translates to:
-  /// **'Modified · Newest first'**
+  /// **'Modified Â· Newest first'**
   String get chapterSortUpdatedDesc;
 
   /// No description provided for @chapterSortTitleAsc.
   ///
   /// In en, this message translates to:
-  /// **'Name · A→Z'**
+  /// **'Name Â· AâZ'**
   String get chapterSortTitleAsc;
 
   /// No description provided for @chapterSortTitleDesc.
   ///
   /// In en, this message translates to:
-  /// **'Name · Z→A'**
+  /// **'Name Â· ZâA'**
   String get chapterSortTitleDesc;
 
   /// No description provided for @tooltipOpenLibrary.
@@ -2494,13 +2506,13 @@ abstract class AppLocalizations {
   /// No description provided for @bookStatsMeta.
   ///
   /// In en, this message translates to:
-  /// **'{volumes} volumes · {chapters} chapters'**
+  /// **'{volumes} volumes Â· {chapters} chapters'**
   String bookStatsMeta(int volumes, int chapters);
 
   /// No description provided for @chapterMeta.
   ///
   /// In en, this message translates to:
-  /// **'Created {created} · Edited {modified} · {wordCount} words'**
+  /// **'Created {created} Â· Edited {modified} Â· {wordCount} words'**
   String chapterMeta(String created, String modified, int wordCount);
 
   /// No description provided for @themeSlotLight.

@@ -107,6 +107,28 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
               ),
             ),
           ),
+        if (compact)
+          ZephyrSettingsSwitchTile(
+            icon: Icons.vertical_align_center,
+            title: l10n.editorTypewriterModeTitle,
+            subtitle: l10n.editorTypewriterModeSubtitle,
+            value: preferences.typewriterMode,
+            onChanged: viewModel.updateTypewriterMode,
+          )
+        else
+          ZephyrSettingsDesktopRow(
+            label: l10n.editorTypewriterModeTitle,
+            description: l10n.editorTypewriterModeSubtitle,
+            child: Transform.scale(
+              scale: ZephyrControls.settingsSwitchScale,
+              alignment: Alignment.centerLeft,
+              child: Switch(
+                value: preferences.typewriterMode,
+                onChanged: viewModel.updateTypewriterMode,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ),
         ZephyrSettingsAdaptiveNumber(
           compact: compact,
           icon: Icons.format_line_spacing,

@@ -596,6 +596,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get editorTitleCenteredSubtitle => '开则居中，关则与正文左边界对齐';
 
   @override
+  String get editorTypewriterModeTitle => '打字机模式';
+
+  @override
+  String get editorTypewriterModeSubtitle =>
+      '开启后当前编辑行保持在屏幕中央；非当前段落与未聚焦的标题半透明显示';
+
+  @override
   String get editorLineHeightTitle => '行高';
 
   @override

@@ -184,7 +184,11 @@ class _WorkspacePageState extends State<WorkspacePage>
   Widget build(BuildContext context) {
     final scope = ZephyrScope.of(context);
     return ListenableBuilder(
-      listenable: Listenable.merge([scope.library, scope.theme]),
+      listenable: Listenable.merge([
+        scope.library,
+        scope.theme,
+        scope.editorPreferences,
+      ]),
       builder: (context, _) {
         final model = scope.library;
         final immersiveStatusBar = scope.theme.ui.immersiveStatusBar;
@@ -353,6 +357,8 @@ class _WorkspacePageState extends State<WorkspacePage>
                             model: model,
                             showSidebarToggle: !model.isSidebarExpanded,
                             showDocumentTitle: _showTitleInChrome,
+                            dimDocumentTitle: scope
+                                .editorPreferences.preferences.typewriterMode,
                             transparent: bleedEditorBackground,
                             toolsBuilder: (headerContext) =>
                                 buildWorkspaceOverflowTools(

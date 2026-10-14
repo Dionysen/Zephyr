@@ -13,6 +13,7 @@ class EditorPreferences {
     required this.editorWidth,
     required this.titleFontSize,
     required this.titleCentered,
+    required this.typewriterMode,
   });
 
   static const defaults = EditorPreferences(
@@ -27,6 +28,7 @@ class EditorPreferences {
     editorWidth: 720,
     titleFontSize: 25,
     titleCentered: true,
+    typewriterMode: false,
   );
 
   static const minTitleFontSize = 14.0;
@@ -69,6 +71,10 @@ class EditorPreferences {
   /// left-aligned to the same edge as the body.
   final bool titleCentered;
 
+  /// When true, keeps the caret line vertically centered, dims paragraphs
+  /// other than the caret's, and dims the chapter title while it is unfocused.
+  final bool typewriterMode;
+
   EditorPreferences copyWith({
     String? fontFamily,
     String? fontPath,
@@ -82,6 +88,7 @@ class EditorPreferences {
     double? editorWidth,
     double? titleFontSize,
     bool? titleCentered,
+    bool? typewriterMode,
   }) => EditorPreferences(
     fontFamily: clearFontFamily
         ? ZephyrBundledFonts.wenkaiLite
@@ -96,6 +103,7 @@ class EditorPreferences {
     editorWidth: editorWidth ?? this.editorWidth,
     titleFontSize: titleFontSize ?? this.titleFontSize,
     titleCentered: titleCentered ?? this.titleCentered,
+    typewriterMode: typewriterMode ?? this.typewriterMode,
   );
 }
 

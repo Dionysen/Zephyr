@@ -72,6 +72,14 @@ void main() {
     expect(model.preferences.titleFontSize, EditorPreferences.maxTitleFontSize);
   });
 
+  test('Typewriter mode defaults off and updates independently', () {
+    expect(model.preferences.typewriterMode, isFalse);
+    model.updateTypewriterMode(true);
+    expect(model.preferences.typewriterMode, isTrue);
+    model.updateTypewriterMode(false);
+    expect(model.preferences.typewriterMode, isFalse);
+  });
+
   testWidgets('rapid preference changes persist only the latest value', (
     tester,
   ) async {
