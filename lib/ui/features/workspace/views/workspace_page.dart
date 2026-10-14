@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../data/services/android_storage_access.dart';
 import '../../../../data/services/folder_bookmark.dart';
+import '../../../../data/services/mobile_backup_notification.dart';
 import '../../../../domain/models/app_theme_mode.dart';
 import '../../../../domain/models/cloud_sync.dart';
 import '../../../../domain/models/keyboard_shortcuts.dart';
@@ -150,17 +151,34 @@ class _WorkspacePageState extends State<WorkspacePage>
   Future<void> _backupOnLeave() async {
     if (_leaveBackupInFlight || !mounted) return;
     _leaveBackupInFlight = true;
+    final notify = MobileBackupNotification();
     try {
       final scope = ZephyrScope.of(context);
       // Cloud path creates the local file then uploads — skip a second local
       // backup when both are enabled and the upload cleared the dirty flag.
       if (scope.cloudSync.cloudBackupEnabled && scope.cloudSync.isSignedIn) {
-        await scope.cloudSync.maybeUploadOnLeave();
+        final attempted = await scope.cloudSync.maybeUploadOnLeave();
+        if (attempted) {
+          final failed = scope.cloudSync.error != null;
+          await notify.show(
+            success: !failed,
+            error: scope.cloudSync.error,
+            didCloud: !failed,
+            didLocal: !failed,
+          );
+          if (!failed) return;
+        }
         if (!scope.library.contentDirtySinceBackup) return;
       }
-      await scope.backup.maybeAutoBackupOnLeave();
-    } on Object {
-      // Best-effort while backgrounding; resume pull / manual backup can retry.
+      final localAttempted = await scope.backup.maybeAutoBackupOnLeave();
+      if (!localAttempted) return;
+      await notify.show(
+        success: scope.backup.error == null,
+        error: scope.backup.error,
+        didLocal: scope.backup.error == null,
+      );
+    } on Object catch (error) {
+      await notify.show(success: false, error: error);
     }
   }
 

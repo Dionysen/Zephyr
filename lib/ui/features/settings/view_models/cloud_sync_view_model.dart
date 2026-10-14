@@ -229,11 +229,13 @@ class CloudSyncViewModel extends ChangeNotifier {
   ///
   /// Creates one local automatic `.pwb` then uploads it — mirrors desktop exit
   /// upload, but only when there is something new (pause is frequent).
-  Future<void> maybeUploadOnLeave() async {
-    if (!cloudBackupEnabled || !isSignedIn) return;
-    if (library.isReadOnly) return;
-    if (!library.contentDirtySinceBackup) return;
-    if (busy) return;
+  /// Returns `true` when an upload was attempted (check [error] for failure).
+  Future<bool> maybeUploadOnLeave() async {
+    if (!cloudBackupEnabled || !isSignedIn) return false;
+    if (library.isReadOnly) return false;
+    if (!library.contentDirtySinceBackup) return false;
+    if (busy) return false;
     await backupNow();
+    return true;
   }
 }

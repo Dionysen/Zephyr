@@ -130,11 +130,11 @@ void main() {
     service.cloudBackupOn = true;
     service.signedIn = true;
     dirtyLibrary.dirty = false;
-    await leaveModel.maybeUploadOnLeave();
+    expect(await leaveModel.maybeUploadOnLeave(), isFalse);
     expect(service.backupCalls, 0);
 
     dirtyLibrary.dirty = true;
-    await leaveModel.maybeUploadOnLeave();
+    expect(await leaveModel.maybeUploadOnLeave(), isTrue);
     expect(service.backupCalls, 1);
     expect(dirtyLibrary.dirty, isFalse);
   });

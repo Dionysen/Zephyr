@@ -126,12 +126,15 @@ class BackupViewModel extends ChangeNotifier {
   }
 
   /// Call when the app is backgrounded after edits (fire-and-forget).
-  Future<void> maybeAutoBackupOnLeave() async {
-    if (!_preferences.autoBackupEnabled) return;
-    if (!_library.contentDirtySinceBackup) return;
-    if (_library.isReadOnly) return;
-    if (busy) return;
+  ///
+  /// Returns `true` when a backup was attempted (check [error] for failure).
+  Future<bool> maybeAutoBackupOnLeave() async {
+    if (!_preferences.autoBackupEnabled) return false;
+    if (!_library.contentDirtySinceBackup) return false;
+    if (_library.isReadOnly) return false;
+    if (busy) return false;
     await backupNow(kind: BackupKind.automatic);
+    return true;
   }
 
   /// Back up edited content after the configured interval while the app stays open.
