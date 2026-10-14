@@ -82,10 +82,10 @@ class WorkspaceLayout {
   final String? lastLibraryRoot;
   final String? lastLibraryBookmark;
 
-  /// Selected [LibraryRegistryEntry.id] when using the multi-library registry.
+  /// Selected [LibraryRegistryEntry.id] in the saved single-directory layout.
   final String? activeLibraryId;
 
-  /// Remembered libraries (ordered by [LibraryRegistryEntry.rank]).
+  /// The selected library. Older saved layouts may contain extra entries.
   final List<LibraryRegistryEntry> libraries;
 
   final String? selectedBookId;

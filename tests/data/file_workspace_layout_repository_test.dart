@@ -11,9 +11,10 @@ void main() {
       'zephyr-layout-test-',
     );
     addTearDown(() => directory.delete(recursive: true));
-    final repository = FileWorkspaceLayoutRepository(
-      WorkspaceLayoutFileStorage(directoryProvider: () async => directory),
+    final storage = WorkspaceLayoutFileStorage(
+      directoryProvider: () async => directory,
     );
+    final repository = FileWorkspaceLayoutRepository(storage);
 
     await repository.save(
       const WorkspaceLayout(
@@ -48,14 +49,15 @@ void main() {
       ),
     );
     final actual = await repository.load();
+    expect((await storage.read())?['libraries'], hasLength(1));
 
     expect(actual.sidebarWidth, 412);
     expect(actual.lastLibraryRoot, '/lib/a');
     expect(actual.lastLibraryBookmark, 'bookmark-data');
     expect(actual.activeLibraryId, 'lib-1');
-    expect(actual.libraries, hasLength(2));
-    expect(actual.libraries.first.displayName, 'Alpha');
-    expect(actual.libraries.last.rootPath, '/lib/b');
+    expect(actual.libraries, hasLength(1));
+    expect(actual.libraries.single.displayName, 'a');
+    expect(actual.libraries.single.rootPath, '/lib/a');
     expect(actual.selectedBookId, 'book-1');
     expect(actual.selectedArticleId, 'article-9');
     expect(actual.expandedVolumesByBook, {
@@ -92,6 +94,42 @@ void main() {
     expect(actual.activeLibraryId, actual.libraries.single.id);
     expect(actual.lastLibraryRoot, '/legacy/MyLib');
   });
+
+  test(
+    'keeps the active directory from a legacy multi-library layout',
+    () async {
+      final directory = await Directory.systemTemp.createTemp('zephyr-layout-');
+      addTearDown(() => directory.delete(recursive: true));
+      final storage = WorkspaceLayoutFileStorage(
+        directoryProvider: () async => directory,
+      );
+      await storage.write({
+        'activeLibraryId': 'second',
+        'lastLibraryRoot': '/lib/second',
+        'libraries': [
+          {
+            'id': 'first',
+            'displayName': 'First',
+            'rootPath': '/lib/first',
+            'rank': 0,
+          },
+          {
+            'id': 'second',
+            'displayName': 'Second',
+            'rootPath': '/lib/second',
+            'rank': 1,
+          },
+        ],
+      });
+
+      final actual = await FileWorkspaceLayoutRepository(storage).load();
+
+      expect(actual.libraries, hasLength(1));
+      expect(actual.libraries.single.id, 'second');
+      expect(actual.libraries.single.rank, 0);
+      expect(actual.lastLibraryRoot, '/lib/second');
+    },
+  );
 
   test('clamps an out-of-range stored width', () async {
     final directory = await Directory.systemTemp.createTemp(

@@ -74,16 +74,8 @@ class CloudSyncService {
     final entry = await library.createBackup(kind: BackupKind.manual);
     final client = _clientFactory();
     try {
-      final folderId = await client.ensureLibraryFolder(
-        session: session,
-        libraryId: libraryId,
-      );
-      await client.uploadNamedBackup(
-        session: session,
-        libraryFolderId: folderId,
-        pwb: File(entry.path),
-        fileName: entry.fileName,
-      );
+      final folderId = await client.ensureLibraryFolder(session: session);
+      await _checkRemoteLibrary(client, session, folderId, libraryId);
       final package = await PackageInfo.fromPlatform();
       final device = await resolveDeviceLabel();
       final manifest = CloudSyncManifest(
@@ -97,6 +89,12 @@ class CloudSyncService {
         parentFileId: folderId,
         pwb: File(entry.path),
         manifest: manifest,
+      );
+      await client.uploadNamedBackup(
+        session: session,
+        libraryFolderId: folderId,
+        pwb: File(entry.path),
+        fileName: entry.fileName,
       );
       _preferences = _preferences.copyWith(
         lastSyncAt: DateTime.now(),
@@ -121,10 +119,8 @@ class CloudSyncService {
     final session = _requireSession();
     final libraryId = await library.ensureCloudLibraryId();
     return _withClient((client) async {
-      final folderId = await client.ensureLibraryFolder(
-        session: session,
-        libraryId: libraryId,
-      );
+      final folderId = await client.ensureLibraryFolder(session: session);
+      await _checkRemoteLibrary(client, session, folderId, libraryId);
       return client.listNamedBackups(
         session: session,
         libraryFolderId: folderId,
@@ -140,11 +136,14 @@ class CloudSyncService {
   }) async {
     final session = _requireSession();
     await flushPending();
+    final libraryId = await library.ensureCloudLibraryId();
     final staging = await Directory.systemTemp.createTemp(
       'zephyr-cloud-restore-',
     );
     final client = _clientFactory();
     try {
+      final folderId = await client.ensureLibraryFolder(session: session);
+      await _checkRemoteLibrary(client, session, folderId, libraryId);
       final pwb = await client.downloadBackupFile(
         session: session,
         entry: entry,
@@ -178,17 +177,13 @@ class CloudSyncService {
     final libraryId = await library.ensureCloudLibraryId();
     final client = _clientFactory();
     try {
-      final folderId = await client.ensureLibraryFolder(
-        session: session,
-        libraryId: libraryId,
+      final folderId = await client.ensureLibraryFolder(session: session);
+      final remoteManifest = await _checkRemoteLibrary(
+        client,
+        session,
+        folderId,
+        libraryId,
       );
-      final remoteManifest = await client.downloadManifest(
-        session: session,
-        parentFileId: folderId,
-      );
-      if (remoteManifest != null && remoteManifest.libraryId != libraryId) {
-        throw StateError('Cloud snapshot belongs to another library.');
-      }
       final shouldPull =
           remoteManifest != null &&
           (_preferences.lastSyncLibraryId != libraryId ||
@@ -266,6 +261,33 @@ class CloudSyncService {
       throw StateError('WebDAV account is not connected.');
     }
     return session;
+  }
+
+  Future<CloudSyncManifest?> _checkRemoteLibrary(
+    WebDavClient client,
+    CloudSyncSession session,
+    String folderId,
+    String libraryId,
+  ) async {
+    final manifest = await client.downloadManifest(
+      session: session,
+      parentFileId: folderId,
+    );
+    if (manifest != null && manifest.libraryId != libraryId) {
+      throw const CloudLibraryConflictException(
+        CloudLibraryConflictReason.anotherLibrary,
+      );
+    }
+    if (manifest == null &&
+        await client.hasUntrackedContent(
+          session: session,
+          parentFileId: folderId,
+        )) {
+      throw const CloudLibraryConflictException(
+        CloudLibraryConflictReason.missingManifest,
+      );
+    }
+    return manifest;
   }
 
   Future<T> _withClient<T>(

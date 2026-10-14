@@ -144,6 +144,7 @@ void main() {
     expect(uploaded.fileName, 'backup.pwb');
     expect(client.namedUploads, 1);
     expect(client.snapshotUploads, 1);
+    expect(client.uploadOrder, ['snapshot', 'backup']);
     expect(client.closed, isTrue);
     expect(preferences.value.lastSyncLibraryId, 'library-id');
   });
@@ -207,13 +208,110 @@ void main() {
 
       await expectLater(
         service.syncNow(library: library, flushPending: () async {}),
-        throwsStateError,
+        throwsA(isA<CloudLibraryConflictException>().having(
+          (error) => error.reason,
+          'reason',
+          CloudLibraryConflictReason.anotherLibrary,
+        )),
       );
       expect(client.snapshotUploads, 0);
       expect(client.namedUploads, 0);
       expect(client.closed, isTrue);
     },
   );
+
+  test('manual backup rejects another library before uploading', () async {
+    auth.session = _session();
+    final directory = await Directory.systemTemp.createTemp('zephyr-cloud-');
+    addTearDown(() => directory.delete(recursive: true));
+    final library = _CloudLibraryRepository(directory);
+    final client = _WorkflowClient()
+      ..remoteManifest = CloudSyncManifest(
+        libraryId: 'another-library',
+        updatedAt: DateTime.utc(2026, 9, 1),
+        deviceName: 'other',
+        appVersion: '0.1.0',
+      );
+    final service = CloudSyncService(
+      authStore: auth,
+      preferencesStorage: preferences,
+      clientFactory: () => client,
+    );
+    await service.load();
+
+    await expectLater(
+      service.backupNow(library: library, flushPending: () async {}),
+      throwsA(isA<CloudLibraryConflictException>()),
+    );
+    expect(client.snapshotUploads, 0);
+    expect(client.namedUploads, 0);
+    expect(client.closed, isTrue);
+  });
+
+  test('listing and restoring reject a different cloud library', () async {
+    auth.session = _session();
+    final directory = await Directory.systemTemp.createTemp('zephyr-cloud-');
+    addTearDown(() => directory.delete(recursive: true));
+    final library = _CloudLibraryRepository(directory);
+    final client = _WorkflowClient()
+      ..remoteManifest = CloudSyncManifest(
+        libraryId: 'another-library',
+        updatedAt: DateTime.utc(2026, 9, 1),
+        deviceName: 'other',
+        appVersion: '0.1.0',
+      );
+    final service = CloudSyncService(
+      authStore: auth,
+      preferencesStorage: preferences,
+      clientFactory: () => client,
+    );
+    await service.load();
+
+    await expectLater(
+      service.listCloudBackups(library: library),
+      throwsA(isA<CloudLibraryConflictException>()),
+    );
+    await expectLater(
+      service.restoreCloudBackup(
+        library: library,
+        entry: CloudBackupEntry(
+          fileId: 'https://dav.jianguoyun.com/dav/Zephyr/Backups/one.pwb',
+          fileName: 'one.pwb',
+          modified: DateTime.utc(2026, 9, 1),
+          sizeBytes: 3,
+        ),
+        mode: RestoreMode.overwrite,
+        flushPending: () async {},
+      ),
+      throwsA(isA<CloudLibraryConflictException>()),
+    );
+    expect(library.restoredMode, isNull);
+  });
+
+  test('sync refuses an untracked remote snapshot', () async {
+    auth.session = _session();
+    final directory = await Directory.systemTemp.createTemp('zephyr-cloud-');
+    addTearDown(() => directory.delete(recursive: true));
+    final library = _CloudLibraryRepository(directory);
+    final client = _WorkflowClient()..untrackedContent = true;
+    final service = CloudSyncService(
+      authStore: auth,
+      preferencesStorage: preferences,
+      clientFactory: () => client,
+    );
+    await service.load();
+
+    await expectLater(
+      service.syncNow(library: library, flushPending: () async {}),
+      throwsA(isA<CloudLibraryConflictException>().having(
+        (error) => error.reason,
+        'reason',
+        CloudLibraryConflictReason.missingManifest,
+      )),
+    );
+    expect(client.snapshotUploads, 0);
+    expect(client.namedUploads, 0);
+  });
 
   test(
     'cloud restore cleans its staging file after applying the backup',
@@ -340,14 +438,21 @@ class _WorkflowClient extends WebDavClient {
 
   int namedUploads = 0;
   int snapshotUploads = 0;
+  final uploadOrder = <String>[];
   bool closed = false;
+  bool untrackedContent = false;
   CloudSyncManifest? remoteManifest;
 
   @override
   Future<String> ensureLibraryFolder({
     required CloudSyncSession session,
-    required String libraryId,
   }) async => 'folder';
+
+  @override
+  Future<bool> hasUntrackedContent({
+    required CloudSyncSession session,
+    required String parentFileId,
+  }) async => untrackedContent;
 
   @override
   Future<void> uploadNamedBackup({
@@ -358,6 +463,7 @@ class _WorkflowClient extends WebDavClient {
   }) async {
     expect(await pwb.exists(), isTrue);
     namedUploads++;
+    uploadOrder.add('backup');
   }
 
   @override
@@ -369,6 +475,7 @@ class _WorkflowClient extends WebDavClient {
   }) async {
     expect(await pwb.exists(), isTrue);
     snapshotUploads++;
+    uploadOrder.add('snapshot');
   }
 
   @override

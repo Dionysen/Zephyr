@@ -131,7 +131,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cloudSyncBackupNowSubtitle =>
-      'Upload this library to PureWriter on Nutstore (keeps history)';
+      'Upload this library to Zephyr on Nutstore (keeps history)';
 
   @override
   String get cloudSyncBackupNowSuccess => 'Cloud backup completed.';
@@ -153,6 +153,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String cloudSyncFailed(String error) {
     return 'Cloud sync failed: $error';
   }
+
+  @override
+  String get cloudSyncAnotherLibrary =>
+      'This Zephyr cloud folder belongs to another library. Choose the original local directory or another WebDAV account; cloud sync has stopped.';
+
+  @override
+  String get cloudSyncMissingManifest =>
+      'The Zephyr cloud folder contains files without a manifest. Resolve that cloud folder before syncing.';
+
+  @override
+  String get cloudSyncWaitBeforeChoosingDirectory =>
+      'Wait for cloud sync to finish before choosing another directory.';
 
   @override
   String get cloudSyncAutoTitle => 'Automatic sync';
@@ -1172,39 +1184,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tooltipOpenLibrary => 'Open library';
 
   @override
-  String get librarySwitcherAdd => 'Add library';
-
-  @override
-  String get librarySwitcherRename => 'Rename';
-
-  @override
-  String get librarySwitcherRemove => 'Remove from list';
-
-  @override
-  String get librarySwitcherRenameTitle => 'Rename library';
-
-  @override
-  String get librarySwitcherRenameHint => 'Display name';
-
-  @override
-  String get librarySwitcherRenameEmpty => 'Please enter a name';
-
-  @override
-  String get librarySwitcherRemoveTitle => 'Remove library?';
-
-  @override
-  String librarySwitcherRemoveBody(String name) {
-    return '“$name” will be removed from the list. Files on disk are not deleted.';
-  }
-
-  @override
-  String get librarySwitcherRemoveAction => 'Remove';
-
-  @override
-  String get librarySwitcherOpenFailed => 'Could not open this library.';
-
-  @override
-  String get librarySwitcherOpen => 'Open';
+  String get librarySwitcherChooseDirectory => 'Choose another directory';
 
   @override
   String get tooltipOpenSidebar => 'Open sidebar';

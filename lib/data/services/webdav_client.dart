@@ -90,13 +90,41 @@ class WebDavClient {
 
   Future<String> ensureLibraryFolder({
     required CloudSyncSession session,
-    required String libraryId,
   }) async {
-    final pureWriter = _folder(_root(session), 'PureWriter');
-    await _ensureFolder(session, pureWriter);
-    final library = _folder(pureWriter, libraryId);
-    await _ensureFolder(session, library);
-    return library.toString();
+    final folder = _folder(_root(session), 'Zephyr');
+    await _ensureFolder(session, folder);
+    return folder.toString();
+  }
+
+  /// Detects any pre-existing content whose library ID cannot be verified.
+  Future<bool> hasUntrackedContent({
+    required CloudSyncSession session,
+    required String parentFileId,
+  }) async {
+    final folder = Uri.parse(parentFileId);
+    final response = await _request(
+      session,
+      'PROPFIND',
+      folder,
+      headers: const {'Depth': '1'},
+    );
+    _expect(response, {207});
+    final document = XmlDocument.parse(utf8.decode(response.bodyBytes));
+    for (final item in document.descendants.whereType<XmlElement>().where(
+      (element) => element.name.local == 'response',
+    )) {
+      final href = _firstText(item, 'href');
+      if (href == null) continue;
+      final uri = folder.resolve(href);
+      if (uri.scheme == folder.scheme &&
+          uri.host == folder.host &&
+          uri.port == folder.port &&
+          uri.path.startsWith(folder.path) &&
+          uri.path != folder.path) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Future<void> _ensureFolder(CloudSyncSession session, Uri uri) async {
@@ -259,10 +287,11 @@ class WebDavClient {
   }) async {
     final uri = Uri.parse(entry.fileId);
     final root = _root(session);
+    final backupRoot = _folder(_folder(root, 'Zephyr'), 'Backups');
     if (uri.scheme != root.scheme ||
         uri.host != root.host ||
         uri.port != root.port ||
-        !uri.path.startsWith(root.path) ||
+        !uri.path.startsWith(backupRoot.path) ||
         path.basename(uri.path) != entry.fileName ||
         entry.fileName == '.' ||
         entry.fileName == '..' ||

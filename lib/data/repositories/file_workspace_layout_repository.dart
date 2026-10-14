@@ -31,7 +31,8 @@ class FileWorkspaceLayoutRepository implements WorkspaceLayoutRepository {
         : null;
 
     var libraries = _parseLibraries(values['libraries']);
-    var activeLibraryId = values['activeLibraryId'] is String &&
+    var activeLibraryId =
+        values['activeLibraryId'] is String &&
             (values['activeLibraryId'] as String).isNotEmpty
         ? values['activeLibraryId'] as String
         : null;
@@ -54,7 +55,8 @@ class FileWorkspaceLayoutRepository implements WorkspaceLayoutRepository {
       activeLibraryId = libraries.isEmpty ? null : libraries.first.id;
     } else if (activeLibraryId == null && libraries.isNotEmpty) {
       // Prefer matching lastLibraryRoot, else first entry.
-      activeLibraryId = libraries
+      activeLibraryId =
+          libraries
               .where((entry) => entry.rootPath == lastLibraryRoot)
               .map((entry) => entry.id)
               .firstOrNull ??
@@ -64,6 +66,17 @@ class FileWorkspaceLayoutRepository implements WorkspaceLayoutRepository {
     final active = libraries
         .where((entry) => entry.id == activeLibraryId)
         .firstOrNull;
+
+    // Older layouts may contain several libraries. Keep only the selected
+    // directory in app state; their folders on disk are untouched.
+    libraries = active == null
+        ? const []
+        : [
+            active.copyWith(
+              displayName: path.basename(active.rootPath),
+              rank: 0,
+            ),
+          ];
 
     return WorkspaceLayout(
       sidebarWidth: width is num
@@ -81,7 +94,9 @@ class FileWorkspaceLayoutRepository implements WorkspaceLayoutRepository {
           ? selectedArticleId
           : null,
       expandedVolumesByBook: _stringListMap(values['expandedVolumesByBook']),
-      sidebarScrollOffsetByBook: _doubleMap(values['sidebarScrollOffsetByBook']),
+      sidebarScrollOffsetByBook: _doubleMap(
+        values['sidebarScrollOffsetByBook'],
+      ),
       chapterSortByBook: _stringMap(values['chapterSortByBook']),
       booksSheetDualColumn: values['booksSheetDualColumn'] != false,
     );
@@ -94,7 +109,11 @@ class FileWorkspaceLayoutRepository implements WorkspaceLayoutRepository {
     'lastLibraryBookmark': layout.lastLibraryBookmark,
     'activeLibraryId': layout.activeLibraryId,
     'libraries': [
-      for (final entry in layout.libraries) entry.toJson(),
+      if (layout.activeLibrary case final entry?)
+        entry.copyWith(
+          displayName: path.basename(entry.rootPath),
+          rank: 0,
+        ).toJson(),
     ],
     'selectedBookId': layout.selectedBookId,
     'selectedArticleId': layout.selectedArticleId,

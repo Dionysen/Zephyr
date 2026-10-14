@@ -164,53 +164,68 @@ void main() {
     expect(model.activeLibraryId, model.libraries.single.id);
   });
 
-  test('renames library display name without changing path', () async {
+  test('reselecting the same directory keeps its identity', () async {
     final library = FakeLibraryRepository();
     final layout = FakeLayoutRepository(WorkspaceLayout.defaults);
     final model = LibraryViewModel(library, layoutRepository: layout);
     await model.openLibrary('/writing/book');
     final id = model.libraries.single.id;
 
-    await model.renameLibrary(id, '  Drafts  ');
+    await model.openLibrary('/writing/book');
 
-    expect(model.libraries.single.displayName, 'Drafts');
+    expect(model.libraries, hasLength(1));
+    expect(model.libraries.single.id, id);
+    expect(model.libraries.single.displayName, 'book');
     expect(model.libraries.single.rootPath, '/writing/book');
-    expect(model.displayLibraryName(AppLocalizationsEn()), 'Drafts');
-    expect(layout.layout.libraries.single.displayName, 'Drafts');
+    expect(model.displayLibraryName(AppLocalizationsEn()), 'book');
+    expect(layout.layout.libraries.single.displayName, 'book');
   });
 
-  test('removeLibrary drops registry entry and keeps files conceptually', () async {
+  test('choosing another directory replaces the current library', () async {
     final library = FakeLibraryRepository();
     final layout = FakeLayoutRepository(WorkspaceLayout.defaults);
     final model = LibraryViewModel(library, layoutRepository: layout);
     await model.openLibrary('/writing/a');
+    final previousId = model.activeLibraryId;
     await model.openLibrary('/writing/b');
-    expect(model.libraries, hasLength(2));
-    final removeId = model.libraries.first.id;
-
-    await model.removeLibrary(removeId);
 
     expect(model.libraries, hasLength(1));
     expect(model.libraries.single.rootPath, '/writing/b');
+    expect(model.activeLibraryId, isNot(previousId));
     expect(model.activeLibraryId, model.libraries.single.id);
+    expect(layout.layout.libraries, hasLength(1));
+    expect(layout.layout.lastLibraryRoot, '/writing/b');
   });
 
-  test('removing the last library returns to temporary setup', () async {
+  test('loads only the active directory from an older library list', () async {
     final library = FakeLibraryRepository();
-    final layout = FakeLayoutRepository(WorkspaceLayout.defaults);
-    final model = LibraryViewModel(library, layoutRepository: layout);
-    await model.openLibrary('/writing/book');
-    final id = model.libraries.single.id;
-
-    await model.removeLibrary(id);
-
-    expect(model.libraries, isEmpty);
-    expect(model.needsLibrarySetup, isTrue);
-    expect(library.openedRoot, '/tmp/zephyr-temporary-library');
-    expect(
-      model.displayLibraryName(AppLocalizationsEn()),
-      'Temporary library',
+    await library.openLibrary('/writing/second');
+    final layout = FakeLayoutRepository(
+      const WorkspaceLayout(
+        sidebarWidth: WorkspaceLayout.defaultSidebarWidth,
+        activeLibraryId: 'second',
+        libraries: [
+          LibraryRegistryEntry(
+            id: 'first',
+            displayName: 'Old alias',
+            rootPath: '/writing/first',
+          ),
+          LibraryRegistryEntry(
+            id: 'second',
+            displayName: 'Another alias',
+            rootPath: '/writing/second',
+          ),
+        ],
+      ),
     );
+    final model = LibraryViewModel(library, layoutRepository: layout);
+
+    await model.load();
+
+    expect(model.libraries, hasLength(1));
+    expect(model.libraries.single.id, 'second');
+    expect(model.displayLibraryName(AppLocalizationsEn()), 'second');
+    expect(model.activeLibraryId, 'second');
   });
 
   test('opens a temporary library when none is open yet', () async {

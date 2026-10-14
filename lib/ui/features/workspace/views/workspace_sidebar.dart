@@ -3078,7 +3078,7 @@ class _LibraryDock extends StatelessWidget {
       ),
       child: LibrarySwitcherMenu(
         model: model,
-        onAddLibrary: openLibrary,
+        onChooseDirectory: openLibrary,
         child: ZephyrFloatingChrome(
           borderRadius: radius,
           child: SizedBox(

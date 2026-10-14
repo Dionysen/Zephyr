@@ -1,3 +1,12 @@
+enum CloudLibraryConflictReason { anotherLibrary, missingManifest }
+
+/// A remote Zephyr folder cannot safely accept the current local library.
+class CloudLibraryConflictException implements Exception {
+  const CloudLibraryConflictException(this.reason);
+
+  final CloudLibraryConflictReason reason;
+}
+
 /// WebDAV credentials kept in secure storage on this device.
 class CloudSyncSession {
   const CloudSyncSession({

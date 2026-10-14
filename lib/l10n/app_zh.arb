@@ -45,13 +45,16 @@
   "cloudSyncLogoutTitle": "断开连接",
   "cloudSyncLogoutSubtitle": "断开后停止云备份和自动同步",
   "cloudSyncBackupNowTitle": "立即云备份",
-  "cloudSyncBackupNowSubtitle": "上传当前书库到坚果云根目录的 PureWriter，并保留历史备份",
+  "cloudSyncBackupNowSubtitle": "上传当前书库到坚果云根目录的 Zephyr，并保留历史备份",
   "cloudSyncBackupNowSuccess": "云备份已完成",
   "cloudSyncRestoreTitle": "云备份恢复",
   "cloudSyncRestoreSubtitle": "从坚果云选择备份，可覆盖或合并",
   "cloudSyncRestoreEmpty": "云盘中尚未找到备份",
   "cloudSyncRestoreSuccess": "已从云备份恢复",
   "cloudSyncFailed": "云同步失败：{error}",
+  "cloudSyncAnotherLibrary": "云端 Zephyr 目录属于另一文库。请选择原本地目录或其他 WebDAV 账号；云同步已停止。",
+  "cloudSyncMissingManifest": "云端 Zephyr 目录已有文件但缺少清单，请先处理该云端目录，再进行同步。",
+  "cloudSyncWaitBeforeChoosingDirectory": "请等待云同步完成后再选择其他目录。",
   "@cloudSyncFailed": {
     "placeholders": {
       "error": {
@@ -452,24 +455,7 @@
   "chapterSortTitleAsc": "名称 · A→Z",
   "chapterSortTitleDesc": "名称 · Z→A",
   "tooltipOpenLibrary": "打开书库",
-  "librarySwitcherAdd": "添加文库",
-  "librarySwitcherRename": "重命名",
-  "librarySwitcherRemove": "从列表移除",
-  "librarySwitcherRenameTitle": "重命名文库",
-  "librarySwitcherRenameHint": "显示名称",
-  "librarySwitcherRenameEmpty": "请输入名称",
-  "librarySwitcherRemoveTitle": "移出文库？",
-  "librarySwitcherRemoveBody": "将从列表中移除“{name}”。不会删除磁盘上的文件。",
-  "@librarySwitcherRemoveBody": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "librarySwitcherRemoveAction": "移除",
-  "librarySwitcherOpenFailed": "无法打开该文库。",
-  "librarySwitcherOpen": "打开",
+  "librarySwitcherChooseDirectory": "重新选择目录",
   "tooltipOpenSidebar": "打开侧边栏",
   "tooltipMore": "更多",
   "tooltipEditBook": "编辑书籍",

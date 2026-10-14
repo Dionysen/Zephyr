@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../../../data/services/cloud_sync_service.dart';
 import '../../../../domain/models/cloud_sync.dart';
 import '../../../../domain/models/library_backup.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../editor/view_models/library_view_model.dart';
 
 enum CloudSyncBusyKind { none, login, sync, backup, restore }
@@ -20,6 +21,19 @@ class CloudSyncViewModel extends ChangeNotifier {
   List<CloudBackupEntry> _cloudBackups = const [];
 
   Object? get error => _error;
+  String? errorMessage(AppLocalizations l10n) {
+    final error = _error;
+    if (error == null) return null;
+    if (error is CloudLibraryConflictException) {
+      return switch (error.reason) {
+        CloudLibraryConflictReason.anotherLibrary =>
+          l10n.cloudSyncAnotherLibrary,
+        CloudLibraryConflictReason.missingManifest =>
+          l10n.cloudSyncMissingManifest,
+      };
+    }
+    return l10n.cloudSyncFailed(error.toString());
+  }
   bool get busy => _busyKind != CloudSyncBusyKind.none;
   bool get isLoggingIn => _busyKind == CloudSyncBusyKind.login;
   bool get isSyncing => _busyKind == CloudSyncBusyKind.sync;

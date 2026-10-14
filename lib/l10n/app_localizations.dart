@@ -329,7 +329,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncBackupNowSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Upload this library to PureWriter on Nutstore (keeps history)'**
+  /// **'Upload this library to Zephyr on Nutstore (keeps history)'**
   String get cloudSyncBackupNowSubtitle;
 
   /// No description provided for @cloudSyncBackupNowSuccess.
@@ -367,6 +367,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cloud sync failed: {error}'**
   String cloudSyncFailed(String error);
+
+  /// No description provided for @cloudSyncAnotherLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'This Zephyr cloud folder belongs to another library. Choose the original local directory or another WebDAV account; cloud sync has stopped.'**
+  String get cloudSyncAnotherLibrary;
+
+  /// No description provided for @cloudSyncMissingManifest.
+  ///
+  /// In en, this message translates to:
+  /// **'The Zephyr cloud folder contains files without a manifest. Resolve that cloud folder before syncing.'**
+  String get cloudSyncMissingManifest;
+
+  /// No description provided for @cloudSyncWaitBeforeChoosingDirectory.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait for cloud sync to finish before choosing another directory.'**
+  String get cloudSyncWaitBeforeChoosingDirectory;
 
   /// No description provided for @cloudSyncAutoTitle.
   ///
@@ -2227,71 +2245,11 @@ abstract class AppLocalizations {
   /// **'Open library'**
   String get tooltipOpenLibrary;
 
-  /// No description provided for @librarySwitcherAdd.
+  /// No description provided for @librarySwitcherChooseDirectory.
   ///
   /// In en, this message translates to:
-  /// **'Add library'**
-  String get librarySwitcherAdd;
-
-  /// No description provided for @librarySwitcherRename.
-  ///
-  /// In en, this message translates to:
-  /// **'Rename'**
-  String get librarySwitcherRename;
-
-  /// No description provided for @librarySwitcherRemove.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove from list'**
-  String get librarySwitcherRemove;
-
-  /// No description provided for @librarySwitcherRenameTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Rename library'**
-  String get librarySwitcherRenameTitle;
-
-  /// No description provided for @librarySwitcherRenameHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Display name'**
-  String get librarySwitcherRenameHint;
-
-  /// No description provided for @librarySwitcherRenameEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'Please enter a name'**
-  String get librarySwitcherRenameEmpty;
-
-  /// No description provided for @librarySwitcherRemoveTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove library?'**
-  String get librarySwitcherRemoveTitle;
-
-  /// No description provided for @librarySwitcherRemoveBody.
-  ///
-  /// In en, this message translates to:
-  /// **'“{name}” will be removed from the list. Files on disk are not deleted.'**
-  String librarySwitcherRemoveBody(String name);
-
-  /// No description provided for @librarySwitcherRemoveAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove'**
-  String get librarySwitcherRemoveAction;
-
-  /// No description provided for @librarySwitcherOpenFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not open this library.'**
-  String get librarySwitcherOpenFailed;
-
-  /// No description provided for @librarySwitcherOpen.
-  ///
-  /// In en, this message translates to:
-  /// **'Open'**
-  String get librarySwitcherOpen;
+  /// **'Choose another directory'**
+  String get librarySwitcherChooseDirectory;
 
   /// No description provided for @tooltipOpenSidebar.
   ///

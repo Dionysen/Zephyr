@@ -169,7 +169,7 @@ class BackupSettingsView extends StatelessWidget {
             context,
             error == null
                 ? l10n.cloudSyncBackupNowSuccess
-                : l10n.cloudSyncFailed(error.toString()),
+                : cloudSync.errorMessage(l10n)!,
           );
         },
         trailing: cloudSync.isBackingUp
@@ -299,7 +299,7 @@ Future<void> _showCredentialsDialog(
     context,
     cloudSync.error == null
         ? l10n.cloudSyncCredentialsSaved
-        : l10n.cloudSyncFailed(cloudSync.error.toString()),
+        : cloudSync.errorMessage(l10n)!,
   );
 }
 
@@ -314,7 +314,7 @@ Future<void> showCloudBackupRestoreFlow(
   if (cloudSync.error != null && cloudSync.cloudBackups.isEmpty) {
     ZephyrSnackBar.show(
       context,
-      l10n.cloudSyncFailed(cloudSync.error.toString()),
+      cloudSync.errorMessage(l10n)!,
     );
     return;
   }
@@ -378,7 +378,7 @@ Future<void> showCloudBackupRestoreFlow(
     context,
     error == null
         ? l10n.cloudSyncRestoreSuccess
-        : l10n.cloudSyncFailed(error.toString()),
+        : cloudSync.errorMessage(l10n)!,
   );
 }
 

@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- 移除阿里云盘开放平台和扫码登录，改用坚果云 WebDAV 账号、网址和应用密码；云备份与自动同步存放在根目录的 PureWriter 下。
+- 移除阿里云盘开放平台和扫码登录，改用坚果云 WebDAV 账号、网址和应用密码；云备份与自动同步存放在根目录的 Zephyr 下。
+- 暂时改为单文库目录；文库菜单可重新选择目录，云端书库 ID 不匹配时阻止同步与备份。
 - Keep each volume header pinned while its chapters scroll, then release it at the end of that volume.
 - Use a closed-book icon for books in the dropdown.
 - Center the chapter toolbar buttons beneath the book picker with consistent spacing.

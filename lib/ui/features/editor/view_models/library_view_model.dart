@@ -57,6 +57,7 @@ class LibraryViewModel extends ChangeNotifier {
   Timer? _pendingTitleSave;
   Timer? _pendingLayoutSave;
   Timer? _pendingDraftSave;
+
   /// Content/title awaiting persistence, keyed by article id (survives chapter switch).
   WritingArticle? _dirtyArticle;
   String? _dirtyTitleArticleId;
@@ -78,6 +79,7 @@ class LibraryViewModel extends ChangeNotifier {
   final Map<String, Set<String>> _expandedVolumesByBook = {};
   final Map<String, double> _sidebarScrollOffsetByBook = {};
   final Map<String, ChapterSortMode> _chapterSortByBook = {};
+
   /// Snapshot of expanded volume ids while a volume drag temporarily collapses all.
   Set<String>? _volumeExpandSnapshotDuringDrag;
   SearchHighlight? _pendingSearchHighlight;
@@ -89,6 +91,7 @@ class LibraryViewModel extends ChangeNotifier {
   Object? get error => _error;
   bool get isLibraryInUse => _error is LibraryInUseException;
   bool get isReadOnly => _repository.location?.schema.writesAllowed == false;
+
   /// Drafts newer than Article after load — UI may offer recovery.
   List<ArticleDraft> get recoverableDrafts => _recoverableDrafts;
   bool get contentDirtySinceBackup => _contentDirtySinceBackup;
@@ -100,6 +103,7 @@ class LibraryViewModel extends ChangeNotifier {
   /// True until the user has chosen a PureWriter library folder.
   bool get needsLibrarySetup => _needsLibrarySetup;
   bool get isSidebarExpanded => _isSidebarExpanded;
+
   /// When true, sidebar rows show immediate-drag handles for reordering.
   bool get isReorderMode => _isReorderMode;
 
@@ -112,17 +116,17 @@ class LibraryViewModel extends ChangeNotifier {
 
   bool get isResizingSidebar => _isResizingSidebar;
   double get sidebarWidth => _sidebarWidth;
+
   /// Mobile books sheet two-column grid layout (persisted in workspace layout).
   bool get booksSheetDualColumn => _booksSheetDualColumn;
   bool get hasVolumes => _volumesForSelectedBook.isNotEmpty;
   bool get areAllVolumesExpanded =>
       hasVolumes &&
-      _volumesForSelectedBook.every(
-        (volume) => isVolumeExpanded(volume.id),
-      );
+      _volumesForSelectedBook.every((volume) => isVolumeExpanded(volume.id));
   WritingFolder? get selectedBook =>
       _library?.folders.where((book) => book.id == _selectedBookId).firstOrNull;
-  /// Registered libraries (ordered). Empty while using only the temporary library.
+
+  /// The selected directory, or empty while using the temporary library.
   List<LibraryRegistryEntry> get libraries => _libraries;
 
   String? get activeLibraryId => _activeLibraryId;
@@ -205,7 +209,8 @@ class LibraryViewModel extends ChangeNotifier {
   }
 
   void setReorderMode(bool value) {
-    final next = value &&
+    final next =
+        value &&
         !isReadOnly &&
         selectedBook?.isTrash != true &&
         chapterSortMode.isManual;
@@ -288,8 +293,9 @@ class LibraryViewModel extends ChangeNotifier {
     if (areAllVolumesExpanded) {
       _expandedVolumesByBook[bookId] = <String>{};
     } else {
-      _expandedVolumesByBook[bookId] =
-          _volumesForSelectedBook.map((volume) => volume.id).toSet();
+      _expandedVolumesByBook[bookId] = _volumesForSelectedBook
+          .map((volume) => volume.id)
+          .toSet();
     }
     _scheduleLayoutSave();
     notifyListeners();
@@ -412,30 +418,22 @@ class LibraryViewModel extends ChangeNotifier {
       return (volumes: 0, chapters: 0);
     }
     return (
-      volumes: library.categories.where((item) => item.folderId == bookId).length,
-      chapters: library.articles.where((item) => item.folderId == bookId).length,
+      volumes: library.categories
+          .where((item) => item.folderId == bookId)
+          .length,
+      chapters: library.articles
+          .where((item) => item.folderId == bookId)
+          .length,
     );
   }
 
-  /// Opens [rootPath], registering it in the library list when new.
-  Future<void> openLibrary(String rootPath, {String? bookmark}) =>
-      addLibrary(rootPath, bookmark: bookmark);
-
-  /// Adds or activates a library at [rootPath] and opens it.
-  Future<void> addLibrary(
-    String rootPath, {
-    String? bookmark,
-    String? displayName,
-  }) async {
+  /// Opens [rootPath] as the sole selected library directory.
+  Future<void> openLibrary(String rootPath, {String? bookmark}) async {
     try {
       await flushPending();
       await _repository.openLibrary(rootPath);
       final opened = _repository.location?.rootPath ?? rootPath;
-      _registerOrActivate(
-        rootPath: opened,
-        bookmark: bookmark,
-        displayName: displayName,
-      );
+      _registerOrActivate(rootPath: opened, bookmark: bookmark);
       _needsLibrarySetup = false;
       _resetBookUiState();
       await _saveLayout();
@@ -446,118 +444,33 @@ class LibraryViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> switchLibrary(String id) async {
-    final entry = _libraries.where((item) => item.id == id).firstOrNull;
-    if (entry == null) return;
-    if (entry.id == _activeLibraryId &&
-        _repository.location?.rootPath == entry.rootPath) {
-      return;
-    }
-    try {
-      await flushPending();
-      await _repository.openLibrary(entry.rootPath);
-      _activeLibraryId = entry.id;
-      _lastLibraryRoot = _repository.location?.rootPath ?? entry.rootPath;
-      _lastLibraryBookmark = entry.bookmark;
-      _needsLibrarySetup = false;
-      _resetBookUiState();
-      await _saveLayout();
-      await load();
-    } on Object catch (error) {
-      _error = error;
-      notifyListeners();
-    }
-  }
-
-  Future<void> renameLibrary(String id, String displayName) async {
-    final trimmed = displayName.trim();
-    if (trimmed.isEmpty) return;
-    final index = _libraries.indexWhere((item) => item.id == id);
-    if (index < 0) return;
-    final next = List<LibraryRegistryEntry>.from(_libraries);
-    next[index] = next[index].copyWith(displayName: trimmed);
-    _libraries = List<LibraryRegistryEntry>.unmodifiable(next);
-    await _saveLayout();
-    notifyListeners();
-  }
-
-  /// Removes [id] from the registry only (does not delete files on disk).
-  Future<void> removeLibrary(String id) async {
-    final index = _libraries.indexWhere((item) => item.id == id);
-    if (index < 0) return;
-    final removedActive = _activeLibraryId == id;
-    final next = List<LibraryRegistryEntry>.from(_libraries)..removeAt(index);
-    for (var i = 0; i < next.length; i++) {
-      next[i] = next[i].copyWith(rank: i);
-    }
-    _libraries = List<LibraryRegistryEntry>.unmodifiable(next);
-
-    if (!removedActive) {
-      await _saveLayout();
-      notifyListeners();
-      return;
-    }
-
-    if (_libraries.isEmpty) {
-      try {
-        await flushPending();
-        await _repository.openDefaultLibrary();
-        _activeLibraryId = null;
-        _lastLibraryRoot = null;
-        _lastLibraryBookmark = null;
-        _needsLibrarySetup = true;
-        _resetBookUiState();
-        await _saveLayout();
-        await load();
-      } on Object catch (error) {
-        _error = error;
-        notifyListeners();
-      }
-      return;
-    }
-
-    final fallback = _libraries[index.clamp(0, _libraries.length - 1)];
-    await switchLibrary(fallback.id);
-  }
-
-  void _registerOrActivate({
-    required String rootPath,
-    String? bookmark,
-    String? displayName,
-  }) {
+  void _registerOrActivate({required String rootPath, String? bookmark}) {
     final existingIndex = _libraries.indexWhere(
       (entry) => _sameLibraryPath(entry.rootPath, rootPath),
     );
     if (existingIndex >= 0) {
       final existing = _libraries[existingIndex];
-      final next = List<LibraryRegistryEntry>.from(_libraries);
-      next[existingIndex] = existing.copyWith(
+      final selected = existing.copyWith(
         rootPath: rootPath,
         bookmark: bookmark ?? existing.bookmark,
-        displayName: displayName?.trim().isNotEmpty == true
-            ? displayName!.trim()
-            : existing.displayName,
+        displayName: path.basename(rootPath),
+        rank: 0,
       );
-      _libraries = List<LibraryRegistryEntry>.unmodifiable(next);
+      _libraries = [selected];
       _activeLibraryId = existing.id;
       _lastLibraryRoot = rootPath;
-      _lastLibraryBookmark = next[existingIndex].bookmark;
+      _lastLibraryBookmark = selected.bookmark;
       return;
     }
 
     final entry = LibraryRegistryEntry(
       id: _uuid.v4(),
-      displayName: (displayName?.trim().isNotEmpty == true)
-          ? displayName!.trim()
-          : path.basename(rootPath),
+      displayName: path.basename(rootPath),
       rootPath: rootPath,
       bookmark: bookmark,
-      rank: _libraries.length,
+      rank: 0,
     );
-    _libraries = List<LibraryRegistryEntry>.unmodifiable([
-      ..._libraries,
-      entry,
-    ]);
+    _libraries = [entry];
     _activeLibraryId = entry.id;
     _lastLibraryRoot = rootPath;
     _lastLibraryBookmark = bookmark;
@@ -755,7 +668,8 @@ class LibraryViewModel extends ChangeNotifier {
     if (isReadOnly) return;
     final book = selectedBook;
     if (book == null || book.isTrash) return;
-    final removedIds = _library?.articles
+    final removedIds =
+        _library?.articles
             .where((chapter) => chapter.categoryId == volumeId)
             .map((chapter) => chapter.id)
             .toSet() ??
@@ -1088,9 +1002,8 @@ class LibraryViewModel extends ChangeNotifier {
 
   Future<void> applyRecoverableDraft(ArticleDraft draft) async {
     await _repository.saveArticle(
-      (await _repository.getArticle(draft.articleId)).copyWith(
-        content: draft.content,
-      ),
+      (await _repository.getArticle(draft.articleId))
+          .copyWith(content: draft.content),
     );
     if (draft.title.isNotEmpty) {
       await _repository.renameArticle(
@@ -1103,7 +1016,8 @@ class LibraryViewModel extends ChangeNotifier {
       for (final item in _recoverableDrafts)
         if (item.articleId != draft.articleId) item,
     ];
-    if (_selectedArticleId == draft.articleId || _article?.id == draft.articleId) {
+    if (_selectedArticleId == draft.articleId ||
+        _article?.id == draft.articleId) {
       _article = await _repository.getArticle(draft.articleId);
     }
     notifyListeners();
@@ -1235,9 +1149,7 @@ class LibraryViewModel extends ChangeNotifier {
     if (chosen != null) {
       _selectedBookId = chosen.folderId;
     }
-    _article = chosen == null
-        ? null
-        : await _repository.getArticle(chosen.id);
+    _article = chosen == null ? null : await _repository.getArticle(chosen.id);
   }
 
   Future<void> _loadLayout() async {
@@ -1247,11 +1159,19 @@ class LibraryViewModel extends ChangeNotifier {
     }
     try {
       final layout = await layoutRepository.load();
+      final selected = layout.activeLibrary ?? layout.libraries.firstOrNull;
       _sidebarWidth = layout.sidebarWidth;
-      _lastLibraryRoot = layout.lastLibraryRoot;
-      _lastLibraryBookmark = layout.lastLibraryBookmark;
-      _activeLibraryId = layout.activeLibraryId;
-      _libraries = layout.libraries;
+      _lastLibraryRoot = selected?.rootPath ?? layout.lastLibraryRoot;
+      _lastLibraryBookmark = selected?.bookmark ?? layout.lastLibraryBookmark;
+      _activeLibraryId = selected?.id;
+      _libraries = selected == null
+          ? const []
+          : [
+              selected.copyWith(
+                displayName: path.basename(selected.rootPath),
+                rank: 0,
+              ),
+            ];
       // Keep an in-session selection across library refreshes (e.g. reorder).
       // Disk may still be null/stale when selection was only restored in memory.
       _selectedBookId ??= layout.selectedBookId;

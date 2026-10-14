@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/data/services/cloud_sync_service.dart';
 import 'package:zephyr/domain/models/cloud_sync.dart';
+import 'package:zephyr/domain/models/purewriter_models.dart';
+import 'package:zephyr/l10n/app_localizations_en.dart';
 import 'package:zephyr/domain/repositories/writing_library_repository.dart';
 import 'package:zephyr/ui/features/editor/view_models/library_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/cloud_sync_view_model.dart';
@@ -81,9 +83,28 @@ void main() {
     expect(model.busy, isFalse);
     expect(model.error, isNull);
   });
+
+  test('explains a library conflict after automatic sync', () async {
+    service.signedIn = true;
+    service.syncFailure = const CloudLibraryConflictException(
+      CloudLibraryConflictReason.anotherLibrary,
+    );
+
+    await model.maybeAutoSync();
+
+    expect(service.syncCalls, 1);
+    expect(model.error, isA<CloudLibraryConflictException>());
+    expect(
+      model.errorMessage(AppLocalizationsEn()),
+      contains('Choose the original local directory'),
+    );
+  });
 }
 
 class _UnusedLibraryRepository implements WritingLibraryRepository {
+  @override
+  LibraryLocation? get location => null;
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -100,6 +121,7 @@ class _CloudService extends CloudSyncService {
   int syncCalls = 0;
   int backupCalls = 0;
   int listCalls = 0;
+  Object syncFailure = StateError('unexpected sync');
   CloudSyncSession? connectedSession;
 
   @override
@@ -142,6 +164,6 @@ class _CloudService extends CloudSyncService {
     required Future<void> Function() flushPending,
   }) async {
     syncCalls++;
-    throw StateError('unexpected sync');
+    throw syncFailure;
   }
 }

@@ -33,6 +33,7 @@ import 'package:zephyr/ui/features/settings/view_models/theme_view_model.dart';
 import 'package:zephyr/l10n/app_localizations.dart';
 import 'package:zephyr/ui/features/settings/views/settings_page.dart';
 import 'package:zephyr/ui/features/workspace/views/workspace_page.dart';
+import 'package:zephyr/ui/features/workspace/views/library_switcher_menu.dart';
 import 'package:zephyr/ui/features/workspace/views/workspace_settings_panel.dart';
 import 'package:zephyr/ui/features/workspace/views/workspace_sidebar.dart';
 
@@ -547,6 +548,26 @@ void main() {
     expect(find.text('Using a temporary library'), findsOneWidget);
     expect(find.text('Choose library'), findsOneWidget);
     expect(find.text('Temporary library'), findsWidgets);
+  });
+
+  testWidgets('library menu offers only directory reselection', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final library = LibraryViewModel(_LibraryRepository());
+    await library.openLibrary('/writing/my-library');
+
+    await tester.pumpWidget(_app(library: library));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(LibrarySwitcherButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text('/writing/my-library'), findsOneWidget);
+    expect(find.text('Choose another directory'), findsOneWidget);
+    expect(find.text('Add library'), findsNothing);
+    expect(find.text('Rename library'), findsNothing);
+    expect(find.text('Remove from list'), findsNothing);
   });
 
   testWidgets('compact top bar opens book and tools sheets', (tester) async {

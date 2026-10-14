@@ -126,7 +126,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncBackupNowTitle => '立即云备份';
 
   @override
-  String get cloudSyncBackupNowSubtitle => '上传当前书库到坚果云根目录的 PureWriter，并保留历史备份';
+  String get cloudSyncBackupNowSubtitle => '上传当前书库到坚果云根目录的 Zephyr，并保留历史备份';
 
   @override
   String get cloudSyncBackupNowSuccess => '云备份已完成';
@@ -147,6 +147,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String cloudSyncFailed(String error) {
     return '云同步失败：$error';
   }
+
+  @override
+  String get cloudSyncAnotherLibrary =>
+      '云端 Zephyr 目录属于另一文库。请选择原本地目录或其他 WebDAV 账号；云同步已停止。';
+
+  @override
+  String get cloudSyncMissingManifest =>
+      '云端 Zephyr 目录已有文件但缺少清单，请先处理该云端目录，再进行同步。';
+
+  @override
+  String get cloudSyncWaitBeforeChoosingDirectory => '请等待云同步完成后再选择其他目录。';
 
   @override
   String get cloudSyncAutoTitle => '自动同步';
@@ -1118,39 +1129,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get tooltipOpenLibrary => '打开书库';
 
   @override
-  String get librarySwitcherAdd => '添加文库';
-
-  @override
-  String get librarySwitcherRename => '重命名';
-
-  @override
-  String get librarySwitcherRemove => '从列表移除';
-
-  @override
-  String get librarySwitcherRenameTitle => '重命名文库';
-
-  @override
-  String get librarySwitcherRenameHint => '显示名称';
-
-  @override
-  String get librarySwitcherRenameEmpty => '请输入名称';
-
-  @override
-  String get librarySwitcherRemoveTitle => '移出文库？';
-
-  @override
-  String librarySwitcherRemoveBody(String name) {
-    return '将从列表中移除“$name”。不会删除磁盘上的文件。';
-  }
-
-  @override
-  String get librarySwitcherRemoveAction => '移除';
-
-  @override
-  String get librarySwitcherOpenFailed => '无法打开该文库。';
-
-  @override
-  String get librarySwitcherOpen => '打开';
+  String get librarySwitcherChooseDirectory => '重新选择目录';
 
   @override
   String get tooltipOpenSidebar => '打开侧边栏';

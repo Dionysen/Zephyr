@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import '../../../../data/services/android_storage_access.dart';
 import '../../../../data/services/folder_bookmark.dart';
 import '../../../../domain/models/app_theme_mode.dart';
+import '../../../../domain/models/cloud_sync.dart';
 import '../../../../domain/models/keyboard_shortcuts.dart';
 import '../../../../domain/models/library_backup.dart';
 import '../../../../domain/models/theme_color_pack.dart';
@@ -127,8 +128,21 @@ class _WorkspacePageState extends State<WorkspacePage>
         unawaited(scope.cloudSync.maybeAutoSync());
       }
     } else if (mounted && state == AppLifecycleState.resumed) {
-      unawaited(ZephyrScope.of(context).cloudSync.maybeAutoSync());
+      unawaited(_autoSyncAndReport());
     }
+  }
+
+  Future<void> _autoSyncAndReport() async {
+    final cloudSync = ZephyrScope.of(context).cloudSync;
+    if (!cloudSync.autoSyncEnabled ||
+        !cloudSync.isSignedIn ||
+        cloudSync.busy ||
+        cloudSync.library.isReadOnly) {
+      return;
+    }
+    await cloudSync.maybeAutoSync();
+    if (!mounted || cloudSync.error is! CloudLibraryConflictException) return;
+    ZephyrSnackBar.show(context, cloudSync.errorMessage(context.l10n)!);
   }
 
   @override
@@ -436,10 +450,24 @@ class _WorkspacePageState extends State<WorkspacePage>
   }
 
   Future<void> _openLibrary() async {
+    final scope = ZephyrScope.of(context);
+    if (scope.cloudSync.busy) {
+      ZephyrSnackBar.show(
+        context,
+        context.l10n.cloudSyncWaitBeforeChoosingDirectory,
+      );
+      return;
+    }
     final picked = await _pickLibraryFolder();
     if (picked != null && mounted) {
-      await ZephyrScope.of(context).library
-          .openLibrary(picked.path, bookmark: picked.bookmark);
+      if (scope.cloudSync.busy) {
+        ZephyrSnackBar.show(
+          context,
+          context.l10n.cloudSyncWaitBeforeChoosingDirectory,
+        );
+        return;
+      }
+      await scope.library.openLibrary(picked.path, bookmark: picked.bookmark);
     }
   }
 

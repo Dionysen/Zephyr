@@ -45,13 +45,16 @@
   "cloudSyncLogoutTitle": "Sign out",
   "cloudSyncLogoutSubtitle": "Stops cloud backup and automatic sync",
   "cloudSyncBackupNowTitle": "Back up to cloud now",
-  "cloudSyncBackupNowSubtitle": "Upload this library to PureWriter on Nutstore (keeps history)",
+  "cloudSyncBackupNowSubtitle": "Upload this library to Zephyr on Nutstore (keeps history)",
   "cloudSyncBackupNowSuccess": "Cloud backup completed.",
   "cloudSyncRestoreTitle": "Restore from cloud",
   "cloudSyncRestoreSubtitle": "Pick a backup from Nutstore — overwrite or merge",
   "cloudSyncRestoreEmpty": "No cloud backups found.",
   "cloudSyncRestoreSuccess": "Library restored from cloud backup.",
   "cloudSyncFailed": "Cloud sync failed: {error}",
+  "cloudSyncAnotherLibrary": "This Zephyr cloud folder belongs to another library. Choose the original local directory or another WebDAV account; cloud sync has stopped.",
+  "cloudSyncMissingManifest": "The Zephyr cloud folder contains files without a manifest. Resolve that cloud folder before syncing.",
+  "cloudSyncWaitBeforeChoosingDirectory": "Wait for cloud sync to finish before choosing another directory.",
   "@cloudSyncFailed": {
     "placeholders": {
       "error": {
@@ -502,24 +505,7 @@
   "chapterSortTitleAsc": "Name · A→Z",
   "chapterSortTitleDesc": "Name · Z→A",
   "tooltipOpenLibrary": "Open library",
-  "librarySwitcherAdd": "Add library",
-  "librarySwitcherRename": "Rename",
-  "librarySwitcherRemove": "Remove from list",
-  "librarySwitcherRenameTitle": "Rename library",
-  "librarySwitcherRenameHint": "Display name",
-  "librarySwitcherRenameEmpty": "Please enter a name",
-  "librarySwitcherRemoveTitle": "Remove library?",
-  "librarySwitcherRemoveBody": "“{name}” will be removed from the list. Files on disk are not deleted.",
-  "@librarySwitcherRemoveBody": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "librarySwitcherRemoveAction": "Remove",
-  "librarySwitcherOpenFailed": "Could not open this library.",
-  "librarySwitcherOpen": "Open",
+  "librarySwitcherChooseDirectory": "Choose another directory",
   "tooltipOpenSidebar": "Open sidebar",
   "tooltipMore": "More",
   "tooltipEditBook": "Edit book",
