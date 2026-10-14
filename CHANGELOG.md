@@ -1,7 +1,8 @@
 # Changelog
 
-## Unreleased
+## 1.0.0
 
+- 首个正式版。
 - 移动端离开（返回 / Home / 进程结束）统一经 WorkManager 后台备份；仅显示「正在备份」，完成后不再弹成功通知。
 - 主清单声明 `INTERNET` / 前台服务权限；WorkManager 启用 `dataSync` 前台服务。
 - 云设置按平台分轨（`settings-desktop.json` / `settings-mobile.json`）；移动端抽屉改回固定宽度，不再跟随桌面侧栏宽度。
@@ -23,7 +24,7 @@
 - Load system fonts only when the editor settings page opens, and skip unused font registration until a writing session needs it.
 - Fixed editor startup notifications during widget construction and made history snapshots conditional on the compatible `History` table being present.
 
-## 0.1.0 - Unreleased
+## 0.1.0
 
 - Created the cross-platform Zephyr foundation with a PureWriter v27-compatible `App/Room.db` library, article list and autosaving editor shell.
 - Reworked the desktop editor shell into an immersive sidebar workspace with animated sidebar visibility, book selection, volume and chapter navigation, and a floating library-directory switcher.
