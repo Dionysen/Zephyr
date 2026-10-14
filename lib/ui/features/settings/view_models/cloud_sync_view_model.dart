@@ -10,11 +10,15 @@ enum CloudSyncBusyKind { none, login, sync, backup, restore }
 
 /// UI state for WebDAV connection, cloud backups, and auto sync.
 class CloudSyncViewModel extends ChangeNotifier {
-  CloudSyncViewModel({required this.library, CloudSyncService? service})
-    : _service = service ?? CloudSyncService();
+  CloudSyncViewModel({
+    required this.library,
+    CloudSyncService? service,
+    this._reloadLocalSettings,
+  }) : _service = service ?? CloudSyncService();
 
   final LibraryViewModel library;
   final CloudSyncService _service;
+  final Future<void> Function()? _reloadLocalSettings;
 
   Object? _error;
   var _busyKind = CloudSyncBusyKind.none;
@@ -167,6 +171,7 @@ class CloudSyncViewModel extends ChangeNotifier {
         flushPending: library.flushPending,
       );
       await library.load();
+      await _reloadLocalSettings?.call();
       _error = null;
     } on Object catch (error) {
       _error = error;
@@ -196,6 +201,8 @@ class CloudSyncViewModel extends ChangeNotifier {
       if (result.pulled) {
         await library.load();
       }
+      // Settings may refresh even when the library snapshot was skipped.
+      await _reloadLocalSettings?.call();
       _error = null;
       return result;
     } on Object catch (error) {

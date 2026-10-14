@@ -1290,11 +1290,31 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
       if (value != null && value.isNotEmpty) return value;
     }
     final id = _uuid.v4();
-    await db.insert('ZephyrMeta', {
-      'key': _cloudLibraryIdKey,
-      'value': id,
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    await setCloudLibraryId(id);
     return id;
+  }
+
+  @override
+  Future<bool> hasArticleContent() async {
+    final db = _store.database;
+    if (!await _hasTable(db, 'Article')) return false;
+    final rows = await db.rawQuery(
+      "SELECT 1 FROM Article WHERE deleted = 0 AND length(trim(content)) > 0 "
+      'LIMIT 1',
+    );
+    return rows.isNotEmpty;
+  }
+
+  @override
+  Future<void> setCloudLibraryId(String id) async {
+    final trimmed = id.trim();
+    if (trimmed.isEmpty) {
+      throw ArgumentError('cloud library id must not be empty');
+    }
+    await _store.database.insert('ZephyrMeta', {
+      'key': _cloudLibraryIdKey,
+      'value': trimmed,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   @override

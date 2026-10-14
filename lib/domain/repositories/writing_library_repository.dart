@@ -131,4 +131,10 @@ abstract interface class WritingLibraryRepository {
 
   /// Stable id for cloud sync folders, stored in ZephyrMeta (created once).
   Future<String> ensureCloudLibraryId();
+
+  /// True when any non-deleted article has non-empty body text.
+  Future<bool> hasArticleContent();
+
+  /// Overwrite [ensureCloudLibraryId] (e.g. empty library claiming a cloud id).
+  Future<void> setCloudLibraryId(String id);
 }

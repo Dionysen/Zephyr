@@ -69,7 +69,31 @@ void runZephyr(
       BackupPreferencesFileStorage(),
     ),
   )..load();
-  final cloudSync = CloudSyncViewModel(library: library)..load();
+  final theme = ThemeViewModel(
+    FileThemePreferencesRepository(ThemeFileStorage()),
+    fontLibrary: fonts,
+    backgroundImages: backgrounds,
+  )..load();
+  final editorPreferences = EditorPreferencesViewModel(
+    FileEditorPreferencesRepository(EditorPreferencesFileStorage()),
+    fonts,
+  )..load();
+  final quickToolbar = QuickToolbarViewModel(
+    FileQuickToolbarPreferencesRepository(QuickToolbarFileStorage()),
+  )..load();
+  final keyboardShortcuts = KeyboardShortcutsViewModel(
+    FileKeyboardShortcutsRepository(KeyboardShortcutsFileStorage()),
+  )..load();
+  final cloudSync = CloudSyncViewModel(
+    library: library,
+    reloadLocalSettings: () async {
+      await theme.load();
+      await editorPreferences.load();
+      await quickToolbar.load();
+      await keyboardShortcuts.load();
+      await backup.load();
+    },
+  )..load();
   if (WindowChrome.isDesktop) {
     WindowFrameTracker.active?.beforeClose = () async {
       await windowManager.hide();
@@ -113,21 +137,10 @@ void runZephyr(
   runApp(
     ZephyrApp(
       library: library,
-      theme: ThemeViewModel(
-        FileThemePreferencesRepository(ThemeFileStorage()),
-        fontLibrary: fonts,
-        backgroundImages: backgrounds,
-      )..load(),
-      editorPreferences: EditorPreferencesViewModel(
-        FileEditorPreferencesRepository(EditorPreferencesFileStorage()),
-        fonts,
-      )..load(),
-      quickToolbar: QuickToolbarViewModel(
-        FileQuickToolbarPreferencesRepository(QuickToolbarFileStorage()),
-      )..load(),
-      keyboardShortcuts: KeyboardShortcutsViewModel(
-        FileKeyboardShortcutsRepository(KeyboardShortcutsFileStorage()),
-      )..load(),
+      theme: theme,
+      editorPreferences: editorPreferences,
+      quickToolbar: quickToolbar,
+      keyboardShortcuts: keyboardShortcuts,
       settings: SettingsViewModel(
         FileSettingsNavigationRepository(SettingsNavigationFileStorage()),
       )..load(),

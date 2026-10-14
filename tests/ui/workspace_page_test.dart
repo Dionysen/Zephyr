@@ -1018,6 +1018,12 @@ class _LibraryRepository implements WritingLibraryRepository {
 
   @override
   Future<String> ensureCloudLibraryId() async => 'test-cloud-library-id';
+
+  @override
+  Future<bool> hasArticleContent() async => true;
+
+  @override
+  Future<void> setCloudLibraryId(String id) async {}
 }
 
 class _ThemeRepository implements ThemePreferencesRepository {

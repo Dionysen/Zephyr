@@ -198,6 +198,36 @@ class WebDavClient {
     _expect(response, {200, 201, 204});
   }
 
+  Future<void> uploadSettingsBundle({
+    required CloudSyncSession session,
+    required String parentFileId,
+    required List<int> bytes,
+  }) async {
+    final response = await _request(
+      session,
+      'PUT',
+      _child(Uri.parse(parentFileId), 'settings.json'),
+      headers: const {'Content-Type': 'application/json; charset=utf-8'},
+      body: bytes,
+    );
+    _expect(response, {200, 201, 204});
+  }
+
+  /// Returns null when the remote settings file is missing.
+  Future<List<int>?> downloadSettingsBundle({
+    required CloudSyncSession session,
+    required String parentFileId,
+  }) async {
+    final response = await _request(
+      session,
+      'GET',
+      _child(Uri.parse(parentFileId), 'settings.json'),
+    );
+    if (response.statusCode == 404) return null;
+    _expect(response, {200});
+    return response.bodyBytes;
+  }
+
   Future<void> uploadNamedBackup({
     required CloudSyncSession session,
     required String libraryFolderId,

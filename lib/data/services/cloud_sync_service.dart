@@ -7,6 +7,7 @@ import '../../domain/models/cloud_sync.dart';
 import '../../domain/models/library_backup.dart';
 import '../../domain/repositories/writing_library_repository.dart';
 import 'cloud_auth_secure_store.dart';
+import 'cloud_settings_bundle.dart';
 import 'cloud_sync_preferences_storage.dart';
 import 'device_label.dart';
 import 'webdav_client.dart';
@@ -17,14 +18,17 @@ class CloudSyncService {
   CloudSyncService({
     CloudAuthSecureStore? authStore,
     CloudSyncPreferencesStorage? preferencesStorage,
+    CloudSettingsBundle? settingsBundle,
     WebDavClient Function()? clientFactory,
   }) : _authStore = authStore ?? CloudAuthSecureStore(),
        _preferencesStorage =
            preferencesStorage ?? CloudSyncPreferencesStorage(),
+       _settingsBundle = settingsBundle ?? CloudSettingsBundle(),
        _clientFactory = clientFactory ?? WebDavClient.new;
 
   final CloudAuthSecureStore _authStore;
   final CloudSyncPreferencesStorage _preferencesStorage;
+  final CloudSettingsBundle _settingsBundle;
   final WebDavClient Function() _clientFactory;
 
   CloudSyncSession? _session;
@@ -90,11 +94,26 @@ class CloudSyncService {
   }) async {
     _requireCloudBackup();
     final active = session ?? _requireSession();
-    final libraryId = await library.ensureCloudLibraryId();
     final client = _clientFactory();
     try {
       final folderId = await client.ensureLibraryFolder(session: active);
-      await _checkRemoteLibrary(client, active, folderId, libraryId);
+      // Never claim an empty library on upload — that would publish a new id
+      // over someone else's cloud folder.
+      final remote = await _resolveRemoteLibrary(
+        client: client,
+        session: active,
+        folderId: folderId,
+        library: library,
+        allowClaimEmpty: false,
+      );
+      // After an empty-library claim for restore/list, refuse publishing an
+      // empty Room.db over an existing cloud snapshot.
+      if (remote != null && !await library.hasArticleContent()) {
+        throw StateError(
+          'Refusing to upload an empty library over an existing cloud backup.',
+        );
+      }
+      final libraryId = await library.ensureCloudLibraryId();
       final package = await PackageInfo.fromPlatform();
       final device = await resolveDeviceLabel();
       final manifest = CloudSyncManifest(
@@ -114,6 +133,11 @@ class CloudSyncService {
         libraryFolderId: folderId,
         pwb: File(entry.path),
         fileName: entry.fileName,
+      );
+      await client.uploadSettingsBundle(
+        session: active,
+        parentFileId: folderId,
+        bytes: await _settingsBundle.exportBytes(),
       );
       _preferences = _preferences.copyWith(
         lastSyncAt: DateTime.now(),
@@ -138,10 +162,15 @@ class CloudSyncService {
   }) async {
     _requireCloudBackup();
     final session = _requireSession();
-    final libraryId = await library.ensureCloudLibraryId();
     return _withClient((client) async {
       final folderId = await client.ensureLibraryFolder(session: session);
-      await _checkRemoteLibrary(client, session, folderId, libraryId);
+      await _resolveRemoteLibrary(
+        client: client,
+        session: session,
+        folderId: folderId,
+        library: library,
+        allowClaimEmpty: true,
+      );
       return client.listNamedBackups(
         session: session,
         libraryFolderId: folderId,
@@ -158,14 +187,19 @@ class CloudSyncService {
     _requireCloudBackup();
     final session = _requireSession();
     await flushPending();
-    final libraryId = await library.ensureCloudLibraryId();
     final staging = await Directory.systemTemp.createTemp(
       'zephyr-cloud-restore-',
     );
     final client = _clientFactory();
     try {
       final folderId = await client.ensureLibraryFolder(session: session);
-      await _checkRemoteLibrary(client, session, folderId, libraryId);
+      await _resolveRemoteLibrary(
+        client: client,
+        session: session,
+        folderId: folderId,
+        library: library,
+        allowClaimEmpty: true,
+      );
       final pwb = await client.downloadBackupFile(
         session: session,
         entry: entry,
@@ -181,6 +215,7 @@ class CloudSyncService {
         ),
         mode: mode,
       );
+      await _downloadAndApplySettings(client, session, folderId);
     } finally {
       client.close();
       if (await staging.exists()) {
@@ -197,22 +232,27 @@ class CloudSyncService {
     _requireCloudBackup();
     final session = _requireSession();
     await flushPending();
-    final libraryId = await library.ensureCloudLibraryId();
     final client = _clientFactory();
     try {
       final folderId = await client.ensureLibraryFolder(session: session);
-      final remoteManifest = await _checkRemoteLibrary(
-        client,
-        session,
-        folderId,
-        libraryId,
+      final remoteManifest = await _resolveRemoteLibrary(
+        client: client,
+        session: session,
+        folderId: folderId,
+        library: library,
+        allowClaimEmpty: true,
       );
       if (remoteManifest == null) return CloudPullResult.skipped;
+      final libraryId = await library.ensureCloudLibraryId();
       final shouldPull =
           _preferences.lastSyncLibraryId != libraryId ||
           _preferences.lastRemoteUpdatedAt == null ||
           remoteManifest.updatedAt.isAfter(_preferences.lastRemoteUpdatedAt!);
-      if (!shouldPull) return CloudPullResult.skipped;
+      if (!shouldPull) {
+        // Still refresh settings when the library snapshot is unchanged.
+        await _downloadAndApplySettings(client, session, folderId);
+        return CloudPullResult.skipped;
+      }
 
       late final LibraryMergeStats mergeStats;
       final staging = await Directory.systemTemp.createTemp(
@@ -227,6 +267,11 @@ class CloudSyncService {
         if (pwb == null) {
           throw StateError('Cloud manifest exists without library.pwb.');
         }
+        // Empty local libraries prefer overwrite so ZephyrMeta (incl. cloud id)
+        // matches the snapshot; otherwise merge by chapter updateTime.
+        final mode = await library.hasArticleContent()
+            ? RestoreMode.merge
+            : RestoreMode.overwrite;
         mergeStats = await library.restoreBackup(
           entry: BackupEntry(
             path: pwb.path,
@@ -235,7 +280,7 @@ class CloudSyncService {
             sizeBytes: await pwb.length(),
             kind: BackupKind.manual,
           ),
-          mode: RestoreMode.merge,
+          mode: mode,
         );
       } finally {
         if (await staging.exists()) {
@@ -243,6 +288,7 @@ class CloudSyncService {
         }
       }
 
+      await _downloadAndApplySettings(client, session, folderId);
       _preferences = _preferences.copyWith(
         lastSyncAt: DateTime.now(),
         lastSyncLibraryId: libraryId,
@@ -302,20 +348,28 @@ class CloudSyncService {
     }
   }
 
-  Future<CloudSyncManifest?> _checkRemoteLibrary(
-    WebDavClient client,
-    CloudSyncSession session,
-    String folderId,
-    String libraryId,
-  ) async {
+  /// Validates remote folder ownership. Empty local libraries may claim the
+  /// remote [CloudSyncManifest.libraryId] when [allowClaimEmpty] is true.
+  Future<CloudSyncManifest?> _resolveRemoteLibrary({
+    required WebDavClient client,
+    required CloudSyncSession session,
+    required String folderId,
+    required WritingLibraryRepository library,
+    required bool allowClaimEmpty,
+  }) async {
+    final libraryId = await library.ensureCloudLibraryId();
     final manifest = await client.downloadManifest(
       session: session,
       parentFileId: folderId,
     );
     if (manifest != null && manifest.libraryId != libraryId) {
-      throw const CloudLibraryConflictException(
-        CloudLibraryConflictReason.anotherLibrary,
-      );
+      if (allowClaimEmpty && !await library.hasArticleContent()) {
+        await library.setCloudLibraryId(manifest.libraryId);
+      } else {
+        throw const CloudLibraryConflictException(
+          CloudLibraryConflictReason.anotherLibrary,
+        );
+      }
     }
     if (manifest == null &&
         await client.hasUntrackedContent(
@@ -327,6 +381,19 @@ class CloudSyncService {
       );
     }
     return manifest;
+  }
+
+  Future<void> _downloadAndApplySettings(
+    WebDavClient client,
+    CloudSyncSession session,
+    String folderId,
+  ) async {
+    final bytes = await client.downloadSettingsBundle(
+      session: session,
+      parentFileId: folderId,
+    );
+    if (bytes == null || bytes.isEmpty) return;
+    await _settingsBundle.importBytes(bytes);
   }
 
   Future<T> _withClient<T>(
