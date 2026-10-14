@@ -57,7 +57,7 @@ abstract final class MobileBackgroundBackup {
       foregroundServiceConfig: ForegroundServiceConfig(
         notificationTitle: zh ? 'Zephyr 正在备份' : 'Zephyr is backing up',
         notificationText: wantCloud
-            ? (zh ? '正在上传到坚果云…' : 'Uploading to Nutstore…')
+            ? (zh ? '正在进行云备份…' : 'Cloud backup in progress…')
             : (zh ? '正在创建本地备份…' : 'Creating a local backup…'),
         notificationChannelId: 'zephyr_backup_foreground',
         notificationChannelName: zh ? '备份进行中' : 'Backup in progress',
