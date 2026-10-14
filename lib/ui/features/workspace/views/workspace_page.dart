@@ -354,6 +354,12 @@ class _WorkspacePageState extends State<WorkspacePage>
                             showSidebarToggle: !model.isSidebarExpanded,
                             showDocumentTitle: _showTitleInChrome,
                             transparent: bleedEditorBackground,
+                            toolsBuilder: (headerContext) =>
+                                buildWorkspaceOverflowTools(
+                              headerContext,
+                              model: model,
+                              openSettings: _openSettings,
+                            ),
                           ),
                           Expanded(
                             child: Row(
@@ -812,63 +818,11 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                     model: widget.model,
                     onOpenMenu: () => ZephyrSwipeDrawer.of(context).open(),
                     transparentBackground: widget.transparentTopBar,
-                    toolsBuilder: (barContext) {
-                      final l10n = barContext.l10n;
-                      final scope = ZephyrScope.of(barContext);
-                      final themeVm = scope.theme;
-                      final backup = scope.backup;
-                      return [
-                        WorkspaceMobileTool(
-                          id: WorkspaceMobileToolId.search,
-                          icon: Icons.search,
-                          label: l10n.tooltipSearchChapters,
-                          onTap: () => unawaited(
-                            showLibrarySearchSheet(
-                              barContext,
-                              model: widget.model,
-                            ),
-                          ),
-                        ),
-                        WorkspaceMobileTool(
-                          id: WorkspaceMobileToolId.themeMode,
-                          icon: Icons.brightness_6_outlined,
-                          label: l10n.mobileToolThemeMode,
-                          onTap: () => unawaited(
-                            _pickMobileThemeMode(barContext, themeVm),
-                          ),
-                        ),
-                        WorkspaceMobileTool(
-                          id: WorkspaceMobileToolId.switchTheme,
-                          icon: Icons.palette_outlined,
-                          label: l10n.mobileToolSwitchTheme,
-                          onTap: () => unawaited(
-                            _pickMobileThemePack(barContext, themeVm),
-                          ),
-                        ),
-                        WorkspaceMobileTool(
-                          id: WorkspaceMobileToolId.backup,
-                          icon: Icons.backup_outlined,
-                          label: l10n.quickToolbarBackupTooltip,
-                          enabled: !backup.busy,
-                          onTap: () => unawaited(_mobileBackupNow(barContext)),
-                        ),
-                        WorkspaceMobileTool(
-                          id: WorkspaceMobileToolId.restore,
-                          icon: Icons.restore_rounded,
-                          label: l10n.quickToolbarRestoreTooltip,
-                          enabled: !backup.busy && backup.backups.isNotEmpty,
-                          onTap: () => unawaited(
-                            showBackupRestoreFlow(barContext, backup),
-                          ),
-                        ),
-                        WorkspaceMobileTool(
-                          id: WorkspaceMobileToolId.settings,
-                          icon: Icons.settings_outlined,
-                          label: l10n.tooltipSettings,
-                          onTap: widget.openSettings,
-                        ),
-                      ];
-                    },
+                    toolsBuilder: (barContext) => buildWorkspaceOverflowTools(
+                      barContext,
+                      model: widget.model,
+                      openSettings: widget.openSettings,
+                    ),
                   ),
                 ),
               ),
@@ -1047,7 +1001,62 @@ class _LibrarySetupPage extends StatelessWidget {
   }
 }
 
-Future<void> _mobileBackupNow(BuildContext context) async {
+/// Shared overflow tools for the mobile top-bar more menu and desktop
+/// title-bar more button (left of the caption minimize control).
+List<WorkspaceMobileTool> buildWorkspaceOverflowTools(
+  BuildContext context, {
+  required LibraryViewModel model,
+  required VoidCallback openSettings,
+}) {
+  final l10n = context.l10n;
+  final scope = ZephyrScope.of(context);
+  final themeVm = scope.theme;
+  final backup = scope.backup;
+  return [
+    WorkspaceMobileTool(
+      id: WorkspaceMobileToolId.search,
+      icon: Icons.search,
+      label: l10n.tooltipSearchChapters,
+      onTap: () => unawaited(
+        showLibrarySearchSheet(context, model: model),
+      ),
+    ),
+    WorkspaceMobileTool(
+      id: WorkspaceMobileToolId.themeMode,
+      icon: Icons.brightness_6_outlined,
+      label: l10n.mobileToolThemeMode,
+      onTap: () => unawaited(_pickMobileThemeMode(context, themeVm)),
+    ),
+    WorkspaceMobileTool(
+      id: WorkspaceMobileToolId.switchTheme,
+      icon: Icons.palette_outlined,
+      label: l10n.mobileToolSwitchTheme,
+      onTap: () => unawaited(_pickMobileThemePack(context, themeVm)),
+    ),
+    WorkspaceMobileTool(
+      id: WorkspaceMobileToolId.backup,
+      icon: Icons.backup_outlined,
+      label: l10n.quickToolbarBackupTooltip,
+      enabled: !backup.busy,
+      onTap: () => unawaited(_overflowBackupNow(context)),
+    ),
+    WorkspaceMobileTool(
+      id: WorkspaceMobileToolId.restore,
+      icon: Icons.restore_rounded,
+      label: l10n.quickToolbarRestoreTooltip,
+      enabled: !backup.busy && backup.backups.isNotEmpty,
+      onTap: () => unawaited(showBackupRestoreFlow(context, backup)),
+    ),
+    WorkspaceMobileTool(
+      id: WorkspaceMobileToolId.settings,
+      icon: Icons.settings_outlined,
+      label: l10n.tooltipSettings,
+      onTap: openSettings,
+    ),
+  ];
+}
+
+Future<void> _overflowBackupNow(BuildContext context) async {
   final backup = ZephyrScope.of(context).backup;
   final l10n = context.l10n;
   await backup.backupNow();

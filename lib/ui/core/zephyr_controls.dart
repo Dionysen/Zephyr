@@ -46,6 +46,9 @@ abstract final class ZephyrControls {
   /// Popup / MenuAnchor rows match [ZephyrDropdown] list rows ([fieldHeight]).
   static const double menuItemHeight = fieldHeight;
 
+  /// Floor width for anchored overflow menus with short labels.
+  static const double menuMinWidth = 180;
+
   /// Material [Switch] track is ~52×32; scale down for denser settings rows.
   static const double settingsSwitchScale = 0.82;
 

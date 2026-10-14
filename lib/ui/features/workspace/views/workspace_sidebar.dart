@@ -148,11 +148,17 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                           height: WorkspaceHeader.height,
                         ),
                       ),
+                    // Center lone icon buttons so stretch from the title-bar
+                    // row does not turn the theme's 28×28 controls into tall
+                    // rectangles (the trailing tool cluster already nests in
+                    // its own centered Row).
                     WindowNonDragArea(
-                      child: IconButton(
-                        onPressed: model.toggleSidebar,
-                        icon: const Icon(Icons.menu_open),
-                        tooltip: l10n.tooltipHideSidebar,
+                      child: Center(
+                        child: IconButton(
+                          onPressed: model.toggleSidebar,
+                          icon: const Icon(Icons.menu_open),
+                          tooltip: l10n.tooltipHideSidebar,
+                        ),
                       ),
                     ),
                     const Expanded(
@@ -631,11 +637,11 @@ class WorkspaceMobileBookBar extends StatelessWidget {
                 ),
               ),
               Center(
-                child: IconButton(
+                child: WorkspaceOverflowToolsButton(
+                  tools: tools,
+                  toolsBuilder: toolsBuilder,
                   style: _mobileBarIconStyle(context),
-                  onPressed: () => _showToolsSheet(context),
-                  icon: const Icon(Icons.more_vert, size: _iconSize),
-                  tooltip: l10n.tooltipMore,
+                  iconSize: _iconSize,
                 ),
               ),
             ],
@@ -680,38 +686,110 @@ class WorkspaceMobileBookBar extends StatelessWidget {
       ),
     );
   }
-
-  Future<void> _showToolsSheet(BuildContext context) async {
-    FocusManager.instance.primaryFocus?.unfocus();
-    final built = toolsBuilder?.call(context) ?? const <WorkspaceMobileTool>[];
-    final theme = ZephyrScope.maybeOf(context)?.theme;
-    final merged = [...tools, ...built];
-    final ordered = orderWorkspaceMobileTools(
-      merged,
-      theme?.ui.mobileToolsOrder ?? const [],
-    );
-    await showWorkspaceMobileToolsSheet(
-      context,
-      tools: ordered,
-      onReorder: theme == null
-          ? null
-          : (ids) => theme.updateMobileToolsOrder(ids),
-    );
-  }
 }
 
-/// Opens the reserved mobile overflow sheet (tools / settings).
-Future<void> showWorkspaceMobileToolsSheet(
+/// Resolve overflow tools in persisted order.
+List<WorkspaceMobileTool> resolveWorkspaceOverflowTools(
   BuildContext context, {
   List<WorkspaceMobileTool> tools = const [],
-  ValueChanged<List<String>>? onReorder,
+  List<WorkspaceMobileTool> Function(BuildContext context)? toolsBuilder,
 }) {
-  return showZephyrModalSheet<void>(
-    context: context,
-    desktopFitContent: true,
-    builder: (sheetContext) =>
-        _MobileToolsSheet(tools: tools, onReorder: onReorder),
+  final built = toolsBuilder?.call(context) ?? const <WorkspaceMobileTool>[];
+  final theme = ZephyrScope.maybeOf(context)?.theme;
+  return orderWorkspaceMobileTools(
+    [...tools, ...built],
+    theme?.ui.mobileToolsOrder ?? const [],
   );
+}
+
+/// More button that opens an icon+label popup, right-aligned to the button
+/// (same density as chapter sort / sidebar context menus).
+class WorkspaceOverflowToolsButton extends StatelessWidget {
+  const WorkspaceOverflowToolsButton({
+    super.key,
+    this.tools = const [],
+    this.toolsBuilder,
+    this.style,
+    this.iconSize,
+  });
+
+  final List<WorkspaceMobileTool> tools;
+  final List<WorkspaceMobileTool> Function(BuildContext context)? toolsBuilder;
+  final ButtonStyle? style;
+  final double? iconSize;
+
+  Future<void> _open(BuildContext buttonContext) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    final items = resolveWorkspaceOverflowTools(
+      buttonContext,
+      tools: tools,
+      toolsBuilder: toolsBuilder,
+    );
+    if (items.isEmpty || !buttonContext.mounted) return;
+
+    final button = buttonContext.findRenderObject()! as RenderBox;
+    final overlay =
+        Overlay.of(buttonContext).context.findRenderObject()! as RenderBox;
+    final topLeft = button.localToGlobal(Offset.zero, ancestor: overlay);
+    final bottomRight = button.localToGlobal(
+      button.size.bottomRight(Offset.zero),
+      ancestor: overlay,
+    );
+    // Zero-height rect on the button's bottom edge: menu top sits flush under
+    // the control, and horizontal growth still uses the button width so a
+    // trailing more button keeps right edges aligned.
+    final position = RelativeRect.fromRect(
+      Rect.fromLTRB(topLeft.dx, bottomRight.dy, bottomRight.dx, bottomRight.dy),
+      Offset.zero & overlay.size,
+    );
+
+    final selected = await showMenu<WorkspaceMobileTool>(
+      context: buttonContext,
+      position: position,
+      constraints: const BoxConstraints(minWidth: ZephyrControls.menuMinWidth),
+      popUpAnimationStyle: AnimationStyle.noAnimation,
+      items: [
+        for (final tool in items)
+          PopupMenuItem<WorkspaceMobileTool>(
+            value: tool.enabled ? tool : null,
+            enabled: tool.enabled,
+            height: ZephyrControls.menuItemHeight,
+            child: Row(
+              children: [
+                Icon(
+                  tool.icon ?? Icons.circle_outlined,
+                  size: ZephyrControls.iconSize,
+                ),
+                const SizedBox(width: 10),
+                Expanded(child: Text(tool.label)),
+              ],
+            ),
+          ),
+      ],
+    );
+    if (selected == null) return;
+    selected.onTap();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Builder(
+      builder: (buttonContext) {
+        final items = resolveWorkspaceOverflowTools(
+          buttonContext,
+          tools: tools,
+          toolsBuilder: toolsBuilder,
+        );
+        return IconButton(
+          style: style,
+          onPressed: items.isEmpty ? null : () => unawaited(_open(buttonContext)),
+          icon: Icon(Icons.more_vert, size: iconSize),
+          tooltip: l10n.tooltipMore,
+        );
+      },
+    );
+  }
 }
 
 class _MobileBookSheet extends StatefulWidget {
@@ -1259,200 +1337,6 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
   }
 }
 
-class _MobileToolsSheet extends StatefulWidget {
-  const _MobileToolsSheet({required this.tools, this.onReorder});
-
-  static const _columns = 5;
-  static const _iconSize = 26.0;
-
-  final List<WorkspaceMobileTool> tools;
-  final ValueChanged<List<String>>? onReorder;
-
-  @override
-  State<_MobileToolsSheet> createState() => _MobileToolsSheetState();
-}
-
-class _MobileToolsSheetState extends State<_MobileToolsSheet> {
-  late List<WorkspaceMobileTool> _tools;
-
-  @override
-  void initState() {
-    super.initState();
-    _tools = List<WorkspaceMobileTool>.from(widget.tools);
-  }
-
-  @override
-  void didUpdateWidget(covariant _MobileToolsSheet oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!identical(oldWidget.tools, widget.tools)) {
-      _tools = List<WorkspaceMobileTool>.from(widget.tools);
-    }
-  }
-
-  void _reorder(int from, int to) {
-    if (from == to || from < 0 || to < 0 || from >= _tools.length) return;
-    setState(() {
-      final item = _tools.removeAt(from);
-      _tools.insert(to.clamp(0, _tools.length), item);
-    });
-    widget.onReorder?.call([for (final tool in _tools) tool.id]);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = context.l10n;
-    final radius = context.zephyrBorderRadius;
-    return SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: ZephyrBottomSheet.titlePadding,
-            child: Text(
-              l10n.moreSheetTitle,
-              style: ZephyrBottomSheet.titleStyle(theme),
-            ),
-          ),
-          if (_tools.isEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-              child: Text(
-                l10n.noMobileTools,
-                style: ZephyrBottomSheet.bodyStyle(theme),
-              ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _tools.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: _MobileToolsSheet._columns,
-                  mainAxisSpacing: 4,
-                  crossAxisSpacing: 4,
-                  childAspectRatio: 0.82,
-                ),
-                itemBuilder: (context, index) {
-                  final tool = _tools[index];
-                  Widget tile({VoidCallback? onTap}) => _MobileToolTile(
-                    tool: tool,
-                    iconSize: _MobileToolsSheet._iconSize,
-                    borderRadius: radius,
-                    onTap: onTap,
-                  );
-                  final onTap = !tool.enabled
-                      ? null
-                      : () {
-                          Navigator.of(context).pop();
-                          tool.onTap();
-                        };
-                  if (widget.onReorder == null) return tile(onTap: onTap);
-                  return LongPressDraggable<int>(
-                    data: index,
-                    dragAnchorStrategy: pointerDragAnchorStrategy,
-                    feedback: Material(
-                      color: Colors.transparent,
-                      elevation: 6,
-                      shadowColor: Colors.black54,
-                      borderRadius: radius,
-                      child: SizedBox(
-                        width:
-                            (MediaQuery.sizeOf(context).width - 24) /
-                            _MobileToolsSheet._columns,
-                        child: tile(),
-                      ),
-                    ),
-                    childWhenDragging: Opacity(opacity: 0.28, child: tile()),
-                    child: DragTarget<int>(
-                      onWillAcceptWithDetails: (details) =>
-                          details.data != index,
-                      onAcceptWithDetails: (details) =>
-                          _reorder(details.data, index),
-                      builder: (context, candidate, rejected) {
-                        final highlight = candidate.isNotEmpty;
-                        return DecoratedBox(
-                          decoration: BoxDecoration(
-                            borderRadius: radius,
-                            color: highlight
-                                ? theme.colorScheme.primary.withValues(
-                                    alpha: 0.10,
-                                  )
-                                : null,
-                          ),
-                          child: tile(onTap: onTap),
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MobileToolTile extends StatelessWidget {
-  const _MobileToolTile({
-    required this.tool,
-    required this.iconSize,
-    required this.borderRadius,
-    this.onTap,
-  });
-
-  final WorkspaceMobileTool tool;
-  final double iconSize;
-  final BorderRadius borderRadius;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final enabled = tool.enabled;
-    final fg = enabled
-        ? theme.colorScheme.onSurface
-        : theme.colorScheme.onSurface.withValues(alpha: 0.38);
-    return Material(
-      type: MaterialType.transparency,
-      child: InkWell(
-        borderRadius: borderRadius,
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                tool.icon ?? Icons.circle_outlined,
-                size: iconSize,
-                color: enabled
-                    ? theme.colorScheme.onSurface.withValues(alpha: 0.82)
-                    : fg,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                tool.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: fg,
-                  height: 1.15,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class WorkspaceHeader extends StatelessWidget {
   const WorkspaceHeader({
     super.key,
@@ -1462,6 +1346,8 @@ class WorkspaceHeader extends StatelessWidget {
     this.onOpenMenu,
     this.showDocumentTitle = true,
     this.transparent = false,
+    this.tools = const [],
+    this.toolsBuilder,
   });
 
   static double get height => WindowChrome.titleBarHeight;
@@ -1480,6 +1366,14 @@ class WorkspaceHeader extends StatelessWidget {
   /// When true, let a host-painted editor background show through (desktop
   /// full-bleed under the title bar).
   final bool transparent;
+
+  /// Static tools for the title-bar overflow menu (same panel as mobile more).
+  final List<WorkspaceMobileTool> tools;
+
+  /// Optional builder merged after [tools] when the overflow menu opens.
+  final List<WorkspaceMobileTool> Function(BuildContext context)? toolsBuilder;
+
+  bool get _hasOverflowTools => tools.isNotEmpty || toolsBuilder != null;
 
   @override
   Widget build(BuildContext context) {
@@ -1526,6 +1420,15 @@ class WorkspaceHeader extends StatelessWidget {
                     ),
                   ),
                 const Expanded(child: WindowDragArea(child: SizedBox.expand())),
+                if (_hasOverflowTools)
+                  WindowNonDragArea(
+                    child: Center(
+                      child: WorkspaceOverflowToolsButton(
+                        tools: tools,
+                        toolsBuilder: toolsBuilder,
+                      ),
+                    ),
+                  ),
                 const WindowCaptionButtons(),
               ],
             ),

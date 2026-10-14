@@ -570,6 +570,28 @@ void main() {
     expect(find.text('Remove from list'), findsNothing);
   });
 
+  testWidgets('wide layout title bar opens overflow tools', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+
+    final headerMore = find.descendant(
+      of: find.byType(WorkspaceHeader),
+      matching: find.byTooltip('More'),
+    );
+    expect(headerMore, findsOneWidget);
+
+    await tester.tap(headerMore);
+    await tester.pumpAndSettle();
+    expect(find.byType(PopupMenuItem<WorkspaceMobileTool>), findsWidgets);
+    expect(find.text('Search'), findsWidgets);
+    expect(find.text('Settings'), findsWidgets);
+  });
+
   testWidgets('compact top bar opens book and tools sheets', (tester) async {
     tester.view.physicalSize = const Size(400, 800);
     tester.view.devicePixelRatio = 1;
@@ -602,8 +624,8 @@ void main() {
 
     await tester.tap(find.byTooltip('More'));
     await tester.pumpAndSettle();
-    expect(find.text('Quick tools'), findsOneWidget);
-    expect(find.text('Search'), findsOneWidget);
+    expect(find.byType(PopupMenuItem<WorkspaceMobileTool>), findsWidgets);
+    expect(find.text('Search'), findsWidgets);
     expect(find.text('Settings'), findsWidgets);
   });
 }
