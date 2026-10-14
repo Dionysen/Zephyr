@@ -65,8 +65,8 @@ class _WorkspaceMobileToolsDrawer extends StatefulWidget {
 
 class _WorkspaceMobileToolsDrawerState
     extends State<_WorkspaceMobileToolsDrawer> {
-  static const _columns = 4;
-  static const _gap = 10.0;
+  static const _columns = 5;
+  static const _gap = 8.0;
   static const _padding = EdgeInsets.fromLTRB(16, 0, 16, 20);
 
   late List<String> _ids;
@@ -145,11 +145,9 @@ class _WorkspaceMobileToolsDrawerState
               const SizedBox(height: 16),
               LayoutBuilder(
                 builder: (context, constraints) {
-                  final columns = items.length < _columns
-                      ? items.length.clamp(1, _columns)
-                      : _columns;
-                  final tile = (constraints.maxWidth - _gap * (columns - 1)) /
-                      columns;
+                  final tile =
+                      (constraints.maxWidth - _gap * (_columns - 1)) /
+                      _columns;
                   return Wrap(
                     spacing: _gap,
                     runSpacing: _gap,
@@ -199,14 +197,15 @@ class _DrawerTile extends StatelessWidget {
     final theme = Theme.of(context);
     final radius = context.zephyrBorderRadius;
     final enabled = action.enabled;
-    final foreground = theme.colorScheme.onSurface.withValues(
-      alpha: enabled ? (action.selected ? 1 : 0.86) : 0.38,
-    );
+    final foreground = action.selected
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurface.withValues(
+            alpha: enabled ? 0.86 : 0.38,
+          );
     final tile = _tileSurface(
       context,
       foreground: foreground,
       radius: radius,
-      selected: action.selected,
       onTap: enabled ? onTap : null,
     );
 
@@ -232,7 +231,6 @@ class _DrawerTile extends StatelessWidget {
                 context,
                 foreground: foreground,
                 radius: radius,
-                selected: action.selected,
                 onTap: null,
               ),
             ),
@@ -260,29 +258,25 @@ class _DrawerTile extends StatelessWidget {
     BuildContext context, {
     required Color foreground,
     required BorderRadius radius,
-    required bool selected,
     required VoidCallback? onTap,
   }) {
     final theme = Theme.of(context);
-    final fill = selected
-        ? theme.colorScheme.secondaryContainer.withValues(alpha: 0.55)
-        : theme.colorScheme.surfaceContainerHigh;
     return Material(
-      color: fill,
+      color: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: radius),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         borderRadius: radius,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(6, 10, 6, 8),
+          padding: const EdgeInsets.fromLTRB(4, 8, 4, 6),
           child: Column(
             children: [
               Expanded(
                 child: Center(
                   child: Icon(
                     action.icon ?? Icons.circle_outlined,
-                    size: 26,
+                    size: 24,
                     color: foreground,
                   ),
                 ),
