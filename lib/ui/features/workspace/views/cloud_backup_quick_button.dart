@@ -140,38 +140,58 @@ class _CloudBackupQuickButtonState extends State<CloudBackupQuickButton> {
     final theme = Theme.of(context);
     // Avoid CheckedPopupMenuItem/ListTile — they ignore height and stay taller.
     const itemHeight = ZephyrControls.menuItemHeight;
+    Widget row({
+      required IconData icon,
+      required String label,
+      bool checked = false,
+    }) {
+      return Row(
+        children: [
+          Icon(icon, size: ZephyrControls.iconSize),
+          const SizedBox(width: 10),
+          Expanded(child: Text(label)),
+          if (checked)
+            Icon(
+              Icons.check,
+              size: ZephyrControls.iconSize,
+              color: theme.colorScheme.onSurface,
+            ),
+        ],
+      );
+    }
+
     final action = await showMenu<String>(
       context: context,
       position: position,
+      constraints: const BoxConstraints(minWidth: ZephyrControls.menuMinWidth),
+      popUpAnimationStyle: AnimationStyle.noAnimation,
       items: [
         PopupMenuItem(
           value: 'backup',
           height: itemHeight,
           enabled: !cloudSync.busy,
-          child: Text(l10n.cloudSyncBackupNowTitle),
+          child: row(
+            icon: Icons.cloud_upload_outlined,
+            label: l10n.cloudSyncBackupNowTitle,
+          ),
         ),
         PopupMenuItem(
           value: 'restore',
           height: itemHeight,
           enabled: !cloudSync.busy,
-          child: Text(l10n.cloudSyncRestoreTitle),
+          child: row(
+            icon: Icons.cloud_download_outlined,
+            label: l10n.cloudSyncRestoreTitle,
+          ),
         ),
         PopupMenuItem(
           value: 'auto',
           height: itemHeight,
           enabled: !cloudSync.busy,
-          child: Row(
-            children: [
-              Icon(
-                cloudSync.autoSyncEnabled
-                    ? Icons.check_box_outlined
-                    : Icons.check_box_outline_blank,
-                size: 18,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.76),
-              ),
-              const SizedBox(width: 10),
-              Expanded(child: Text(l10n.cloudSyncAutoTitle)),
-            ],
+          child: row(
+            icon: Icons.sync_outlined,
+            label: l10n.cloudSyncAutoTitle,
+            checked: cloudSync.autoSyncEnabled,
           ),
         ),
       ],
