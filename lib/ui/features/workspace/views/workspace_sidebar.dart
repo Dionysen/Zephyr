@@ -664,10 +664,8 @@ class WorkspaceMobileBookBar extends StatelessWidget {
     required WritingLibrary library,
   }) async {
     FocusManager.instance.primaryFocus?.unfocus();
-    await showModalBottomSheet<void>(
+    await showZephyrModalSheet<void>(
       context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
       builder: (sheetContext) => DraggableScrollableSheet(
         expand: false,
         initialChildSize: 0.5,
@@ -708,9 +706,9 @@ Future<void> showWorkspaceMobileToolsSheet(
   List<WorkspaceMobileTool> tools = const [],
   ValueChanged<List<String>>? onReorder,
 }) {
-  return showModalBottomSheet<void>(
+  return showZephyrModalSheet<void>(
     context: context,
-    showDragHandle: true,
+    desktopFitContent: true,
     builder: (sheetContext) =>
         _MobileToolsSheet(tools: tools, onReorder: onReorder),
   );

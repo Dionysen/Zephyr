@@ -19,9 +19,8 @@ Future<void> showArticleHistorySheet(
     return;
   }
 
-  await showModalBottomSheet<void>(
+  await showZephyrModalSheet<void>(
     context: context,
-    isScrollControlled: true,
     builder: (context) => DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.55,

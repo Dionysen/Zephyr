@@ -10,10 +10,8 @@ Future<void> showQuickToolbarEditSheet(
   BuildContext context, {
   required QuickToolbarViewModel toolbar,
 }) {
-  return showModalBottomSheet<void>(
+  return showZephyrModalSheet<void>(
     context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
     builder: (context) => DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.72,

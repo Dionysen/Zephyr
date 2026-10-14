@@ -29,10 +29,10 @@ Future<void> showLibrarySearchSheet(
     scaffold.closeDrawer();
   }
   if (!context.mounted) return;
-  return showModalBottomSheet<void>(
+  return showZephyrModalSheet<void>(
     context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
+    desktopWidth: 520,
+    desktopMaxHeightFraction: 0.85,
     builder: (sheetContext) => DraggableScrollableSheet(
       expand: false,
       initialChildSize: 1,

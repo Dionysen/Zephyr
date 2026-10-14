@@ -385,10 +385,8 @@ Future<String?> showEditorBackgroundLibrarySheet(
   required ThemeViewModel viewModel,
   required String? selectedPath,
 }) {
-  return showModalBottomSheet<String>(
+  return showZephyrModalSheet<String>(
     context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(
         top: Radius.circular(context.zephyrCornerRadius + 4),

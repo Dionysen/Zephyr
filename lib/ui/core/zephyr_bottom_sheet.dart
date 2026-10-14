@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
 
+import 'window_chrome.dart';
+
 /// Shared density for modal bottom sheets (titles, rows, secondary text).
 abstract final class ZephyrBottomSheet {
   static const double rowHeight = 38;
   static const double rowIconSize = 20;
-  static const EdgeInsets titlePadding = EdgeInsets.fromLTRB(20, 4, 20, 8);
+  /// Header inset. Top is roomy enough for desktop dialogs (no drag handle);
+  /// mobile sheets still look fine because the handle sits above the builder.
+  static const EdgeInsets titlePadding = EdgeInsets.fromLTRB(20, 16, 20, 12);
   static const EdgeInsets rowPadding = EdgeInsets.symmetric(horizontal: 20);
   static const EdgeInsets listTilePadding = EdgeInsets.symmetric(
     horizontal: 16,
     vertical: 4,
   );
+
+  /// Default desktop dialog width for sheet-style panels.
+  static const double desktopDialogWidth = 420;
 
   /// Sheet header — slightly smaller than [TextTheme.titleMedium], semibold.
   static TextStyle? titleStyle(ThemeData theme) =>
@@ -96,4 +103,66 @@ abstract final class ZephyrBottomSheet {
       ],
     );
   }
+}
+
+/// Mobile: bottom sheet. Desktop: centered modal dialog.
+///
+/// Use this instead of [showModalBottomSheet] so sheet-style panels share one
+/// presentation rule across the app.
+Future<T?> showZephyrModalSheet<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  bool isScrollControlled = true,
+  bool showDragHandle = true,
+  ShapeBorder? shape,
+  double desktopWidth = ZephyrBottomSheet.desktopDialogWidth,
+  double desktopMaxHeightFraction = 0.72,
+  /// When true, the desktop dialog shrink-wraps short menus instead of
+  /// using a fixed panel height (still capped by [desktopMaxHeightFraction]).
+  bool desktopFitContent = false,
+  bool barrierDismissible = true,
+}) {
+  if (WindowChrome.isDesktop) {
+    return showDialog<T>(
+      context: context,
+      barrierDismissible: barrierDismissible,
+      builder: (dialogContext) {
+        final maxHeight =
+            MediaQuery.sizeOf(dialogContext).height * desktopMaxHeightFraction;
+        final Widget child;
+        if (desktopFitContent) {
+          child = ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: desktopWidth,
+              maxHeight: maxHeight,
+            ),
+            child: builder(dialogContext),
+          );
+        } else {
+          // Fixed size so DraggableScrollableSheet / Expanded layouts resolve.
+          child = SizedBox(
+            width: desktopWidth,
+            height: maxHeight,
+            child: builder(dialogContext),
+          );
+        }
+        return Dialog(
+          clipBehavior: Clip.antiAlias,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
+          child: child,
+        );
+      },
+    );
+  }
+
+  return showModalBottomSheet<T>(
+    context: context,
+    isScrollControlled: isScrollControlled,
+    showDragHandle: showDragHandle,
+    shape: shape,
+    builder: builder,
+  );
 }

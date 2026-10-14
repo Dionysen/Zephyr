@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../domain/models/cloud_sync.dart';
 import '../../../../domain/models/library_backup.dart';
+import '../../../core/zephyr_bottom_sheet.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_settings.dart';
@@ -365,9 +366,9 @@ Future<void> showCloudBackupRestoreFlow(
     return;
   }
 
-  final entry = await showModalBottomSheet<CloudBackupEntry>(
+  final entry = await showZephyrModalSheet<CloudBackupEntry>(
     context: context,
-    isScrollControlled: true,
+    desktopFitContent: true,
     builder: (context) =>
         _CloudBackupListSheet(backups: cloudSync.cloudBackups),
   );
@@ -437,9 +438,9 @@ Future<void> showBackupRestoreFlow(
     return;
   }
 
-  final entry = await showModalBottomSheet<BackupEntry>(
+  final entry = await showZephyrModalSheet<BackupEntry>(
     context: context,
-    isScrollControlled: true,
+    desktopFitContent: true,
     builder: (context) => _BackupListSheet(backups: viewModel.backups),
   );
   if (entry == null || !context.mounted) return;

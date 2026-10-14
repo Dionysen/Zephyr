@@ -32,9 +32,9 @@ Future<String?> showSidebarLibraryMenu(
   if (actions.isEmpty) return null;
   final compact = ZephyrBreakpoints.isCompact(MediaQuery.sizeOf(context).width);
   if (compact) {
-    return showModalBottomSheet<String>(
+    return showZephyrModalSheet<String>(
       context: context,
-      showDragHandle: true,
+      desktopFitContent: true,
       builder: (sheetContext) {
         final theme = Theme.of(sheetContext);
         return SafeArea(
@@ -394,9 +394,9 @@ Future<String?> showMoveChapterSheet(
   String? currentCategoryId,
 }) {
   final l10n = context.l10n;
-  return showModalBottomSheet<String>(
+  return showZephyrModalSheet<String>(
     context: context,
-    showDragHandle: true,
+    desktopFitContent: true,
     builder: (sheetContext) {
       return SafeArea(
         child: Column(
@@ -439,9 +439,9 @@ Future<String?> showMoveToBookSheet(
   required List<WritingFolder> books,
 }) {
   final l10n = context.l10n;
-  return showModalBottomSheet<String>(
+  return showZephyrModalSheet<String>(
     context: context,
-    showDragHandle: true,
+    desktopFitContent: true,
     builder: (sheetContext) {
       return SafeArea(
         child: Column(

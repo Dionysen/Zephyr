@@ -41,10 +41,8 @@ Future<T?> showZephyrSettingsChoicePicker<T>(
   final confirmBody = deleteConfirmBody ?? l10n.choiceDeleteBody;
   final confirmAction = deleteConfirmAction ?? l10n.actionDelete;
   final cancelAction = deleteCancelAction ?? l10n.actionCancel;
-  return showModalBottomSheet<T>(
+  return showZephyrModalSheet<T>(
     context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(
         top: Radius.circular(context.zephyrCornerRadius + 4),
@@ -132,79 +130,89 @@ class _ZephyrSettingsChoiceSheetState<T>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final height = MediaQuery.sizeOf(context).height * 0.55;
     return SafeArea(
-      child: SizedBox(
-        height: height,
-        child: ZephyrBottomSheet.listTheme(
-          context: context,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: ZephyrBottomSheet.titlePadding,
-                child: Text(
-                  widget.title,
-                  style: ZephyrBottomSheet.titleStyle(theme),
-                ),
-              ),
-              if (widget.actionLabel != null && widget.onAction != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: () async {
-                        Navigator.of(context).pop();
-                        await widget.onAction!();
-                      },
-                      icon: const Icon(Icons.folder_open, size: 18),
-                      label: Text(widget.actionLabel!),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final height = constraints.hasBoundedHeight
+              ? constraints.maxHeight
+              : MediaQuery.sizeOf(context).height * 0.55;
+          return SizedBox(
+            height: height,
+            child: ZephyrBottomSheet.listTheme(
+              context: context,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: ZephyrBottomSheet.titlePadding,
+                    child: Text(
+                      widget.title,
+                      style: ZephyrBottomSheet.titleStyle(theme),
                     ),
                   ),
-                ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _choices.length,
-                  itemBuilder: (context, index) {
-                    final choice = _choices[index];
-                    final isSelected = choice.value == widget.selected;
-                    final showDelete =
-                        choice.deletable && widget.onDelete != null;
-                    return ZephyrBottomSheet.withRowDivider(
-                      context: context,
-                      showDivider: index < _choices.length - 1,
-                      child: ListTile(
-                        title: Text(choice.label),
-                        subtitle: choice.subtitle == null
-                            ? null
-                            : Text(choice.subtitle!),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (isSelected)
-                              Icon(
-                                Icons.check,
-                                color: theme.colorScheme.primary,
-                              ),
-                            if (showDelete)
-                              IconButton(
-                                tooltip: widget.deleteConfirmAction,
-                                icon: const Icon(Icons.delete_outline, size: 20),
-                                onPressed: () => _delete(choice),
-                              ),
-                          ],
+                  if (widget.actionLabel != null && widget.onAction != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: () async {
+                            Navigator.of(context).pop();
+                            await widget.onAction!();
+                          },
+                          icon: const Icon(Icons.folder_open, size: 18),
+                          label: Text(widget.actionLabel!),
                         ),
-                        selected: isSelected,
-                        onTap: () => Navigator.of(context).pop(choice.value),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: _choices.length,
+                      itemBuilder: (context, index) {
+                        final choice = _choices[index];
+                        final isSelected = choice.value == widget.selected;
+                        final showDelete =
+                            choice.deletable && widget.onDelete != null;
+                        return ZephyrBottomSheet.withRowDivider(
+                          context: context,
+                          showDivider: index < _choices.length - 1,
+                          child: ListTile(
+                            title: Text(choice.label),
+                            subtitle: choice.subtitle == null
+                                ? null
+                                : Text(choice.subtitle!),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (isSelected)
+                                  Icon(
+                                    Icons.check,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                if (showDelete)
+                                  IconButton(
+                                    tooltip: widget.deleteConfirmAction,
+                                    icon: const Icon(
+                                      Icons.delete_outline,
+                                      size: 20,
+                                    ),
+                                    onPressed: () => _delete(choice),
+                                  ),
+                              ],
+                            ),
+                            selected: isSelected,
+                            onTap: () =>
+                                Navigator.of(context).pop(choice.value),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
