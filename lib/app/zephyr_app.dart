@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -185,7 +186,11 @@ class ZephyrApp extends StatelessWidget {
     child: ListenableBuilder(
       listenable: theme,
       builder: (context, _) => MaterialApp(
-        title: 'Zephyr',
+        title: kReleaseMode
+            ? 'Zephyr'
+            : kProfileMode
+            ? 'Zephyr Profile'
+            : 'Zephyr Debug',
         debugShowCheckedModeBanner: false,
         theme: zephyrTheme(theme.tokens, ui: theme.ui),
         locale: _localeFor(theme.ui.localePreference),

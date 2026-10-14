@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Android debug / profile 使用独立包名与桌面名（`Zephyr Debug` / `Zephyr Profile`），与正式版 `Zephyr` 可并存；仅重新安装 release 才会覆盖日常使用包。
+
 ## 1.0.0
 
 - 首个正式版。

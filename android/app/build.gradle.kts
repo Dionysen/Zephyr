@@ -32,10 +32,20 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Side-by-side with release so daily debug does not overwrite the personal install.
+            applicationIdSuffix = ".debug"
+            resValue("string", "app_name", "Zephyr Debug")
+        }
+        profile {
+            applicationIdSuffix = ".profile"
+            resValue("string", "app_name", "Zephyr Profile")
+        }
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // Personal final build (not Play Store). Debug signing is fine for sideload.
+            // applicationId stays com.zephyr.zephyr → only a new release APK replaces it.
             signingConfig = signingConfigs.getByName("debug")
+            resValue("string", "app_name", "Zephyr")
         }
     }
 }
