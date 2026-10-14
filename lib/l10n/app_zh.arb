@@ -58,7 +58,7 @@
     }
   },
   "cloudSyncEnableTitle": "开启云备份",
-  "cloudSyncEnableSubtitle": "将本地备份上传到坚果云，并在打开软件时拉取较新的云端快照",
+  "cloudSyncEnableSubtitle": "将本地备份上传到坚果云；打开时拉取较新快照，移动端有改动进入后台时也会上传",
   "cloudSyncLoginTitle": "绑定坚果云",
   "cloudSyncLoginSubtitle": "输入坚果云账号、WebDAV 网址和应用密码",
   "cloudSyncSettingsTitle": "坚果云设置",
@@ -495,6 +495,7 @@
   "librarySwitcherChooseDirectory": "重新选择目录",
   "tooltipOpenSidebar": "打开侧边栏",
   "tooltipMore": "更多",
+  "mobileToolsDrawerReorderHint": "长按拖动可调整顺序",
   "tooltipEditBook": "编辑书籍",
   "tooltipSettings": "设置",
   "selectBook": "选择书籍",

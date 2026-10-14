@@ -27,6 +27,7 @@ import '../../editor/view_models/library_view_model.dart';
 import 'cloud_backup_quick_button.dart';
 import 'library_search_sheet.dart';
 import 'library_switcher_menu.dart';
+import 'workspace_mobile_tools_drawer.dart';
 import 'workspace_sidebar_library_actions.dart';
 
 enum SidebarMode { docked, drawer }
@@ -717,10 +718,10 @@ List<WorkspaceMobileTool> resolveWorkspaceOverflowTools(
   );
 }
 
-/// More button that opens an icon+label menu, right-aligned to the button.
+/// More button that opens overflow tools.
 ///
 /// Desktop uses [MenuAnchor] (cascading submenus, same chrome as chapter
-/// sort). Compact / test builds keep a flat [showMenu] and honor [onTap].
+/// sort). Mobile opens a square-button bottom drawer with long-press reorder.
 class WorkspaceOverflowToolsButton extends StatelessWidget {
   const WorkspaceOverflowToolsButton({
     super.key,
@@ -741,57 +742,32 @@ class WorkspaceOverflowToolsButton extends StatelessWidget {
   final ButtonStyle? style;
   final double? iconSize;
 
-  Future<void> _openFlatMenu(BuildContext buttonContext) async {
-    FocusManager.instance.primaryFocus?.unfocus();
+  Future<void> _openMobileDrawer(BuildContext buttonContext) async {
     final items = resolveWorkspaceOverflowTools(
       buttonContext,
       tools: tools,
       toolsBuilder: toolsBuilder,
     );
     if (items.isEmpty || !buttonContext.mounted) return;
-
-    final button = buttonContext.findRenderObject()! as RenderBox;
-    final overlay =
-        Overlay.of(buttonContext).context.findRenderObject()! as RenderBox;
-    final topLeft = button.localToGlobal(Offset.zero, ancestor: overlay);
-    final bottomRight = button.localToGlobal(
-      button.size.bottomRight(Offset.zero),
-      ancestor: overlay,
-    );
-    // Zero-height rect on the button's bottom edge: menu top sits flush under
-    // the control, and horizontal growth still uses the button width so a
-    // trailing more button keeps right edges aligned.
-    final position = RelativeRect.fromRect(
-      Rect.fromLTRB(topLeft.dx, bottomRight.dy, bottomRight.dx, bottomRight.dy),
-      Offset.zero & overlay.size,
-    );
-
-    final selected = await showMenu<WorkspaceMobileTool>(
-      context: buttonContext,
-      position: position,
-      constraints: const BoxConstraints(minWidth: ZephyrControls.menuMinWidth),
-      popUpAnimationStyle: AnimationStyle.noAnimation,
-      items: [
+    final themeVm = ZephyrScope.maybeOf(buttonContext)?.theme;
+    await showWorkspaceMobileToolsDrawer(
+      buttonContext,
+      title: buttonContext.l10n.tooltipMore,
+      order: themeVm?.ui.mobileToolsOrder,
+      onReorder: themeVm == null
+          ? null
+          : (ids) => themeVm.updateMobileToolsOrder(ids),
+      actions: [
         for (final tool in items)
-          PopupMenuItem<WorkspaceMobileTool>(
-            value: tool.enabled ? tool : null,
+          WorkspaceMobileDrawerAction(
+            id: tool.id,
+            label: tool.label,
+            icon: tool.icon,
             enabled: tool.enabled,
-            height: ZephyrControls.menuItemHeight,
-            child: Row(
-              children: [
-                Icon(
-                  tool.icon ?? Icons.circle_outlined,
-                  size: ZephyrControls.iconSize,
-                ),
-                const SizedBox(width: 10),
-                Expanded(child: Text(tool.label)),
-              ],
-            ),
+            onTap: tool.onTap,
           ),
       ],
     );
-    if (selected == null) return;
-    selected.onTap();
   }
 
   List<Widget> _desktopMenuChildren(
@@ -841,7 +817,7 @@ class WorkspaceOverflowToolsButton extends StatelessWidget {
             style: style,
             onPressed: items.isEmpty
                 ? null
-                : () => unawaited(_openFlatMenu(buttonContext)),
+                : () => unawaited(_openMobileDrawer(buttonContext)),
             icon: Icon(Icons.more_vert, size: iconSize),
             tooltip: l10n.tooltipMore,
           );

@@ -118,6 +118,45 @@ void main() {
     await model.maybeAutoSync();
     expect(service.pullCalls, 0);
   });
+
+  test('maybeUploadOnLeave uploads only when dirty and cloud-ready', () async {
+    final dirtyLibrary = _DirtyLibrary(_UnusedLibraryRepository());
+    final leaveModel = CloudSyncViewModel(
+      library: dirtyLibrary,
+      service: service,
+    );
+    addTearDown(leaveModel.dispose);
+
+    service.cloudBackupOn = true;
+    service.signedIn = true;
+    dirtyLibrary.dirty = false;
+    await leaveModel.maybeUploadOnLeave();
+    expect(service.backupCalls, 0);
+
+    dirtyLibrary.dirty = true;
+    await leaveModel.maybeUploadOnLeave();
+    expect(service.backupCalls, 1);
+    expect(dirtyLibrary.dirty, isFalse);
+  });
+}
+
+class _DirtyLibrary extends LibraryViewModel {
+  // ignore: use_super_parameters
+  _DirtyLibrary(WritingLibraryRepository repository) : super(repository);
+
+  bool dirty = false;
+
+  @override
+  bool get contentDirtySinceBackup => dirty;
+
+  @override
+  bool get isReadOnly => false;
+
+  @override
+  Future<void> flushPending() async {}
+
+  @override
+  void markBackupCompleted() => dirty = false;
 }
 
 class _UnusedLibraryRepository implements WritingLibraryRepository {

@@ -366,6 +366,10 @@ class ThemeViewModel extends ChangeNotifier {
   void updateMobileToolsOrder(List<String> order) =>
       _updateUi(_ui.copyWith(mobileToolsOrder: List<String>.from(order)));
 
+  void updateCloudBackupMenuOrder(List<String> order) => _updateUi(
+    _ui.copyWith(cloudBackupMenuOrder: List<String>.from(order)),
+  );
+
   EditorBackgroundConfig editorBackground({required bool dark}) =>
       _ui.editorBackgroundFor(dark: dark);
 

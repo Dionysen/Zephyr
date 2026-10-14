@@ -312,6 +312,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
         values['uiLocale'] as String?,
       ),
       mobileToolsOrder: _stringList(values, 'uiMobileToolsOrder'),
+      cloudBackupMenuOrder: _stringList(values, 'uiCloudBackupMenuOrder'),
       lightEditorBackground: _readEditorBackground(values, 'light'),
       darkEditorBackground: _readEditorBackground(values, 'dark'),
     );
@@ -333,6 +334,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'uiEditorBackgroundEnabled': ui.editorBackgroundEnabled,
     'uiLocale': ui.localePreference.storageValue,
     'uiMobileToolsOrder': ui.mobileToolsOrder,
+    'uiCloudBackupMenuOrder': ui.cloudBackupMenuOrder,
     ..._writeEditorBackground(ui.lightEditorBackground, 'light'),
     ..._writeEditorBackground(ui.darkEditorBackground, 'dark'),
   };

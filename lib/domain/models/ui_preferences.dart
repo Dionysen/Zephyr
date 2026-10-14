@@ -38,6 +38,7 @@ class UiPreferences {
     required this.editorBackgroundEnabled,
     required this.localePreference,
     this.mobileToolsOrder = const [],
+    this.cloudBackupMenuOrder = const [],
     this.lightEditorBackground = EditorBackgroundConfig.defaults,
     this.darkEditorBackground = EditorBackgroundConfig.defaults,
   });
@@ -60,6 +61,7 @@ class UiPreferences {
     editorBackgroundEnabled: true,
     localePreference: AppLocalePreference.system,
     mobileToolsOrder: [],
+    cloudBackupMenuOrder: [],
   );
 
   static const referenceFontSize = 15.0;
@@ -121,6 +123,11 @@ class UiPreferences {
   /// Empty means use the order tools were registered in.
   final List<String> mobileToolsOrder;
 
+  /// Stable ids for the mobile cloud-backup drawer actions.
+  ///
+  /// Empty means use the registration order (backup / restore / auto).
+  final List<String> cloudBackupMenuOrder;
+
   /// Writing-column background image for light appearance.
   final EditorBackgroundConfig lightEditorBackground;
 
@@ -158,6 +165,7 @@ class UiPreferences {
     bool? editorBackgroundEnabled,
     AppLocalePreference? localePreference,
     List<String>? mobileToolsOrder,
+    List<String>? cloudBackupMenuOrder,
     EditorBackgroundConfig? lightEditorBackground,
     EditorBackgroundConfig? darkEditorBackground,
   }) => UiPreferences(
@@ -179,6 +187,7 @@ class UiPreferences {
         editorBackgroundEnabled ?? this.editorBackgroundEnabled,
     localePreference: localePreference ?? this.localePreference,
     mobileToolsOrder: mobileToolsOrder ?? this.mobileToolsOrder,
+    cloudBackupMenuOrder: cloudBackupMenuOrder ?? this.cloudBackupMenuOrder,
     lightEditorBackground:
         lightEditorBackground ?? this.lightEditorBackground,
     darkEditorBackground: darkEditorBackground ?? this.darkEditorBackground,

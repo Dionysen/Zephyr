@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_controls.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_snackbar.dart';
 import '../../settings/views/backup_settings_view.dart';
 import '../../settings/view_models/cloud_sync_view_model.dart';
+import 'workspace_mobile_tools_drawer.dart';
 
 /// Cloud chrome control: hidden when cloud backup is off; slashed when unbound.
 ///
@@ -29,6 +31,12 @@ class CloudBackupQuickButton extends StatefulWidget {
 
   @override
   State<CloudBackupQuickButton> createState() => _CloudBackupQuickButtonState();
+}
+
+abstract final class _CloudBackupMenuId {
+  static const backup = 'backup';
+  static const restore = 'restore';
+  static const auto = 'auto';
 }
 
 class _CloudBackupQuickButtonState extends State<CloudBackupQuickButton> {
@@ -125,6 +133,57 @@ class _CloudBackupQuickButtonState extends State<CloudBackupQuickButton> {
       return;
     }
 
+    if (!WindowChrome.isDesktop) {
+      await _openMobileDrawer(context, cloudSync);
+      return;
+    }
+    await _openDesktopMenu(context, cloudSync);
+  }
+
+  Future<void> _openMobileDrawer(
+    BuildContext context,
+    CloudSyncViewModel cloudSync,
+  ) async {
+    final l10n = context.l10n;
+    final themeVm = ZephyrScope.of(context).theme;
+    await showWorkspaceMobileToolsDrawer(
+      context,
+      title: l10n.cloudBackupQuickTooltip,
+      order: themeVm.ui.cloudBackupMenuOrder,
+      onReorder: themeVm.updateCloudBackupMenuOrder,
+      actions: [
+        WorkspaceMobileDrawerAction(
+          id: _CloudBackupMenuId.backup,
+          icon: Icons.cloud_upload_outlined,
+          label: l10n.cloudSyncBackupNowTitle,
+          enabled: !cloudSync.busy,
+          onTap: () => unawaited(_runBackup(context, cloudSync)),
+        ),
+        WorkspaceMobileDrawerAction(
+          id: _CloudBackupMenuId.restore,
+          icon: Icons.cloud_download_outlined,
+          label: l10n.cloudSyncRestoreTitle,
+          enabled: !cloudSync.busy,
+          onTap: () => unawaited(showCloudBackupRestoreFlow(context, cloudSync)),
+        ),
+        WorkspaceMobileDrawerAction(
+          id: _CloudBackupMenuId.auto,
+          icon: Icons.sync_outlined,
+          label: l10n.cloudSyncAutoTitle,
+          enabled: !cloudSync.busy,
+          selected: cloudSync.autoSyncEnabled,
+          onTap: () => unawaited(
+            cloudSync.setAutoSyncEnabled(!cloudSync.autoSyncEnabled),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _openDesktopMenu(
+    BuildContext context,
+    CloudSyncViewModel cloudSync,
+  ) async {
     final box = context.findRenderObject() as RenderBox?;
     final overlay =
         Overlay.of(context).context.findRenderObject() as RenderBox?;
@@ -167,7 +226,7 @@ class _CloudBackupQuickButtonState extends State<CloudBackupQuickButton> {
       popUpAnimationStyle: AnimationStyle.noAnimation,
       items: [
         PopupMenuItem(
-          value: 'backup',
+          value: _CloudBackupMenuId.backup,
           height: itemHeight,
           enabled: !cloudSync.busy,
           child: row(
@@ -176,7 +235,7 @@ class _CloudBackupQuickButtonState extends State<CloudBackupQuickButton> {
           ),
         ),
         PopupMenuItem(
-          value: 'restore',
+          value: _CloudBackupMenuId.restore,
           height: itemHeight,
           enabled: !cloudSync.busy,
           child: row(
@@ -185,7 +244,7 @@ class _CloudBackupQuickButtonState extends State<CloudBackupQuickButton> {
           ),
         ),
         PopupMenuItem(
-          value: 'auto',
+          value: _CloudBackupMenuId.auto,
           height: itemHeight,
           enabled: !cloudSync.busy,
           child: row(
@@ -198,19 +257,27 @@ class _CloudBackupQuickButtonState extends State<CloudBackupQuickButton> {
     );
     if (!context.mounted || action == null) return;
     switch (action) {
-      case 'backup':
-        await cloudSync.backupNow();
-        if (!context.mounted) return;
-        ZephyrSnackBar.show(
-          context,
-          cloudSync.error == null
-              ? l10n.cloudSyncBackupNowSuccess
-              : cloudSync.errorMessage(l10n)!,
-        );
-      case 'restore':
+      case _CloudBackupMenuId.backup:
+        await _runBackup(context, cloudSync);
+      case _CloudBackupMenuId.restore:
         await showCloudBackupRestoreFlow(context, cloudSync);
-      case 'auto':
+      case _CloudBackupMenuId.auto:
         await cloudSync.setAutoSyncEnabled(!cloudSync.autoSyncEnabled);
     }
+  }
+
+  Future<void> _runBackup(
+    BuildContext context,
+    CloudSyncViewModel cloudSync,
+  ) async {
+    final l10n = context.l10n;
+    await cloudSync.backupNow();
+    if (!context.mounted) return;
+    ZephyrSnackBar.show(
+      context,
+      cloudSync.error == null
+          ? l10n.cloudSyncBackupNowSuccess
+          : cloudSync.errorMessage(l10n)!,
+    );
   }
 }

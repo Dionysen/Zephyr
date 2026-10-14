@@ -69,6 +69,7 @@ void main() {
           editorBackgroundEnabled: false,
           localePreference: AppLocalePreference.system,
           mobileToolsOrder: ['settings', 'search'],
+          cloudBackupMenuOrder: ['auto', 'backup', 'restore'],
           lightEditorBackground: EditorBackgroundConfig(
             imagePath: r'C:\App\backgrounds\paper.jpg',
             fit: EditorBackgroundFit.cover,
@@ -119,6 +120,10 @@ void main() {
       );
       expect(actual.ui.localePreference, expected.ui.localePreference);
       expect(actual.ui.mobileToolsOrder, expected.ui.mobileToolsOrder);
+      expect(
+        actual.ui.cloudBackupMenuOrder,
+        expected.ui.cloudBackupMenuOrder,
+      );
       expect(
         actual.ui.lightEditorBackground,
         expected.ui.lightEditorBackground,

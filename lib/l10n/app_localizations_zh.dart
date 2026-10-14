@@ -128,7 +128,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncEnableTitle => '开启云备份';
 
   @override
-  String get cloudSyncEnableSubtitle => '将本地备份上传到坚果云，并在打开软件时拉取较新的云端快照';
+  String get cloudSyncEnableSubtitle => '将本地备份上传到坚果云；打开时拉取较新快照，移动端有改动进入后台时也会上传';
 
   @override
   String get cloudSyncLoginTitle => '绑定坚果云';
@@ -1192,6 +1192,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get tooltipMore => '更多';
+
+  @override
+  String get mobileToolsDrawerReorderHint => '长按拖动可调整顺序';
 
   @override
   String get tooltipEditBook => '编辑书籍';

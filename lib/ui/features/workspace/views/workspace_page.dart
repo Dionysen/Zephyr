@@ -57,6 +57,9 @@ class _WorkspacePageState extends State<WorkspacePage>
   /// Chrome title when the in-editor chapter title has scrolled away.
   var _showTitleInChrome = false;
 
+  /// Avoid starting local + cloud leave backup twice across paused→detached.
+  var _leaveBackupInFlight = false;
+
   @override
   void initState() {
     super.initState();
@@ -126,18 +129,38 @@ class _WorkspacePageState extends State<WorkspacePage>
       if (library != null) {
         unawaited(library.flushPending());
       }
-      // Local auto-backup only on paused (not inactive). Cloud pull runs on
-      // open / resume, not on pause.
+      // Mobile leave: local auto-backup and/or cloud upload when content is
+      // dirty. Prefer paused; also run on detached so back-to-exit still
+      // starts work if paused was skipped. Cloud pull stays on resume only.
       if (mounted &&
           !WindowChrome.isDesktop &&
-          state == AppLifecycleState.paused) {
-        final scope = ZephyrScope.of(context);
-        unawaited(scope.backup.maybeAutoBackupOnLeave());
+          (state == AppLifecycleState.paused ||
+              state == AppLifecycleState.detached)) {
+        unawaited(_backupOnLeave());
       }
     } else if (mounted &&
         !WindowChrome.isDesktop &&
         state == AppLifecycleState.resumed) {
+      _leaveBackupInFlight = false;
       unawaited(_autoSyncAndReport());
+    }
+  }
+
+  /// Local automatic `.pwb` and optional Nutstore upload after edits.
+  Future<void> _backupOnLeave() async {
+    if (_leaveBackupInFlight || !mounted) return;
+    _leaveBackupInFlight = true;
+    try {
+      final scope = ZephyrScope.of(context);
+      // Cloud path creates the local file then uploads — skip a second local
+      // backup when both are enabled and the upload cleared the dirty flag.
+      if (scope.cloudSync.cloudBackupEnabled && scope.cloudSync.isSignedIn) {
+        await scope.cloudSync.maybeUploadOnLeave();
+        if (!scope.library.contentDirtySinceBackup) return;
+      }
+      await scope.backup.maybeAutoBackupOnLeave();
+    } on Object {
+      // Best-effort while backgrounding; resume pull / manual backup can retry.
     }
   }
 

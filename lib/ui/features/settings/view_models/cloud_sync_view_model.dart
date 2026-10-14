@@ -223,4 +223,17 @@ class CloudSyncViewModel extends ChangeNotifier {
     if (busy) return null;
     return syncNow();
   }
+
+  /// Mobile background / leave: upload when cloud backup is on and content
+  /// changed since the last backup (same dirty gate as local auto-backup).
+  ///
+  /// Creates one local automatic `.pwb` then uploads it — mirrors desktop exit
+  /// upload, but only when there is something new (pause is frequent).
+  Future<void> maybeUploadOnLeave() async {
+    if (!cloudBackupEnabled || !isSignedIn) return;
+    if (library.isReadOnly) return;
+    if (!library.contentDirtySinceBackup) return;
+    if (busy) return;
+    await backupNow();
+  }
 }
