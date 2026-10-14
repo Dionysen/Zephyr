@@ -14,6 +14,9 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private val storageChannel = "zephyr/android_storage"
     private val backupChannel = "zephyr/purewriter_backup"
+    private val leaveChannel = "zephyr/android_leave_backup"
+
+    private var leaveBackupChannel: MethodChannel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Let Flutter draw under status + gesture nav bars (true edge-to-edge).
@@ -46,6 +49,17 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+        leaveBackupChannel =
+            MethodChannel(flutterEngine.dartExecutor.binaryMessenger, leaveChannel)
+    }
+
+    /**
+     * Fires while the activity is still interactive (Home / Recents / back-to-leave)
+     * so Dart can enqueue WorkManager before the process is restricted.
+     */
+    override fun onUserLeaveHint() {
+        leaveBackupChannel?.invokeMethod("userLeaving", null)
+        super.onUserLeaveHint()
     }
 
     private fun deviceDisplayName(): String {

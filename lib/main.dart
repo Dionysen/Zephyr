@@ -8,6 +8,7 @@ import 'app/zephyr_app.dart';
 import 'data/repositories/file_workspace_layout_repository.dart';
 import 'data/services/folder_bookmark.dart';
 import 'data/services/desktop_exit_backup.dart';
+import 'data/services/mobile_background_backup.dart';
 import 'data/services/purewriter_database.dart';
 import 'data/services/startup_library.dart';
 import 'data/services/workspace_layout_file_storage.dart';
@@ -18,6 +19,7 @@ Future<void> main(List<String> arguments) async {
     await DesktopExitBackup.run(arguments.last);
     exit(0);
   }
+  await MobileBackgroundBackup.initialize();
   await _enableHighRefreshRate();
   await initializeDesktopWindow();
   final database = PureWriterDatabase();

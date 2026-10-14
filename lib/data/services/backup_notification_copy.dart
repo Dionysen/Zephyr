@@ -12,6 +12,23 @@ abstract final class BackupNotificationCopy {
     return zh ? '警告：Zephyr 备份失败' : 'Warning: Zephyr backup failed';
   }
 
+  static String get networkFailureBody => isZh
+      ? '无法连接坚果云（网络或 DNS）。请确认网络后重试云备份。'
+      : 'Could not reach Nutstore (network or DNS). Check connectivity and retry.';
+
+  static bool isNetworkFailure(Object? error) {
+    if (error == null) return false;
+    final text = error.toString().toLowerCase();
+    return text.contains('socketexception') ||
+        text.contains('failed host lookup') ||
+        text.contains('network is unreachable') ||
+        text.contains('connection failed') ||
+        text.contains('timed out') ||
+        text.contains('connection reset') ||
+        text.contains('errno = 7') ||
+        text.contains('errno=7');
+  }
+
   static String body({
     required bool success,
     Object? error,
@@ -20,6 +37,7 @@ abstract final class BackupNotificationCopy {
   }) {
     final zh = isZh;
     if (!success) {
+      if (isNetworkFailure(error)) return networkFailureBody;
       return zh
           ? '请重新打开软件检查备份。${error ?? ''}'
           : 'Reopen Zephyr to check backups. ${error ?? ''}';

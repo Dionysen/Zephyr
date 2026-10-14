@@ -4,10 +4,12 @@ import 'dart:math' as math;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../../data/services/android_storage_access.dart';
 import '../../../../data/services/folder_bookmark.dart';
-import '../../../../data/services/mobile_backup_notification.dart';
+import '../../../../data/services/android_leave_backup.dart';
+import '../../../../data/services/mobile_background_backup.dart';
 import '../../../../domain/models/app_theme_mode.dart';
 import '../../../../domain/models/cloud_sync.dart';
 import '../../../../domain/models/keyboard_shortcuts.dart';
@@ -58,13 +60,21 @@ class _WorkspacePageState extends State<WorkspacePage>
   /// Chrome title when the in-editor chapter title has scrolled away.
   var _showTitleInChrome = false;
 
-  /// Avoid starting local + cloud leave backup twice across paused→detached.
-  var _leaveBackupInFlight = false;
+  /// Avoid enqueueing leave backup twice across leave-hint → paused → detached.
+  var _leaveBackupScheduled = false;
+
+  /// Root back is exiting after scheduling background backup.
+  var _handlingExit = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Home / Recents / kill path: enqueue WorkManager while still allowed.
+    AndroidLeaveBackup.listenForUserLeaving(() {
+      if (!mounted || WindowChrome.isDesktop || _handlingExit) return;
+      unawaited(_scheduleLeaveBackup());
+    });
   }
 
   @override
@@ -130,67 +140,72 @@ class _WorkspacePageState extends State<WorkspacePage>
       if (library != null) {
         unawaited(library.flushPending());
       }
-      // Mobile leave: local auto-backup and/or cloud upload when content is
-      // dirty. Prefer paused; also run on detached so back-to-exit still
-      // starts work if paused was skipped. Cloud pull stays on resume only.
+      // Safety net if [onUserLeaveHint] did not fire (some OEM paths).
       if (mounted &&
           !WindowChrome.isDesktop &&
+          !_handlingExit &&
           (state == AppLifecycleState.paused ||
               state == AppLifecycleState.detached)) {
-        unawaited(_backupOnLeave());
+        unawaited(_scheduleLeaveBackup());
       }
     } else if (mounted &&
         !WindowChrome.isDesktop &&
         state == AppLifecycleState.resumed) {
-      _leaveBackupInFlight = false;
+      if (!_handlingExit) {
+        _leaveBackupScheduled = false;
+      }
       unawaited(_autoSyncAndReport());
     }
   }
 
-  /// Local automatic `.pwb` and optional Nutstore upload after edits.
-  Future<void> _backupOnLeave() async {
-    if (_leaveBackupInFlight || !mounted) return;
-    _leaveBackupInFlight = true;
-    final notify = MobileBackupNotification();
-    try {
-      final scope = ZephyrScope.of(context);
-      // Cloud path creates the local file then uploads — skip a second local
-      // backup when both are enabled and the upload cleared the dirty flag.
-      if (scope.cloudSync.cloudBackupEnabled && scope.cloudSync.isSignedIn) {
-        final attempted = await scope.cloudSync.maybeUploadOnLeave();
-        if (attempted) {
-          final failed = scope.cloudSync.error != null;
-          await notify.show(
-            success: !failed,
-            error: scope.cloudSync.error,
-            didCloud: !failed,
-            didLocal: !failed,
-          );
-          if (!failed) return;
-        }
-        if (!scope.library.contentDirtySinceBackup) return;
-      }
-      final localAttempted = await scope.backup.maybeAutoBackupOnLeave();
-      if (!localAttempted) return;
-      await notify.show(
-        success: scope.backup.error == null,
-        error: scope.backup.error,
-        didLocal: scope.backup.error == null,
-      );
-    } on Object catch (error) {
-      await notify.show(success: false, error: error);
+  /// Back gesture / system back at workspace root: enqueue backup, then exit.
+  Future<void> _onRootBack() async {
+    if (_handlingExit) return;
+    final nav = Navigator.of(context);
+    if (nav.canPop()) {
+      nav.pop();
+      return;
     }
+    if (WindowChrome.isDesktop) return;
+
+    _handlingExit = true;
+    try {
+      await _scheduleLeaveBackup();
+    } on Object {
+      // Still leave after a failed schedule so the user is not trapped.
+    }
+    await SystemNavigator.pop();
+  }
+
+  /// Flush pending edits and enqueue WorkManager (in-progress notify only).
+  Future<void> _scheduleLeaveBackup() async {
+    if (_leaveBackupScheduled || !mounted) return;
+    final scope = ZephyrScope.of(context);
+    await scope.library.flushPending();
+    if (!mounted) return;
+    final scheduled = await MobileBackgroundBackup.scheduleIfNeeded(
+      contentDirty: scope.library.contentDirtySinceBackup,
+      cloudBackupEnabled: scope.cloudSync.cloudBackupEnabled,
+      isSignedIn: scope.cloudSync.isSignedIn,
+      autoBackupEnabled: scope.backup.autoBackupEnabled,
+      isReadOnly: scope.library.isReadOnly,
+    );
+    if (!scheduled) return;
+    _leaveBackupScheduled = true;
+    // Trust WorkManager retry; avoid re-enqueue storms while leaving.
+    scope.library.markBackupCompleted();
   }
 
   Future<void> _autoSyncAndReport() async {
     final cloudSync = ZephyrScope.of(context).cloudSync;
     if (!cloudSync.cloudBackupEnabled ||
-        !cloudSync.autoSyncEnabled ||
         !cloudSync.isSignedIn ||
         cloudSync.busy ||
         cloudSync.library.isReadOnly) {
       return;
     }
+    // Leave backup is handled by WorkManager; resume only pulls when enabled.
+    if (!cloudSync.autoSyncEnabled) return;
     final result = await cloudSync.maybeAutoSync();
     if (!mounted) return;
     if (cloudSync.error is CloudLibraryConflictException) {
@@ -215,6 +230,7 @@ class _WorkspacePageState extends State<WorkspacePage>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    unawaited(AndroidLeaveBackup.clearUserLeavingListener());
     final library = _library;
     if (library != null) {
       unawaited(library.flushPending());
@@ -225,7 +241,15 @@ class _WorkspacePageState extends State<WorkspacePage>
   @override
   Widget build(BuildContext context) {
     final scope = ZephyrScope.of(context);
-    return ListenableBuilder(
+    // Mobile root back: finish cloud/local backup while still visible, then exit.
+    // Mobile root back: schedule WorkManager backup, then exit immediately.
+    return PopScope(
+      canPop: WindowChrome.isDesktop,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        unawaited(_onRootBack());
+      },
+      child: ListenableBuilder(
       listenable: Listenable.merge([
         scope.library,
         scope.theme,
@@ -529,6 +553,7 @@ class _WorkspacePageState extends State<WorkspacePage>
           },
         );
       },
+    ),
     );
   }
 

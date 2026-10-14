@@ -1,17 +1,7 @@
 import 'dart:io';
 
-import 'package:path/path.dart' as path;
-
-import '../../domain/models/library_backup.dart';
-import '../../domain/repositories/workspace_layout_repository.dart';
-import '../repositories/file_workspace_layout_repository.dart';
-import '../repositories/purewriter_writing_library_repository.dart';
-import 'backup_preferences_file_storage.dart';
-import 'cloud_sync_service.dart';
 import 'desktop_backup_notification.dart';
-import 'folder_bookmark.dart';
-import 'purewriter_database.dart';
-import 'workspace_layout_file_storage.dart';
+import 'headless_exit_backup.dart';
 
 /// Launches a detached copy of the desktop app for the last backup.
 abstract final class DesktopExitBackup {
@@ -31,41 +21,13 @@ abstract final class DesktopExitBackup {
   /// file when cloud backup is enabled and Nutstore is connected.
   static Future<void> run(String expectedRoot) async {
     final notification = DesktopBackupNotification();
-    final database = PureWriterDatabase();
     try {
-      final layout = FileWorkspaceLayoutRepository(
-        WorkspaceLayoutFileStorage(),
-      );
-      final selected = await _selectedRoot(layout);
-      if (selected == null ||
-          !path.equals(path.absolute(selected), path.absolute(expectedRoot))) {
-        throw StateError('The selected library changed before backup started.');
-      }
-      final localStorage = BackupPreferencesFileStorage();
-      final local = await localStorage.load();
-      final cloud = CloudSyncService();
-      await cloud.load();
-      final cloudEnabled = cloud.cloudBackupEnabled && cloud.isSignedIn;
-      if (!local.autoBackupEnabled && !cloudEnabled) return;
-
-      await database.openLibrary(selected, createIfMissing: false);
-      if (!database.writesAllowed) {
-        throw StateError('The selected library is read-only.');
-      }
-      final library = PureWriterWritingLibraryRepository(database);
-      final entry = await library.createBackup(kind: BackupKind.automatic);
-      if (cloudEnabled) {
-        await cloud.uploadLocalBackup(library: library, entry: entry);
-      }
-      if (local.autoBackupEnabled) {
-        await localStorage.save(
-          local.copyWith(lastAutoBackupAt: DateTime.now()),
-        );
-      }
+      final result = await HeadlessExitBackup.run(expectedRoot: expectedRoot);
+      if (!result.didLocal && !result.didCloud) return;
       await notification.show(
         success: true,
-        didCloud: cloudEnabled,
-        didLocal: true,
+        didCloud: result.didCloud,
+        didLocal: result.didLocal,
       );
     } on Object catch (error) {
       try {
@@ -74,19 +36,6 @@ abstract final class DesktopExitBackup {
         // The backup error remains the primary failure when notifications are disabled.
       }
       stderr.writeln('Zephyr exit backup failed: $error');
-    } finally {
-      await database.close();
     }
-  }
-
-  static Future<String?> _selectedRoot(WorkspaceLayoutRepository layout) async {
-    final saved = await layout.load();
-    final active = saved.activeLibrary;
-    final bookmark = active?.bookmark ?? saved.lastLibraryBookmark;
-    if (bookmark != null && Platform.isMacOS) {
-      final restored = await FolderBookmarkAccess().restore(bookmark);
-      if (restored != null && restored.isNotEmpty) return restored;
-    }
-    return active?.rootPath ?? saved.lastLibraryRoot;
   }
 }

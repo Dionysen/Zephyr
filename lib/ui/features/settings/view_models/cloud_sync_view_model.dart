@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 
+import '../../../../data/services/backup_notification_copy.dart';
 import '../../../../data/services/cloud_sync_service.dart';
 import '../../../../domain/models/cloud_sync.dart';
 import '../../../../domain/models/library_backup.dart';
@@ -36,6 +39,10 @@ class CloudSyncViewModel extends ChangeNotifier {
         CloudLibraryConflictReason.missingManifest =>
           l10n.cloudSyncMissingManifest,
       };
+    }
+    if (error is SocketException ||
+        BackupNotificationCopy.isNetworkFailure(error)) {
+      return BackupNotificationCopy.networkFailureBody;
     }
     return l10n.cloudSyncFailed(error.toString());
   }
