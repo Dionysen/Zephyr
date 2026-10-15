@@ -777,9 +777,13 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
     super.didChangeDependencies();
     final toolbar = ZephyrScope.of(context).quickToolbar;
     _editorBridge.onDismissToolsPanel = () {
-      if (toolbar.toolsDrawerOpen || toolbar.holdingPanelForIme) {
-        toolbar.closeToolsDrawer();
+      if (!toolbar.toolsDrawerOpen &&
+          !toolbar.formatDrawerOpen &&
+          !toolbar.holdingPanelForIme) {
+        return;
       }
+      toolbar.closeToolsDrawer();
+      toolbar.closeFormatDrawer();
     };
   }
 

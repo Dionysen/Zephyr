@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zephyr/domain/models/plain_text_format_option.dart';
 import 'package:zephyr/domain/models/quick_toolbar_config.dart';
 
 void main() {
@@ -74,5 +75,20 @@ void main() {
     expect(config.pinnedIds.toSet().length, config.pinnedIds.length);
     expect(config.customIds, isEmpty);
     expect(config.fixedZoneIds.contains(QuickTool.toolsId), isTrue);
+  });
+
+  test('normalized keeps format checkbox selection', () {
+    final ids = [
+      PlainTextFormatOption.removeParagraphBlanks.name,
+      PlainTextFormatOption.insertCjkLatinSpaces.name,
+    ];
+    final config = QuickToolbarConfig(
+      pinnedIds: QuickToolbarConfig.defaults.pinnedIds,
+      customIds: QuickToolbarConfig.defaults.customIds,
+      catalog: QuickToolbarConfig.defaults.catalog,
+      formatSelectionIds: ids,
+    ).normalized();
+
+    expect(config.formatSelectionIds, ids);
   });
 }

@@ -525,5 +525,14 @@
   "quickToolbarMoveToPinned": "移到固定栏",
   "quickToolbarMoveToCustom": "移到自定义栏",
   "quickToolbarDrawerEmpty": "工具面板内容将稍后加入",
+  "quickToolbarFormatApplyAll": "一键排版",
+  "quickToolbarFormatKeepParagraphBlanks": "段间保留空行",
+  "quickToolbarFormatRemoveParagraphBlanks": "段间删除空行",
+  "quickToolbarFormatInsertCjkLatinSpaces": "中英文之间插入空格",
+  "quickToolbarFormatAddParagraphIndent": "段首插入缩进",
+  "quickToolbarFormatRemoveParagraphIndent": "去除段首缩进",
+  "quickToolbarFormatSimplifiedToTraditional": "简体转繁体",
+  "quickToolbarFormatTraditionalToSimplified": "繁体转简体",
+  "quickToolbarFormatHalfwidthToFullwidth": "半角符号转全角符号",
   "cloudSyncServerUrlLabel": "WebDAV 网址"
 }

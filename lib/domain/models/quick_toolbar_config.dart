@@ -1,3 +1,5 @@
+import 'plain_text_format_option.dart';
+
 /// Built-in and user-defined tools for the IME quick toolbar.
 enum QuickToolKind { tools, undo, paste, indent, format, phrase }
 
@@ -132,6 +134,7 @@ class QuickToolbarConfig {
     required this.pinnedIds,
     required this.customIds,
     required this.catalog,
+    this.formatSelectionIds = const [],
   });
 
   /// Max configurable pinned slots (tools button is always first → 5 total).
@@ -144,11 +147,15 @@ class QuickToolbarConfig {
       for (final phrase in QuickTool.defaultPhrases) phrase.id,
     ],
     catalog: [...QuickTool.builtins, ...QuickTool.defaultPhrases],
+    formatSelectionIds: PlainTextFormatSelection.defaults.toIds(),
   );
 
   final List<String> pinnedIds;
   final List<String> customIds;
   final List<QuickTool> catalog;
+
+  /// Persisted checkbox ids for the format panel batch action.
+  final List<String> formatSelectionIds;
 
   /// Fixed zone ids including the reserved tools button at index 0.
   List<String> get fixedZoneIds => [QuickTool.toolsId, ...pinnedIds];
@@ -185,10 +192,12 @@ class QuickToolbarConfig {
     List<String>? pinnedIds,
     List<String>? customIds,
     List<QuickTool>? catalog,
+    List<String>? formatSelectionIds,
   }) => QuickToolbarConfig(
     pinnedIds: pinnedIds ?? this.pinnedIds,
     customIds: customIds ?? this.customIds,
     catalog: catalog ?? this.catalog,
+    formatSelectionIds: formatSelectionIds ?? this.formatSelectionIds,
   );
 
   /// Drops unknown ids, enforces uniqueness, caps pinned length, keeps tools out
@@ -214,16 +223,27 @@ class QuickToolbarConfig {
         .where((t) => t.kind == QuickToolKind.phrase && t.id.isNotEmpty)
         .toList();
     final mergedCatalog = [...QuickTool.builtins, ...phrases];
+    final validFormatIds = PlainTextFormatOption.values
+        .map((o) => o.name)
+        .toSet();
+    final formatIds = formatSelectionIds
+        .where(validFormatIds.contains)
+        .toList(growable: false);
+
     return QuickToolbarConfig(
       pinnedIds: clean(pinnedIds, max: maxPinned),
       customIds: clean(customIds, max: null),
       catalog: mergedCatalog,
+      formatSelectionIds: formatIds.isEmpty
+          ? PlainTextFormatSelection.defaults.toIds()
+          : formatIds,
     );
   }
 
   Map<String, Object?> toJson() => {
     'pinnedIds': pinnedIds,
     'customIds': customIds,
+    'formatSelectionIds': formatSelectionIds,
     'catalog': catalog
         .where((t) => t.kind == QuickToolKind.phrase)
         .map((t) => t.toJson())
@@ -251,10 +271,14 @@ class QuickToolbarConfig {
       }
     }
 
+    final formatIds = stringList(json['formatSelectionIds']);
     return QuickToolbarConfig(
       pinnedIds: stringList(json['pinnedIds']),
       customIds: stringList(json['customIds']),
       catalog: [...QuickTool.builtins, ...phrases],
+      formatSelectionIds: formatIds.isEmpty
+          ? PlainTextFormatSelection.defaults.toIds()
+          : formatIds,
     ).normalized();
   }
 }

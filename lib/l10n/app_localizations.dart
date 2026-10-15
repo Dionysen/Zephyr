@@ -2634,6 +2634,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tool panel content coming soon'**
   String get quickToolbarDrawerEmpty;
+
+  /// No description provided for @quickToolbarFormatApplyAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Format document'**
+  String get quickToolbarFormatApplyAll;
+
+  /// No description provided for @quickToolbarFormatKeepParagraphBlanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep blank lines between paragraphs'**
+  String get quickToolbarFormatKeepParagraphBlanks;
+
+  /// No description provided for @quickToolbarFormatRemoveParagraphBlanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove blank lines between paragraphs'**
+  String get quickToolbarFormatRemoveParagraphBlanks;
+
+  /// No description provided for @quickToolbarFormatInsertCjkLatinSpaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Space between Chinese and English'**
+  String get quickToolbarFormatInsertCjkLatinSpaces;
+
+  /// No description provided for @quickToolbarFormatAddParagraphIndent.
+  ///
+  /// In en, this message translates to:
+  /// **'Indent paragraph starts'**
+  String get quickToolbarFormatAddParagraphIndent;
+
+  /// No description provided for @quickToolbarFormatRemoveParagraphIndent.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove paragraph indents'**
+  String get quickToolbarFormatRemoveParagraphIndent;
+
+  /// No description provided for @quickToolbarFormatSimplifiedToTraditional.
+  ///
+  /// In en, this message translates to:
+  /// **'Simplified to Traditional Chinese'**
+  String get quickToolbarFormatSimplifiedToTraditional;
+
+  /// No description provided for @quickToolbarFormatTraditionalToSimplified.
+  ///
+  /// In en, this message translates to:
+  /// **'Traditional to Simplified Chinese'**
+  String get quickToolbarFormatTraditionalToSimplified;
+
+  /// No description provided for @quickToolbarFormatHalfwidthToFullwidth.
+  ///
+  /// In en, this message translates to:
+  /// **'Halfwidth to fullwidth symbols'**
+  String get quickToolbarFormatHalfwidthToFullwidth;
 }
 
 class _AppLocalizationsDelegate

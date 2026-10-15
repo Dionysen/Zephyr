@@ -599,5 +599,14 @@
   "quickToolbarPhraseContent": "Inserted text",
   "quickToolbarMoveToPinned": "Move to fixed bar",
   "quickToolbarMoveToCustom": "Move to custom bar",
-  "quickToolbarDrawerEmpty": "Tool panel content coming soon"
+  "quickToolbarDrawerEmpty": "Tool panel content coming soon",
+  "quickToolbarFormatApplyAll": "Format document",
+  "quickToolbarFormatKeepParagraphBlanks": "Keep blank lines between paragraphs",
+  "quickToolbarFormatRemoveParagraphBlanks": "Remove blank lines between paragraphs",
+  "quickToolbarFormatInsertCjkLatinSpaces": "Space between Chinese and English",
+  "quickToolbarFormatAddParagraphIndent": "Indent paragraph starts",
+  "quickToolbarFormatRemoveParagraphIndent": "Remove paragraph indents",
+  "quickToolbarFormatSimplifiedToTraditional": "Simplified to Traditional Chinese",
+  "quickToolbarFormatTraditionalToSimplified": "Traditional to Simplified Chinese",
+  "quickToolbarFormatHalfwidthToFullwidth": "Halfwidth to fullwidth symbols"
 }

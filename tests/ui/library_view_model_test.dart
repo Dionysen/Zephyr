@@ -1052,6 +1052,12 @@ class FakeLibraryRepository implements WritingLibraryRepository {
 
   @override
   Future<void> setCloudLibraryId(String id) async {}
+
+  @override
+  Future<List<String>?> readQuickToolbarFormatSelectionIds() async => null;
+
+  @override
+  Future<void> writeQuickToolbarFormatSelectionIds(List<String> ids) async {}
 }
 
 class FakeLayoutRepository implements WorkspaceLayoutRepository {

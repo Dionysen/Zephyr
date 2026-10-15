@@ -1193,6 +1193,12 @@ class _LibraryRepository implements WritingLibraryRepository {
 
   @override
   Future<void> setCloudLibraryId(String id) async {}
+
+  @override
+  Future<List<String>?> readQuickToolbarFormatSelectionIds() async => null;
+
+  @override
+  Future<void> writeQuickToolbarFormatSelectionIds(List<String> ids) async {}
 }
 
 class _ThemeRepository implements ThemePreferencesRepository {

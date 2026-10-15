@@ -137,4 +137,10 @@ abstract interface class WritingLibraryRepository {
 
   /// Overwrite [ensureCloudLibraryId] (e.g. empty library claiming a cloud id).
   Future<void> setCloudLibraryId(String id);
+
+  /// Format-panel checkbox ids for this library (`null` when never saved).
+  Future<List<String>?> readQuickToolbarFormatSelectionIds();
+
+  /// Persists [ids] into ZephyrMeta so manual/auto `.pwb` backups include them.
+  Future<void> writeQuickToolbarFormatSelectionIds(List<String> ids);
 }

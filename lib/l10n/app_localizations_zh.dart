@@ -1329,4 +1329,31 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get quickToolbarDrawerEmpty => '工具面板内容将稍后加入';
+
+  @override
+  String get quickToolbarFormatApplyAll => '一键排版';
+
+  @override
+  String get quickToolbarFormatKeepParagraphBlanks => '段间保留空行';
+
+  @override
+  String get quickToolbarFormatRemoveParagraphBlanks => '段间删除空行';
+
+  @override
+  String get quickToolbarFormatInsertCjkLatinSpaces => '中英文之间插入空格';
+
+  @override
+  String get quickToolbarFormatAddParagraphIndent => '段首插入缩进';
+
+  @override
+  String get quickToolbarFormatRemoveParagraphIndent => '去除段首缩进';
+
+  @override
+  String get quickToolbarFormatSimplifiedToTraditional => '简体转繁体';
+
+  @override
+  String get quickToolbarFormatTraditionalToSimplified => '繁体转简体';
+
+  @override
+  String get quickToolbarFormatHalfwidthToFullwidth => '半角符号转全角符号';
 }

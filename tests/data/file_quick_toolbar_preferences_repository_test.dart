@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/data/repositories/file_quick_toolbar_preferences_repository.dart';
 import 'package:zephyr/data/services/quick_toolbar_file_storage.dart';
+import 'package:zephyr/domain/models/plain_text_format_option.dart';
 import 'package:zephyr/domain/models/quick_toolbar_config.dart';
 
 void main() {
@@ -71,6 +72,19 @@ void main() {
       expect(config.toolById('phrase-one')?.payload, 'The end');
     },
   );
+
+  test('format checkbox ids round-trip through JSON storage', () async {
+    final ids = [
+      PlainTextFormatOption.removeParagraphBlanks.name,
+      PlainTextFormatOption.insertCjkLatinSpaces.name,
+    ];
+    await repository.save(
+      QuickToolbarConfig.defaults.copyWith(formatSelectionIds: ids),
+    );
+
+    final restored = await repository.load();
+    expect(restored.formatSelectionIds, ids);
+  });
 
   test('invalid toolbar JSON is reported as a format error', () async {
     final file = File('${directory.path}/zephyr/quick-toolbar.json');

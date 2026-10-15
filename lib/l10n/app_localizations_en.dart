@@ -1390,4 +1390,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get quickToolbarDrawerEmpty => 'Tool panel content coming soon';
+
+  @override
+  String get quickToolbarFormatApplyAll => 'Format document';
+
+  @override
+  String get quickToolbarFormatKeepParagraphBlanks =>
+      'Keep blank lines between paragraphs';
+
+  @override
+  String get quickToolbarFormatRemoveParagraphBlanks =>
+      'Remove blank lines between paragraphs';
+
+  @override
+  String get quickToolbarFormatInsertCjkLatinSpaces =>
+      'Space between Chinese and English';
+
+  @override
+  String get quickToolbarFormatAddParagraphIndent => 'Indent paragraph starts';
+
+  @override
+  String get quickToolbarFormatRemoveParagraphIndent =>
+      'Remove paragraph indents';
+
+  @override
+  String get quickToolbarFormatSimplifiedToTraditional =>
+      'Simplified to Traditional Chinese';
+
+  @override
+  String get quickToolbarFormatTraditionalToSimplified =>
+      'Traditional to Simplified Chinese';
+
+  @override
+  String get quickToolbarFormatHalfwidthToFullwidth =>
+      'Halfwidth to fullwidth symbols';
 }

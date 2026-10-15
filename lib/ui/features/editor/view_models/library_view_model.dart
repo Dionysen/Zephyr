@@ -46,6 +46,10 @@ class LibraryViewModel extends ChangeNotifier {
   }) : _error = initialError,
        _needsLibrarySetup = needsLibrarySetup,
        _uuid = uuid ?? const Uuid();
+
+  /// Called after [load] succeeds (library content is available).
+  Future<void> Function()? onLibraryLoaded;
+
   final WritingLibraryRepository _repository;
   final WorkspaceLayoutRepository? _layoutRepository;
   final Uuid _uuid;
@@ -517,6 +521,9 @@ class LibraryViewModel extends ChangeNotifier {
       _error = error;
     }
     notifyListeners();
+    if (_error == null) {
+      await onLibraryLoaded?.call();
+    }
   }
 
   Future<void> selectArticle(String id) async {

@@ -25,6 +25,7 @@ class QuickToolbarBar extends StatelessWidget {
     required this.config,
     required this.foreground,
     required this.toolsDrawerOpen,
+    required this.formatDrawerOpen,
     required this.canUndo,
     required this.onToolPressed,
     this.onReorderPinned,
@@ -35,6 +36,7 @@ class QuickToolbarBar extends StatelessWidget {
   final QuickToolbarConfig config;
   final Color foreground;
   final bool toolsDrawerOpen;
+  final bool formatDrawerOpen;
   final bool canUndo;
   final ValueChanged<QuickTool> onToolPressed;
 
@@ -77,6 +79,8 @@ class QuickToolbarBar extends StatelessWidget {
                 onToolPressed: onToolPressed,
                 onReorder: onReorderPinned,
                 tooltipFor: (tool) => _tooltip(l10n, tool),
+                toolsDrawerOpen: toolsDrawerOpen,
+                formatDrawerOpen: formatDrawerOpen,
               ),
             if (custom.isNotEmpty) ...[
               _ShortDivider(color: chrome),
@@ -90,6 +94,8 @@ class QuickToolbarBar extends StatelessWidget {
                   onToolPressed: onToolPressed,
                   onReorder: onReorderCustom,
                   tooltipFor: (tool) => _tooltip(l10n, tool),
+                  toolsDrawerOpen: toolsDrawerOpen,
+                  formatDrawerOpen: formatDrawerOpen,
                 ),
               ),
             ] else
@@ -121,6 +127,8 @@ class _ReorderableToolRow extends StatelessWidget {
     required this.tooltipFor,
     this.bodyFontFamily,
     this.onReorder,
+    this.toolsDrawerOpen = false,
+    this.formatDrawerOpen = false,
   });
 
   final List<QuickTool> tools;
@@ -131,6 +139,8 @@ class _ReorderableToolRow extends StatelessWidget {
   final ValueChanged<QuickTool> onToolPressed;
   final void Function(int oldIndex, int newIndex)? onReorder;
   final String? Function(QuickTool tool) tooltipFor;
+  final bool toolsDrawerOpen;
+  final bool formatDrawerOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -141,6 +151,7 @@ class _ReorderableToolRow extends StatelessWidget {
             tool: tool,
             foreground: foreground,
             enabled: tool.kind != QuickToolKind.undo || canUndo,
+            panelOpen: _panelOpenFor(tool),
             tooltip: tooltipFor(tool),
             bodyFontFamily: bodyFontFamily,
             onPressed: () => onToolPressed(tool),
@@ -197,6 +208,7 @@ class _ReorderableToolRow extends StatelessWidget {
             tool: tool,
             foreground: foreground,
             enabled: tool.kind != QuickToolKind.undo || canUndo,
+            panelOpen: _panelOpenFor(tool),
             bodyFontFamily: bodyFontFamily,
             onPressed: () => onToolPressed(tool),
           ),
@@ -210,6 +222,12 @@ class _ReorderableToolRow extends StatelessWidget {
           )
         : list;
   }
+
+  bool _panelOpenFor(QuickTool tool) => switch (tool.kind) {
+    QuickToolKind.tools => toolsDrawerOpen,
+    QuickToolKind.format => formatDrawerOpen,
+    _ => false,
+  };
 }
 
 /// Material's stretch feedback is available on every supported platform,

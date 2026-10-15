@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:plain_text_editor/input/plain_text_editing_controller.dart';
 
+import '../../../../domain/models/plain_text_format_option.dart';
 import '../../../../domain/use_cases/plain_text_format.dart';
 import '../plain_text/zephyr_plain_text_editor.dart';
 
@@ -126,12 +127,24 @@ class WorkspaceEditorBridge extends ChangeNotifier {
   }
 
   void applyFormat() {
+    applyFormatOptions(PlainTextFormatSelection.defaults.selected);
+  }
+
+  void applyFormatOptions(Set<PlainTextFormatOption> options) {
     final controller = _controller;
-    if (controller == null) return;
-    final next = formatPlainTextDocument(controller.text, _firstLineIndent);
+    if (controller == null || options.isEmpty) return;
+    final next = applyPlainTextFormat(
+      controller.text,
+      options: options,
+      firstLineIndent: _firstLineIndent,
+    );
     if (next == controller.text) return;
     controller.setText(next, selection: controller.selection, recordUndo: true);
     notifyCanUndo();
+  }
+
+  void applyFormatOption(PlainTextFormatOption option) {
+    applyFormatOptions({option});
   }
 
   void insertPhrase(String text) {

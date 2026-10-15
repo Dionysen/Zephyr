@@ -38,6 +38,7 @@ import '../ui/core/zephyr_scope.dart';
 import '../ui/core/zephyr_theme.dart';
 import '../ui/features/editor/view_models/editor_preferences_view_model.dart';
 import '../ui/features/editor/view_models/library_view_model.dart';
+import '../ui/features/editor/quick_toolbar/quick_toolbar_library_sync.dart';
 import '../ui/features/editor/view_models/quick_toolbar_view_model.dart';
 import '../ui/features/settings/view_models/backup_view_model.dart';
 import '../ui/features/settings/view_models/background_image_library.dart';
@@ -83,6 +84,12 @@ void runZephyr(
   final quickToolbar = QuickToolbarViewModel(
     FileQuickToolbarPreferencesRepository(QuickToolbarFileStorage()),
   )..load();
+  final toolbarLibrarySync = QuickToolbarLibrarySync(
+    toolbar: quickToolbar,
+    libraryRepository: library.repository,
+  );
+  toolbarLibrarySync.install();
+  library.onLibraryLoaded = toolbarLibrarySync.pullOrSeed;
   final keyboardShortcuts = KeyboardShortcutsViewModel(
     FileKeyboardShortcutsRepository(KeyboardShortcutsFileStorage()),
   )..load();

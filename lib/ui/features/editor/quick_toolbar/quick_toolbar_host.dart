@@ -9,6 +9,7 @@ import '../view_models/quick_toolbar_view_model.dart';
 import 'quick_toolbar_bar.dart';
 import 'quick_toolbar_drawer.dart';
 import 'quick_toolbar_edit_sheet.dart';
+import 'quick_toolbar_format_drawer.dart';
 import 'tools_panel_toggle_gate.dart';
 import 'workspace_editor_bridge.dart';
 
@@ -66,6 +67,7 @@ class QuickToolbarHost extends StatefulWidget {
 
 class _QuickToolbarHostState extends State<QuickToolbarHost> {
   late final ToolsPanelToggleGate _toolsGate;
+  late final ToolsPanelToggleGate _formatGate;
   bool? _librarySidebarSwipeBlocked;
 
   @override
@@ -74,6 +76,10 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
     _toolsGate = ToolsPanelToggleGate(
       isDrawerOpen: () => widget.toolbar.toolsDrawerOpen,
       onCommit: _commitToolsDrawer,
+    );
+    _formatGate = ToolsPanelToggleGate(
+      isDrawerOpen: () => widget.toolbar.formatDrawerOpen,
+      onCommit: _commitFormatDrawer,
     );
   }
 
@@ -84,6 +90,7 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
           .dispatch(context);
     }
     _toolsGate.dispose();
+    _formatGate.dispose();
     super.dispose();
   }
 
@@ -100,31 +107,50 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
     if (open) {
       final keyboard = MediaQuery.viewInsetsOf(context).bottom;
       toolbar.openToolsDrawer(keyboardHeight: keyboard);
-      // Keep body focus; hide keyboard and block re-show until tools close
-      // or the body actually loses focus.
       bridge.setSuppressBodyIme(true);
       bridge.hideIme();
       _syncLibrarySidebarSwipeBlock(true);
     } else {
-      // Show IME first while the panel slot is still held, then drop
-      // the drawer chrome — avoids a blank frame at bottom:0.
-      toolbar.restoreImeFromTools();
+      toolbar.restoreImeFromAuxiliaryPanel();
       bridge.focusBodyAndShowIme();
-      _syncLibrarySidebarSwipeBlock(false);
+      if (!toolbar.formatDrawerOpen) {
+        _syncLibrarySidebarSwipeBlock(false);
+      }
     }
   }
 
-  void _syncToolsGateSettle(double keyboard) {
+  void _commitFormatDrawer(bool open) {
     final toolbar = widget.toolbar;
-    if (!_toolsGate.isBusy) return;
-    if (toolbar.toolsDrawerOpen) {
-      // Open commit: wait until the soft keyboard is essentially gone.
-      if (keyboard < 8) _toolsGate.markSettled();
-      return;
+    final bridge = widget.bridge;
+    if (open) {
+      final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+      toolbar.openFormatDrawer(keyboardHeight: keyboard);
+      bridge.setSuppressBodyIme(true);
+      bridge.hideIme();
+      _syncLibrarySidebarSwipeBlock(true);
+    } else {
+      toolbar.restoreImeFromAuxiliaryPanel();
+      bridge.focusBodyAndShowIme();
+      if (!toolbar.toolsDrawerOpen) {
+        _syncLibrarySidebarSwipeBlock(false);
+      }
     }
-    // Close commit: wait until the IME has filled the latched slot.
-    if (!toolbar.holdingPanelForIme && keyboard > 40) {
-      _toolsGate.markSettled();
+  }
+
+  void _syncAuxiliaryGateSettle(double keyboard, QuickToolbarViewModel toolbar) {
+    if (_toolsGate.isBusy) {
+      if (toolbar.toolsDrawerOpen) {
+        if (keyboard < 8) _toolsGate.markSettled();
+      } else if (!toolbar.holdingPanelForIme && keyboard > 40) {
+        _toolsGate.markSettled();
+      }
+    }
+    if (_formatGate.isBusy) {
+      if (toolbar.formatDrawerOpen) {
+        if (keyboard < 8) _formatGate.markSettled();
+      } else if (!toolbar.holdingPanelForIme && keyboard > 40) {
+        _formatGate.markSettled();
+      }
     }
   }
 
@@ -137,45 +163,45 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
       builder: (context, _) {
         final keyboard = MediaQuery.viewInsetsOf(context).bottom;
         final bodyFocused = bridge.bodyFocused;
-        final drawerOpen = toolbar.toolsDrawerOpen;
+        final toolsOpen = toolbar.toolsDrawerOpen;
+        final formatOpen = toolbar.formatDrawerOpen;
+        final auxiliaryOpen = toolsOpen || formatOpen;
         final fixedPanel = toolbar.usesFixedPanel;
         final latched = toolbar.toolsPanelHeight;
-        // While the panel slot is owned (drawer or IME restore), pin the bar to
-        // the latched height — but never below the live keyboard (overshoot).
         final panelHeight = fixedPanel ? math.max(latched, keyboard) : keyboard;
-        // While the tools panel is latched, stay visible even if a blank panel
-        // tap briefly drops primary focus before we restore it.
         final visible =
             !widget.hidden && (fixedPanel || (bodyFocused && keyboard > 0.5));
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!context.mounted) return;
           if (widget.hidden &&
-              (toolbar.toolsDrawerOpen || toolbar.holdingPanelForIme)) {
-            final wasDrawer = toolbar.toolsDrawerOpen;
+              (auxiliaryOpen || toolbar.holdingPanelForIme)) {
+            final wasTools = toolbar.toolsDrawerOpen;
+            final wasFormat = toolbar.formatDrawerOpen;
             toolbar.closeToolsDrawer();
+            toolbar.closeFormatDrawer();
             bridge.setSuppressBodyIme(false);
             _toolsGate.markSettled();
-            if (wasDrawer) bridge.focusBodyAndShowIme();
+            _formatGate.markSettled();
+            if (wasTools || wasFormat) bridge.focusBodyAndShowIme();
             return;
           }
-          // Keep suppress in sync if the drawer was closed via focus loss.
-          if (!drawerOpen && bridge.suppressBodyIme) {
+          if (!auxiliaryOpen && bridge.suppressBodyIme) {
             bridge.setSuppressBodyIme(false);
-          } else if (drawerOpen && !bridge.suppressBodyIme) {
+          } else if (auxiliaryOpen && !bridge.suppressBodyIme) {
             bridge.setSuppressBodyIme(true);
           }
           toolbar.reportKeyboardInset(keyboard);
-          _syncToolsGateSettle(keyboard);
-          // Do not close an open tools drawer here — panel taps briefly drop
-          // primary focus and [bodyFocused] in this closure can be stale.
-          // Dismiss via tools toggle, system back, or chrome focus (title).
+          _syncAuxiliaryGateSettle(keyboard, toolbar);
           if (!bridge.bodyFocused &&
-              !toolbar.toolsDrawerOpen &&
+              !toolsOpen &&
+              !formatOpen &&
               toolbar.holdingPanelForIme) {
             toolbar.closeToolsDrawer();
+            toolbar.closeFormatDrawer();
             bridge.setSuppressBodyIme(false);
             _toolsGate.markSettled();
+            _formatGate.markSettled();
           }
         });
 
@@ -186,18 +212,21 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
           panelHeight: fixedPanel ? panelHeight : 0,
         );
         final chromeHeight =
-            quickToolbarHeight + (drawerOpen ? panelHeight : 0);
-        final chromeBottom = drawerOpen ? 0.0 : panelHeight;
+            quickToolbarHeight + (auxiliaryOpen ? panelHeight : 0);
+        final chromeBottom = auxiliaryOpen ? 0.0 : panelHeight;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!context.mounted) return;
-          _syncLibrarySidebarSwipeBlock(drawerOpen);
+          _syncLibrarySidebarSwipeBlock(auxiliaryOpen);
         });
 
         return PopScope(
-          canPop: !drawerOpen,
+          canPop: !auxiliaryOpen,
           onPopInvokedWithResult: (didPop, _) {
-            if (!didPop && drawerOpen) {
+            if (didPop) return;
+            if (toolsOpen) {
               _toolsGate.close();
+            } else if (formatOpen) {
+              _formatGate.close();
             }
           },
           child: Stack(
@@ -229,14 +258,15 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
                               ),
                               config: toolbar.config,
                               foreground: widget.foreground,
-                              toolsDrawerOpen: drawerOpen,
+                              toolsDrawerOpen: toolsOpen,
+                              formatDrawerOpen: formatOpen,
                               canUndo: bridge.canUndo,
                               bodyFontFamily: widget.bodyFontFamily,
                               onToolPressed: (tool) => _onTool(context, tool),
                               onReorderPinned: toolbar.reorderPinned,
                               onReorderCustom: toolbar.reorderCustom,
                             ),
-                            if (drawerOpen)
+                            if (toolsOpen)
                               QuickToolbarDrawer(
                                 height: panelHeight,
                                 foreground: widget.foreground,
@@ -247,6 +277,18 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
                                     toolbar: toolbar,
                                   );
                                 },
+                              ),
+                            if (formatOpen)
+                              QuickToolbarFormatDrawer(
+                                height: panelHeight,
+                                foreground: widget.foreground,
+                                toolbar: toolbar,
+                                onApplyAll: () {
+                                  bridge.applyFormatOptions(
+                                    toolbar.formatSelection.selected,
+                                  );
+                                },
+                                onApplyOption: bridge.applyFormatOption,
                               ),
                           ],
                         ),
@@ -264,8 +306,6 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
   void _onTool(BuildContext context, QuickTool tool) {
     switch (tool.kind) {
       case QuickToolKind.tools:
-        // Defer + coalesce via [_toolsGate] so splash can play and rapid taps
-        // cannot stack hide/show IME races.
         _toolsGate.toggle();
       case QuickToolKind.undo:
         widget.bridge.undo();
@@ -274,7 +314,7 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
       case QuickToolKind.indent:
         widget.bridge.insertIndent();
       case QuickToolKind.format:
-        widget.bridge.applyFormat();
+        _formatGate.toggle();
       case QuickToolKind.phrase:
         widget.bridge.insertPhrase(tool.payload ?? '');
     }

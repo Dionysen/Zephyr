@@ -669,6 +669,12 @@ class _CloudLibraryRepository implements WritingLibraryRepository {
   }
 
   @override
+  Future<List<String>?> readQuickToolbarFormatSelectionIds() async => null;
+
+  @override
+  Future<void> writeQuickToolbarFormatSelectionIds(List<String> ids) async {}
+
+  @override
   Future<BackupEntry> createBackup({required BackupKind kind}) async {
     createCalls++;
     createdKind = kind;

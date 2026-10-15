@@ -60,6 +60,13 @@ void main() {
     );
   });
 
+  test('quick toolbar format selection round-trips in ZephyrMeta', () async {
+    final repository = PureWriterWritingLibraryRepository(database);
+    const ids = ['removeParagraphBlanks', 'insertCjkLatinSpaces'];
+    await repository.writeQuickToolbarFormatSelectionIds(ids);
+    expect(await repository.readQuickToolbarFormatSelectionIds(), ids);
+  });
+
   test(
     'editor connection survives another engine closing the same library',
     () async {

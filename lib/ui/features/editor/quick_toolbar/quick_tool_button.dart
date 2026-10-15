@@ -63,6 +63,13 @@ class QuickToolButton extends StatelessWidget {
         foreground: color,
         onPressed: enabled ? onPressed : null,
       ),
+      QuickToolKind.format => _ToolbarInk(
+        onTap: enabled ? onPressed : null,
+        selected: panelOpen,
+        selectedColor: foreground.withValues(alpha: 0.12),
+        width: iconExtent,
+        child: Icon(Icons.auto_fix_high_rounded, size: iconSize, color: color),
+      ),
       _ => _ToolbarInk(
         onTap: enabled ? onPressed : null,
         selected: selected,

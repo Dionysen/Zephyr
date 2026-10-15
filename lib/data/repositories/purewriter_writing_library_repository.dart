@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:package_info_plus/package_info_plus.dart';
@@ -6,6 +7,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../domain/models/library_backup.dart';
 import '../../domain/models/purewriter_models.dart';
+import '../../domain/models/zephyr_meta_keys.dart';
 import '../../domain/repositories/writing_library_repository.dart';
 import '../../domain/use_cases/article_preview_summary.dart';
 import '../services/device_label.dart';
@@ -1292,6 +1294,37 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   }
 
   static const _cloudLibraryIdKey = 'cloud_library_id';
+
+  @override
+  Future<List<String>?> readQuickToolbarFormatSelectionIds() async {
+    final db = _store.database;
+    final rows = await db.query(
+      'ZephyrMeta',
+      columns: ['value'],
+      where: 'key = ?',
+      whereArgs: [ZephyrMetaKeys.quickToolbarFormatSelection],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    final raw = rows.first['value'] as String?;
+    if (raw == null || raw.isEmpty) return null;
+    final decoded = jsonDecode(raw);
+    if (decoded is! List) return null;
+    return decoded.whereType<String>().toList(growable: false);
+  }
+
+  @override
+  Future<void> writeQuickToolbarFormatSelectionIds(List<String> ids) async {
+    _store.ensureWritable();
+    await _store.database.insert(
+      'ZephyrMeta',
+      {
+        'key': ZephyrMetaKeys.quickToolbarFormatSelection,
+        'value': jsonEncode(ids),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
 
   @override
   Future<String> ensureCloudLibraryId() async {

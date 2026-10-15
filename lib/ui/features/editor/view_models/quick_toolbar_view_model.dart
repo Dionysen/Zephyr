@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../../domain/models/plain_text_format_option.dart';
 import '../../../../domain/models/quick_toolbar_config.dart';
 import '../../../../domain/repositories/quick_toolbar_preferences_repository.dart';
 
@@ -17,18 +18,27 @@ class QuickToolbarViewModel extends ChangeNotifier {
 
   QuickToolbarConfig _config = QuickToolbarConfig.defaults;
   Timer? _pendingSave;
+
+  /// Writes format checkbox ids into the open library's ZephyrMeta (`.pwb`).
+  Future<void> Function(List<String> ids)? onFormatSelectionIdsChanged;
   var _toolsDrawerOpen = false;
+  var _formatDrawerOpen = false;
   /// Keep the latched panel slot until the soft keyboard fills it again.
   var _holdingPanelForIme = false;
   double _latchedKeyboardHeight = 0;
 
   QuickToolbarConfig get config => _config;
   bool get toolsDrawerOpen => _toolsDrawerOpen;
+  bool get formatDrawerOpen => _formatDrawerOpen;
   bool get holdingPanelForIme => _holdingPanelForIme;
   double get latchedKeyboardHeight => _latchedKeyboardHeight;
 
-  /// Panel chrome is active (tools drawer, or empty hold while IME rises).
-  bool get usesFixedPanel => _toolsDrawerOpen || _holdingPanelForIme;
+  PlainTextFormatSelection get formatSelection =>
+      PlainTextFormatSelection.fromStoredIds(_config.formatSelectionIds);
+
+  /// Panel chrome is active (tools/format drawer, or empty hold while IME rises).
+  bool get usesFixedPanel =>
+      _toolsDrawerOpen || _formatDrawerOpen || _holdingPanelForIme;
 
   Future<void> load() async {
     try {
@@ -50,7 +60,7 @@ class QuickToolbarViewModel extends ChangeNotifier {
   void rememberKeyboardHeight(double height) {
     // Freeze while the tools panel is open so the bar does not drift as the
     // soft keyboard animates away.
-    if (_toolsDrawerOpen) return;
+    if (_toolsDrawerOpen || _formatDrawerOpen) return;
     if (_holdingPanelForIme) {
       // Release only when the IME has essentially filled the latched slot.
       // Early release (e.g. at 92%) drops effective bottom cover and bounces.
@@ -71,6 +81,7 @@ class QuickToolbarViewModel extends ChangeNotifier {
   /// Opens the tools panel, freezing [panelHeight] for the session.
   void openToolsDrawer({required double keyboardHeight}) {
     if (_toolsDrawerOpen) return;
+    _formatDrawerOpen = false;
     _holdingPanelForIme = false;
     // Prefer the larger of live inset and the last latch so a mid-collapse
     // keyboard (rapid re-open) does not shrink the panel under the bar.
@@ -84,18 +95,27 @@ class QuickToolbarViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Closes the tools drawer but keeps the panel slot until the IME rises.
-  void restoreImeFromTools() {
-    if (!_toolsDrawerOpen && !_holdingPanelForIme) return;
+  /// Closes an auxiliary panel but keeps the slot until the IME rises.
+  void restoreImeFromAuxiliaryPanel() {
+    if (!_toolsDrawerOpen && !_formatDrawerOpen && !_holdingPanelForIme) {
+      return;
+    }
     _toolsDrawerOpen = false;
+    _formatDrawerOpen = false;
     _holdingPanelForIme = true;
     notifyListeners();
   }
 
+  /// Closes the tools drawer but keeps the panel slot until the IME rises.
+  void restoreImeFromTools() => restoreImeFromAuxiliaryPanel();
+
   void setToolsDrawerOpen(bool open) {
     if (_toolsDrawerOpen == open) return;
     _toolsDrawerOpen = open;
-    if (open) _holdingPanelForIme = false;
+    if (open) {
+      _holdingPanelForIme = false;
+      _formatDrawerOpen = false;
+    }
     notifyListeners();
   }
 
@@ -109,6 +129,56 @@ class QuickToolbarViewModel extends ChangeNotifier {
   void closeToolsDrawer() {
     _holdingPanelForIme = false;
     setToolsDrawerOpen(false);
+  }
+
+  void openFormatDrawer({required double keyboardHeight}) {
+    if (_formatDrawerOpen) return;
+    _toolsDrawerOpen = false;
+    _holdingPanelForIme = false;
+    final candidate = keyboardHeight > _latchedKeyboardHeight
+        ? keyboardHeight
+        : _latchedKeyboardHeight;
+    if (candidate >= 80) {
+      _latchedKeyboardHeight = candidate;
+    }
+    _formatDrawerOpen = true;
+    notifyListeners();
+  }
+
+  void setFormatDrawerOpen(bool open) {
+    if (_formatDrawerOpen == open) return;
+    _formatDrawerOpen = open;
+    if (open) {
+      _toolsDrawerOpen = false;
+      _holdingPanelForIme = false;
+    }
+    notifyListeners();
+  }
+
+  void closeFormatDrawer() {
+    _holdingPanelForIme = false;
+    setFormatDrawerOpen(false);
+  }
+
+  void setFormatOption(PlainTextFormatOption option, bool selected) {
+    final next = formatSelection.toggle(option, selected);
+    final ids = next.toIds();
+    _update(_config.copyWith(formatSelectionIds: ids));
+    unawaited(onFormatSelectionIdsChanged?.call(ids));
+  }
+
+  /// Applies ids from library meta without re-firing [onFormatSelectionIdsChanged].
+  void applyFormatSelectionIds(List<String> ids) {
+    if (_listEquals(_config.formatSelectionIds, ids)) return;
+    _update(_config.copyWith(formatSelectionIds: ids));
+  }
+
+  static bool _listEquals(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   /// [newIndex] is the destination after removal (as from [onReorderItem]).
