@@ -162,6 +162,7 @@ Future<T?> showZephyrModalSheet<T>({
     context: context,
     isScrollControlled: isScrollControlled,
     showDragHandle: showDragHandle,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     shape: shape,
     builder: builder,
   );

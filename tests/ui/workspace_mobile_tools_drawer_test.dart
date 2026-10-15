@@ -10,9 +10,16 @@ void main() {
     tester,
   ) async {
     var tapped = false;
+    const drawerColor = Color(0xFFFAF4ED);
 
     await tester.pumpWidget(
       MaterialApp(
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue).copyWith(
+            surface: drawerColor,
+            surfaceContainerLow: const Color(0xFFD8D0C8),
+          ),
+        ),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         locale: const Locale('en'),
@@ -54,6 +61,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('More'), findsOneWidget);
+    expect(
+      tester.widget<BottomSheet>(find.byType(BottomSheet)).backgroundColor,
+      drawerColor,
+    );
+    expect(
+      tester.widget<Material>(
+        find.ancestor(of: find.text('More'), matching: find.byType(Material)).first,
+      ).color,
+      drawerColor,
+    );
     expect(find.textContaining('Long-press'), findsOneWidget);
     // Persisted order puts Settings before Search.
     final settingsY = tester.getTopLeft(find.text('Settings')).dy;
