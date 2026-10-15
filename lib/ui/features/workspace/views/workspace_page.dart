@@ -65,6 +65,8 @@ class _WorkspacePageState extends State<WorkspacePage>
 
   /// Root back is exiting after scheduling background backup.
   var _handlingExit = false;
+  Object? _leaveBackupError;
+  Object? _reportedSaveError;
 
   @override
   void initState() {
@@ -73,7 +75,7 @@ class _WorkspacePageState extends State<WorkspacePage>
     // Home / Recents / kill path: enqueue WorkManager while still allowed.
     AndroidLeaveBackup.listenForUserLeaving(() {
       if (!mounted || WindowChrome.isDesktop || _handlingExit) return;
-      unawaited(_scheduleLeaveBackup());
+      _queueLeaveBackup();
     });
   }
 
@@ -85,7 +87,23 @@ class _WorkspacePageState extends State<WorkspacePage>
       return;
     }
     _started = true;
+    _library!.addListener(_reportSaveError);
     unawaited(_bootstrapLibrary());
+  }
+
+  void _reportSaveError() {
+    final error = _library?.saveError;
+    if (error == null) {
+      _reportedSaveError = null;
+      return;
+    }
+    if (identical(error, _reportedSaveError)) return;
+    _reportedSaveError = error;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ZephyrSnackBar.show(context, context.l10n.saveFailed(error.toString()));
+      }
+    });
   }
 
   Future<void> _bootstrapLibrary() async {
@@ -138,7 +156,11 @@ class _WorkspacePageState extends State<WorkspacePage>
         state == AppLifecycleState.detached) {
       final library = _library;
       if (library != null) {
-        unawaited(library.flushPending());
+        unawaited(
+          library.flushPending().catchError((Object error) {
+            _leaveBackupError = error;
+          }),
+        );
       }
       // Safety net if [onUserLeaveHint] did not fire (some OEM paths).
       if (mounted &&
@@ -146,7 +168,7 @@ class _WorkspacePageState extends State<WorkspacePage>
           !_handlingExit &&
           (state == AppLifecycleState.paused ||
               state == AppLifecycleState.detached)) {
-        unawaited(_scheduleLeaveBackup());
+        _queueLeaveBackup();
       }
     } else if (mounted &&
         !WindowChrome.isDesktop &&
@@ -154,11 +176,23 @@ class _WorkspacePageState extends State<WorkspacePage>
       if (!_handlingExit) {
         _leaveBackupScheduled = false;
       }
+      final leaveError = _leaveBackupError;
+      _leaveBackupError = null;
+      if (leaveError != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            ZephyrSnackBar.show(
+              context,
+              context.l10n.backupFailed(leaveError.toString()),
+            );
+          }
+        });
+      }
       unawaited(_autoSyncAndReport());
     }
   }
 
-  /// Back gesture / system back at workspace root: enqueue backup, then exit.
+  /// Root back waits for cloud upload before allowing the process to exit.
   Future<void> _onRootBack() async {
     if (_handlingExit) return;
     final nav = Navigator.of(context);
@@ -168,13 +202,61 @@ class _WorkspacePageState extends State<WorkspacePage>
     }
     if (WindowChrome.isDesktop) return;
 
+    FocusManager.instance.primaryFocus?.unfocus();
     _handlingExit = true;
+    unawaited(
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => PopScope(
+          canPop: false,
+          child: AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 20),
+                Text(dialogContext.l10n.exitBackupInProgress),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
     try {
-      await _scheduleLeaveBackup();
-    } on Object {
-      // Still leave after a failed schedule so the user is not trapped.
+      final scope = ZephyrScope.of(context);
+      await scope.library.flushPending();
+      while (scope.backup.busy || scope.cloudSync.busy) {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
+      if (scope.cloudSync.cloudBackupEnabled) {
+        if (!scope.cloudSync.isSignedIn) {
+          throw StateError(
+            'Cloud backup is enabled but no account is connected.',
+          );
+        }
+        await scope.cloudSync.backupNow();
+        if (scope.cloudSync.error case final error?) throw error;
+      } else {
+        await _scheduleLeaveBackup();
+      }
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      await SystemNavigator.pop();
+      _handlingExit = false;
+    } on Object catch (error) {
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      _handlingExit = false;
+      ZephyrSnackBar.show(context, context.l10n.backupFailed(error.toString()));
     }
-    await SystemNavigator.pop();
+  }
+
+  void _queueLeaveBackup() {
+    unawaited(
+      _scheduleLeaveBackup().catchError((Object error) {
+        _leaveBackupError = error;
+      }),
+    );
   }
 
   /// Flush pending edits and enqueue WorkManager (in-progress notify only).
@@ -192,8 +274,6 @@ class _WorkspacePageState extends State<WorkspacePage>
     );
     if (!scheduled) return;
     _leaveBackupScheduled = true;
-    // Trust WorkManager retry; avoid re-enqueue storms while leaving.
-    scope.library.markBackupCompleted();
   }
 
   Future<void> _autoSyncAndReport() async {
@@ -233,7 +313,8 @@ class _WorkspacePageState extends State<WorkspacePage>
     unawaited(AndroidLeaveBackup.clearUserLeavingListener());
     final library = _library;
     if (library != null) {
-      unawaited(library.flushPending());
+      library.removeListener(_reportSaveError);
+      unawaited(library.flushPending().catchError((Object _) {}));
     }
     super.dispose();
   }
@@ -241,319 +322,365 @@ class _WorkspacePageState extends State<WorkspacePage>
   @override
   Widget build(BuildContext context) {
     final scope = ZephyrScope.of(context);
-    // Mobile root back: finish cloud/local backup while still visible, then exit.
-    // Mobile root back: schedule WorkManager backup, then exit immediately.
-    return PopScope(
-      canPop: WindowChrome.isDesktop,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
-        unawaited(_onRootBack());
-      },
-      child: ListenableBuilder(
-      listenable: Listenable.merge([
-        scope.library,
-        scope.theme,
-        scope.editorPreferences,
-      ]),
-      builder: (context, _) {
-        final model = scope.library;
-        final immersiveStatusBar = scope.theme.ui.immersiveStatusBar;
-        final hideStatusBarIcons = scope.theme.ui.hideStatusBarIcons;
-        final surface = Theme.of(context).colorScheme.surface;
-        if (model.error != null && model.library == null) {
-          return ZephyrStatusBar(
-            immersive: immersiveStatusBar,
-            hideIcons: hideStatusBarIcons,
-            statusBarColor: surface,
-            child: _LibrarySetupPage(
-              error: model.error,
-              openLibrary: _openLibrary,
-            ),
-          );
-        }
-        if (model.library == null) {
-          return ZephyrStatusBar(
-            immersive: immersiveStatusBar,
-            hideIcons: hideStatusBarIcons,
-            statusBarColor: surface,
-            child: const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            ),
-          );
-        }
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final compact = ZephyrBreakpoints.isCompact(constraints.maxWidth);
-            if (compact) {
-              final drawerWidth = WorkspaceLayout.mobileDrawerWidth.clamp(
-                260.0,
-                constraints.maxWidth * 0.88,
-              );
-              final immersive = immersiveStatusBar;
-              final editorBackground = scope.theme.ui.activeEditorBackgroundFor(
-                dark: scope.theme.isEffectivelyDark,
-              );
-              final bleedEditorBackground = editorBackground.hasImage;
-              // Bleed under the status band when immersive or a writing-column
-              // background is active so the image fills above the book bar.
-              final invadeStatusBand = immersive || bleedEditorBackground;
-              final sidebarColor = Theme.of(context)
-                  .colorScheme
-                  .surfaceContainerLowest;
-              // Immersive: full-bleed under a transparent status bar; pad chrome
-              // only. Off: keep the same edge-to-edge surface, but pad the shell.
-              return Theme(
-                data: withMobileRoundControls(Theme.of(context)),
-                child: ZephyrStatusBar(
-                  immersive: immersive,
-                  hideIcons: hideStatusBarIcons,
-                  statusBarColor: surface,
-                  child: Scaffold(
-                    backgroundColor: surface,
-                    // Keep the editor viewport stable; the plain-text editor
-                    // pads its scroll extent by the IME inset so the last line
-                    // can sit above the keyboard without a layout resize jump.
-                    resizeToAvoidBottomInset: false,
-                    body: ColoredBox(
-                      color: surface,
-                      child: ZephyrTopSafeArea(
-                        top: !invadeStatusBand,
-                        // Content paints under the transparent gesture bar.
-                        bottom: false,
-                        child: Column(
-                          children: [
-                            if (model.needsLibrarySetup)
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  top: invadeStatusBand
-                                      ? zephyrTopInset(context)
-                                      : 0,
-                                ),
-                                child: _LibrarySetupBanner(
-                                  openLibrary: _openLibrary,
-                                ),
-                              ),
-                            Expanded(
-                              child: ZephyrSwipeDrawer(
-                                drawerWidth: drawerWidth,
-                                drawer: Material(
-                                  color: sidebarColor,
-                                  child: ZephyrTopSafeArea(
-                                    // Always paint sidebar under the status band
-                                    // when immersive; reserve space for controls.
-                                    top: immersive,
-                                    bottom: false,
-                                    left: false,
-                                    right: false,
-                                    child: WorkspaceSidebar(
-                                      model: model,
-                                      mode: SidebarMode.drawer,
-                                      openLibrary: _openLibrary,
-                                      openSettings: _openSettings,
+    return Stack(
+      children: [
+        AbsorbPointer(
+          absorbing: _handlingExit,
+          child: PopScope(
+            canPop: WindowChrome.isDesktop,
+            onPopInvokedWithResult: (didPop, _) {
+              if (didPop) return;
+              unawaited(_onRootBack());
+            },
+            child: ListenableBuilder(
+              listenable: Listenable.merge([
+                scope.library,
+                scope.theme,
+                scope.editorPreferences,
+              ]),
+              builder: (context, _) {
+                final model = scope.library;
+                final immersiveStatusBar = scope.theme.ui.immersiveStatusBar;
+                final hideStatusBarIcons = scope.theme.ui.hideStatusBarIcons;
+                final surface = Theme.of(context).colorScheme.surface;
+                if (model.error != null && model.library == null) {
+                  return ZephyrStatusBar(
+                    immersive: immersiveStatusBar,
+                    hideIcons: hideStatusBarIcons,
+                    statusBarColor: surface,
+                    child: _LibrarySetupPage(
+                      error: model.error,
+                      openLibrary: _openLibrary,
+                    ),
+                  );
+                }
+                if (model.library == null) {
+                  return ZephyrStatusBar(
+                    immersive: immersiveStatusBar,
+                    hideIcons: hideStatusBarIcons,
+                    statusBarColor: surface,
+                    child: const Scaffold(
+                      body: Center(child: CircularProgressIndicator()),
+                    ),
+                  );
+                }
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compact = ZephyrBreakpoints.isCompact(
+                      constraints.maxWidth,
+                    );
+                    if (compact) {
+                      final drawerWidth = WorkspaceLayout.mobileDrawerWidth
+                          .clamp(260.0, constraints.maxWidth * 0.88);
+                      final immersive = immersiveStatusBar;
+                      final editorBackground = scope.theme.ui
+                          .activeEditorBackgroundFor(
+                            dark: scope.theme.isEffectivelyDark,
+                          );
+                      final bleedEditorBackground = editorBackground.hasImage;
+                      // Bleed under the status band when immersive or a writing-column
+                      // background is active so the image fills above the book bar.
+                      final invadeStatusBand =
+                          immersive || bleedEditorBackground;
+                      final sidebarColor = Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerLowest;
+                      // Immersive: full-bleed under a transparent status bar; pad chrome
+                      // only. Off: keep the same edge-to-edge surface, but pad the shell.
+                      return Theme(
+                        data: withMobileRoundControls(Theme.of(context)),
+                        child: ZephyrStatusBar(
+                          immersive: immersive,
+                          hideIcons: hideStatusBarIcons,
+                          statusBarColor: surface,
+                          child: Scaffold(
+                            backgroundColor: surface,
+                            // Keep the editor viewport stable; the plain-text editor
+                            // pads its scroll extent by the IME inset so the last line
+                            // can sit above the keyboard without a layout resize jump.
+                            resizeToAvoidBottomInset: false,
+                            body: ColoredBox(
+                              color: surface,
+                              child: ZephyrTopSafeArea(
+                                top: !invadeStatusBand,
+                                // Content paints under the transparent gesture bar.
+                                bottom: false,
+                                child: Column(
+                                  children: [
+                                    if (model.needsLibrarySetup)
+                                      Padding(
+                                        padding: EdgeInsets.only(
+                                          top: invadeStatusBand
+                                              ? zephyrTopInset(context)
+                                              : 0,
+                                        ),
+                                        child: _LibrarySetupBanner(
+                                          openLibrary: _openLibrary,
+                                        ),
+                                      ),
+                                    Expanded(
+                                      child: ZephyrSwipeDrawer(
+                                        drawerWidth: drawerWidth,
+                                        drawer: Material(
+                                          color: sidebarColor,
+                                          child: ZephyrTopSafeArea(
+                                            // Always paint sidebar under the status band
+                                            // when immersive; reserve space for controls.
+                                            top: immersive,
+                                            bottom: false,
+                                            left: false,
+                                            right: false,
+                                            child: WorkspaceSidebar(
+                                              model: model,
+                                              mode: SidebarMode.drawer,
+                                              openLibrary: _openLibrary,
+                                              openSettings: _openSettings,
+                                            ),
+                                          ),
+                                        ),
+                                        body: _MobileEditorChrome(
+                                          model: model,
+                                          preferences: scope.editorPreferences,
+                                          invadeStatusBar: invadeStatusBand,
+                                          transparentTopBar:
+                                              bleedEditorBackground,
+                                          openSettings: _openSettings,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                                body: _MobileEditorChrome(
-                                  model: model,
-                                  preferences: scope.editorPreferences,
-                                  invadeStatusBar: invadeStatusBand,
-                                  transparentTopBar: bleedEditorBackground,
-                                  openSettings: _openSettings,
+                                  ],
                                 ),
                               ),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }
+                      );
+                    }
 
-            final editorBackground = scope.theme.ui.activeEditorBackgroundFor(
-              dark: scope.theme.isEffectivelyDark,
-            );
-            // Desktop: paint the writing-column image behind the title bar and
-            // under the resize grip so expanding the sidebar does not leave a
-            // solid strip beside the photo.
-            final bleedEditorBackground = editorBackground.hasImage;
-            final workspace = Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                AnimatedContainer(
-                  duration: model.isResizingSidebar
-                      ? Duration.zero
-                      : const Duration(milliseconds: 180),
-                  curve: Curves.easeOutCubic,
-                  width: model.isSidebarExpanded ? model.sidebarWidth : 0,
-                  child: ClipRect(
-                    child: OverflowBox(
-                      alignment: Alignment.topLeft,
-                      minWidth: model.sidebarWidth,
-                      maxWidth: model.sidebarWidth,
-                      child: WorkspaceSidebar(
-                        model: model,
-                        mode: SidebarMode.docked,
-                        openLibrary: _openLibrary,
-                        openSettings: _openSettings,
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      if (bleedEditorBackground)
-                        ListenableBuilder(
-                          listenable: scope.theme,
-                          builder: (context, _) => EditorBackgroundLayer(
-                            config: scope.theme.ui.activeEditorBackgroundFor(
-                              dark: scope.theme.isEffectivelyDark,
+                    final editorBackground = scope.theme.ui
+                        .activeEditorBackgroundFor(
+                          dark: scope.theme.isEffectivelyDark,
+                        );
+                    // Desktop: paint the writing-column image behind the title bar and
+                    // under the resize grip so expanding the sidebar does not leave a
+                    // solid strip beside the photo.
+                    final bleedEditorBackground = editorBackground.hasImage;
+                    final workspace = Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        AnimatedContainer(
+                          duration: model.isResizingSidebar
+                              ? Duration.zero
+                              : const Duration(milliseconds: 180),
+                          curve: Curves.easeOutCubic,
+                          width: model.isSidebarExpanded
+                              ? model.sidebarWidth
+                              : 0,
+                          child: ClipRect(
+                            child: OverflowBox(
+                              alignment: Alignment.topLeft,
+                              minWidth: model.sidebarWidth,
+                              maxWidth: model.sidebarWidth,
+                              child: WorkspaceSidebar(
+                                model: model,
+                                mode: SidebarMode.docked,
+                                openLibrary: _openLibrary,
+                                openSettings: _openSettings,
+                              ),
                             ),
-                            child: const SizedBox.expand(),
                           ),
                         ),
-                      Column(
-                        children: [
-                          if (model.needsLibrarySetup)
-                            _LibrarySetupBanner(openLibrary: _openLibrary),
-                          WorkspaceHeader(
-                            model: model,
-                            showSidebarToggle: !model.isSidebarExpanded,
-                            showDocumentTitle: _showTitleInChrome,
-                            dimDocumentTitle: scope
-                                .editorPreferences.preferences.typewriterMode,
-                            transparent: bleedEditorBackground,
-                            toolsBuilder: (headerContext) =>
-                                buildWorkspaceOverflowTools(
-                              headerContext,
-                              model: model,
-                              openSettings: _openSettings,
-                            ),
-                          ),
-                          Expanded(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                if (model.isSidebarExpanded)
-                                  SidebarResizeHandle(
+                        Expanded(
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              if (bleedEditorBackground)
+                                ListenableBuilder(
+                                  listenable: scope.theme,
+                                  builder: (context, _) =>
+                                      EditorBackgroundLayer(
+                                        config: scope.theme.ui
+                                            .activeEditorBackgroundFor(
+                                              dark:
+                                                  scope.theme.isEffectivelyDark,
+                                            ),
+                                        child: const SizedBox.expand(),
+                                      ),
+                                ),
+                              Column(
+                                children: [
+                                  if (model.needsLibrarySetup)
+                                    _LibrarySetupBanner(
+                                      openLibrary: _openLibrary,
+                                    ),
+                                  WorkspaceHeader(
                                     model: model,
-                                    maxWidth: _maxSidebarWidth(
-                                      constraints.maxWidth,
+                                    showSidebarToggle: !model.isSidebarExpanded,
+                                    showDocumentTitle: _showTitleInChrome,
+                                    dimDocumentTitle: scope
+                                        .editorPreferences
+                                        .preferences
+                                        .typewriterMode,
+                                    transparent: bleedEditorBackground,
+                                    toolsBuilder: (headerContext) =>
+                                        buildWorkspaceOverflowTools(
+                                          headerContext,
+                                          model: model,
+                                          openSettings: _openSettings,
+                                        ),
+                                  ),
+                                  Expanded(
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        if (model.isSidebarExpanded)
+                                          SidebarResizeHandle(
+                                            model: model,
+                                            maxWidth: _maxSidebarWidth(
+                                              constraints.maxWidth,
+                                            ),
+                                          ),
+                                        Expanded(
+                                          child: WorkspaceEditor(
+                                            model: model,
+                                            preferences:
+                                                scope.editorPreferences,
+                                            showBackground:
+                                                !bleedEditorBackground,
+                                            onDocumentTitleObscured:
+                                                (obscured) {
+                                                  if (_showTitleInChrome ==
+                                                      obscured) {
+                                                    return;
+                                                  }
+                                                  setState(
+                                                    () => _showTitleInChrome =
+                                                        obscured,
+                                                  );
+                                                },
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                Expanded(
-                                  child: WorkspaceEditor(
-                                    model: model,
-                                    preferences: scope.editorPreferences,
-                                    showBackground: !bleedEditorBackground,
-                                    onDocumentTitleObscured: (obscured) {
-                                      if (_showTitleInChrome == obscured) {
-                                        return;
-                                      }
-                                      setState(
-                                        () => _showTitleInChrome = obscured,
-                                      );
-                                    },
+                                ],
+                              ),
+                              Positioned(
+                                left: 12,
+                                bottom: 12,
+                                child: const CloudBackupQuickButton(
+                                  iconSize: 16,
+                                  hoverBorder: true,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                    // Floating settings: overlays the workspace without resizing the
+                    // sidebar slot or the editor.
+                    final settingsInset =
+                        WorkspaceLibraryDockMetrics.horizontalInset;
+                    final settingsPanelWidth = math.max(
+                      WorkspaceSettingsPanel.preferredWidth,
+                      model.sidebarWidth - 2 * settingsInset,
+                    );
+                    final settingsStackHeight = math.max(
+                      0.0,
+                      constraints.maxHeight -
+                          WorkspaceHeader.height -
+                          WorkspaceBookPicker.blockHeight,
+                    );
+                    final settingsPanelHeight = settingsStackHeight * 2 / 3;
+                    final shell = Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        workspace,
+                        if (_settingsOpen)
+                          Focus(
+                            autofocus: true,
+                            onKeyEvent: (node, event) {
+                              final action = scope.keyboardShortcuts
+                                  .actionForKeyEvent(event);
+                              if (action == ShortcutActionId.closeSettings) {
+                                _closeSettings();
+                                return KeyEventResult.handled;
+                              }
+                              return KeyEventResult.ignored;
+                            },
+                            child: Stack(
+                              children: [
+                                Positioned.fill(
+                                  child: GestureDetector(
+                                    onTap: _closeSettings,
+                                    behavior: HitTestBehavior.opaque,
+                                    child: const ColoredBox(
+                                      color: Colors.transparent,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  left: settingsInset,
+                                  bottom:
+                                      WorkspaceLibraryDockMetrics.settingsBottomInset(
+                                        context,
+                                      ),
+                                  width: settingsPanelWidth,
+                                  height: settingsPanelHeight,
+                                  child: WorkspaceSettingsSlideIn(
+                                    child: WorkspaceSettingsPanel(
+                                      onClose: _closeSettings,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        ],
-                      ),
-                      Positioned(
-                        left: 12,
-                        bottom: 12,
-                        child: const CloudBackupQuickButton(
-                          iconSize: 16,
-                          hoverBorder: true,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-            // Floating settings: overlays the workspace without resizing the
-            // sidebar slot or the editor.
-            final settingsInset = WorkspaceLibraryDockMetrics.horizontalInset;
-            final settingsPanelWidth = math.max(
-              WorkspaceSettingsPanel.preferredWidth,
-              model.sidebarWidth - 2 * settingsInset,
-            );
-            final settingsStackHeight = math.max(
-              0.0,
-              constraints.maxHeight -
-                  WorkspaceHeader.height -
-                  WorkspaceBookPicker.blockHeight,
-            );
-            final settingsPanelHeight = settingsStackHeight * 2 / 3;
-            final shell = Stack(
-              clipBehavior: Clip.none,
-              children: [
-                workspace,
-                if (_settingsOpen)
-                  Focus(
-                    autofocus: true,
-                    onKeyEvent: (node, event) {
-                      final action = scope.keyboardShortcuts.actionForKeyEvent(
-                        event,
-                      );
-                      if (action == ShortcutActionId.closeSettings) {
-                        _closeSettings();
-                        return KeyEventResult.handled;
-                      }
-                      return KeyEventResult.ignored;
-                    },
-                    child: Stack(
-                      children: [
-                        Positioned.fill(
-                          child: GestureDetector(
-                            onTap: _closeSettings,
-                            behavior: HitTestBehavior.opaque,
-                            child: const ColoredBox(color: Colors.transparent),
-                          ),
-                        ),
-                        Positioned(
-                          left: settingsInset,
-                          bottom:
-                              WorkspaceLibraryDockMetrics.settingsBottomInset(
-                                context,
-                              ),
-                          width: settingsPanelWidth,
-                          height: settingsPanelHeight,
-                          child: WorkspaceSettingsSlideIn(
-                            child: WorkspaceSettingsPanel(
-                              onClose: _closeSettings,
-                            ),
-                          ),
-                        ),
                       ],
-                    ),
-                  ),
-              ],
-            );
-            return ZephyrStatusBar(
-              immersive: immersiveStatusBar,
-              hideIcons: hideStatusBarIcons,
-              statusBarColor: surface,
-              child: Scaffold(
-                backgroundColor: surface,
-                body: WindowChrome.isDesktop
-                    ? SafeArea(top: false, child: shell)
-                    : ColoredBox(
-                        color: surface,
-                        child: ZephyrTopSafeArea(bottom: false, child: shell),
+                    );
+                    return ZephyrStatusBar(
+                      immersive: immersiveStatusBar,
+                      hideIcons: hideStatusBarIcons,
+                      statusBarColor: surface,
+                      child: Scaffold(
+                        backgroundColor: surface,
+                        body: WindowChrome.isDesktop
+                            ? SafeArea(top: false, child: shell)
+                            : ColoredBox(
+                                color: surface,
+                                child: ZephyrTopSafeArea(
+                                  bottom: false,
+                                  child: shell,
+                                ),
+                              ),
                       ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+        if (_handlingExit)
+          Positioned.fill(
+            child: ColoredBox(
+              color: Theme.of(context).colorScheme.surface
+                  .withValues(alpha: 0.88),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 20),
+                    Text(context.l10n.exitBackupInProgress),
+                  ],
+                ),
               ),
-            );
-          },
-        );
-      },
-    ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -1090,9 +1217,7 @@ List<WorkspaceMobileTool> buildWorkspaceOverflowTools(
       id: WorkspaceMobileToolId.search,
       icon: Icons.search,
       label: l10n.tooltipSearchChapters,
-      onTap: () => unawaited(
-        showLibrarySearchSheet(context, model: model),
-      ),
+      onTap: () => unawaited(showLibrarySearchSheet(context, model: model)),
     ),
     WorkspaceMobileTool(
       id: WorkspaceMobileToolId.themeMode,

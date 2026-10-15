@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/l10n/app_localizations_en.dart';
 import 'package:zephyr/domain/models/chapter_sort_mode.dart';
@@ -32,11 +34,83 @@ void main() {
     expect(model.article?.id, 'article-b');
   });
 
+  test(
+    'typing starts a recovery draft without waiting for the body timer',
+    () async {
+      final repository = _RecordingDraftRepository();
+      final model = LibraryViewModel(repository);
+      addTearDown(model.dispose);
+      await model.load();
+
+      model.updateContent('A character just entered');
+      final draft = await repository.firstDraft.future;
+      expect(draft.content, 'A character just entered');
+      expect(repository.saved.content, isNot(draft.content));
+      await model.flushPending();
+    },
+  );
+
+  test('flushPending waits for an in-flight save and its newer edit', () async {
+    final repository = _BlockingSaveRepository();
+    final model = LibraryViewModel(repository);
+    addTearDown(model.dispose);
+    await model.load();
+
+    model.updateContent('First edit');
+    final firstSave = model.save();
+    await repository.saveStarted.future;
+    model.updateContent('First edit plus more');
+    var flushed = false;
+    final flush = model.flushPending().then((_) => flushed = true);
+    await Future<void>.delayed(Duration.zero);
+    expect(flushed, isFalse);
+
+    repository.allowSave.complete();
+    await Future.wait([firstSave, flush]);
+    expect(repository.saved.content, 'First edit plus more');
+    expect(flushed, isTrue);
+  });
+
+  test(
+    'failed body save blocks flush and remains available for retry',
+    () async {
+      final repository = _FailOnceSaveRepository();
+      final model = LibraryViewModel(repository);
+      addTearDown(model.dispose);
+      await model.load();
+
+      model.updateContent('Must survive a failed write');
+      await expectLater(model.flushPending(), throwsStateError);
+      expect(repository.saved.content, isNot('Must survive a failed write'));
+      expect(model.saveError, isA<StateError>());
+
+      await model.flushPending();
+      expect(repository.saved.content, 'Must survive a failed write');
+      expect(model.saveError, isNull);
+    },
+  );
+
+  test('failed title save blocks flush and is retried', () async {
+    final repository = _FailOnceTitleRepository();
+    final model = LibraryViewModel(repository);
+    addTearDown(model.dispose);
+    await model.load();
+
+    model.updateTitle('A title that must persist');
+    await expectLater(model.flushPending(), throwsStateError);
+    expect(repository.saved.title, isNot('A title that must persist'));
+
+    await model.flushPending();
+    expect(repository.saved.title, 'A title that must persist');
+  });
+
   test('save refreshes sidebar preview when leading text changes', () async {
     final repository = FakeLibraryRepository();
     final model = LibraryViewModel(repository);
     await model.load();
-    final before = model.library!.articles.singleWhere((a) => a.id == 'article');
+    final before = model.library!.articles.singleWhere(
+      (a) => a.id == 'article',
+    );
     expect(before.summary, isNot(contains('Brand new opening')));
 
     model.updateContent('Brand new opening\n\nRest of chapter');
@@ -47,30 +121,35 @@ void main() {
     expect(model.article?.summary, after.summary);
   });
 
-  test('save does not rewrite sidebar preview when only the tail changes', () async {
-    final head = 'A' * 200;
-    final repository = FakeLibraryRepository()
-      ..saved = WritingArticle(
-        id: 'article',
-        title: 'Article',
-        content: '${head}old-tail',
-        summary: head,
-        folderId: 'Default',
-        categoryId: null,
-        createdAt: DateTime.utc(2025),
-        updatedAt: DateTime.utc(2026),
-        wordCount: head.length + 8,
+  test(
+    'save does not rewrite sidebar preview when only the tail changes',
+    () async {
+      final head = 'A' * 200;
+      final repository = FakeLibraryRepository()
+        ..saved = WritingArticle(
+          id: 'article',
+          title: 'Article',
+          content: '${head}old-tail',
+          summary: head,
+          folderId: 'Default',
+          categoryId: null,
+          createdAt: DateTime.utc(2025),
+          updatedAt: DateTime.utc(2026),
+          wordCount: head.length + 8,
+        );
+      final model = LibraryViewModel(repository);
+      await model.load();
+
+      model.updateContent('${head}new-tail-changed');
+      await model.save();
+
+      final after = model.library!.articles.singleWhere(
+        (a) => a.id == 'article',
       );
-    final model = LibraryViewModel(repository);
-    await model.load();
-
-    model.updateContent('${head}new-tail-changed');
-    await model.save();
-
-    final after = model.library!.articles.singleWhere((a) => a.id == 'article');
-    expect(after.summary, head);
-    expect(after.summary, articlePreviewSummary('${head}new-tail-changed'));
-  });
+      expect(after.summary, head);
+      expect(after.summary, articlePreviewSummary('${head}new-tail-changed'));
+    },
+  );
 
   test('switching books selects only that book chapter', () async {
     final model = LibraryViewModel(FakeLibraryRepository());
@@ -107,44 +186,50 @@ void main() {
     expect(model.isReorderMode, isFalse);
   });
 
-  test('chapter sort mode exits reorder and blocks drag until manual', () async {
-    final model = LibraryViewModel(FakeLibraryRepository());
-    await model.load();
+  test(
+    'chapter sort mode exits reorder and blocks drag until manual',
+    () async {
+      final model = LibraryViewModel(FakeLibraryRepository());
+      await model.load();
 
-    expect(model.chapterSortMode, ChapterSortMode.manual);
-    model.toggleReorderMode();
-    expect(model.isReorderMode, isTrue);
+      expect(model.chapterSortMode, ChapterSortMode.manual);
+      model.toggleReorderMode();
+      expect(model.isReorderMode, isTrue);
 
-    model.setChapterSortMode(ChapterSortMode.titleAsc);
-    expect(model.chapterSortMode, ChapterSortMode.titleAsc);
-    expect(model.isReorderMode, isFalse);
+      model.setChapterSortMode(ChapterSortMode.titleAsc);
+      expect(model.chapterSortMode, ChapterSortMode.titleAsc);
+      expect(model.isReorderMode, isFalse);
 
-    model.toggleReorderMode();
-    expect(model.isReorderMode, isFalse);
+      model.toggleReorderMode();
+      expect(model.isReorderMode, isFalse);
 
-    model.setChapterSortMode(ChapterSortMode.manual);
-    expect(model.chapterSortMode, ChapterSortMode.manual);
-    model.toggleReorderMode();
-    expect(model.isReorderMode, isTrue);
-  });
+      model.setChapterSortMode(ChapterSortMode.manual);
+      expect(model.chapterSortMode, ChapterSortMode.manual);
+      model.toggleReorderMode();
+      expect(model.isReorderMode, isTrue);
+    },
+  );
 
-  test('volume drag collapses all volumes then restores expand state', () async {
-    final model = LibraryViewModel(FakeLibraryRepository());
-    await model.load();
+  test(
+    'volume drag collapses all volumes then restores expand state',
+    () async {
+      final model = LibraryViewModel(FakeLibraryRepository());
+      await model.load();
 
-    expect(model.isVolumeExpanded('volume-a'), isTrue);
-    model.beginVolumeReorderDrag();
-    expect(model.isVolumeExpanded('volume-a'), isFalse);
-    model.endVolumeReorderDrag();
-    expect(model.isVolumeExpanded('volume-a'), isTrue);
+      expect(model.isVolumeExpanded('volume-a'), isTrue);
+      model.beginVolumeReorderDrag();
+      expect(model.isVolumeExpanded('volume-a'), isFalse);
+      model.endVolumeReorderDrag();
+      expect(model.isVolumeExpanded('volume-a'), isTrue);
 
-    model.toggleVolume('volume-a');
-    expect(model.isVolumeExpanded('volume-a'), isFalse);
-    model.beginVolumeReorderDrag();
-    expect(model.isVolumeExpanded('volume-a'), isFalse);
-    model.endVolumeReorderDrag();
-    expect(model.isVolumeExpanded('volume-a'), isFalse);
-  });
+      model.toggleVolume('volume-a');
+      expect(model.isVolumeExpanded('volume-a'), isFalse);
+      model.beginVolumeReorderDrag();
+      expect(model.isVolumeExpanded('volume-a'), isFalse);
+      model.endVolumeReorderDrag();
+      expect(model.isVolumeExpanded('volume-a'), isFalse);
+    },
+  );
 
   test('remembers the last opened library folder', () async {
     final library = FakeLibraryRepository();
@@ -236,10 +321,7 @@ void main() {
 
     expect(library.openedRoot, '/tmp/zephyr-temporary-library');
     expect(model.needsLibrarySetup, isTrue);
-    expect(
-      model.displayLibraryName(AppLocalizationsEn()),
-      'Temporary library',
-    );
+    expect(model.displayLibraryName(AppLocalizationsEn()), 'Temporary library');
     expect(model.error, isNull);
   });
 
@@ -277,9 +359,7 @@ void main() {
         sidebarWidth: 334,
         selectedBookId: 'book-b',
         selectedArticleId: 'article-b',
-        expandedVolumesByBook: {
-          'book-b': <String>[],
-        },
+        expandedVolumesByBook: {'book-b': <String>[]},
         sidebarScrollOffsetByBook: {'book-b': 42},
       ),
     );
@@ -323,7 +403,10 @@ void main() {
         .where((volume) => volume.folderId == 'Default')
         .map((volume) => volume.id)
         .toList();
-    expect(ids.indexOf('volume-a') + 1, ids.indexOf(repository.createdVolume!.id));
+    expect(
+      ids.indexOf('volume-a') + 1,
+      ids.indexOf(repository.createdVolume!.id),
+    );
   });
 
   test('deleteVolume can unfile or trash chapters', () async {
@@ -416,45 +499,51 @@ void main() {
     expect(layout.layout.sidebarScrollOffsetByBook['book-b'], 96);
   });
 
-  test('flushPending writes pending article selection without waiting', () async {
-    final layout = FakeLayoutRepository(WorkspaceLayout.defaults);
-    final model = LibraryViewModel(
-      FakeLibraryRepository(),
-      layoutRepository: layout,
-    );
-    await model.load();
-    // Clear any load-time layout debounce so the next write is from select.
-    await model.flushPending();
-    expect(layout.layout.selectedArticleId, isNot('article-b'));
+  test(
+    'flushPending writes pending article selection without waiting',
+    () async {
+      final layout = FakeLayoutRepository(WorkspaceLayout.defaults);
+      final model = LibraryViewModel(
+        FakeLibraryRepository(),
+        layoutRepository: layout,
+      );
+      await model.load();
+      // Clear any load-time layout debounce so the next write is from select.
+      await model.flushPending();
+      expect(layout.layout.selectedArticleId, isNot('article-b'));
 
-    await model.selectArticle('article-b');
-    // Debounce has not fired yet — still the previous chapter on disk.
-    expect(layout.layout.selectedArticleId, isNot('article-b'));
+      await model.selectArticle('article-b');
+      // Debounce has not fired yet — still the previous chapter on disk.
+      expect(layout.layout.selectedArticleId, isNot('article-b'));
 
-    await model.flushPending();
+      await model.flushPending();
 
-    expect(layout.layout.selectedBookId, 'book-b');
-    expect(layout.layout.selectedArticleId, 'article-b');
-  });
+      expect(layout.layout.selectedBookId, 'book-b');
+      expect(layout.layout.selectedArticleId, 'article-b');
+    },
+  );
 
-  test('restores remembered article even when saved book id is stale', () async {
-    final layout = FakeLayoutRepository(
-      const WorkspaceLayout(
-        sidebarWidth: 334,
-        selectedBookId: 'Default',
-        selectedArticleId: 'article-b',
-      ),
-    );
-    final model = LibraryViewModel(
-      FakeLibraryRepository(),
-      layoutRepository: layout,
-    );
+  test(
+    'restores remembered article even when saved book id is stale',
+    () async {
+      final layout = FakeLayoutRepository(
+        const WorkspaceLayout(
+          sidebarWidth: 334,
+          selectedBookId: 'Default',
+          selectedArticleId: 'article-b',
+        ),
+      );
+      final model = LibraryViewModel(
+        FakeLibraryRepository(),
+        layoutRepository: layout,
+      );
 
-    await model.load();
+      await model.load();
 
-    expect(model.article?.id, 'article-b');
-    expect(model.selectedBook?.id, 'book-b');
-  });
+      expect(model.article?.id, 'article-b');
+      expect(model.selectedBook?.id, 'book-b');
+    },
+  );
 
   test('reorderBooks keeps the currently selected book', () async {
     final repository = FakeLibraryRepository();
@@ -470,10 +559,10 @@ void main() {
 
     expect(model.selectedBook?.id, 'book-b');
     expect(model.article?.id, 'article-b');
-    expect(
-      model.library!.folders.map((book) => book.id).toList(),
-      ['book-b', 'Default'],
-    );
+    expect(model.library!.folders.map((book) => book.id).toList(), [
+      'book-b',
+      'Default',
+    ]);
   });
 
   test('reorderBooks keeps auto-selected first book after it moves', () async {
@@ -605,25 +694,22 @@ class FakeLibraryRepository implements WritingLibraryRepository {
         if (articleId != null
             ? article.id == articleId
             : folderId != null && categoryId != null
-                ? article.folderId == folderId &&
-                    article.categoryId == categoryId
-                : folderId != null && unfiledOnly
-                    ? article.folderId == folderId &&
-                        article.categoryId == null
-                    : folderId != null
-                        ? article.folderId == folderId
-                        : includeTrash ||
-                            article.folderId != WritingFolder.trashId)
+            ? article.folderId == folderId && article.categoryId == categoryId
+            : folderId != null && unfiledOnly
+            ? article.folderId == folderId && article.categoryId == null
+            : folderId != null
+            ? article.folderId == folderId
+            : includeTrash || article.folderId != WritingFolder.trashId)
           article,
     ];
   }
+
   @override
   Future<WritingArticle> createArticle({
     required String folderId,
     String? categoryId,
     String? afterArticleId,
-  }) async =>
-      saved;
+  }) async => saved;
   @override
   Future<void> saveArticle(WritingArticle article) async {
     if (article.id == _secondArticle.id) {
@@ -881,14 +967,13 @@ class FakeLibraryRepository implements WritingLibraryRepository {
     required String name,
     String description = '',
     String tags = '',
-  }) async =>
-      WritingFolder(
-        id: 'new-book',
-        name: name,
-        rank: 99,
-        description: description,
-        tags: tags,
-      );
+  }) async => WritingFolder(
+    id: 'new-book',
+    name: name,
+    rank: 99,
+    description: description,
+    tags: tags,
+  );
 
   @override
   Future<void> deleteFolder(String folderId) async {}
@@ -912,6 +997,7 @@ class FakeLibraryRepository implements WritingLibraryRepository {
   Future<void> trashArticle(String articleId) async {
     trashedArticleIds.add(articleId);
   }
+
   @override
   Future<void> restoreArticle(
     String articleId, {
@@ -979,5 +1065,59 @@ class FakeLayoutRepository implements WorkspaceLayoutRepository {
   @override
   Future<void> save(WorkspaceLayout layout) async {
     this.layout = layout;
+  }
+}
+
+class _BlockingSaveRepository extends FakeLibraryRepository {
+  final saveStarted = Completer<void>();
+  final allowSave = Completer<void>();
+  var _firstSave = true;
+
+  @override
+  Future<void> saveArticle(WritingArticle article) async {
+    if (_firstSave) {
+      _firstSave = false;
+      saveStarted.complete();
+      await allowSave.future;
+    }
+    await super.saveArticle(article);
+  }
+}
+
+class _RecordingDraftRepository extends FakeLibraryRepository {
+  final firstDraft = Completer<ArticleDraft>();
+
+  @override
+  Future<void> upsertDraft(ArticleDraft draft) async {
+    if (!firstDraft.isCompleted) firstDraft.complete(draft);
+  }
+}
+
+class _FailOnceSaveRepository extends FakeLibraryRepository {
+  var _failNext = true;
+
+  @override
+  Future<void> saveArticle(WritingArticle article) async {
+    if (_failNext) {
+      _failNext = false;
+      throw StateError('Simulated disk write failure');
+    }
+    await super.saveArticle(article);
+  }
+}
+
+class _FailOnceTitleRepository extends FakeLibraryRepository {
+  var _failNext = true;
+
+  @override
+  Future<void> renameArticle({
+    required String articleId,
+    required String title,
+  }) async {
+    if (_failNext) {
+      _failNext = false;
+      throw StateError('Simulated title write failure');
+    }
+    await super.renameArticle(articleId: articleId, title: title);
   }
 }

@@ -56,12 +56,13 @@ class LibraryViewModel extends ChangeNotifier {
   Timer? _pendingSave;
   Timer? _pendingTitleSave;
   Timer? _pendingLayoutSave;
-  Timer? _pendingDraftSave;
+  Future<void> _writeTail = Future<void>.value();
 
   /// Content/title awaiting persistence, keyed by article id (survives chapter switch).
   WritingArticle? _dirtyArticle;
   String? _dirtyTitleArticleId;
   String? _dirtyTitle;
+  Object? _saveError;
   List<ArticleDraft> _recoverableDrafts = const [];
   var _contentDirtySinceBackup = false;
   bool _isSidebarExpanded = true;
@@ -89,6 +90,7 @@ class LibraryViewModel extends ChangeNotifier {
   WritingLibrary? get library => _library;
   WritingArticle? get article => _article;
   Object? get error => _error;
+  Object? get saveError => _saveError;
   bool get isLibraryInUse => _error is LibraryInUseException;
   bool get isReadOnly => _repository.location?.schema.writesAllowed == false;
 
@@ -844,7 +846,7 @@ class LibraryViewModel extends ChangeNotifier {
     _contentDirtySinceBackup = true;
     _pendingSave?.cancel();
     _pendingSave = Timer(const Duration(milliseconds: 500), () {
-      unawaited(save());
+      _runBackgroundSave(save);
     });
     _scheduleDraftUpsert(next);
     notifyListeners();
@@ -896,7 +898,7 @@ class LibraryViewModel extends ChangeNotifier {
     _contentDirtySinceBackup = true;
     _pendingTitleSave?.cancel();
     _pendingTitleSave = Timer(const Duration(milliseconds: 400), () {
-      unawaited(_persistTitle(article.id, title));
+      _runBackgroundSave(_persistTitle);
     });
     final draftSource = _dirtyArticle ?? _article;
     if (draftSource != null) {
@@ -917,45 +919,40 @@ class LibraryViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _persistTitle(String articleId, String title) async {
-    try {
-      await _repository.renameArticle(articleId: articleId, title: title);
+  Future<void> _persistTitle() async {
+    while (_dirtyTitleArticleId != null && _dirtyTitle != null) {
+      final articleId = _dirtyTitleArticleId!;
+      final title = _dirtyTitle!;
+      await _serializeWrite(
+        () => _repository.renameArticle(articleId: articleId, title: title),
+      );
       if (_dirtyTitleArticleId == articleId && _dirtyTitle == title) {
         _dirtyTitleArticleId = null;
         _dirtyTitle = null;
       }
-    } on Object {
-      // Keep the in-memory title; the next edit retries persistence.
+      _clearSaveErrorIfClean();
     }
   }
 
-  /// Persists any pending content/title/layout immediately.
+  /// Waits for every earlier write, then persists the latest content/title.
+  /// A failed write remains pending and prevents exit or backup.
   Future<void> flushPending() async {
     _pendingSave?.cancel();
     _pendingSave = null;
     _pendingTitleSave?.cancel();
     _pendingTitleSave = null;
-    _pendingDraftSave?.cancel();
-    _pendingDraftSave = null;
-
-    final dirty = _dirtyArticle;
-    if (dirty != null) {
-      _dirtyArticle = null;
-      try {
-        await _repository.saveArticle(dirty);
-        if (_article?.id == dirty.id) {
-          _refreshSidebarPreviewIfNeeded(dirty);
-        }
-      } on Object {
-        _dirtyArticle = dirty;
-        rethrow;
-      }
-    }
-
-    final titleId = _dirtyTitleArticleId;
-    final title = _dirtyTitle;
-    if (titleId != null && title != null) {
-      await _persistTitle(titleId, title);
+    try {
+      do {
+        await _writeTail;
+        await save();
+        await _persistTitle();
+        await _writeTail;
+      } while (_dirtyArticle != null || _dirtyTitleArticleId != null);
+      _saveError = null;
+    } on Object catch (error) {
+      _saveError = error;
+      notifyListeners();
+      rethrow;
     }
 
     // Flush a pending layout write so last book/article survive pause/dispose.
@@ -974,30 +971,60 @@ class LibraryViewModel extends ChangeNotifier {
 
   Future<void> save() async {
     _pendingSave?.cancel();
-    final article = _dirtyArticle ?? _article;
-    if (article == null) return;
-    _dirtyArticle = null;
-    await _repository.saveArticle(article);
-    if (_article?.id == article.id) {
-      _refreshSidebarPreviewIfNeeded(article);
+    while (_dirtyArticle != null) {
+      final article = _dirtyArticle!;
+      await _serializeWrite(() => _repository.saveArticle(article));
+      if (identical(_dirtyArticle, article)) {
+        _dirtyArticle = null;
+      }
+      if (_article?.id == article.id) {
+        _refreshSidebarPreviewIfNeeded(article);
+      }
+      _clearSaveErrorIfClean();
     }
   }
 
   void _scheduleDraftUpsert(WritingArticle article) {
     if (isReadOnly) return;
-    _pendingDraftSave?.cancel();
-    _pendingDraftSave = Timer(const Duration(milliseconds: 150), () {
-      unawaited(
-        _repository.upsertDraft(
-          ArticleDraft(
-            articleId: article.id,
-            content: article.content,
-            title: article.title,
-            updatedAt: DateTime.now(),
-          ),
-        ),
-      );
-    });
+    final draft = ArticleDraft(
+      articleId: article.id,
+      content: article.content,
+      title: article.title,
+      updatedAt: DateTime.now(),
+    );
+    _runBackgroundSave(
+      () => _serializeWrite(() => _repository.upsertDraft(draft)),
+    );
+  }
+
+  /// All editor writes share one queue so an older draft or body cannot finish
+  /// after a newer version or clear a newer recovery draft.
+  Future<void> _serializeWrite(Future<void> Function() write) {
+    final operation = _writeTail.then((_) => write());
+    _writeTail = operation.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return operation;
+  }
+
+  void _runBackgroundSave(Future<void> Function() save) {
+    unawaited(
+      save().catchError((Object error, StackTrace stack) {
+        _saveError = error;
+        notifyListeners();
+      }),
+    );
+  }
+
+  void _clearSaveErrorIfClean() {
+    if (_dirtyArticle != null ||
+        _dirtyTitleArticleId != null ||
+        _saveError == null) {
+      return;
+    }
+    _saveError = null;
+    notifyListeners();
   }
 
   Future<void> applyRecoverableDraft(ArticleDraft draft) async {

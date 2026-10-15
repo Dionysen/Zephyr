@@ -79,9 +79,16 @@ class LibraryLocation {
 }
 
 class ArticleHistory {
-  const ArticleHistory({required this.createdAt, required this.content});
+  const ArticleHistory({
+    required this.createdAt,
+    required this.content,
+    this.title,
+  });
   final DateTime createdAt;
   final String content;
+
+  /// Title stored with this revision, when the history schema provides one.
+  final String? title;
 }
 
 class DailyWriting {

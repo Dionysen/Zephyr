@@ -74,6 +74,10 @@ class ZephyrPlainTextEditor extends StatefulWidget {
 
 class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+  bool get _isMobile =>
+      defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS;
+
   late final PlainTextLayoutEngine _engine;
   late final ScrollController _scrollController;
   late final FocusNode _focusNode;
@@ -83,6 +87,7 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   late PlainTextGestureHandler _gestures;
   late final AnimationController _caretBlink;
   bool _showCaret = true;
+  bool _showCaretHandle = false;
   bool _selecting = false;
   bool _draggingHandle = false;
 
@@ -325,6 +330,7 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
       });
     } else {
       _suppressImeAttach = false;
+      _showCaretHandle = false;
       _inputClient?.detach();
       _caretBlink.stop();
       setState(() => _showCaret = false);
@@ -398,6 +404,7 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     _attachIme();
     _scheduleAttachIme();
     _gestures.handleTapDown(details, details.localPosition);
+    if (_isMobile) setState(() => _showCaretHandle = true);
   }
 
   /// Tap in the trailing blank below the document: caret at end + IME.
@@ -409,6 +416,7 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     _focusNode.requestFocus();
     _attachIme();
     _scheduleAttachIme();
+    if (_isMobile) setState(() => _showCaretHandle = true);
   }
 
   void _onControllerTick() {
@@ -416,6 +424,9 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     final selection = widget.controller.selection;
     final textChanged = text != _lastText;
     final selectionChanged = selection != _lastSelection;
+    if (textChanged || (selectionChanged && !_draggingHandle)) {
+      _showCaretHandle = false;
+    }
     if (textChanged) {
       _lastText = text;
       widget.onTextChanged(text);
@@ -920,14 +931,21 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
         });
 
         final selection = widget.controller.selection;
-        final isMobile =
-            defaultTargetPlatform == TargetPlatform.android ||
-            defaultTargetPlatform == TargetPlatform.iOS;
+        final isMobile = _isMobile;
         final showHandles =
             !widget.readOnly &&
             bodyFocused &&
             !selection.isCollapsed &&
             isMobile;
+        final showCaretHandle =
+            !widget.readOnly &&
+            bodyFocused &&
+            selection.isCollapsed &&
+            _showCaretHandle &&
+            isMobile;
+        final caretHandle = showCaretHandle
+            ? _engine.caretRectForOffset(selection.extentOffset)
+            : null;
         final baseCaret = showHandles
             ? _engine.caretRectForOffset(selection.baseOffset)
             : null;
@@ -1096,23 +1114,31 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                             ),
                           ),
                         ),
+                        if (caretHandle != null)
+                          _TextHandle(
+                            key: const ValueKey('mobile-caret-handle'),
+                            color: widget.cursorColor,
+                            top: caretHandle.bottom,
+                            left: caretHandle.left,
+                            onDragStart: () => _setDraggingHandle(true),
+                            onDragEnd: () => _setDraggingHandle(false),
+                            onDragGlobal: _moveCaretHandle,
+                          ),
                         if (baseCaret != null)
-                          _SelectionHandle(
+                          _TextHandle(
                             color: widget.cursorColor,
                             top: baseCaret.bottom,
                             left: baseCaret.left,
-                            isBase: true,
                             onDragStart: () => _setDraggingHandle(true),
                             onDragEnd: () => _setDraggingHandle(false),
                             onDragGlobal: (global) =>
                                 _moveSelectionHandle(global, isBase: true),
                           ),
                         if (extentCaret != null)
-                          _SelectionHandle(
+                          _TextHandle(
                             color: widget.cursorColor,
                             top: extentCaret.bottom,
                             left: extentCaret.left,
-                            isBase: false,
                             onDragStart: () => _setDraggingHandle(true),
                             onDragEnd: () => _setDraggingHandle(false),
                             onDragGlobal: (global) =>
@@ -1153,10 +1179,20 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
           return Stack(
             key: _viewportKey,
             children: [
-              ZephyrEditorScrollbar(
-                controller: _scrollController,
-                padding: widget.scrollbarPadding,
-                child: scrollView,
+              NotificationListener<ScrollStartNotification>(
+                onNotification: (notification) {
+                  if (notification.dragDetails != null &&
+                      _showCaretHandle &&
+                      !_draggingHandle) {
+                    setState(() => _showCaretHandle = false);
+                  }
+                  return false;
+                },
+                child: ZephyrEditorScrollbar(
+                  controller: _scrollController,
+                  padding: widget.scrollbarPadding,
+                  child: scrollView,
+                ),
               ),
               if (anchor != null)
                 _MobileSelectionToolbar(
@@ -1187,11 +1223,8 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   }
 
   void _moveSelectionHandle(Offset globalPosition, {required bool isBase}) {
-    final box =
-        _documentStackKey.currentContext?.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize) return;
-    final local = box.globalToLocal(globalPosition);
-    final next = _engine.offsetForPosition(local);
+    final next = _offsetForHandle(globalPosition);
+    if (next == null) return;
     final sel = widget.controller.selection;
     if (isBase) {
       widget.controller.setSelection(
@@ -1202,6 +1235,20 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
         TextSelection(baseOffset: sel.baseOffset, extentOffset: next),
       );
     }
+  }
+
+  void _moveCaretHandle(Offset globalPosition) {
+    final next = _offsetForHandle(globalPosition);
+    if (next == null) return;
+    widget.controller.setSelection(TextSelection.collapsed(offset: next));
+  }
+
+  int? _offsetForHandle(Offset globalPosition) {
+    final box =
+        _documentStackKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return null;
+    final local = box.globalToLocal(globalPosition);
+    return _engine.offsetForPosition(local);
   }
 }
 
@@ -1317,14 +1364,14 @@ class _MaterialStretchScrollBehavior extends ScrollBehavior {
   }
 }
 
-/// Mobile selection endpoint. Uses raw [Listener] events so the scroll view
+/// Mobile caret or selection endpoint. Uses raw [Listener] events so the scroll view
 /// cannot steal the pointer via the gesture arena.
-class _SelectionHandle extends StatefulWidget {
-  const _SelectionHandle({
+class _TextHandle extends StatefulWidget {
+  const _TextHandle({
+    super.key,
     required this.color,
     required this.top,
     required this.left,
-    required this.isBase,
     required this.onDragStart,
     required this.onDragEnd,
     required this.onDragGlobal,
@@ -1333,16 +1380,15 @@ class _SelectionHandle extends StatefulWidget {
   final Color color;
   final double top;
   final double left;
-  final bool isBase;
   final VoidCallback onDragStart;
   final VoidCallback onDragEnd;
   final ValueChanged<Offset> onDragGlobal;
 
   @override
-  State<_SelectionHandle> createState() => _SelectionHandleState();
+  State<_TextHandle> createState() => _TextHandleState();
 }
 
-class _SelectionHandleState extends State<_SelectionHandle> {
+class _TextHandleState extends State<_TextHandle> {
   int? _activePointer;
   static const double _hitSize = 48;
   static const double _visualSize = 22;

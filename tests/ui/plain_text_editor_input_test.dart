@@ -322,4 +322,114 @@ void main() {
     expect(find.text('Share'), findsOneWidget);
     debugDefaultTargetPlatformOverride = null;
   });
+
+  testWidgets('Android caret handle appears after tap and drags the caret', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    final controller = PlainTextEditingController(text: 'Hello world');
+    addTearDown(controller.dispose);
+    const handle = ValueKey('mobile-caret-handle');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ZephyrPlainTextEditor(
+            controller: controller,
+            typography: typography,
+            cursorColor: Colors.black,
+            selectionColor: Colors.blue,
+            onTextChanged: (_) {},
+            onSelectionChanged: (_) {},
+            onShareSelectedText: (_, _) async {},
+          ),
+        ),
+      ),
+    );
+    expect(find.byKey(handle), findsNothing);
+
+    await tester.tapAt(const Offset(18, 12));
+    await tester.pump();
+    await tester.pump();
+    expect(find.byKey(handle), findsOneWidget);
+    final before = controller.selection.extentOffset;
+
+    final handlePosition = tester.getTopLeft(find.byKey(handle));
+    final gesture = await tester.startGesture(
+      handlePosition + const Offset(24, 11),
+    );
+    await gesture.moveBy(const Offset(75, 0));
+    await tester.pump();
+    await gesture.up();
+    await tester.pump();
+
+    expect(controller.selection.isCollapsed, isTrue);
+    expect(controller.selection.extentOffset, greaterThan(before));
+    expect(find.byKey(handle), findsOneWidget);
+
+    tester.testTextInput.updateEditingValue(
+      TextEditingValue(
+        text: '${controller.text}!',
+        selection: TextSelection.collapsed(offset: controller.text.length + 1),
+      ),
+    );
+    await tester.pump();
+    expect(find.byKey(handle), findsNothing);
+    debugDefaultTargetPlatformOverride = null;
+  });
+
+  testWidgets('mobile caret handle hides on scroll and focus loss', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    final controller = PlainTextEditingController(text: 'Hello world');
+    addTearDown(controller.dispose);
+    final otherFocus = FocusNode();
+    addTearDown(otherFocus.dispose);
+    const handle = ValueKey('mobile-caret-handle');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Column(
+            children: [
+              Expanded(
+                child: ZephyrPlainTextEditor(
+                  controller: controller,
+                  typography: typography,
+                  cursorColor: Colors.black,
+                  selectionColor: Colors.blue,
+                  onTextChanged: (_) {},
+                  onSelectionChanged: (_) {},
+                  onShareSelectedText: (_, _) async {},
+                ),
+              ),
+              TextField(focusNode: otherFocus),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.tapAt(const Offset(18, 12));
+    await tester.pump();
+    await tester.pump();
+    expect(find.byKey(handle), findsOneWidget);
+
+    final scrollGesture = await tester.startGesture(const Offset(300, 300));
+    await scrollGesture.moveBy(const Offset(0, -80));
+    await scrollGesture.up();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byKey(handle), findsNothing);
+
+    await tester.tap(find.byType(ZephyrPlainTextEditor));
+    await tester.pump();
+    await tester.pump();
+    expect(find.byKey(handle), findsOneWidget);
+    otherFocus.requestFocus();
+    await tester.pump();
+    expect(find.byKey(handle), findsNothing);
+    debugDefaultTargetPlatformOverride = null;
+  });
 }

@@ -55,7 +55,11 @@ Future<void> showArticleHistorySheet(
                         ? l10n.historyEmptyRevision
                         : item.content;
                     return ListTile(
-                      title: Text(format.format(item.createdAt)),
+                      title: Text(
+                        item.title == null
+                            ? format.format(item.createdAt)
+                            : '${format.format(item.createdAt)} · ${item.title}',
+                      ),
                       subtitle: Text(
                         preview,
                         maxLines: 3,

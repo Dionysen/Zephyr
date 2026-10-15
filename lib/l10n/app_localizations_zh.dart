@@ -259,6 +259,14 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String saveFailed(String error) {
+    return '保存失败，编辑仍在当前窗口中；退出前请重试：$error';
+  }
+
+  @override
+  String get exitBackupInProgress => '正在保存并上传云备份，完成后退出…';
+
+  @override
   String get backupRestoreTitle => '恢复备份';
 
   @override

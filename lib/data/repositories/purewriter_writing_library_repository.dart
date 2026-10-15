@@ -201,15 +201,28 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     _store.ensureWritable();
     final now = DateTime.now().millisecondsSinceEpoch;
     final trimmed = title.trim().isEmpty ? 'Untitled' : title.trim();
-    final updated = await _store.database.update(
-      'Article',
-      {'title': trimmed, 'titleUpdateTime': now, 'updateTime': now},
-      where: 'id = ? AND deleted = 0',
-      whereArgs: [articleId],
-    );
-    if (updated == 0) {
-      throw StateError('PureWriter article not found: $articleId');
-    }
+    await _store.database.transaction((transaction) async {
+      final rows = await transaction.query(
+        'Article',
+        where: 'id = ? AND deleted = 0',
+        whereArgs: [articleId],
+        limit: 1,
+      );
+      if (rows.isEmpty) {
+        throw StateError('PureWriter article not found: $articleId');
+      }
+      final original = rows.single;
+      if (original['title'] == trimmed) return;
+      if (await _hasHistoryTable(transaction)) {
+        await transaction.insert('History', _historySnapshot(original, now));
+      }
+      await transaction.update(
+        'Article',
+        {'title': trimmed, 'titleUpdateTime': now, 'updateTime': now},
+        where: 'id = ?',
+        whereArgs: [articleId],
+      );
+    });
   }
 
   @override
@@ -1056,7 +1069,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
       ? const []
       : (await _store.database.query(
               'History',
-              columns: ['createTime', 'article_content'],
+              columns: ['createTime', 'article_content', 'article_title'],
               where: 'article_id = ?',
               whereArgs: [articleId],
               orderBy: 'createTime DESC',
@@ -1065,6 +1078,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
               (row) => ArticleHistory(
                 createdAt: _date(row['createTime']! as int),
                 content: row['article_content'] as String? ?? '',
+                title: row['article_title'] as String?,
               ),
             )
             .toList(growable: false);
@@ -1115,7 +1129,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     }
     final rows = await _store.database.query(
       'History',
-      columns: ['article_content'],
+      columns: ['article_content', 'article_title'],
       where: 'article_id = ? AND createTime = ?',
       whereArgs: [articleId, createdAt.millisecondsSinceEpoch],
       limit: 1,
@@ -1129,6 +1143,10 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
         content: rows.single['article_content'] as String? ?? '',
       ),
     );
+    final title = rows.single['article_title'] as String?;
+    if (title != null && title != article.title) {
+      await renameArticle(articleId: articleId, title: title);
+    }
   }
 
   @override
@@ -1407,12 +1425,25 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
         await _hasColumn(backupDb, table, 'deleted');
     final localRows = await localDb.query(
       table,
-      columns: [
-        idColumn,
-        timeColumn,
-        if (trackArticleStats && hasDeleted) 'deleted',
-      ],
+      columns: trackArticleStats ? null : [idColumn, timeColumn],
     );
+    final localById = {
+      if (trackArticleStats)
+        for (final row in localRows) row[idColumn]: row,
+    };
+    final hasHistory = trackArticleStats && await _hasHistoryTable(localDb);
+    final historyKeys = <(Object?, Object?, Object?)>{
+      if (hasHistory)
+        for (final row in await localDb.query(
+          'History',
+          columns: ['article_id', 'article_content', 'article_updateTime'],
+        ))
+          (
+            row['article_id'],
+            row['article_content'],
+            row['article_updateTime'],
+          ),
+    };
     final localTimes = <Object?, int>{
       for (final row in localRows)
         row[idColumn]: (row[timeColumn] as int?) ?? 0,
@@ -1432,6 +1463,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
         if (id == null) continue;
         final remoteTime = (remote[timeColumn] as int?) ?? 0;
         final localTime = localTimes[id];
+        final local = localById[id];
         final remoteDeleted = hasDeleted
             ? ((remote['deleted'] as int?) ?? 0)
             : 0;
@@ -1444,7 +1476,26 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
               added++;
             }
           }
-        } else if (remoteTime >= localTime) {
+        } else {
+          if (hasHistory &&
+              local != null &&
+              (local['content'] != remote['content'] ||
+                  local['title'] != remote['title'])) {
+            final preserved = remoteTime > localTime ? local : remote;
+            final key = (id, preserved['content'], preserved[timeColumn]);
+            if (historyKeys.add(key)) {
+              batch.insert(
+                'History',
+                _historySnapshot(
+                  preserved,
+                  DateTime.now().millisecondsSinceEpoch,
+                ),
+              );
+            }
+          }
+          // Equal timestamps are ambiguous across devices: keep the local
+          // article and retain the remote text in History.
+          if (remoteTime <= localTime) continue;
           batch.update(table, remote, where: '$idColumn = ?', whereArgs: [id]);
           if (trackArticleStats) {
             final wasDeleted = localDeleted[id] ?? 0;

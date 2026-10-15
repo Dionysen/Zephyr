@@ -17,7 +17,7 @@
   "languageTitle": "Language",
   "languageSubtitle": "App interface language.",
   "languageSystem": "System default",
-  "languageChinese": "Ã§Â®ÂÃ¤Â½ÂÃ¤Â¸Â­Ã¦ÂÂ",
+  "languageChinese": "简体中文",
   "languageEnglish": "English",
   "settingsTitle": "Settings",
   "settingsDesktopHeader": "Settings",
@@ -42,8 +42,8 @@
   },
   "cloudBackupQuickTooltip": "Cloud backup",
   "cloudBackupQuickTooltipUnconfigured": "Connect Nutstore for cloud backup",
-  "cloudSyncPullNoChanges": "Cloud sync finished Ã¢ÂÂ no chapter changes",
-  "cloudSyncPullSummary": "Cloud sync: +{added} ÃÂ· updated {updated} ÃÂ· Ã¢ÂÂ{removed} chapters",
+  "cloudSyncPullNoChanges": "Cloud sync finished — no chapter changes",
+  "cloudSyncPullSummary": "Cloud sync: +{added} · updated {updated} · −{removed} chapters",
   "@cloudSyncPullSummary": {
     "placeholders": {
       "added": {
@@ -77,7 +77,7 @@
   "cloudSyncBackupNowSubtitle": "Create a local backup, then upload that file to Zephyr on Nutstore",
   "cloudSyncBackupNowSuccess": "Cloud backup completed.",
   "cloudSyncRestoreTitle": "Restore from cloud",
-  "cloudSyncRestoreSubtitle": "Pick a backup from Nutstore Ã¢ÂÂ overwrite or merge",
+  "cloudSyncRestoreSubtitle": "Pick a backup from Nutstore — overwrite or merge",
   "cloudSyncRestoreEmpty": "No cloud backups found.",
   "cloudSyncRestoreSuccess": "Library restored from cloud backup.",
   "cloudSyncFailed": "Cloud sync failed: {error}",
@@ -119,6 +119,15 @@
   "backupNowSubtitle": "Write a manual .pwb under Backups. Manual and automatic backups share the 25-copy limit.",
   "backupNowSuccess": "Backup completed.",
   "backupFailed": "Backup failed: {error}",
+  "saveFailed": "Saving failed. Your edits remain open; retry before exiting: {error}",
+  "exitBackupInProgress": "Saving and uploading before exit…",
+  "@saveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "@backupFailed": {
     "placeholders": {
       "error": {
@@ -127,7 +136,7 @@
     }
   },
   "backupRestoreTitle": "Restore backup",
-  "backupRestoreSubtitle": "{count} backups available Ã¢ÂÂ overwrite or merge.",
+  "backupRestoreSubtitle": "{count} backups available — overwrite or merge.",
   "@backupRestoreSubtitle": {
     "placeholders": {
       "count": {
@@ -167,7 +176,7 @@
   "shortcutsResetAction": "Reset",
   "shortcutsClearAction": "Clear",
   "shortcutsRecordTitle": "Press a new shortcut",
-  "shortcutsRecordHint": "Esc to cancel ÃÂ· Backspace to clear",
+  "shortcutsRecordHint": "Esc to cancel · Backspace to clear",
   "shortcutsUnbound": "Unbound",
   "shortcutsConflictHint": "Conflicting shortcuts were replaced",
   "shortcutGroupClipboard": "Clipboard",
@@ -239,7 +248,7 @@
   "hideQuickToolbarTitle": "Hide quick input bar",
   "hideQuickToolbarSubtitle": "When on, the accessory toolbar above the keyboard is hidden.",
   "showChapterDetailsTitle": "Show chapter details",
-  "showChapterDetailsSubtitle": "When off, the sidebar shows chapter titles onlyÃ¢ÂÂno preview or meta.",
+  "showChapterDetailsSubtitle": "When off, the sidebar shows chapter titles only—no preview or meta.",
   "editorSectionTitle": "Editor",
   "editorSectionIntro": "Typography and reading-column preferences apply immediately.",
   "editorSectionFooter": "Changes apply to the writing area immediately.",
@@ -298,7 +307,7 @@
     }
   },
   "themePackDeleteTitle": "Delete theme?",
-  "themePackDeleteBody": "Ã¢ÂÂ{name}Ã¢ÂÂ will be removed permanently.",
+  "themePackDeleteBody": "“{name}” will be removed permanently.",
   "@themePackDeleteBody": {
     "placeholders": {
       "name": {
@@ -374,10 +383,10 @@
   "fontImportFailure": "Could not import that font file.",
   "fontDeleteSuccess": "Removed from the app font library.",
   "fontDeleteFailure": "Could not delete that font.",
-  "fontImportFromFile": "Choose font fileÃ¢ÂÂ¦",
+  "fontImportFromFile": "Choose font file…",
   "fontDeleteFromLibrary": "Delete from library",
   "fontDeleteDialogTitle": "Delete font?",
-  "fontDeleteDialogBody": "Remove Ã¢ÂÂ{family}Ã¢ÂÂ from the app font library to free space?",
+  "fontDeleteDialogBody": "Remove “{family}” from the app font library to free space?",
   "@fontDeleteDialogBody": {
     "placeholders": {
       "family": {
@@ -397,7 +406,7 @@
   "editorBackgroundChoose": "Choose",
   "editorBackgroundClear": "Clear",
   "editorBackgroundSelectTitle": "Choose background",
-  "editorBackgroundAddFromFile": "Add from fileÃ¢ÂÂ¦",
+  "editorBackgroundAddFromFile": "Add from file…",
   "editorBackgroundEmptyLibrary": "No images yet. Tap above to add one.",
   "editorBackgroundNoImagePreview": "No background image",
   "editorBackgroundPreviewSample": "The quick brown fox jumps over the lazy dog.\nWriting stays sharp above a soft backdrop.",
@@ -415,7 +424,7 @@
   "editorBackgroundDeleteSuccess": "Removed from the app library.",
   "editorBackgroundDeleteFailure": "Could not delete that image.",
   "editorBackgroundDeleteTitle": "Delete image?",
-  "editorBackgroundDeleteBody": "Delete Ã¢ÂÂ{name}Ã¢ÂÂ? Modes using it will reset to no background.",
+  "editorBackgroundDeleteBody": "Delete “{name}”? Modes using it will reset to no background.",
   "@editorBackgroundDeleteBody": {
     "placeholders": {
       "name": {
@@ -423,7 +432,7 @@
       }
     }
   },
-  "editorBackgroundSummary": "{name} ÃÂ· {fit} ÃÂ· {opacity}%",
+  "editorBackgroundSummary": "{name} · {fit} · {opacity}%",
   "@editorBackgroundSummary": {
     "placeholders": {
       "name": {
@@ -437,7 +446,7 @@
       }
     }
   },
-  "editorBackgroundSummaryWithBlur": "{name} ÃÂ· {fit} ÃÂ· {opacity}% ÃÂ· blur {blur}",
+  "editorBackgroundSummaryWithBlur": "{name} · {fit} · {opacity}% · blur {blur}",
   "@editorBackgroundSummaryWithBlur": {
     "placeholders": {
       "name": {
@@ -493,7 +502,7 @@
   "chapterNameLabel": "Chapter name",
   "validationNameRequired": "Please enter a name",
   "deleteChapterTitle": "Delete chapter",
-  "deleteChapterBody": "Move Ã¢ÂÂ{name}Ã¢ÂÂ to the trash?",
+  "deleteChapterBody": "Move “{name}” to the trash?",
   "@deleteChapterBody": {
     "placeholders": {
       "name": {
@@ -502,7 +511,7 @@
     }
   },
   "deleteVolumeTitle": "Delete volume",
-  "deleteVolumeBody": "When deleting Ã¢ÂÂ{name}Ã¢ÂÂ, choose what to do with its chapters.",
+  "deleteVolumeBody": "When deleting “{name}”, choose what to do with its chapters.",
   "@deleteVolumeBody": {
     "placeholders": {
       "name": {
@@ -535,12 +544,12 @@
   "tooltipDoneReordering": "Done adjusting order",
   "chapterSortManual": "Manual order",
   "chapterSortAdjustOrder": "Adjust order",
-  "chapterSortCreatedAsc": "Created ÃÂ· Oldest first",
-  "chapterSortCreatedDesc": "Created ÃÂ· Newest first",
-  "chapterSortUpdatedAsc": "Modified ÃÂ· Oldest first",
-  "chapterSortUpdatedDesc": "Modified ÃÂ· Newest first",
-  "chapterSortTitleAsc": "Name ÃÂ· AÃ¢ÂÂZ",
-  "chapterSortTitleDesc": "Name ÃÂ· ZÃ¢ÂÂA",
+  "chapterSortCreatedAsc": "Created · Oldest first",
+  "chapterSortCreatedDesc": "Created · Newest first",
+  "chapterSortUpdatedAsc": "Modified · Oldest first",
+  "chapterSortUpdatedDesc": "Modified · Newest first",
+  "chapterSortTitleAsc": "Name · A→Z",
+  "chapterSortTitleDesc": "Name · Z→A",
   "tooltipOpenLibrary": "Open library",
   "librarySwitcherChooseDirectory": "Choose another directory",
   "tooltipOpenSidebar": "Open sidebar",
@@ -569,7 +578,7 @@
   "bookTagsHint": "e.g. Literature",
   "bookDescriptionLabel": "Description",
   "bookDescriptionHint": "Briefly describe this book",
-  "bookStatsMeta": "{volumes} volumes ÃÂ· {chapters} chapters",
+  "bookStatsMeta": "{volumes} volumes · {chapters} chapters",
   "@bookStatsMeta": {
     "placeholders": {
       "volumes": {
@@ -580,7 +589,7 @@
       }
     }
   },
-  "chapterMeta": "Created {created} ÃÂ· Edited {modified} ÃÂ· {wordCount} words",
+  "chapterMeta": "Created {created} · Edited {modified} · {wordCount} words",
   "@chapterMeta": {
     "placeholders": {
       "created": {

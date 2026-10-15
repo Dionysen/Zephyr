@@ -61,7 +61,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageSystem => 'System default';
 
   @override
-  String get languageChinese => 'Ã§Â®ÂÃ¤Â½ÂÃ¤Â¸Â­Ã¦ÂÂ';
+  String get languageChinese => '简体中文';
 
   @override
   String get languageEnglish => 'English';
@@ -122,11 +122,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cloudSyncPullNoChanges =>
-      'Cloud sync finished Ã¢ÂÂ no chapter changes';
+      'Cloud sync finished — no chapter changes';
 
   @override
   String cloudSyncPullSummary(int added, int updated, int removed) {
-    return 'Cloud sync: +$added ÃÂ· updated $updated ÃÂ· Ã¢ÂÂ$removed chapters';
+    return 'Cloud sync: +$added · updated $updated · −$removed chapters';
   }
 
   @override
@@ -175,7 +175,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cloudSyncRestoreSubtitle =>
-      'Pick a backup from Nutstore Ã¢ÂÂ overwrite or merge';
+      'Pick a backup from Nutstore — overwrite or merge';
 
   @override
   String get cloudSyncRestoreEmpty => 'No cloud backups found.';
@@ -273,11 +273,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String saveFailed(String error) {
+    return 'Saving failed. Your edits remain open; retry before exiting: $error';
+  }
+
+  @override
+  String get exitBackupInProgress => 'Saving and uploading before exit…';
+
+  @override
   String get backupRestoreTitle => 'Restore backup';
 
   @override
   String backupRestoreSubtitle(int count) {
-    return '$count backups available Ã¢ÂÂ overwrite or merge.';
+    return '$count backups available — overwrite or merge.';
   }
 
   @override
@@ -383,7 +391,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shortcutsRecordTitle => 'Press a new shortcut';
 
   @override
-  String get shortcutsRecordHint => 'Esc to cancel ÃÂ· Backspace to clear';
+  String get shortcutsRecordHint => 'Esc to cancel · Backspace to clear';
 
   @override
   String get shortcutsUnbound => 'Unbound';
@@ -585,7 +593,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get showChapterDetailsSubtitle =>
-      'When off, the sidebar shows chapter titles onlyÃ¢ÂÂno preview or meta.';
+      'When off, the sidebar shows chapter titles only—no preview or meta.';
 
   @override
   String get editorSectionTitle => 'Editor';
@@ -766,7 +774,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String themePackDeleteBody(String name) {
-    return 'Ã¢ÂÂ$nameÃ¢ÂÂ will be removed permanently.';
+    return '“$name” will be removed permanently.';
   }
 
   @override
@@ -926,7 +934,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fontDeleteFailure => 'Could not delete that font.';
 
   @override
-  String get fontImportFromFile => 'Choose font fileÃ¢ÂÂ¦';
+  String get fontImportFromFile => 'Choose font file…';
 
   @override
   String get fontDeleteFromLibrary => 'Delete from library';
@@ -936,7 +944,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String fontDeleteDialogBody(String family) {
-    return 'Remove Ã¢ÂÂ$familyÃ¢ÂÂ from the app font library to free space?';
+    return 'Remove “$family” from the app font library to free space?';
   }
 
   @override
@@ -978,7 +986,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editorBackgroundSelectTitle => 'Choose background';
 
   @override
-  String get editorBackgroundAddFromFile => 'Add from fileÃ¢ÂÂ¦';
+  String get editorBackgroundAddFromFile => 'Add from file…';
 
   @override
   String get editorBackgroundEmptyLibrary =>
@@ -1036,12 +1044,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String editorBackgroundDeleteBody(String name) {
-    return 'Delete Ã¢ÂÂ$nameÃ¢ÂÂ? Modes using it will reset to no background.';
+    return 'Delete “$name”? Modes using it will reset to no background.';
   }
 
   @override
   String editorBackgroundSummary(String name, String fit, int opacity) {
-    return '$name ÃÂ· $fit ÃÂ· $opacity%';
+    return '$name · $fit · $opacity%';
   }
 
   @override
@@ -1051,7 +1059,7 @@ class AppLocalizationsEn extends AppLocalizations {
     int opacity,
     int blur,
   ) {
-    return '$name ÃÂ· $fit ÃÂ· $opacity% ÃÂ· blur $blur';
+    return '$name · $fit · $opacity% · blur $blur';
   }
 
   @override
@@ -1137,7 +1145,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String deleteChapterBody(String name) {
-    return 'Move Ã¢ÂÂ$nameÃ¢ÂÂ to the trash?';
+    return 'Move “$name” to the trash?';
   }
 
   @override
@@ -1145,7 +1153,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String deleteVolumeBody(String name) {
-    return 'When deleting Ã¢ÂÂ$nameÃ¢ÂÂ, choose what to do with its chapters.';
+    return 'When deleting “$name”, choose what to do with its chapters.';
   }
 
   @override
@@ -1224,22 +1232,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chapterSortAdjustOrder => 'Adjust order';
 
   @override
-  String get chapterSortCreatedAsc => 'Created ÃÂ· Oldest first';
+  String get chapterSortCreatedAsc => 'Created · Oldest first';
 
   @override
-  String get chapterSortCreatedDesc => 'Created ÃÂ· Newest first';
+  String get chapterSortCreatedDesc => 'Created · Newest first';
 
   @override
-  String get chapterSortUpdatedAsc => 'Modified ÃÂ· Oldest first';
+  String get chapterSortUpdatedAsc => 'Modified · Oldest first';
 
   @override
-  String get chapterSortUpdatedDesc => 'Modified ÃÂ· Newest first';
+  String get chapterSortUpdatedDesc => 'Modified · Newest first';
 
   @override
-  String get chapterSortTitleAsc => 'Name ÃÂ· AÃ¢ÂÂZ';
+  String get chapterSortTitleAsc => 'Name · A→Z';
 
   @override
-  String get chapterSortTitleDesc => 'Name ÃÂ· ZÃ¢ÂÂA';
+  String get chapterSortTitleDesc => 'Name · Z→A';
 
   @override
   String get tooltipOpenLibrary => 'Open library';
@@ -1328,12 +1336,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String bookStatsMeta(int volumes, int chapters) {
-    return '$volumes volumes ÃÂ· $chapters chapters';
+    return '$volumes volumes · $chapters chapters';
   }
 
   @override
   String chapterMeta(String created, String modified, int wordCount) {
-    return 'Created $created ÃÂ· Edited $modified ÃÂ· $wordCount words';
+    return 'Created $created · Edited $modified · $wordCount words';
   }
 
   @override

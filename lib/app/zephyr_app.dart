@@ -17,7 +17,7 @@ import '../data/repositories/file_workspace_layout_repository.dart';
 import '../data/repositories/purewriter_writing_library_repository.dart';
 import '../data/services/backup_preferences_file_storage.dart';
 import '../data/services/desktop_backup_notification.dart';
-import '../data/services/desktop_exit_backup.dart';
+import '../data/services/headless_exit_backup.dart';
 import '../data/services/editor_preferences_file_storage.dart';
 import '../data/services/keyboard_shortcuts_file_storage.dart';
 import '../data/services/purewriter_database.dart';
@@ -33,6 +33,7 @@ import '../domain/repositories/workspace_layout_repository.dart';
 import '../ui/core/window_chrome.dart';
 import '../ui/core/zephyr_controls.dart';
 import '../ui/core/zephyr_l10n.dart';
+import '../ui/core/zephyr_snackbar.dart';
 import '../ui/core/zephyr_scope.dart';
 import '../ui/core/zephyr_theme.dart';
 import '../ui/features/editor/view_models/editor_preferences_view_model.dart';
@@ -95,12 +96,13 @@ void runZephyr(
       await backup.load();
     },
   )..load();
+  final messengerKey = GlobalKey<ScaffoldMessengerState>();
   if (WindowChrome.isDesktop) {
     WindowFrameTracker.active?.beforeClose = () async {
       await windowManager.hide();
       try {
-        // Existing manual operations must finish before the database lock moves
-        // to the detached worker process.
+        // Existing manual operations must finish before the database lock is
+        // released for the exit backup.
         while (backup.busy || cloudSync.busy) {
           await Future<void>.delayed(const Duration(milliseconds: 100));
         }
@@ -109,23 +111,42 @@ void runZephyr(
         if (root == null || library.needsLibrarySetup || library.isReadOnly) {
           return true;
         }
+        if (cloudSync.cloudBackupEnabled && !cloudSync.isSignedIn) {
+          throw StateError(
+            'Cloud backup is enabled but no account is connected.',
+          );
+        }
         final needsWorker =
-            backup.autoBackupEnabled ||
-            (cloudSync.cloudBackupEnabled && cloudSync.isSignedIn);
+            backup.autoBackupEnabled || cloudSync.cloudBackupEnabled;
         if (!needsWorker) {
           return true;
         }
         await database.close();
         try {
-          await DesktopExitBackup.launch(root);
-        } on Object {
+          final result = await HeadlessExitBackup.run(expectedRoot: root);
+          if (cloudSync.cloudBackupEnabled && !result.didCloud) {
+            throw StateError('Cloud backup did not complete.');
+          }
           await database.openLibrary(root, createIfMissing: false);
+        } on Object {
+          if (database.location == null) {
+            await database.openLibrary(root, createIfMissing: false);
+          }
           rethrow;
         }
         return true;
       } on Object catch (error) {
         await windowManager.show();
         await windowManager.focus();
+        final messengerContext = messengerKey.currentContext;
+        if (messengerContext != null && messengerContext.mounted) {
+          messengerKey.currentState?.showSnackBar(
+            ZephyrSnackBar.build(
+              messengerContext,
+              messengerContext.l10n.backupFailed(error.toString()),
+            ),
+          );
+        }
         try {
           await DesktopBackupNotification().show(success: false, error: error);
         } on Object {
@@ -137,6 +158,7 @@ void runZephyr(
   }
   runApp(
     ZephyrApp(
+      messengerKey: messengerKey,
       library: library,
       theme: theme,
       editorPreferences: editorPreferences,
@@ -154,6 +176,7 @@ void runZephyr(
 class ZephyrApp extends StatelessWidget {
   const ZephyrApp({
     super.key,
+    required this.messengerKey,
     required this.library,
     required this.theme,
     required this.editorPreferences,
@@ -164,6 +187,7 @@ class ZephyrApp extends StatelessWidget {
     required this.cloudSync,
   });
 
+  final GlobalKey<ScaffoldMessengerState> messengerKey;
   final LibraryViewModel library;
   final ThemeViewModel theme;
   final EditorPreferencesViewModel editorPreferences;
@@ -186,6 +210,7 @@ class ZephyrApp extends StatelessWidget {
     child: ListenableBuilder(
       listenable: theme,
       builder: (context, _) => MaterialApp(
+        scaffoldMessengerKey: messengerKey,
         title: kReleaseMode
             ? 'Zephyr'
             : kProfileMode

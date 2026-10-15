@@ -59,36 +59,37 @@ void main() {
     );
   });
 
-  test('creates App/Room.db when opening an empty folder as a new library', () async {
-    final emptyRoot = await Directory.systemTemp.createTemp(
-      'zephyr-empty-library-',
-    );
-    addTearDown(() => emptyRoot.delete(recursive: true));
-    final folder = await Directory(
-      path.join(emptyRoot.path, 'My Library'),
-    ).create();
-    final store = PureWriterDatabase(supportDirectory: () async => emptyRoot);
-    addTearDown(store.close);
+  test(
+    'creates App/Room.db when opening an empty folder as a new library',
+    () async {
+      final emptyRoot = await Directory.systemTemp.createTemp(
+        'zephyr-empty-library-',
+      );
+      addTearDown(() => emptyRoot.delete(recursive: true));
+      final folder = await Directory(path.join(emptyRoot.path, 'My Library'))
+          .create();
+      final store = PureWriterDatabase(supportDirectory: () async => emptyRoot);
+      addTearDown(store.close);
 
-    final repository = PureWriterWritingLibraryRepository(store);
-    final location = await repository.openLibrary(folder.path);
+      final repository = PureWriterWritingLibraryRepository(store);
+      final location = await repository.openLibrary(folder.path);
 
-    expect(location.rootPath, folder.path);
-    expect(location.schema.writesAllowed, isTrue);
-    expect(
-      File(path.join(folder.path, 'App', 'Room.db')).existsSync(),
-      isTrue,
-    );
-    expect(
-      Directory(path.join(folder.path, 'Backups')).existsSync(),
-      isTrue,
-    );
-    final library = await repository.loadLibrary();
-    expect(
-      library.folders.any((item) => item.id == PureWriterDatabase.defaultFolderId),
-      isTrue,
-    );
-  });
+      expect(location.rootPath, folder.path);
+      expect(location.schema.writesAllowed, isTrue);
+      expect(
+        File(path.join(folder.path, 'App', 'Room.db')).existsSync(),
+        isTrue,
+      );
+      expect(Directory(path.join(folder.path, 'Backups')).existsSync(), isTrue);
+      final library = await repository.loadLibrary();
+      expect(
+        library.folders.any(
+          (item) => item.id == PureWriterDatabase.defaultFolderId,
+        ),
+        isTrue,
+      );
+    },
+  );
 
   test('opens an Android-style App + Backups library root', () async {
     final androidRoot = await Directory.systemTemp.createTemp(
@@ -104,9 +105,8 @@ void main() {
     await seed.close();
 
     await Directory(path.join(libraryRoot.path, 'Backups')).create();
-    await File(
-      path.join(libraryRoot.path, 'Backups', '2026-01-01.pwb'),
-    ).writeAsString('backup-placeholder');
+    await File(path.join(libraryRoot.path, 'Backups', '2026-01-01.pwb'))
+        .writeAsString('backup-placeholder');
 
     final store = PureWriterDatabase(supportDirectory: () async => androidRoot);
     addTearDown(store.close);
@@ -118,9 +118,8 @@ void main() {
       isTrue,
     );
     expect(
-      File(
-        path.join(libraryRoot.path, 'Backups', '2026-01-01.pwb'),
-      ).existsSync(),
+      File(path.join(libraryRoot.path, 'Backups', '2026-01-01.pwb'))
+          .existsSync(),
       isTrue,
     );
   });
@@ -141,41 +140,33 @@ void main() {
     expect(location.rootPath, libraryRoot.path);
   });
 
-  test(
-    'restores Room.db from the newest Backups/*.pwb when missing',
-    () async {
-      final root = await Directory.systemTemp.createTemp('zephyr-pwb-restore-');
-      addTearDown(() => root.delete(recursive: true));
-      final libraryRoot = await Directory(path.join(root.path, 'PW')).create();
-      final seed = PureWriterDatabase(supportDirectory: () async => root);
-      addTearDown(seed.close);
-      await seed.openLibrary(libraryRoot.path, createIfMissing: true);
-      final article = await PureWriterWritingLibraryRepository(seed)
-          .createArticle(
-        folderId: PureWriterDatabase.defaultFolderId,
-      );
-      await PureWriterWritingLibraryRepository(seed).saveArticle(
-        article.copyWith(content: 'From backup'),
-      );
-      await seed.close();
+  test('restores Room.db from the newest Backups/*.pwb when missing', () async {
+    final root = await Directory.systemTemp.createTemp('zephyr-pwb-restore-');
+    addTearDown(() => root.delete(recursive: true));
+    final libraryRoot = await Directory(path.join(root.path, 'PW')).create();
+    final seed = PureWriterDatabase(supportDirectory: () async => root);
+    addTearDown(seed.close);
+    await seed.openLibrary(libraryRoot.path, createIfMissing: true);
+    final article = await PureWriterWritingLibraryRepository(seed)
+        .createArticle(folderId: PureWriterDatabase.defaultFolderId);
+    await PureWriterWritingLibraryRepository(seed)
+        .saveArticle(article.copyWith(content: 'From backup'));
+    await seed.close();
 
-      final room = File(path.join(libraryRoot.path, 'App', 'Room.db'));
-      final backups = Directory(path.join(libraryRoot.path, 'Backups', 'Auto'))
-        ..createSync(recursive: true);
-      final pwb = File(path.join(backups.path, 'library.pwb'));
-      await _packPwb(room: room, pwb: pwb);
-      await room.delete();
+    final room = File(path.join(libraryRoot.path, 'App', 'Room.db'));
+    final backups = Directory(path.join(libraryRoot.path, 'Backups', 'Auto'))
+      ..createSync(recursive: true);
+    final pwb = File(path.join(backups.path, 'library.pwb'));
+    await _packPwb(room: room, pwb: pwb);
+    await room.delete();
 
-      final store = PureWriterDatabase(supportDirectory: () async => root);
-      addTearDown(store.close);
-      await store.openLibrary(libraryRoot.path);
-      final reloaded = await PureWriterWritingLibraryRepository(store)
-          .getArticle(
-        article.id,
-      );
-      expect(reloaded.content, 'From backup');
-    },
-  );
+    final store = PureWriterDatabase(supportDirectory: () async => root);
+    addTearDown(store.close);
+    await store.openLibrary(libraryRoot.path);
+    final reloaded = await PureWriterWritingLibraryRepository(store)
+        .getArticle(article.id);
+    expect(reloaded.content, 'From backup');
+  });
 
   test('resolvePureWriterLibrary maps Android layout paths', () {
     final root = Directory.systemTemp.createTempSync('zephyr-resolve-');
@@ -239,106 +230,131 @@ void main() {
     expect(tables.map((row) => row['name']), contains('Article'));
   });
 
-  test('repairs a Zephyr library that only received a partial schema', () async {
-    final root = await Directory.systemTemp.createTemp('zephyr-partial-schema-');
-    addTearDown(() => root.delete(recursive: true));
-    final libraryRoot = await Directory(path.join(root.path, 'Lib')).create();
-    final app = await Directory(path.join(libraryRoot.path, 'App')).create();
-    final room = File(path.join(app.path, 'Room.db'));
+  test(
+    'repairs a Zephyr library that only received a partial schema',
+    () async {
+      final root = await Directory.systemTemp.createTemp(
+        'zephyr-partial-schema-',
+      );
+      addTearDown(() => root.delete(recursive: true));
+      final libraryRoot = await Directory(path.join(root.path, 'Lib')).create();
+      final app = await Directory(path.join(libraryRoot.path, 'App')).create();
+      final room = File(path.join(app.path, 'Room.db'));
 
-    // Simulate Android sqflite running only the first CREATE from a multi-
-    // statement script, then still writing the Room identity fingerprint.
-    final seed = PureWriterDatabase(supportDirectory: () async => root);
-    addTearDown(seed.close);
-    await seed.openLibrary(libraryRoot.path, createIfMissing: true);
-    await seed.database.execute('DROP TABLE IF EXISTS Article');
-    await seed.database.execute('DROP TABLE IF EXISTS Category');
-    await seed.database.execute('DROP TABLE IF EXISTS History');
-    await seed.close();
+      // Simulate Android sqflite running only the first CREATE from a multi-
+      // statement script, then still writing the Room identity fingerprint.
+      final seed = PureWriterDatabase(supportDirectory: () async => root);
+      addTearDown(seed.close);
+      await seed.openLibrary(libraryRoot.path, createIfMissing: true);
+      await seed.database.execute('DROP TABLE IF EXISTS Article');
+      await seed.database.execute('DROP TABLE IF EXISTS Category');
+      await seed.database.execute('DROP TABLE IF EXISTS History');
+      await seed.close();
 
-    expect(room.existsSync(), isTrue);
+      expect(room.existsSync(), isTrue);
 
-    final store = PureWriterDatabase(supportDirectory: () async => root);
-    addTearDown(store.close);
-    final location = await store.openLibrary(libraryRoot.path);
-    expect(location.schema.writesAllowed, isTrue);
-    final tables = await store.database.rawQuery(
-      "SELECT name FROM sqlite_master WHERE type = 'table'",
-    );
-    expect(tables.map((row) => row['name']), contains('Article'));
-    final library = await PureWriterWritingLibraryRepository(store).loadLibrary();
-    expect(
-      library.folders.any((item) => item.id == PureWriterDatabase.defaultFolderId),
-      isTrue,
-    );
-  });
+      final store = PureWriterDatabase(supportDirectory: () async => root);
+      addTearDown(store.close);
+      final location = await store.openLibrary(libraryRoot.path);
+      expect(location.schema.writesAllowed, isTrue);
+      final tables = await store.database.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type = 'table'",
+      );
+      expect(tables.map((row) => row['name']), contains('Article'));
+      final library = await PureWriterWritingLibraryRepository(store)
+          .loadLibrary();
+      expect(
+        library.folders.any(
+          (item) => item.id == PureWriterDatabase.defaultFolderId,
+        ),
+        isTrue,
+      );
+    },
+  );
 
-  test('inserts, renames, moves, reorders, and deletes volumes/chapters', () async {
-    final repository = PureWriterWritingLibraryRepository(database);
-    final first = await repository.createCategory(
-      folderId: PureWriterDatabase.defaultFolderId,
-      name: 'Volume 1',
-    );
-    final second = await repository.createCategory(
-      folderId: PureWriterDatabase.defaultFolderId,
-      name: 'Volume 2',
-      afterCategoryId: first.id,
-    );
-    final chapter = await repository.createArticle(
-      folderId: PureWriterDatabase.defaultFolderId,
-      categoryId: first.id,
-    );
-    final below = await repository.createArticle(
-      folderId: PureWriterDatabase.defaultFolderId,
-      categoryId: first.id,
-      afterArticleId: chapter.id,
-    );
+  test(
+    'inserts, renames, moves, reorders, and deletes volumes/chapters',
+    () async {
+      final repository = PureWriterWritingLibraryRepository(database);
+      final first = await repository.createCategory(
+        folderId: PureWriterDatabase.defaultFolderId,
+        name: 'Volume 1',
+      );
+      final second = await repository.createCategory(
+        folderId: PureWriterDatabase.defaultFolderId,
+        name: 'Volume 2',
+        afterCategoryId: first.id,
+      );
+      final chapter = await repository.createArticle(
+        folderId: PureWriterDatabase.defaultFolderId,
+        categoryId: first.id,
+      );
+      final below = await repository.createArticle(
+        folderId: PureWriterDatabase.defaultFolderId,
+        categoryId: first.id,
+        afterArticleId: chapter.id,
+      );
 
-    await repository.renameCategory(categoryId: first.id, name: 'Renamed volume');
-    await repository.renameArticle(articleId: chapter.id, title: 'Renamed chapter');
-    await repository.moveArticleToCategory(
-      articleId: below.id,
-      categoryId: second.id,
-    );
-    await repository.reorderCategories(
-      folderId: PureWriterDatabase.defaultFolderId,
-      orderedIds: [second.id, first.id],
-    );
+      await repository.renameCategory(
+        categoryId: first.id,
+        name: 'Renamed volume',
+      );
+      await repository.renameArticle(
+        articleId: chapter.id,
+        title: 'Renamed chapter',
+      );
+      await repository.moveArticleToCategory(
+        articleId: below.id,
+        categoryId: second.id,
+      );
+      await repository.reorderCategories(
+        folderId: PureWriterDatabase.defaultFolderId,
+        orderedIds: [second.id, first.id],
+      );
 
-    var library = await repository.loadLibrary();
-    expect(
-      library.categories.map((item) => item.id).toList(),
-      [second.id, first.id],
-    );
-    expect(
-      library.categories.singleWhere((item) => item.id == first.id).name,
-      'Renamed volume',
-    );
-    expect(
-      (await repository.getArticle(chapter.id)).title,
-      'Renamed chapter',
-    );
-    expect(
-      library.articles.singleWhere((item) => item.id == below.id).categoryId,
-      second.id,
-    );
+      var library = await repository.loadLibrary();
+      expect(library.categories.map((item) => item.id).toList(), [
+        second.id,
+        first.id,
+      ]);
+      expect(
+        library.categories.singleWhere((item) => item.id == first.id).name,
+        'Renamed volume',
+      );
+      expect(
+        (await repository.getArticle(chapter.id)).title,
+        'Renamed chapter',
+      );
+      expect(
+        library.articles.singleWhere((item) => item.id == below.id).categoryId,
+        second.id,
+      );
 
-    await repository.deleteCategory(categoryId: first.id, deleteArticles: false);
-    library = await repository.loadLibrary();
-    expect(library.categories.any((item) => item.id == first.id), isFalse);
-    expect(
-      library.articles.singleWhere((item) => item.id == chapter.id).categoryId,
-      isNull,
-    );
+      await repository.deleteCategory(
+        categoryId: first.id,
+        deleteArticles: false,
+      );
+      library = await repository.loadLibrary();
+      expect(library.categories.any((item) => item.id == first.id), isFalse);
+      expect(
+        library.articles
+            .singleWhere((item) => item.id == chapter.id)
+            .categoryId,
+        isNull,
+      );
 
-    await repository.deleteCategory(categoryId: second.id, deleteArticles: true);
-    library = await repository.loadLibrary();
-    expect(library.categories.any((item) => item.id == second.id), isFalse);
-    expect(
-      library.articles.singleWhere((item) => item.id == below.id).folderId,
-      PureWriterDatabase.trashFolderId,
-    );
-  });
+      await repository.deleteCategory(
+        categoryId: second.id,
+        deleteArticles: true,
+      );
+      library = await repository.loadLibrary();
+      expect(library.categories.any((item) => item.id == second.id), isFalse);
+      expect(
+        library.articles.singleWhere((item) => item.id == below.id).folderId,
+        PureWriterDatabase.trashFolderId,
+      );
+    },
+  );
 
   test('converts a volume into a book with unfiled chapters', () async {
     final repository = PureWriterWritingLibraryRepository(database);
@@ -363,10 +379,7 @@ void main() {
 
     expect(book.name, 'Standalone');
     expect(library.categories.any((item) => item.id == volume.id), isFalse);
-    expect(
-      library.folders.any((item) => item.id == book.id),
-      isTrue,
-    );
+    expect(library.folders.any((item) => item.id == book.id), isTrue);
     expect(
       library.articles.singleWhere((item) => item.id == a.id).folderId,
       book.id,
@@ -455,6 +468,27 @@ void main() {
       whereArgs: [article.id],
     );
     expect(raw.single, {'editorId': 0, 'preview': 0, 'preview1': 0});
+  });
+
+  test('title changes enter history and can be restored', () async {
+    final repository = PureWriterWritingLibraryRepository(database);
+    final article = await repository.createArticle(
+      folderId: PureWriterDatabase.defaultFolderId,
+    );
+    await repository.renameArticle(articleId: article.id, title: 'First title');
+    await Future<void>.delayed(const Duration(milliseconds: 2));
+    await repository.renameArticle(
+      articleId: article.id,
+      title: 'Second title',
+    );
+
+    final revision = (await repository.listHistory(article.id))
+        .singleWhere((item) => item.title == 'First title');
+    await repository.restoreHistory(
+      articleId: article.id,
+      createdAt: revision.createdAt,
+    );
+    expect((await repository.getArticle(article.id)).title, 'First title');
   });
 
   test('creates ZephyrDraft table and round-trips crash drafts', () async {

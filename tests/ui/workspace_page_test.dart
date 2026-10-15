@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/domain/models/app_theme_mode.dart';
 import 'package:zephyr/domain/models/editor_preferences.dart';
@@ -38,6 +40,80 @@ import 'package:zephyr/ui/features/workspace/views/workspace_settings_panel.dart
 import 'package:zephyr/ui/features/workspace/views/workspace_sidebar.dart';
 
 void main() {
+  testWidgets('root exit waits for cloud backup and stays open on failure', (
+    tester,
+  ) async {
+    final library = LibraryViewModel(_LibraryRepository());
+    final cloud = _ExitCloudSyncViewModel(library);
+    var exits = 0;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'SystemNavigator.pop') exits++;
+        return null;
+      },
+    );
+    addTearDown(() {
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      );
+      cloud.dispose();
+      library.dispose();
+    });
+
+    await tester.pumpWidget(_app(library: library, cloudSync: cloud));
+    await tester.pumpAndSettle();
+    // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
+    await tester.binding.handlePopRoute();
+    await cloud.backupStarted.future;
+    await tester.pump();
+    expect(exits, 0);
+    expect(find.text(_l10n(tester).exitBackupInProgress), findsOneWidget);
+
+    cloud.failure = StateError('Upload failed');
+    cloud.allowBackup.complete();
+    await tester.pumpAndSettle();
+    expect(exits, 0);
+    expect(find.byType(WorkspacePage), findsOneWidget);
+  });
+
+  testWidgets('root exit closes only after cloud backup succeeds', (
+    tester,
+  ) async {
+    final library = LibraryViewModel(_LibraryRepository());
+    final cloud = _ExitCloudSyncViewModel(library);
+    var exits = 0;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'SystemNavigator.pop') exits++;
+        return null;
+      },
+    );
+    addTearDown(() {
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      );
+      cloud.dispose();
+      library.dispose();
+    });
+
+    await tester.pumpWidget(_app(library: library, cloudSync: cloud));
+    await tester.pumpAndSettle();
+    // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
+    await tester.binding.handlePopRoute();
+    await cloud.backupStarted.future;
+    await tester.pump();
+    expect(exits, 0);
+
+    cloud.allowBackup.complete();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(exits, 1);
+  });
+
   testWidgets('volume header stays pinned only while its chapters scroll', (
     tester,
   ) async {
@@ -284,7 +360,12 @@ void main() {
         find.text('Created 2025-12-19 · Edited 2026-01-02 · 42 words'),
       );
       expect(preview.style?.fontSize, metadata.style?.fontSize);
-      expect(find.text('First line\n\u3000\u3000Second line\r\n\u3000\u3000Third line'), findsNothing);
+      expect(
+        find.text(
+          'First line\n\u3000\u3000Second line\r\n\u3000\u3000Third line',
+        ),
+        findsNothing,
+      );
     },
   );
 
@@ -362,9 +443,7 @@ void main() {
     expect(find.textContaining('to the trash'), findsOneWidget);
   });
 
-  testWidgets('sidebar add menu creates a volume in the book', (
-    tester,
-  ) async {
+  testWidgets('sidebar add menu creates a volume in the book', (tester) async {
     tester.view.physicalSize = const Size(1200, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -435,10 +514,7 @@ void main() {
     expect(
       panelBox.width,
       closeTo(
-        math.max(
-          WorkspaceSettingsPanel.preferredWidth,
-          sidebarBox.width - 20,
-        ),
+        math.max(WorkspaceSettingsPanel.preferredWidth, sidebarBox.width - 20),
         0.5,
       ),
     );
@@ -489,9 +565,9 @@ void main() {
     await tester.pumpWidget(_app());
     await tester.pumpAndSettle();
     final l10n = _l10n(tester);
-    final closeTooltip =
-        MaterialLocalizations.of(tester.element(find.byType(WorkspacePage)))
-            .closeButtonTooltip;
+    final closeTooltip = MaterialLocalizations.of(
+      tester.element(find.byType(WorkspacePage)),
+    ).closeButtonTooltip;
 
     await tester.tap(find.byTooltip(l10n.tooltipSettings));
     await tester.pumpAndSettle();
@@ -589,7 +665,8 @@ void main() {
 
     await tester.tap(headerMore);
     await tester.pumpAndSettle();
-    expect(find.byType(PopupMenuItem<WorkspaceMobileTool>), findsWidgets);
+    // Tests force WindowChrome.isDesktop=false, so More opens the mobile drawer.
+    expect(find.textContaining('Long-press'), findsOneWidget);
     expect(find.text('Search'), findsWidgets);
     expect(find.text('Settings'), findsWidgets);
   });
@@ -626,7 +703,7 @@ void main() {
 
     await tester.tap(find.byTooltip('More'));
     await tester.pumpAndSettle();
-    expect(find.byType(PopupMenuItem<WorkspaceMobileTool>), findsWidgets);
+    expect(find.textContaining('Long-press'), findsOneWidget);
     expect(find.text('Search'), findsWidgets);
     expect(find.text('Settings'), findsWidgets);
   });
@@ -635,7 +712,11 @@ void main() {
 AppLocalizations _l10n(WidgetTester tester) =>
     AppLocalizations.of(tester.element(find.byType(WorkspacePage)));
 
-Widget _app({LibraryViewModel? library, bool needsLibrarySetup = false}) {
+Widget _app({
+  LibraryViewModel? library,
+  bool needsLibrarySetup = false,
+  CloudSyncViewModel? cloudSync,
+}) {
   library ??= LibraryViewModel(
     _LibraryRepository(),
     needsLibrarySetup: needsLibrarySetup,
@@ -655,7 +736,7 @@ Widget _app({LibraryViewModel? library, bool needsLibrarySetup = false}) {
     library: library,
     preferencesRepository: _BackupPreferencesRepository(),
   );
-  final cloudSync = CloudSyncViewModel(library: library);
+  cloudSync ??= CloudSyncViewModel(library: library);
   return ZephyrScope(
     library: library,
     theme: theme,
@@ -709,7 +790,8 @@ class _LibraryRepository implements WritingLibraryRepository {
       ArticleSummary(
         id: 'article',
         title: 'Chapter A',
-        summary: 'First line\n\u3000\u3000Second line\r\n\u3000\u3000Third line',
+        summary:
+            'First line\n\u3000\u3000Second line\r\n\u3000\u3000Third line',
         folderId: 'Default',
         categoryId: 'volume-a',
         createdAt: DateTime.utc(2025, 12, 19),
@@ -785,15 +867,12 @@ class _LibraryRepository implements WritingLibraryRepository {
       final match = articleId != null
           ? summary.id == articleId
           : folderId != null && categoryId != null
-              ? summary.folderId == folderId &&
-                  summary.categoryId == categoryId
-              : folderId != null && unfiledOnly
-                  ? summary.folderId == folderId &&
-                      summary.categoryId == null
-                  : folderId != null
-                      ? summary.folderId == folderId
-                      : includeTrash ||
-                          summary.folderId != WritingFolder.trashId;
+          ? summary.folderId == folderId && summary.categoryId == categoryId
+          : folderId != null && unfiledOnly
+          ? summary.folderId == folderId && summary.categoryId == null
+          : folderId != null
+          ? summary.folderId == folderId
+          : includeTrash || summary.folderId != WritingFolder.trashId;
       if (!match) continue;
       articles.add(await getArticle(summary.id));
     }
@@ -805,8 +884,7 @@ class _LibraryRepository implements WritingLibraryRepository {
     required String folderId,
     String? categoryId,
     String? afterArticleId,
-  }) async =>
-      getArticle('article');
+  }) async => getArticle('article');
 
   @override
   Future<void> saveArticle(WritingArticle article) async {}
@@ -852,14 +930,13 @@ class _LibraryRepository implements WritingLibraryRepository {
   @override
   Future<WritingFolder> convertCategoryToFolder({
     required String categoryId,
-  }) async =>
-      const WritingFolder(
-        id: 'converted',
-        name: 'Converted',
-        rank: 0,
-        description: '',
-        tags: '',
-      );
+  }) async => const WritingFolder(
+    id: 'converted',
+    name: 'Converted',
+    rank: 0,
+    description: '',
+    tags: '',
+  );
 
   @override
   Future<void> reorderCategories({
@@ -940,14 +1017,13 @@ class _LibraryRepository implements WritingLibraryRepository {
     required String name,
     String description = '',
     String tags = '',
-  }) async =>
-      WritingFolder(
-        id: 'new-book',
-        name: name,
-        rank: 99,
-        description: description,
-        tags: tags,
-      );
+  }) async => WritingFolder(
+    id: 'new-book',
+    name: name,
+    rank: 99,
+    description: description,
+    tags: tags,
+  );
 
   @override
   Future<void> deleteFolder(String folderId) async {}
@@ -1102,4 +1178,27 @@ class _FontRepository implements SystemFontRepository {
 
   @override
   Future<bool> deleteImportedFont(SystemFont font) async => false;
+}
+
+class _ExitCloudSyncViewModel extends CloudSyncViewModel {
+  _ExitCloudSyncViewModel(LibraryViewModel library) : super(library: library);
+
+  final backupStarted = Completer<void>();
+  final allowBackup = Completer<void>();
+  Object? failure;
+
+  @override
+  bool get cloudBackupEnabled => true;
+
+  @override
+  bool get isSignedIn => true;
+
+  @override
+  Object? get error => failure;
+
+  @override
+  Future<void> backupNow() async {
+    backupStarted.complete();
+    await allowBackup.future;
+  }
 }
