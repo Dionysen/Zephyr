@@ -353,6 +353,10 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(find.byKey(handle), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('mobile-text-handle-visual')),
+      findsOneWidget,
+    );
     final before = controller.selection.extentOffset;
 
     final handlePosition = tester.getTopLeft(find.byKey(handle));
@@ -361,8 +365,19 @@ void main() {
     );
     await gesture.moveBy(const Offset(75, 0));
     await tester.pump();
+    expect(find.byType(Magnifier), findsOneWidget);
+    expect(find.byKey(handle), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('mobile-text-handle-visual')),
+      findsNothing,
+    );
     await gesture.up();
     await tester.pump();
+    expect(find.byType(Magnifier), findsNothing);
+    expect(
+      find.byKey(const ValueKey('mobile-text-handle-visual')),
+      findsOneWidget,
+    );
 
     expect(controller.selection.isCollapsed, isTrue);
     expect(controller.selection.extentOffset, greaterThan(before));

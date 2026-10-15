@@ -79,9 +79,7 @@ class ZephyrShapeTheme extends ThemeExtension<ZephyrShapeTheme> {
 extension ZephyrThemeContext on BuildContext {
   ZephyrShapeTheme get zephyrShape =>
       Theme.of(this).extension<ZephyrShapeTheme>() ??
-      const ZephyrShapeTheme(
-        cornerRadius: ZephyrControls.defaultCornerRadius,
-      );
+      const ZephyrShapeTheme(cornerRadius: ZephyrControls.defaultCornerRadius);
 
   double get zephyrCornerRadius => zephyrShape.cornerRadius;
 
@@ -97,9 +95,8 @@ extension ZephyrThemeContext on BuildContext {
 
   double get zephyrSidebarVolumeGap => zephyrShape.sidebarVolumeGap;
 
-  BorderSide zephyrOutlineSide([Color? color]) => zephyrShape.outlineSide(
-    color ?? Theme.of(this).colorScheme.outline,
-  );
+  BorderSide zephyrOutlineSide([Color? color]) =>
+      zephyrShape.outlineSide(color ?? Theme.of(this).colorScheme.outline);
 }
 
 /// Builds the writing-shell theme from user-owned semantic tokens.
@@ -187,7 +184,10 @@ ThemeData zephyrTheme(
           onSurfaceVariant: mutedText,
           outline: border,
           outlineVariant: divider,
-          error: const Color(0xFFFFB4AB),
+          error: brightness == Brightness.light
+              ? const Color(0xFFB3261E)
+              : const Color(0xFFFFB4AB),
+          onError: brightness == Brightness.light ? Colors.white : null,
         ),
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith((states) {
@@ -340,17 +340,11 @@ ThemeData zephyrTheme(
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: control,
-      shape: RoundedRectangleBorder(
-        borderRadius: borderRadius,
-        side: hairline,
-      ),
+      shape: RoundedRectangleBorder(borderRadius: borderRadius, side: hairline),
     ),
     cardTheme: CardThemeData(
       color: control,
-      shape: RoundedRectangleBorder(
-        borderRadius: borderRadius,
-        side: hairline,
-      ),
+      shape: RoundedRectangleBorder(borderRadius: borderRadius, side: hairline),
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
@@ -422,7 +416,8 @@ ThemeData withMobileRoundControls(ThemeData theme) {
   final onSurface = theme.colorScheme.onSurface;
   final accent = theme.colorScheme.primary;
   final outline = theme.colorScheme.outline;
-  final hairline = shape?.outlineSide(outline) ??
+  final hairline =
+      shape?.outlineSide(outline) ??
       BorderSide(color: outline, width: ZephyrControls.borderWidth);
 
   return theme.copyWith(

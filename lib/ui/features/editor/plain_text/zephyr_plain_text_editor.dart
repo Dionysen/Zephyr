@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -90,6 +92,9 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   bool _showCaretHandle = false;
   bool _selecting = false;
   bool _draggingHandle = false;
+  Offset? _magnifierFocal;
+  double _magnifierCaretHeight = 0;
+  static const double _magnifierWidth = 110;
 
   /// When true, gaining focus does not open the soft keyboard (e.g. long-press
   /// selection). Cleared when a short tap confirms editing intent.
@@ -1102,7 +1107,9 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                                     typography: widget.typography,
                                     cursorColor: widget.cursorColor,
                                     selectionColor: widget.selectionColor,
-                                    showCaret: bodyFocused && _showCaret,
+                                    showCaret:
+                                        bodyFocused &&
+                                        (_showCaret || _draggingHandle),
                                     readOnly: widget.readOnly,
                                     typewriterMode: widget.typewriterMode,
                                     decorations: widget.decorations,
@@ -1118,8 +1125,9 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                           _TextHandle(
                             key: const ValueKey('mobile-caret-handle'),
                             color: widget.cursorColor,
+                            showVisual: !_draggingHandle,
                             top: caretHandle.bottom,
-                            left: caretHandle.left,
+                            left: caretHandle.center.dx,
                             onDragStart: () => _setDraggingHandle(true),
                             onDragEnd: () => _setDraggingHandle(false),
                             onDragGlobal: _moveCaretHandle,
@@ -1127,8 +1135,9 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                         if (baseCaret != null)
                           _TextHandle(
                             color: widget.cursorColor,
+                            showVisual: !_draggingHandle,
                             top: baseCaret.bottom,
-                            left: baseCaret.left,
+                            left: baseCaret.center.dx,
                             onDragStart: () => _setDraggingHandle(true),
                             onDragEnd: () => _setDraggingHandle(false),
                             onDragGlobal: (global) =>
@@ -1137,8 +1146,9 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                         if (extentCaret != null)
                           _TextHandle(
                             color: widget.cursorColor,
+                            showVisual: !_draggingHandle,
                             top: extentCaret.bottom,
-                            left: extentCaret.left,
+                            left: extentCaret.center.dx,
                             onDragStart: () => _setDraggingHandle(true),
                             onDragEnd: () => _setDraggingHandle(false),
                             onDragGlobal: (global) =>
@@ -1194,6 +1204,8 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                   child: scrollView,
                 ),
               ),
+              if (_draggingHandle && _magnifierFocal != null)
+                _buildDragMagnifier(viewport),
               if (anchor != null)
                 _MobileSelectionToolbar(
                   selection: selection,
@@ -1216,39 +1228,106 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
 
   void _setDraggingHandle(bool dragging) {
     if (_draggingHandle == dragging) return;
-    setState(() => _draggingHandle = dragging);
+    setState(() {
+      _draggingHandle = dragging;
+      if (!dragging) _magnifierFocal = null;
+    });
     // Block the compact swipe-drawer open gesture for this pointer. Dispatched
     // on pointer down (before drag slop) so the drawer can ignore the claim.
     ZephyrDrawerDragBlockNotification(blocked: dragging).dispatch(context);
   }
 
   void _moveSelectionHandle(Offset globalPosition, {required bool isBase}) {
-    final next = _offsetForHandle(globalPosition);
-    if (next == null) return;
     final sel = widget.controller.selection;
-    if (isBase) {
-      widget.controller.setSelection(
-        TextSelection(baseOffset: next, extentOffset: sel.extentOffset),
-      );
-    } else {
-      widget.controller.setSelection(
-        TextSelection(baseOffset: sel.baseOffset, extentOffset: next),
-      );
-    }
+    final next = _offsetForHandle(
+      globalPosition,
+      currentOffset: isBase ? sel.baseOffset : sel.extentOffset,
+    );
+    if (next == null) return;
+    widget.controller.setSelection(
+      isBase
+          ? TextSelection(baseOffset: next, extentOffset: sel.extentOffset)
+          : TextSelection(baseOffset: sel.baseOffset, extentOffset: next),
+    );
+    _updateMagnifierFocal(next);
   }
 
   void _moveCaretHandle(Offset globalPosition) {
-    final next = _offsetForHandle(globalPosition);
+    final next = _offsetForHandle(
+      globalPosition,
+      currentOffset: widget.controller.selection.extentOffset,
+    );
     if (next == null) return;
     widget.controller.setSelection(TextSelection.collapsed(offset: next));
+    _updateMagnifierFocal(next);
   }
 
-  int? _offsetForHandle(Offset globalPosition) {
+  int? _offsetForHandle(Offset globalPosition, {required int currentOffset}) {
     final box =
         _documentStackKey.currentContext?.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) return null;
     final local = box.globalToLocal(globalPosition);
-    return _engine.offsetForPosition(local);
+    final currentCaret = _engine.caretRectForOffset(currentOffset);
+    if (currentCaret == null) return null;
+    // The tip rests below the caret. Keep a small band around the current
+    // line so vertical finger jitter does not switch lines prematurely.
+    final lineHeight = currentCaret.height;
+    final y = local.dy - lineHeight * .5;
+    final margin = lineHeight * .25;
+    final hitY =
+        y < currentCaret.top - margin || y > currentCaret.bottom + margin
+        ? y
+        : currentCaret.center.dy;
+    return _engine.offsetForPosition(Offset(local.dx, hitY));
+  }
+
+  void _updateMagnifierFocal(int offset) {
+    final caret = _engine.caretRectForOffset(offset);
+    final document =
+        _documentStackKey.currentContext?.findRenderObject() as RenderBox?;
+    final viewport =
+        _viewportKey.currentContext?.findRenderObject() as RenderBox?;
+    if (caret == null || document == null || viewport == null) return;
+    final global = document.localToGlobal(caret.center);
+    setState(() {
+      _magnifierFocal = viewport.globalToLocal(global);
+      _magnifierCaretHeight = caret.height;
+    });
+  }
+
+  Widget _buildDragMagnifier(Rect viewport) {
+    final focal = _magnifierFocal!;
+    // At 1.25x, leave breathing room above and below even for large text.
+    final size = Size(
+      _magnifierWidth,
+      math.max(64, _magnifierCaretHeight * 1.75),
+    );
+    const gap = 52.0;
+    final left = (focal.dx - size.width / 2).clamp(
+      0.0,
+      (viewport.width - size.width).clamp(0.0, double.infinity),
+    );
+    final top = (focal.dy - size.height - gap).clamp(
+      0.0,
+      (viewport.height - size.height).clamp(0.0, double.infinity),
+    );
+    return Positioned(
+      left: left,
+      top: top,
+      child: IgnorePointer(
+        child: Magnifier(
+          size: size,
+          additionalFocalPointOffset: Offset(
+            focal.dx - left - size.width / 2,
+            focal.dy -
+                top -
+                size.height / 2 -
+                Magnifier.kDefaultMagnifierSize.height / 2 -
+                Magnifier.kStandardVerticalFocalPointShift,
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -1370,6 +1449,7 @@ class _TextHandle extends StatefulWidget {
   const _TextHandle({
     super.key,
     required this.color,
+    required this.showVisual,
     required this.top,
     required this.left,
     required this.onDragStart,
@@ -1378,6 +1458,7 @@ class _TextHandle extends StatefulWidget {
   });
 
   final Color color;
+  final bool showVisual;
   final double top;
   final double left;
   final VoidCallback onDragStart;
@@ -1390,37 +1471,40 @@ class _TextHandle extends StatefulWidget {
 
 class _TextHandleState extends State<_TextHandle> {
   int? _activePointer;
+  Offset? _pointerToTip;
   static const double _hitSize = 48;
-  static const double _visualSize = 22;
+  static const double _visualWidth = 20;
+  static const double _visualHeight = _visualWidth / 2 * (1 + math.sqrt2);
 
-  Offset _aimPoint(Offset globalPosition) {
-    // Knobs sit under the caret; aim at the text line above the finger.
-    return globalPosition.translate(0, -_hitSize * 0.35);
-  }
+  Offset _tipForPointer(Offset globalPosition) =>
+      globalPosition + (_pointerToTip ?? Offset.zero);
 
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      top: widget.top - 4,
+      top: widget.top,
       left: widget.left - _hitSize / 2,
       child: Listener(
         behavior: HitTestBehavior.opaque,
         onPointerDown: (event) {
           _activePointer = event.pointer;
+          _pointerToTip = Offset(_hitSize / 2, 0) - event.localPosition;
           widget.onDragStart();
         },
         onPointerMove: (event) {
           if (event.pointer != _activePointer) return;
-          widget.onDragGlobal(_aimPoint(event.position));
+          widget.onDragGlobal(_tipForPointer(event.position));
         },
         onPointerUp: (event) {
           if (event.pointer != _activePointer) return;
           _activePointer = null;
+          _pointerToTip = null;
           widget.onDragEnd();
         },
         onPointerCancel: (event) {
           if (event.pointer != _activePointer) return;
           _activePointer = null;
+          _pointerToTip = null;
           widget.onDragEnd();
         },
         child: SizedBox(
@@ -1428,25 +1512,54 @@ class _TextHandleState extends State<_TextHandle> {
           height: _hitSize,
           child: Align(
             alignment: Alignment.topCenter,
-            child: Container(
-              width: _visualSize,
-              height: _visualSize,
-              decoration: BoxDecoration(
-                color: widget.color,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x66000000),
-                    blurRadius: 4,
-                    offset: Offset(0, 1),
-                  ),
-                ],
-              ),
-            ),
+            child: widget.showVisual
+                ? CustomPaint(
+                    key: const ValueKey('mobile-text-handle-visual'),
+                    size: const Size(_visualWidth, _visualHeight),
+                    painter: _TextHandlePainter(widget.color),
+                  )
+                : const SizedBox(width: _visualWidth, height: _visualHeight),
           ),
         ),
       ),
     );
   }
+}
+
+class _TextHandlePainter extends CustomPainter {
+  const _TextHandlePainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final radius = size.width / 2;
+    final circle = Rect.fromCircle(
+      center: Offset(radius, radius * math.sqrt2),
+      radius: radius,
+    );
+    // The 90° tip's two 45° edges meet the circle at its tangents.
+    final leftTangent = Offset(
+      radius - radius / math.sqrt2,
+      radius / math.sqrt2,
+    );
+    final path = Path()
+      ..moveTo(radius, 0)
+      ..lineTo(leftTangent.dx, leftTangent.dy)
+      ..arcTo(circle, -3 * math.pi / 4, -3 * math.pi / 2, false)
+      ..close();
+    canvas.drawShadow(path, Colors.black, 2, true);
+    canvas.drawPath(path, Paint()..color = color);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_TextHandlePainter oldDelegate) =>
+      oldDelegate.color != color;
 }
