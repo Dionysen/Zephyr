@@ -94,7 +94,7 @@
   "backupNowSuccess": "Backup completed.",
   "backupFailed": "Backup failed: {error}",
   "saveFailed": "Saving failed. Your edits remain open; retry before exiting: {error}",
-  "exitBackupInProgress": "Saving and uploading before exit…",
+  "exitBackupInProgress": "Saving…",
   "@saveFailed": {
     "placeholders": {
       "error": {

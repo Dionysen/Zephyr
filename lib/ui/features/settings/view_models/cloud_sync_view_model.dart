@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../../data/services/backup_notification_copy.dart';
 import '../../../../data/services/cloud_sync_service.dart';
+import '../../../../data/services/mobile_background_backup.dart';
 import '../../../../domain/models/cloud_sync.dart';
 import '../../../../domain/models/library_backup.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -17,7 +18,9 @@ class CloudSyncViewModel extends ChangeNotifier {
     required this.library,
     CloudSyncService? service,
     this._reloadLocalSettings,
-  }) : _service = service ?? CloudSyncService();
+  }) : _service = service ?? CloudSyncService() {
+    library.onLocalContentPersisted = markPendingCloudBackup;
+  }
 
   final LibraryViewModel library;
   final CloudSyncService _service;
@@ -54,6 +57,7 @@ class CloudSyncViewModel extends ChangeNotifier {
   bool get isRestoring => _busyKind == CloudSyncBusyKind.restore;
   bool get isSignedIn => _service.isSignedIn;
   bool get cloudBackupEnabled => _service.cloudBackupEnabled;
+  bool get pendingCloudBackup => _service.pendingCloudBackup;
   CloudSyncSession? get session => _service.session;
   CloudSyncPreferences get preferences => _service.preferences;
   List<CloudBackupEntry> get cloudBackups => _cloudBackups;
@@ -67,6 +71,36 @@ class CloudSyncViewModel extends ChangeNotifier {
       _error = error;
     }
     notifyListeners();
+  }
+
+  /// Durable flag: local edits need a cloud upload (survives process death).
+  Future<void> markPendingCloudBackup() async {
+    if (!cloudBackupEnabled) return;
+    await _service.markPendingCloudBackup();
+    notifyListeners();
+  }
+
+  /// After launch: if a prior session left [pendingCloudBackup], enqueue upload.
+  ///
+  /// Uses WorkManager on Android; otherwise a fire-and-forget [backupNow].
+  Future<void> catchUpPendingCloudBackup() async {
+    if (!pendingCloudBackup) return;
+    if (!cloudBackupEnabled || !isSignedIn || library.isReadOnly) return;
+    if (MobileBackgroundBackup.isSupported) {
+      try {
+        final scheduled = await MobileBackgroundBackup.scheduleIfNeeded(
+          contentDirty: true,
+          cloudBackupEnabled: cloudBackupEnabled,
+          isSignedIn: isSignedIn,
+          autoBackupEnabled: false,
+          isReadOnly: library.isReadOnly,
+        );
+        if (scheduled) return;
+      } on Object {
+        // Fall through to in-process upload when WM cannot start.
+      }
+    }
+    await backupNow();
   }
 
   Future<void> setCloudBackupEnabled(bool enabled) async {

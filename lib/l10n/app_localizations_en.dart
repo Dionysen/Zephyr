@@ -254,7 +254,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get exitBackupInProgress => 'Saving and uploading before exit…';
+  String get exitBackupInProgress => 'Saving…';
 
   @override
   String get backupRestoreTitle => 'Restore backup';

@@ -213,6 +213,50 @@ void main() {
     expect(client.uploadOrder, ['snapshot', 'backup', 'settings']);
   });
 
+  test('pendingCloudBackup is set and cleared only after upload succeeds', () async {
+    auth.session = _session();
+    preferences.value = const CloudSyncPreferences(pendingCloudBackup: false);
+    final directory = await Directory.systemTemp.createTemp(
+      'zephyr-cloud-pending-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final library = _CloudLibraryRepository(directory);
+    final entry = await library.createBackup(kind: BackupKind.automatic);
+    final client = _WorkflowClient();
+    final service = serviceWith(() => client);
+    await service.load();
+
+    await service.markPendingCloudBackup();
+    expect(service.pendingCloudBackup, isTrue);
+    expect(preferences.value.pendingCloudBackup, isTrue);
+
+    await service.uploadLocalBackup(library: library, entry: entry);
+
+    expect(service.pendingCloudBackup, isFalse);
+    expect(preferences.value.pendingCloudBackup, isFalse);
+  });
+
+  test('failed upload keeps pendingCloudBackup set', () async {
+    auth.session = _session();
+    preferences.value = const CloudSyncPreferences(pendingCloudBackup: true);
+    final directory = await Directory.systemTemp.createTemp(
+      'zephyr-cloud-pending-fail-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final library = _CloudLibraryRepository(directory);
+    final entry = await library.createBackup(kind: BackupKind.automatic);
+    final client = _WorkflowClient()..failUpload = true;
+    final service = serviceWith(() => client);
+    await service.load();
+
+    await expectLater(
+      service.uploadLocalBackup(library: library, entry: entry),
+      throwsA(anything),
+    );
+    expect(service.pendingCloudBackup, isTrue);
+    expect(preferences.value.pendingCloudBackup, isTrue);
+  });
+
   test('cloud operations fail when cloud backup is disabled', () async {
     preferences.value = const CloudSyncPreferences(cloudBackupEnabled: false);
     auth.session = _session();
@@ -665,6 +709,7 @@ class _MemorySettingsBundle extends CloudSettingsBundle {
 class _WorkflowClient extends WebDavClient {
   CloudSyncSession? verifiedSession;
   bool failVerification = false;
+  bool failUpload = false;
 
   @override
   Future<void> verifyConnection(CloudSyncSession session) async {
@@ -727,6 +772,7 @@ class _WorkflowClient extends WebDavClient {
     required File pwb,
     required CloudSyncManifest manifest,
   }) async {
+    if (failUpload) throw StateError('upload failed');
     expect(await pwb.exists(), isTrue);
     snapshotUploads++;
     uploadOrder.add('snapshot');

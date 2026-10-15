@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -57,10 +56,8 @@ void main() {
     expect(cloud.syncCalls, 0);
   });
 
-  testWidgets('root exit waits for cloud backup and stays open on failure', (
-    tester,
-  ) async {
-    final library = LibraryViewModel(_LibraryRepository());
+  testWidgets('root exit stays open when flush fails', (tester) async {
+    final library = _FlushFailLibrary(_LibraryRepository());
     final cloud = _ExitCloudSyncViewModel(library);
     var exits = 0;
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -76,26 +73,22 @@ void main() {
         null,
       );
       cloud.dispose();
-      library.dispose();
+      // Skip library.dispose — flushPending is stubbed to throw.
     });
 
     await tester.pumpWidget(_app(library: library, cloudSync: cloud));
     await tester.pumpAndSettle();
     // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
     await tester.binding.handlePopRoute();
-    await cloud.backupStarted.future;
-    await tester.pump();
-    expect(exits, 0);
-    expect(find.text(_l10n(tester).exitBackupInProgress), findsOneWidget);
-
-    cloud.failure = StateError('Upload failed');
-    cloud.allowBackup.complete();
     await tester.pumpAndSettle();
+
     expect(exits, 0);
+    expect(cloud.backupCalls, 0);
     expect(find.byType(WorkspacePage), findsOneWidget);
+    expect(find.byType(SnackBar), findsOneWidget);
   });
 
-  testWidgets('root exit closes only after cloud backup succeeds', (
+  testWidgets('root exit leaves without waiting for in-process cloud upload', (
     tester,
   ) async {
     final library = LibraryViewModel(_LibraryRepository());
@@ -121,17 +114,13 @@ void main() {
     await tester.pumpAndSettle();
     // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
     await tester.binding.handlePopRoute();
-    await cloud.backupStarted.future;
-    await tester.pump();
-    expect(exits, 0);
+    await tester.pumpAndSettle();
 
-    cloud.allowBackup.complete();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
     expect(exits, 1);
+    expect(cloud.backupCalls, 0);
   });
 
-  testWidgets('root exit skips cloud backup when no account is connected', (
+  testWidgets('root exit skips in-process cloud upload when signed out', (
     tester,
   ) async {
     final library = LibraryViewModel(_LibraryRepository());
@@ -1284,16 +1273,25 @@ class _FontRepository implements SystemFontRepository {
   Future<bool> deleteImportedFont(SystemFont font) async => false;
 }
 
+class _FlushFailLibrary extends LibraryViewModel {
+  // ignore: use_super_parameters
+  _FlushFailLibrary(WritingLibraryRepository repository) : super(repository);
+
+  @override
+  Future<void> flushPending() async {
+    throw StateError('Flush failed');
+  }
+}
+
 class _ExitCloudSyncViewModel extends CloudSyncViewModel {
   _ExitCloudSyncViewModel(LibraryViewModel library, {this.signedIn = true})
     : super(library: library);
 
   final bool signedIn;
-  final backupStarted = Completer<void>();
-  final allowBackup = Completer<void>();
   Object? failure;
   int backupCalls = 0;
   int syncCalls = 0;
+  var pending = false;
 
   @override
   bool get cloudBackupEnabled => true;
@@ -1302,13 +1300,22 @@ class _ExitCloudSyncViewModel extends CloudSyncViewModel {
   bool get isSignedIn => signedIn;
 
   @override
+  bool get pendingCloudBackup => pending;
+
+  @override
   Object? get error => failure;
+
+  @override
+  Future<void> markPendingCloudBackup() async {
+    pending = true;
+  }
+
+  @override
+  Future<void> catchUpPendingCloudBackup() async {}
 
   @override
   Future<void> backupNow() async {
     backupCalls++;
-    backupStarted.complete();
-    await allowBackup.future;
   }
 
   @override

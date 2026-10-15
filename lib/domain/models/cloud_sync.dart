@@ -52,6 +52,7 @@ class CloudSyncSession {
 class CloudSyncPreferences {
   const CloudSyncPreferences({
     this.cloudBackupEnabled = true,
+    this.pendingCloudBackup = false,
     this.lastSyncAt,
     this.lastSyncLibraryId,
     this.lastRemoteUpdatedAt,
@@ -59,6 +60,13 @@ class CloudSyncPreferences {
 
   /// Master switch for cloud backup UI and exit upload.
   final bool cloudBackupEnabled;
+
+  /// Durable “local changes not yet on Nutstore” flag (survives process death).
+  ///
+  /// Set when content is persisted while cloud backup is on; cleared only after
+  /// a successful [CloudSyncService.uploadLocalBackup]. Next launch catch-up
+  /// reads this when in-memory dirty state is gone.
+  final bool pendingCloudBackup;
 
   final DateTime? lastSyncAt;
   final String? lastSyncLibraryId;
@@ -68,6 +76,7 @@ class CloudSyncPreferences {
 
   CloudSyncPreferences copyWith({
     bool? cloudBackupEnabled,
+    bool? pendingCloudBackup,
     DateTime? lastSyncAt,
     String? lastSyncLibraryId,
     DateTime? lastRemoteUpdatedAt,
@@ -75,6 +84,7 @@ class CloudSyncPreferences {
     bool clearLastRemoteUpdatedAt = false,
   }) => CloudSyncPreferences(
     cloudBackupEnabled: cloudBackupEnabled ?? this.cloudBackupEnabled,
+    pendingCloudBackup: pendingCloudBackup ?? this.pendingCloudBackup,
     lastSyncAt: clearLastSyncAt ? null : (lastSyncAt ?? this.lastSyncAt),
     lastSyncLibraryId: lastSyncLibraryId ?? this.lastSyncLibraryId,
     lastRemoteUpdatedAt: clearLastRemoteUpdatedAt
@@ -84,6 +94,7 @@ class CloudSyncPreferences {
 
   Map<String, Object?> toJson() => {
     'cloudBackupEnabled': cloudBackupEnabled,
+    'pendingCloudBackup': pendingCloudBackup,
     if (lastSyncAt != null) 'lastSyncAt': lastSyncAt!.millisecondsSinceEpoch,
     if (lastSyncLibraryId != null) 'lastSyncLibraryId': lastSyncLibraryId,
     if (lastRemoteUpdatedAt != null)
@@ -95,6 +106,7 @@ class CloudSyncPreferences {
     final remote = map['lastRemoteUpdatedAt'];
     return CloudSyncPreferences(
       cloudBackupEnabled: map['cloudBackupEnabled'] as bool? ?? true,
+      pendingCloudBackup: map['pendingCloudBackup'] as bool? ?? false,
       lastSyncAt: last is int
           ? DateTime.fromMillisecondsSinceEpoch(last)
           : null,

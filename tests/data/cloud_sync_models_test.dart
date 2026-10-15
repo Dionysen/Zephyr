@@ -50,6 +50,16 @@ void main() {
     expect(restored.cloudBackupEnabled, isFalse);
   });
 
+  test('CloudSyncPreferences round-trips pendingCloudBackup', () {
+    final prefs = const CloudSyncPreferences(pendingCloudBackup: true);
+    final restored = CloudSyncPreferences.fromJson(prefs.toJson());
+    expect(restored.pendingCloudBackup, isTrue);
+    expect(
+      CloudSyncPreferences.fromJson(const {}).pendingCloudBackup,
+      isFalse,
+    );
+  });
+
   test('CloudSyncSession rejects incomplete stored credentials', () {
     expect(
       CloudSyncSession.fromJson(const {

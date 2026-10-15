@@ -110,9 +110,13 @@ class _WorkspacePageState extends State<WorkspacePage>
     if (library == null) return;
     await library.load();
     if (!mounted) return;
-    if (_offeredDraftRecovery) return;
-    _offeredDraftRecovery = true;
-    await _offerDraftRecovery(library);
+    if (!_offeredDraftRecovery) {
+      _offeredDraftRecovery = true;
+      await _offerDraftRecovery(library);
+    }
+    if (!mounted) return;
+    // After draft UI: catch up any cloud upload missed after process death.
+    unawaited(ZephyrScope.of(context).cloudSync.catchUpPendingCloudBackup());
   }
 
   Future<void> _offerDraftRecovery(LibraryViewModel library) async {
@@ -188,7 +192,10 @@ class _WorkspacePageState extends State<WorkspacePage>
     }
   }
 
-  /// Root back waits for cloud upload before allowing the process to exit.
+  /// Root back flushes local edits, enqueues background backup, then exits.
+  ///
+  /// Does not wait for cloud upload — WorkManager (or next launch catch-up)
+  /// finishes the `.pwb` when possible.
   Future<void> _onRootBack() async {
     if (_handlingExit) return;
     final nav = Navigator.of(context);
@@ -200,43 +207,15 @@ class _WorkspacePageState extends State<WorkspacePage>
 
     FocusManager.instance.primaryFocus?.unfocus();
     _handlingExit = true;
-    unawaited(
-      showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) => PopScope(
-          canPop: false,
-          child: AlertDialog(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(),
-                const SizedBox(height: 20),
-                Text(dialogContext.l10n.exitBackupInProgress),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
     try {
       final scope = ZephyrScope.of(context);
       await scope.library.flushPending();
-      while (scope.backup.busy || scope.cloudSync.busy) {
-        await Future<void>.delayed(const Duration(milliseconds: 100));
-      }
-      if (scope.cloudSync.cloudBackupEnabled && scope.cloudSync.isSignedIn) {
-        await scope.cloudSync.backupNow();
-        if (scope.cloudSync.error case final error?) throw error;
-      } else {
-        await _scheduleLeaveBackup();
-      }
-      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      if (!mounted) return;
+      await _scheduleLeaveBackup();
       await SystemNavigator.pop();
       _handlingExit = false;
     } on Object catch (error) {
       if (!mounted) return;
-      Navigator.of(context, rootNavigator: true).pop();
       _handlingExit = false;
       ZephyrSnackBar.show(context, context.l10n.backupFailed(error.toString()));
     }
@@ -256,8 +235,19 @@ class _WorkspacePageState extends State<WorkspacePage>
     final scope = ZephyrScope.of(context);
     await scope.library.flushPending();
     if (!mounted) return;
+    final needsCloud =
+        scope.cloudSync.cloudBackupEnabled &&
+        scope.cloudSync.isSignedIn &&
+        (scope.library.contentDirtySinceBackup ||
+            scope.cloudSync.pendingCloudBackup);
+    if (needsCloud) {
+      await scope.cloudSync.markPendingCloudBackup();
+    }
+    if (!mounted) return;
     final scheduled = await MobileBackgroundBackup.scheduleIfNeeded(
-      contentDirty: scope.library.contentDirtySinceBackup,
+      contentDirty:
+          scope.library.contentDirtySinceBackup ||
+          scope.cloudSync.pendingCloudBackup,
       cloudBackupEnabled: scope.cloudSync.cloudBackupEnabled,
       isSignedIn: scope.cloudSync.isSignedIn,
       autoBackupEnabled: scope.backup.autoBackupEnabled,

@@ -93,7 +93,7 @@
   "backupNowSuccess": "备份已完成",
   "backupFailed": "备份失败：{error}",
   "saveFailed": "保存失败，编辑仍在当前窗口中；退出前请重试：{error}",
-  "exitBackupInProgress": "正在保存并上传云备份，完成后退出…",
+  "exitBackupInProgress": "正在保存…",
   "@saveFailed": {
     "placeholders": {
       "error": {"type": "String"}

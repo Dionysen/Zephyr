@@ -97,6 +97,12 @@ class LibraryViewModel extends ChangeNotifier {
   /// Drafts newer than Article after load — UI may offer recovery.
   List<ArticleDraft> get recoverableDrafts => _recoverableDrafts;
   bool get contentDirtySinceBackup => _contentDirtySinceBackup;
+
+  /// Fired after article content or title is successfully written to Room.db.
+  ///
+  /// Used to persist a durable cloud-backup-pending flag (survives process death).
+  Future<void> Function()? onLocalContentPersisted;
+
   WritingLibraryRepository get repository => _repository;
 
   /// Set by [requestSearchJump]; consumed by the workspace editor.
@@ -941,17 +947,32 @@ class LibraryViewModel extends ChangeNotifier {
   }
 
   Future<void> _persistTitle() async {
+    var didPersist = false;
     while (_dirtyTitleArticleId != null && _dirtyTitle != null) {
       final articleId = _dirtyTitleArticleId!;
       final title = _dirtyTitle!;
       await _serializeWrite(
         () => _repository.renameArticle(articleId: articleId, title: title),
       );
+      didPersist = true;
       if (_dirtyTitleArticleId == articleId && _dirtyTitle == title) {
         _dirtyTitleArticleId = null;
         _dirtyTitle = null;
       }
       _clearSaveErrorIfClean();
+    }
+    if (didPersist) {
+      await _notifyLocalContentPersisted();
+    }
+  }
+
+  Future<void> _notifyLocalContentPersisted() async {
+    final hook = onLocalContentPersisted;
+    if (hook == null) return;
+    try {
+      await hook();
+    } on Object {
+      // Pending-flag persistence must not block editor writes.
     }
   }
 
@@ -992,9 +1013,11 @@ class LibraryViewModel extends ChangeNotifier {
 
   Future<void> save() async {
     _pendingSave?.cancel();
+    var didPersist = false;
     while (_dirtyArticle != null) {
       final article = _dirtyArticle!;
       await _serializeWrite(() => _repository.saveArticle(article));
+      didPersist = true;
       if (identical(_dirtyArticle, article)) {
         _dirtyArticle = null;
       }
@@ -1002,6 +1025,9 @@ class LibraryViewModel extends ChangeNotifier {
         _refreshSidebarPreviewIfNeeded(article);
       }
       _clearSaveErrorIfClean();
+    }
+    if (didPersist) {
+      await _notifyLocalContentPersisted();
     }
   }
 
@@ -1068,6 +1094,8 @@ class LibraryViewModel extends ChangeNotifier {
         _article?.id == draft.articleId) {
       _article = await _repository.getArticle(draft.articleId);
     }
+    _contentDirtySinceBackup = true;
+    await _notifyLocalContentPersisted();
     notifyListeners();
   }
 

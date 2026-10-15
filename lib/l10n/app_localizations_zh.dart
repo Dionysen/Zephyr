@@ -242,7 +242,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get exitBackupInProgress => '正在保存并上传云备份，完成后退出…';
+  String get exitBackupInProgress => '正在保存…';
 
   @override
   String get backupRestoreTitle => '恢复备份';

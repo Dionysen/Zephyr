@@ -539,7 +539,7 @@ abstract class AppLocalizations {
   /// No description provided for @exitBackupInProgress.
   ///
   /// In en, this message translates to:
-  /// **'Saving and uploading before exit…'**
+  /// **'Saving…'**
   String get exitBackupInProgress;
 
   /// No description provided for @backupRestoreTitle.

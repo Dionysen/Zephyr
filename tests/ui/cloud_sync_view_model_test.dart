@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/data/services/cloud_sync_service.dart';
 import 'package:zephyr/domain/models/cloud_sync.dart';
@@ -131,6 +132,31 @@ void main() {
     expect(service.backupCalls, 1);
     expect(dirtyLibrary.dirty, isFalse);
   });
+
+  test('markPendingCloudBackup persists through the service when enabled', () async {
+    service.cloudBackupOn = true;
+    await model.markPendingCloudBackup();
+    expect(service.pending, isTrue);
+    expect(model.pendingCloudBackup, isTrue);
+
+    service.cloudBackupOn = false;
+    service.pending = false;
+    await model.markPendingCloudBackup();
+    expect(service.pending, isFalse);
+  });
+
+  test('catchUpPendingCloudBackup backups on desktop when pending', () async {
+    final previous = debugDefaultTargetPlatformOverride;
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = previous);
+
+    service.cloudBackupOn = true;
+    service.signedIn = true;
+    service.pending = true;
+    await model.catchUpPendingCloudBackup();
+    // WorkManager unsupported off Android → in-process backupNow.
+    expect(service.backupCalls, 1);
+  });
 }
 
 class _DirtyLibrary extends LibraryViewModel {
@@ -182,9 +208,21 @@ class _CloudService extends CloudSyncService {
   @override
   bool get cloudBackupEnabled => cloudBackupOn;
 
+  var pending = false;
+
   @override
-  CloudSyncPreferences get preferences =>
-      CloudSyncPreferences(cloudBackupEnabled: cloudBackupOn);
+  CloudSyncPreferences get preferences => CloudSyncPreferences(
+    cloudBackupEnabled: cloudBackupOn,
+    pendingCloudBackup: pending,
+  );
+
+  @override
+  bool get pendingCloudBackup => pending;
+
+  @override
+  Future<void> markPendingCloudBackup() async {
+    pending = true;
+  }
 
   @override
   Future<void> load() async {

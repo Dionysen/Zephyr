@@ -68,6 +68,15 @@ class CloudSyncService {
     await _preferencesStorage.save(_preferences);
   }
 
+  /// Persist that local library changes still need a cloud upload.
+  Future<void> markPendingCloudBackup() async {
+    if (_preferences.pendingCloudBackup) return;
+    _preferences = _preferences.copyWith(pendingCloudBackup: true);
+    await _preferencesStorage.save(_preferences);
+  }
+
+  bool get pendingCloudBackup => _preferences.pendingCloudBackup;
+
   /// Create a local `.pwb` then upload that same file to Nutstore.
   Future<CloudBackupEntry> backupNow({
     required WritingLibraryRepository library,
@@ -139,6 +148,7 @@ class CloudSyncService {
         lastSyncAt: DateTime.now(),
         lastSyncLibraryId: libraryId,
         lastRemoteUpdatedAt: manifest.updatedAt,
+        pendingCloudBackup: false,
       );
       await _preferencesStorage.save(_preferences);
       await _pruneCloudBackups(client, active, folderId);
