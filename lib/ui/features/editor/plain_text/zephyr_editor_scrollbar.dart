@@ -15,6 +15,7 @@ class ZephyrEditorScrollbar extends StatefulWidget {
     this.thumbExtent = defaultThumbExtent,
     this.mainAxisMargin = 8,
     this.padding = EdgeInsets.zero,
+    this.bottomTrackInset = 0,
   });
 
   final ScrollController controller;
@@ -28,6 +29,9 @@ class ZephyrEditorScrollbar extends StatefulWidget {
 
   /// Outer inset for the track — e.g. top padding below a floating app bar.
   final EdgeInsets padding;
+
+  /// Shrinks the vertical track from the bottom (IME, quick-toolbar overlay).
+  final double bottomTrackInset;
 
   /// How much of the diameter protrudes into the document (rest is clipped).
   static const double visibleDiameterFraction = 2 / 3;
@@ -158,7 +162,8 @@ class _ZephyrEditorScrollbarState extends State<ZephyrEditorScrollbar>
       },
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final viewport = constraints.maxHeight;
+          final viewport = (constraints.maxHeight - widget.bottomTrackInset)
+              .clamp(0.0, constraints.maxHeight);
           final position = _position;
           final show = _scrollable && viewport.isFinite && viewport > 0;
           final thumbTop = !show

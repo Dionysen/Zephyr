@@ -1224,6 +1224,7 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                 child: ZephyrEditorScrollbar(
                   controller: _scrollController,
                   padding: widget.scrollbarPadding,
+                  bottomTrackInset: _effectiveBottomInset(context),
                   child: scrollView,
                 ),
               ),
