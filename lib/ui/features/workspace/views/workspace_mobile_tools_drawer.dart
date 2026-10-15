@@ -120,7 +120,7 @@ class _WorkspaceMobileToolsDrawerState
     final byId = {for (final action in widget.actions) action.id: action};
     final items = <WorkspaceMobileDrawerAction>[
       for (final id in _ids)
-        if (byId[id] case final action?) action,
+        ?byId[id],
     ];
     final canReorder = widget.onReorder != null && items.length > 1;
 

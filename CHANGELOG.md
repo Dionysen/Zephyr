@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Show a horizontal selection menu on Android and iOS with Cut, Copy, Paste, Share, and Select all; hide Select all when the entire chapter is selected.
+- Fix the Android profile build type configuration so Gradle can compile the app with the current Kotlin DSL.
+
 - Android debug / profile 使用独立包名与桌面名（`Zephyr Debug` / `Zephyr Profile`），与正式版 `Zephyr` 可并存；仅重新安装 release 才会覆盖日常使用包。
 
 ## 1.0.0

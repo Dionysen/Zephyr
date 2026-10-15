@@ -7,6 +7,7 @@ import 'package:plain_text_editor/plain_text_editor.dart';
 import '../../../../domain/models/keyboard_shortcuts.dart';
 import '../../../../domain/use_cases/shortcut_resolver.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
+import '../../../core/zephyr_floating_chrome.dart';
 import '../../settings/view_models/keyboard_shortcuts_view_model.dart';
 import 'zephyr_editor_scrollbar.dart';
 
@@ -18,6 +19,7 @@ class ZephyrPlainTextEditor extends StatefulWidget {
     required this.typography,
     required this.onTextChanged,
     required this.onSelectionChanged,
+    required this.onShareSelectedText,
     this.decorations = const [],
     this.scrollController,
     this.focusNode,
@@ -36,6 +38,10 @@ class ZephyrPlainTextEditor extends StatefulWidget {
   final EditorTypography typography;
   final ValueChanged<String> onTextChanged;
   final ValueChanged<TextSelection> onSelectionChanged;
+
+  /// Opens the platform share sheet for selected text at the supplied button.
+  final Future<void> Function(String text, Rect sharePositionOrigin)
+  onShareSelectedText;
   final List<TextSpanDecoration> decorations;
   final ScrollController? scrollController;
   final FocusNode? focusNode;
@@ -79,22 +85,26 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   bool _showCaret = true;
   bool _selecting = false;
   bool _draggingHandle = false;
+
   /// When true, gaining focus does not open the soft keyboard (e.g. long-press
   /// selection). Cleared when a short tap confirms editing intent.
   bool _suppressImeAttach = false;
   TapDownDetails? _pendingTapDetails;
   final GlobalKey _documentStackKey = GlobalKey();
+  final GlobalKey _viewportKey = GlobalKey();
   final GlobalKey _headerKey = GlobalKey();
   double _headerExtent = 0;
   String _lastText = '';
   TextSelection _lastSelection = const TextSelection.collapsed(offset: 0);
   double _lastKeyboardInset = 0;
   double _lastEffectiveBottomInset = 0;
+
   /// True while a post-frame IME geometry pump is scheduled (avoid stacking).
   bool _imeGeometryPumpActive = false;
 
   /// Pointer id for an in-progress drag-select (mouse or long-press).
   int? _selectPointer;
+
   /// Last global position while drag-selecting (for edge auto-scroll).
   Offset? _selectGlobal;
   bool _selectAutoScrollScheduled = false;
@@ -110,18 +120,19 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     _scrollController = widget.scrollController ?? ScrollController();
     _ownsFocus = widget.focusNode == null;
     _focusNode = widget.focusNode ?? FocusNode();
-    _caretBlink = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    )..addStatusListener((status) {
-        if (status == AnimationStatus.completed) {
-          setState(() => _showCaret = false);
-          _caretBlink.reverse();
-        } else if (status == AnimationStatus.dismissed) {
-          setState(() => _showCaret = true);
-          _caretBlink.forward();
-        }
-      });
+    _caretBlink =
+        AnimationController(
+          vsync: this,
+          duration: const Duration(milliseconds: 500),
+        )..addStatusListener((status) {
+          if (status == AnimationStatus.completed) {
+            setState(() => _showCaret = false);
+            _caretBlink.reverse();
+          } else if (status == AnimationStatus.dismissed) {
+            setState(() => _showCaret = true);
+            _caretBlink.forward();
+          }
+        });
     _gestures = PlainTextGestureHandler(
       controller: widget.controller,
       engine: _engine,
@@ -185,7 +196,7 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
 
   @override
   void dispose() {
-    _stopSelectionDrag();
+    _stopSelectionDrag(notify: false);
     if (_draggingHandle && context.mounted) {
       ZephyrDrawerDragBlockNotification(blocked: false).dispatch(context);
     }
@@ -322,9 +333,7 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   }
 
   void _attachIme() {
-    if (widget.readOnly ||
-        _suppressImeAttach ||
-        !_focusNode.hasPrimaryFocus) {
+    if (widget.readOnly || _suppressImeAttach || !_focusNode.hasPrimaryFocus) {
       return;
     }
     // Windows (and multi-view desktop) reject setClient without viewId.
@@ -465,8 +474,7 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     }
     final viewTop = _scrollController.offset;
     final viewBottom = viewTop + viewport - keyboard;
-    final line =
-        widget.typography.fontSize * widget.typography.lineHeight;
+    final line = widget.typography.fontSize * widget.typography.lineHeight;
     // Keep the caret about two lines above the keyboard / visible bottom.
     final bottomMargin = line * 2;
     final topMargin = line;
@@ -497,8 +505,10 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     _selecting = true;
     _selectPointer = event.pointer;
     _selectGlobal = event.position;
-    GestureBinding.instance.pointerRouter
-        .addRoute(event.pointer, _handleSelectPointerRoute);
+    GestureBinding.instance.pointerRouter.addRoute(
+      event.pointer,
+      _handleSelectPointerRoute,
+    );
     final local = _documentLocalForGlobal(event.position);
     if (local != null) {
       _gestures.handleDragStart(local);
@@ -525,16 +535,19 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     }
   }
 
-  void _stopSelectionDrag() {
+  void _stopSelectionDrag({bool notify = true}) {
     final pointer = _selectPointer;
     if (pointer != null) {
-      GestureBinding.instance.pointerRouter
-          .removeRoute(pointer, _handleSelectPointerRoute);
+      GestureBinding.instance.pointerRouter.removeRoute(
+        pointer,
+        _handleSelectPointerRoute,
+      );
     }
     _selectPointer = null;
     _selectGlobal = null;
     _selecting = false;
     _selectAutoScrollScheduled = false;
+    if (notify && mounted) setState(() {});
   }
 
   Offset? _documentLocalForGlobal(Offset global) {
@@ -579,8 +592,10 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   double _selectAutoScrollSpeed(double overscroll) {
     // Ramp with distance past the edge zone so far drags scroll faster.
     final t = (overscroll / _selectEdgeZone).clamp(0.25, 3.0);
-    return (_selectAutoScrollMaxPerFrame * t)
-        .clamp(2.0, _selectAutoScrollMaxPerFrame * 3);
+    return (_selectAutoScrollMaxPerFrame * t).clamp(
+      2.0,
+      _selectAutoScrollMaxPerFrame * 3,
+    );
   }
 
   void _scheduleSelectAutoScroll() {
@@ -794,9 +809,7 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     final extent = widget.controller.selection.extentOffset;
     final caret = _engine.caretRectForOffset(extent);
     if (caret == null) return;
-    final page = _scrollController.position.viewportDimension *
-        0.9 *
-        direction;
+    final page = _scrollController.position.viewportDimension * 0.9 * direction;
     final target = Offset(caret.left, caret.center.dy + page);
     widget.controller.moveCaret(
       _engine.offsetForPosition(target),
@@ -809,8 +822,10 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     if (caret == null) return offset;
     final target = Offset(
       caret.left,
-      caret.center.dy + direction * _engine.typography.fontSize *
-          _engine.typography.lineHeight,
+      caret.center.dy +
+          direction *
+              _engine.typography.fontSize *
+              _engine.typography.lineHeight,
     );
     return _engine.offsetForPosition(target);
   }
@@ -836,6 +851,38 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     widget.controller.replaceSelection(text, coalesce: false);
   }
 
+  Future<void> _shareSelection(Rect origin) async {
+    final selection = widget.controller.selection;
+    if (selection.isCollapsed) return;
+    final text = widget.controller.text.substring(
+      selection.start,
+      selection.end,
+    );
+    await widget.onShareSelectedText(text, origin);
+  }
+
+  /// Converts rendered document selection boxes into the scrolling viewport.
+  Rect? _selectionAnchor(Rect viewport) {
+    final documentBox =
+        _documentStackKey.currentContext?.findRenderObject() as RenderBox?;
+    final viewportBox =
+        _viewportKey.currentContext?.findRenderObject() as RenderBox?;
+    if (documentBox == null ||
+        !documentBox.hasSize ||
+        viewportBox == null ||
+        !viewportBox.hasSize) {
+      return null;
+    }
+    for (final box in _engine.boxesForSelection(widget.controller.selection)) {
+      final origin = viewportBox.globalToLocal(
+        documentBox.localToGlobal(box.topLeft),
+      );
+      final candidate = origin & box.size;
+      if (candidate.overlaps(viewport)) return candidate;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Keep [header] outside the body [Focus] so title focus is not a
@@ -848,17 +895,21 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
           typography: widget.typography,
           viewportWidth: constraints.maxWidth,
         );
-        final scrollOffset =
-            _scrollController.hasClients ? _scrollController.offset : 0.0;
+        final scrollOffset = _scrollController.hasClients
+            ? _scrollController.offset
+            : 0.0;
         final viewportHeight = constraints.maxHeight.isFinite
             ? constraints.maxHeight
             : MediaQuery.sizeOf(context).height;
-        final typewriterLeading =
-            widget.typewriterMode ? viewportHeight * 0.5 : 0.0;
+        final typewriterLeading = widget.typewriterMode
+            ? viewportHeight * 0.5
+            : 0.0;
         // Culling is document-local; subtract top pad and scrolled header.
         final documentScrollOffset =
-            (scrollOffset - typewriterLeading - _headerExtent)
-                .clamp(0.0, double.infinity);
+            (scrollOffset - typewriterLeading - _headerExtent).clamp(
+              0.0,
+              double.infinity,
+            );
         final bodyFocused = _focusNode.hasPrimaryFocus;
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -869,11 +920,14 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
         });
 
         final selection = widget.controller.selection;
-        final showHandles = !widget.readOnly &&
+        final isMobile =
+            defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS;
+        final showHandles =
+            !widget.readOnly &&
             bodyFocused &&
             !selection.isCollapsed &&
-            (defaultTargetPlatform == TargetPlatform.android ||
-                defaultTargetPlatform == TargetPlatform.iOS);
+            isMobile;
         final baseCaret = showHandles
             ? _engine.caretRectForOffset(selection.baseOffset)
             : null;
@@ -904,8 +958,9 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
         final minBodyHeight = fitsAboveImeReserve
             ? (viewportH - _headerExtent).clamp(0.0, double.infinity)
             : 0.0;
-        final bodyHeight =
-            docHeight < minBodyHeight ? minBodyHeight : docHeight;
+        final bodyHeight = docHeight < minBodyHeight
+            ? minBodyHeight
+            : docHeight;
 
         final scrollView = ScrollConfiguration(
           // Same Material stretch as the workspace sidebar ListView.
@@ -982,9 +1037,15 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                                       _focusNode.requestFocus();
                                       _selecting = true;
                                       _selectGlobal = details.globalPosition;
-                                      _gestures.handleDragStart(
-                                        details.localPosition,
-                                      );
+                                      if (isMobile) {
+                                        _gestures.handleLongPressStart(
+                                          details.localPosition,
+                                        );
+                                      } else {
+                                        _gestures.handleDragStart(
+                                          details.localPosition,
+                                        );
+                                      }
                                       _scheduleSelectAutoScroll();
                                     },
                               onLongPressMoveUpdate: widget.readOnly
@@ -1007,6 +1068,7 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                                       if (_focusNode.hasPrimaryFocus) {
                                         _attachIme();
                                       }
+                                      setState(() {});
                                     },
                               child: Semantics(
                                 textField: true,
@@ -1060,35 +1122,58 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                     ),
                   ),
                 ),
-                  SizedBox(
-                    height: endScrollRoom,
-                    width: double.infinity,
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      // onTap (not onTapDown): scroll drags must not open the IME.
-                      onTap: widget.readOnly ? null : _onEndPaddingTap,
-                    ),
+                SizedBox(
+                  height: endScrollRoom,
+                  width: double.infinity,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    // onTap (not onTapDown): scroll drags must not open the IME.
+                    onTap: widget.readOnly ? null : _onEndPaddingTap,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          );
+          ),
+        );
 
         // Circular thumb is mobile-only; desktop keeps the Material scrollbar.
-        final useCircularScrollbar =
-            defaultTargetPlatform == TargetPlatform.android ||
-            defaultTargetPlatform == TargetPlatform.iOS;
-        if (useCircularScrollbar) {
-          return ZephyrEditorScrollbar(
-            controller: _scrollController,
-            padding: widget.scrollbarPadding,
-            child: scrollView,
+        if (isMobile) {
+          final viewport =
+              Offset.zero &
+              Size(
+                constraints.maxWidth,
+                (viewportHeight - widget.bottomObstruction).clamp(
+                  0.0,
+                  viewportHeight,
+                ),
+              );
+          final anchor = showHandles && !_selecting && !_draggingHandle
+              ? _selectionAnchor(viewport)
+              : null;
+          return Stack(
+            key: _viewportKey,
+            children: [
+              ZephyrEditorScrollbar(
+                controller: _scrollController,
+                padding: widget.scrollbarPadding,
+                child: scrollView,
+              ),
+              if (anchor != null)
+                _MobileSelectionToolbar(
+                  selection: selection,
+                  textLength: widget.controller.text.length,
+                  viewport: viewport,
+                  anchor: anchor,
+                  onCut: _cut,
+                  onCopy: _copy,
+                  onPaste: _paste,
+                  onShare: _shareSelection,
+                  onSelectAll: widget.controller.selectAll,
+                ),
+            ],
           );
         }
-        return Scrollbar(
-          controller: _scrollController,
-          child: scrollView,
-        );
+        return Scrollbar(controller: _scrollController, child: scrollView);
       },
     );
   }
@@ -1117,6 +1202,91 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
         TextSelection(baseOffset: sel.baseOffset, extentOffset: next),
       );
     }
+  }
+}
+
+/// Compact horizontal actions shown above a mobile text selection.
+class _MobileSelectionToolbar extends StatelessWidget {
+  const _MobileSelectionToolbar({
+    required this.selection,
+    required this.textLength,
+    required this.viewport,
+    required this.anchor,
+    required this.onCut,
+    required this.onCopy,
+    required this.onPaste,
+    required this.onShare,
+    required this.onSelectAll,
+  });
+
+  final TextSelection selection;
+  final int textLength;
+  final Rect viewport;
+  final Rect anchor;
+  final VoidCallback onCut;
+  final VoidCallback onCopy;
+  final VoidCallback onPaste;
+  final Future<void> Function(Rect origin) onShare;
+  final VoidCallback onSelectAll;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = MaterialLocalizations.of(context);
+    final allSelected = selection.start == 0 && selection.end == textLength;
+    final width = (allSelected ? 288.0 : 352.0).clamp(0.0, viewport.width - 16);
+    const height = 48.0;
+    final left = (anchor.center.dx - width / 2).clamp(
+      8.0,
+      viewport.width - width - 8,
+    );
+    final preferredTop = anchor.top - height - 8;
+    final belowTop = anchor.bottom + 8;
+    final top = (preferredTop >= 8 ? preferredTop : belowTop).clamp(
+      8.0,
+      (viewport.height - height - 8).clamp(8.0, double.infinity),
+    );
+
+    Widget action(String label, VoidCallback onPressed) => Expanded(
+      child: TextButton(
+        onPressed: onPressed,
+        style: TextButton.styleFrom(
+          minimumSize: const Size(0, height),
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          shape: const RoundedRectangleBorder(),
+        ),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(label, maxLines: 1, softWrap: false),
+        ),
+      ),
+    );
+
+    return Positioned(
+      left: left,
+      top: top,
+      width: width,
+      height: height,
+      child: ZephyrFloatingChrome(
+        borderRadius: BorderRadius.circular(12),
+        child: Row(
+          children: [
+            action(localizations.cutButtonLabel, onCut),
+            action(localizations.copyButtonLabel, onCopy),
+            action(localizations.pasteButtonLabel, onPaste),
+            Builder(
+              builder: (shareContext) =>
+                  action(localizations.shareButtonLabel, () {
+                    final box = shareContext.findRenderObject() as RenderBox?;
+                    if (box == null) return;
+                    onShare(box.localToGlobal(Offset.zero) & box.size);
+                  }),
+            ),
+            if (!allSelected)
+              action(localizations.selectAllButtonLabel, onSelectAll),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -1234,4 +1404,3 @@ class _SelectionHandleState extends State<_SelectionHandle> {
     );
   }
 }
-

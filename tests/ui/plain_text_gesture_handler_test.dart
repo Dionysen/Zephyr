@@ -84,4 +84,12 @@ void main() {
     expect(controller.selection.end, 11);
     expect(changes, 3);
   });
+
+  test('long press selects the word before the finger moves', () {
+    handler.handleLongPressStart(at(2));
+
+    expect(controller.selection.start, 0);
+    expect(controller.selection.end, 5);
+    expect(changes, 1);
+  });
 }

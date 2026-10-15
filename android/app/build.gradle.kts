@@ -9,6 +9,10 @@ android {
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
+    buildFeatures {
+        resValues = true
+    }
+
     compileOptions {
         // Required by flutter_local_notifications (java.time APIs on older Android).
         isCoreLibraryDesugaringEnabled = true
@@ -37,7 +41,7 @@ android {
             applicationIdSuffix = ".debug"
             resValue("string", "app_name", "Zephyr Debug")
         }
-        profile {
+        getByName("profile") {
             applicationIdSuffix = ".profile"
             resValue("string", "app_name", "Zephyr Profile")
         }

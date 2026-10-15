@@ -64,6 +64,17 @@ class PlainTextGestureHandler {
     onChanged();
   }
 
+  /// A mobile long press selects the word under the finger before dragging.
+  /// Further drag updates extend from the word's start.
+  void handleLongPressStart(Offset documentLocal) {
+    _tapCount = 0;
+    _lastTapAt = null;
+    _lastTapPos = null;
+    final offset = engine.offsetForPosition(documentLocal);
+    controller.setSelection(_wordSelectionAt(offset));
+    onChanged();
+  }
+
   TextSelection _wordSelectionAt(int offset) {
     final text = controller.text;
     if (text.isEmpty) {

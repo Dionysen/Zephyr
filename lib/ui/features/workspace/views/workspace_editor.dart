@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:plain_text_editor/plain_text_editor.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../../domain/models/editor_preferences.dart';
 import '../../../../domain/use_cases/plain_text_word_count.dart';
@@ -1053,6 +1054,11 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
                   shortcuts: ZephyrScope.of(context).keyboardShortcuts,
                   onTextChanged: (_) {},
                   onSelectionChanged: _onSelectionChanged,
+                  onShareSelectedText: (text, origin) async {
+                    await SharePlus.instance.share(
+                      ShareParams(text: text, sharePositionOrigin: origin),
+                    );
+                  },
                 ),
               );
               if (!widget.showBackground) {
