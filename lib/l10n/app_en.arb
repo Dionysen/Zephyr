@@ -42,23 +42,8 @@
   },
   "cloudBackupQuickTooltip": "Cloud backup",
   "cloudBackupQuickTooltipUnconfigured": "Connect Nutstore for cloud backup",
-  "cloudSyncPullNoChanges": "Cloud sync finished — no chapter changes",
-  "cloudSyncPullSummary": "Cloud sync: +{added} · updated {updated} · −{removed} chapters",
-  "@cloudSyncPullSummary": {
-    "placeholders": {
-      "added": {
-        "type": "int"
-      },
-      "updated": {
-        "type": "int"
-      },
-      "removed": {
-        "type": "int"
-      }
-    }
-  },
   "cloudSyncEnableTitle": "Enable cloud backup",
-  "cloudSyncEnableSubtitle": "Upload local backups to Nutstore; pull newer snapshots when opening, and upload on mobile backgrounding after edits",
+  "cloudSyncEnableSubtitle": "Upload local backups to Nutstore on exit or after mobile backgrounding with edits",
   "cloudSyncLoginTitle": "Connect Nutstore",
   "cloudSyncLoginSubtitle": "Enter your account, WebDAV URL, and app password",
   "cloudSyncSettingsTitle": "Nutstore settings",
@@ -72,7 +57,7 @@
   },
   "cloudSyncUnbindTitle": "Disconnect",
   "cloudSyncLogoutTitle": "Sign out",
-  "cloudSyncLogoutSubtitle": "Stops cloud backup and automatic sync",
+  "cloudSyncLogoutSubtitle": "Stops cloud backup",
   "cloudSyncBackupNowTitle": "Back up to cloud now",
   "cloudSyncBackupNowSubtitle": "Create a local backup, then upload that file to Zephyr on Nutstore",
   "cloudSyncBackupNowSuccess": "Cloud backup completed.",
@@ -91,17 +76,6 @@
       }
     }
   },
-  "cloudSyncAutoTitle": "Automatic sync",
-  "cloudSyncAutoSubtitle": "When opening the app, pull a newer cloud snapshot and merge by chapter update time",
-  "cloudSyncLastSync": "Last sync: {time}",
-  "@cloudSyncLastSync": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "cloudSyncLastSyncNever": "Not synced yet",
   "cloudSyncCredentialsTitle": "Connect Nutstore WebDAV",
   "cloudSyncCredentialsEditTitle": "Nutstore settings",
   "cloudSyncCredentialsSubtitle": "Use a Nutstore app password, not your account password. Stored securely on this device.",

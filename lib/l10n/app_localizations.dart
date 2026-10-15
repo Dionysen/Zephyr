@@ -308,18 +308,6 @@ abstract class AppLocalizations {
   /// **'Connect Nutstore for cloud backup'**
   String get cloudBackupQuickTooltipUnconfigured;
 
-  /// No description provided for @cloudSyncPullNoChanges.
-  ///
-  /// In en, this message translates to:
-  /// **'Cloud sync finished — no chapter changes'**
-  String get cloudSyncPullNoChanges;
-
-  /// No description provided for @cloudSyncPullSummary.
-  ///
-  /// In en, this message translates to:
-  /// **'Cloud sync: +{added} · updated {updated} · −{removed} chapters'**
-  String cloudSyncPullSummary(int added, int updated, int removed);
-
   /// No description provided for @cloudSyncEnableTitle.
   ///
   /// In en, this message translates to:
@@ -329,7 +317,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncEnableSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Upload local backups to Nutstore; pull newer snapshots when opening, and upload on mobile backgrounding after edits'**
+  /// **'Upload local backups to Nutstore on exit or after mobile backgrounding with edits'**
   String get cloudSyncEnableSubtitle;
 
   /// No description provided for @cloudSyncLoginTitle.
@@ -371,7 +359,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncLogoutSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Stops cloud backup and automatic sync'**
+  /// **'Stops cloud backup'**
   String get cloudSyncLogoutSubtitle;
 
   /// No description provided for @cloudSyncBackupNowTitle.
@@ -439,30 +427,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Wait for cloud sync to finish before choosing another directory.'**
   String get cloudSyncWaitBeforeChoosingDirectory;
-
-  /// No description provided for @cloudSyncAutoTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Automatic sync'**
-  String get cloudSyncAutoTitle;
-
-  /// No description provided for @cloudSyncAutoSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'When opening the app, pull a newer cloud snapshot and merge by chapter update time'**
-  String get cloudSyncAutoSubtitle;
-
-  /// No description provided for @cloudSyncLastSync.
-  ///
-  /// In en, this message translates to:
-  /// **'Last sync: {time}'**
-  String cloudSyncLastSync(String time);
-
-  /// No description provided for @cloudSyncLastSyncNever.
-  ///
-  /// In en, this message translates to:
-  /// **'Not synced yet'**
-  String get cloudSyncLastSyncNever;
 
   /// No description provided for @cloudSyncCredentialsTitle.
   ///

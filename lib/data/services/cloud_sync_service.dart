@@ -68,11 +68,6 @@ class CloudSyncService {
     await _preferencesStorage.save(_preferences);
   }
 
-  Future<void> setAutoSyncEnabled(bool enabled) async {
-    _preferences = _preferences.copyWith(autoSyncEnabled: enabled);
-    await _preferencesStorage.save(_preferences);
-  }
-
   /// Create a local `.pwb` then upload that same file to Nutstore.
   Future<CloudBackupEntry> backupNow({
     required WritingLibraryRepository library,

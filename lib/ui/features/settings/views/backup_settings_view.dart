@@ -117,12 +117,6 @@ class BackupSettingsView extends StatelessWidget {
     final signedIn = cloudSync.isSignedIn;
     final name = cloudSync.session?.username.trim();
     final displayName = (name == null || name.isEmpty) ? 'Nutstore' : name;
-    final last = cloudSync.preferences.lastSyncAt;
-    final lastLabel = last == null
-        ? l10n.cloudSyncLastSyncNever
-        : l10n.cloudSyncLastSync(
-            DateFormat.yMMMd().add_Hm().format(last.toLocal()),
-          );
 
     final tiles = <Widget>[
       ZephyrSettingsSwitchTile(
@@ -205,15 +199,6 @@ class BackupSettingsView extends StatelessWidget {
                 size: 20,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-      ),
-      ZephyrSettingsSwitchTile(
-        icon: Icons.sync_outlined,
-        title: l10n.cloudSyncAutoTitle,
-        subtitle: '$lastLabel\n${l10n.cloudSyncAutoSubtitle}',
-        value: cloudSync.autoSyncEnabled,
-        onChanged: cloudSync.busy
-            ? null
-            : (value) => cloudSync.setAutoSyncEnabled(value),
       ),
       ZephyrSettingsListTile(
         icon: Icons.settings_outlined,

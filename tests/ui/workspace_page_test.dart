@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/domain/models/app_theme_mode.dart';
+import 'package:zephyr/domain/models/cloud_sync.dart';
 import 'package:zephyr/domain/models/editor_preferences.dart';
 import 'package:zephyr/domain/models/library_backup.dart';
 import 'package:zephyr/domain/models/purewriter_models.dart';
@@ -40,6 +41,22 @@ import 'package:zephyr/ui/features/workspace/views/workspace_settings_panel.dart
 import 'package:zephyr/ui/features/workspace/views/workspace_sidebar.dart';
 
 void main() {
+  testWidgets('opening a library does not pull a cloud snapshot', (
+    tester,
+  ) async {
+    final library = LibraryViewModel(_LibraryRepository());
+    final cloud = _ExitCloudSyncViewModel(library);
+    addTearDown(() {
+      cloud.dispose();
+      library.dispose();
+    });
+
+    await tester.pumpWidget(_app(library: library, cloudSync: cloud));
+    await tester.pumpAndSettle();
+
+    expect(cloud.syncCalls, 0);
+  });
+
   testWidgets('root exit waits for cloud backup and stays open on failure', (
     tester,
   ) async {
@@ -1276,6 +1293,7 @@ class _ExitCloudSyncViewModel extends CloudSyncViewModel {
   final allowBackup = Completer<void>();
   Object? failure;
   int backupCalls = 0;
+  int syncCalls = 0;
 
   @override
   bool get cloudBackupEnabled => true;
@@ -1291,5 +1309,11 @@ class _ExitCloudSyncViewModel extends CloudSyncViewModel {
     backupCalls++;
     backupStarted.complete();
     await allowBackup.future;
+  }
+
+  @override
+  Future<CloudPullResult?> syncNow() async {
+    syncCalls++;
+    return CloudPullResult.skipped;
   }
 }

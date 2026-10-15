@@ -117,18 +117,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudBackupQuickTooltipUnconfigured => '绑定坚果云以使用云备份';
 
   @override
-  String get cloudSyncPullNoChanges => '云同步完成，章节无变化';
-
-  @override
-  String cloudSyncPullSummary(int added, int updated, int removed) {
-    return '已从云端同步：新增 $added，更新 $updated，删除 $removed 章';
-  }
-
-  @override
   String get cloudSyncEnableTitle => '开启云备份';
 
   @override
-  String get cloudSyncEnableSubtitle => '将本地备份上传到坚果云；打开时拉取较新快照，移动端有改动进入后台时也会上传';
+  String get cloudSyncEnableSubtitle => '退出时或移动端有改动进入后台后，将本地备份上传到坚果云';
 
   @override
   String get cloudSyncLoginTitle => '绑定坚果云';
@@ -151,7 +143,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncLogoutTitle => '断开连接';
 
   @override
-  String get cloudSyncLogoutSubtitle => '断开后停止云备份和自动同步';
+  String get cloudSyncLogoutSubtitle => '断开后停止云备份';
 
   @override
   String get cloudSyncBackupNowTitle => '立即云备份';
@@ -189,20 +181,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cloudSyncWaitBeforeChoosingDirectory => '请等待云同步完成后再选择其他目录。';
-
-  @override
-  String get cloudSyncAutoTitle => '自动同步';
-
-  @override
-  String get cloudSyncAutoSubtitle => '打开软件时从云端拉取较新快照，并按章节更新时间合并';
-
-  @override
-  String cloudSyncLastSync(String time) {
-    return '上次同步：$time';
-  }
-
-  @override
-  String get cloudSyncLastSyncNever => '尚未同步';
 
   @override
   String get cloudSyncCredentialsTitle => '连接坚果云 WebDAV';

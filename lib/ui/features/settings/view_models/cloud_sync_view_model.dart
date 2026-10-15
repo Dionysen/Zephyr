@@ -11,7 +11,7 @@ import '../../editor/view_models/library_view_model.dart';
 
 enum CloudSyncBusyKind { none, login, sync, backup, restore }
 
-/// UI state for WebDAV connection, cloud backups, and auto sync.
+/// UI state for WebDAV connection, cloud backups, and manual sync.
 class CloudSyncViewModel extends ChangeNotifier {
   CloudSyncViewModel({
     required this.library,
@@ -56,7 +56,6 @@ class CloudSyncViewModel extends ChangeNotifier {
   bool get cloudBackupEnabled => _service.cloudBackupEnabled;
   CloudSyncSession? get session => _service.session;
   CloudSyncPreferences get preferences => _service.preferences;
-  bool get autoSyncEnabled => _service.preferences.autoSyncEnabled;
   List<CloudBackupEntry> get cloudBackups => _cloudBackups;
   CloudPullResult? get lastPullResult => _lastPullResult;
 
@@ -72,11 +71,6 @@ class CloudSyncViewModel extends ChangeNotifier {
 
   Future<void> setCloudBackupEnabled(bool enabled) async {
     await _service.setCloudBackupEnabled(enabled);
-    notifyListeners();
-  }
-
-  Future<void> setAutoSyncEnabled(bool enabled) async {
-    await _service.setAutoSyncEnabled(enabled);
     notifyListeners();
   }
 
@@ -219,16 +213,6 @@ class CloudSyncViewModel extends ChangeNotifier {
       _busyKind = CloudSyncBusyKind.none;
       notifyListeners();
     }
-  }
-
-  /// Open / resume: pull-merge newer cloud snapshot only (no upload).
-  Future<CloudPullResult?> maybeAutoSync() async {
-    if (!cloudBackupEnabled) return null;
-    if (!autoSyncEnabled) return null;
-    if (!isSignedIn) return null;
-    if (library.isReadOnly) return null;
-    if (busy) return null;
-    return syncNow();
   }
 
   /// Mobile background / leave: upload when cloud backup is on and content

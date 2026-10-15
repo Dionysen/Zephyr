@@ -36,7 +36,6 @@ class CloudBackupQuickButton extends StatefulWidget {
 abstract final class _CloudBackupMenuId {
   static const backup = 'backup';
   static const restore = 'restore';
-  static const auto = 'auto';
 }
 
 class _CloudBackupQuickButtonState extends State<CloudBackupQuickButton> {
@@ -166,16 +165,6 @@ class _CloudBackupQuickButtonState extends State<CloudBackupQuickButton> {
           enabled: !cloudSync.busy,
           onTap: () => unawaited(showCloudBackupRestoreFlow(context, cloudSync)),
         ),
-        WorkspaceMobileDrawerAction(
-          id: _CloudBackupMenuId.auto,
-          icon: Icons.sync_outlined,
-          label: l10n.cloudSyncAutoTitle,
-          enabled: !cloudSync.busy,
-          selected: cloudSync.autoSyncEnabled,
-          onTap: () => unawaited(
-            cloudSync.setAutoSyncEnabled(!cloudSync.autoSyncEnabled),
-          ),
-        ),
       ],
     );
   }
@@ -196,25 +185,17 @@ class _CloudBackupQuickButtonState extends State<CloudBackupQuickButton> {
       Offset.zero & overlay.size,
     );
     final l10n = context.l10n;
-    final theme = Theme.of(context);
     // Avoid CheckedPopupMenuItem/ListTile — they ignore height and stay taller.
     const itemHeight = ZephyrControls.menuItemHeight;
     Widget row({
       required IconData icon,
       required String label,
-      bool checked = false,
     }) {
       return Row(
         children: [
           Icon(icon, size: ZephyrControls.iconSize),
           const SizedBox(width: 10),
           Expanded(child: Text(label)),
-          if (checked)
-            Icon(
-              Icons.check,
-              size: ZephyrControls.iconSize,
-              color: theme.colorScheme.onSurface,
-            ),
         ],
       );
     }
@@ -243,16 +224,6 @@ class _CloudBackupQuickButtonState extends State<CloudBackupQuickButton> {
             label: l10n.cloudSyncRestoreTitle,
           ),
         ),
-        PopupMenuItem(
-          value: _CloudBackupMenuId.auto,
-          height: itemHeight,
-          enabled: !cloudSync.busy,
-          child: row(
-            icon: Icons.sync_outlined,
-            label: l10n.cloudSyncAutoTitle,
-            checked: cloudSync.autoSyncEnabled,
-          ),
-        ),
       ],
     );
     if (!context.mounted || action == null) return;
@@ -261,8 +232,6 @@ class _CloudBackupQuickButtonState extends State<CloudBackupQuickButton> {
         await _runBackup(context, cloudSync);
       case _CloudBackupMenuId.restore:
         await showCloudBackupRestoreFlow(context, cloudSync);
-      case _CloudBackupMenuId.auto:
-        await cloudSync.setAutoSyncEnabled(!cloudSync.autoSyncEnabled);
     }
   }
 

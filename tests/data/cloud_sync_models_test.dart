@@ -33,7 +33,15 @@ void main() {
     expect(CloudSyncPreferences.defaults.cloudBackupEnabled, isTrue);
     final restored = CloudSyncPreferences.fromJson(const {});
     expect(restored.cloudBackupEnabled, isTrue);
-    expect(restored.autoSyncEnabled, isTrue);
+  });
+
+  test('CloudSyncPreferences ignores legacy automatic sync preference', () {
+    final restored = CloudSyncPreferences.fromJson(const {
+      'autoSyncEnabled': true,
+      'cloudBackupEnabled': false,
+    });
+    expect(restored.cloudBackupEnabled, isFalse);
+    expect(restored.toJson(), isNot(contains('autoSyncEnabled')));
   });
 
   test('CloudSyncPreferences round-trips cloudBackupEnabled off', () {

@@ -11,7 +11,6 @@ import '../../../../data/services/folder_bookmark.dart';
 import '../../../../data/services/android_leave_backup.dart';
 import '../../../../data/services/mobile_background_backup.dart';
 import '../../../../domain/models/app_theme_mode.dart';
-import '../../../../domain/models/cloud_sync.dart';
 import '../../../../domain/models/keyboard_shortcuts.dart';
 import '../../../../domain/models/library_backup.dart';
 import '../../../../domain/models/theme_color_pack.dart';
@@ -111,8 +110,6 @@ class _WorkspacePageState extends State<WorkspacePage>
     if (library == null) return;
     await library.load();
     if (!mounted) return;
-    // Pull newer cloud snapshot after the library is ready (desktop + mobile).
-    unawaited(_autoSyncAndReport());
     if (_offeredDraftRecovery) return;
     _offeredDraftRecovery = true;
     await _offerDraftRecovery(library);
@@ -188,7 +185,6 @@ class _WorkspacePageState extends State<WorkspacePage>
           }
         });
       }
-      unawaited(_autoSyncAndReport());
     }
   }
 
@@ -269,37 +265,6 @@ class _WorkspacePageState extends State<WorkspacePage>
     );
     if (!scheduled) return;
     _leaveBackupScheduled = true;
-  }
-
-  Future<void> _autoSyncAndReport() async {
-    final cloudSync = ZephyrScope.of(context).cloudSync;
-    if (!cloudSync.cloudBackupEnabled ||
-        !cloudSync.isSignedIn ||
-        cloudSync.busy ||
-        cloudSync.library.isReadOnly) {
-      return;
-    }
-    // Leave backup is handled by WorkManager; resume only pulls when enabled.
-    if (!cloudSync.autoSyncEnabled) return;
-    final result = await cloudSync.maybeAutoSync();
-    if (!mounted) return;
-    if (cloudSync.error is CloudLibraryConflictException) {
-      ZephyrSnackBar.show(context, cloudSync.errorMessage(context.l10n)!);
-      return;
-    }
-    if (result == null || !result.pulled || cloudSync.error != null) return;
-    final l10n = context.l10n;
-    final stats = result.mergeStats;
-    ZephyrSnackBar.show(
-      context,
-      stats.hasArticleChanges
-          ? l10n.cloudSyncPullSummary(
-              stats.articlesAdded,
-              stats.articlesUpdated,
-              stats.articlesRemoved,
-            )
-          : l10n.cloudSyncPullNoChanges,
-    );
   }
 
   @override

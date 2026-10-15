@@ -95,14 +95,14 @@ void main() {
     expect(model.error, isNull);
   });
 
-  test('explains a library conflict after automatic sync', () async {
+  test('explains a library conflict after manual sync', () async {
     service.cloudBackupOn = true;
     service.signedIn = true;
     service.pullFailure = const CloudLibraryConflictException(
       CloudLibraryConflictReason.anotherLibrary,
     );
 
-    await model.maybeAutoSync();
+    await model.syncNow();
 
     expect(service.pullCalls, 1);
     expect(model.error, isA<CloudLibraryConflictException>());
@@ -110,13 +110,6 @@ void main() {
       model.errorMessage(AppLocalizationsEn()),
       contains('Choose the original local directory'),
     );
-  });
-
-  test('maybeAutoSync skips when cloud backup is disabled', () async {
-    service.signedIn = true;
-    service.cloudBackupOn = false;
-    await model.maybeAutoSync();
-    expect(service.pullCalls, 0);
   });
 
   test('maybeUploadOnLeave uploads only when dirty and cloud-ready', () async {

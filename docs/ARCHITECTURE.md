@@ -28,7 +28,7 @@ flowchart LR
 
 书库由 `WritingLibraryRepository` 边界管理。`PureWriterWritingLibraryRepository` 和 `PureWriterDatabase` 实现 PureWriter v27 的读写协议。启动服务尝试上次书库，失败时使用应用支持目录的临时书库。Zephyr 自有的草稿和元数据表不能改变 PureWriter 的 Room 指纹。备份与同步在书库 ViewModel 刷新待保存内容后运行。
 
-桌面端关闭窗口时先刷新待保存内容并释放书库锁；若本地自动备份开启，或「开启云备份」且已连接 WebDAV，则在当前进程中等待备份完成：先创建一份本地自动 `.pwb`，再在云备份开启时将该文件上传（不拉取合并）；失败则重新显示窗口并保留编辑状态。打开应用时（及移动端 resume）在云备份与自动同步均开启时可 `pullIfNewer` 合并较新远端快照。移动端主动返回退出在已开启云备份时等待上传成功；Home/多任务、进程被杀后由已入队任务继续的路径经 `MobileBackgroundBackup`：先 `flushPending`，再向 Android WorkManager 注册 expedited one-off（`ForegroundServiceConfig` / `dataSync`，文案「正在备份」）；完成后通知自动消失，不再弹成功提示。共享逻辑在 `HeadlessExitBackup`。本地 `.pwb` 由 `PureWriterBackup` 统一限制为最近 25 份 Zephyr 文件；远端历史备份由 `CloudSyncService` 在上传后限制为 25 份。纯纯写作自身的本地备份不在清理范围内。
+桌面端关闭窗口时先刷新待保存内容并释放书库锁；若本地自动备份开启，或「开启云备份」且已连接 WebDAV，则在当前进程中等待备份完成：先创建一份本地自动 `.pwb`，再在云备份开启时将该文件上传（不拉取合并）；失败则重新显示窗口并保留编辑状态。移动端主动返回退出在已开启云备份时等待上传成功；Home/多任务、进程被杀后由已入队任务继续的路径经 `MobileBackgroundBackup`：先 `flushPending`，再向 Android WorkManager 注册 expedited one-off（`ForegroundServiceConfig` / `dataSync`，文案「正在备份」）；完成后通知自动消失，不再弹成功提示。共享逻辑在 `HeadlessExitBackup`。本地 `.pwb` 由 `PureWriterBackup` 统一限制为最近 25 份 Zephyr 文件；远端历史备份由 `CloudSyncService` 在上传后限制为 25 份。纯纯写作自身的本地备份不在清理范围内。
 
 当前工作区只保留一个用户选择的书库目录；重新选择目录会替换当前选择，不删除原目录。旧版多文库布局启动时只读取原活动书库。云同步由 `CloudSyncService` 编排，`WebDavClient` 实现坚果云 WebDAV 文件操作。凭据只存入系统安全存储；`.pwb` 快照、平台分轨设置包（`settings-desktop.json` / `settings-mobile.json`）、manifest 和历史备份位于 WebDAV 根目录的 `Zephyr/`。远端 manifest 中的书库 ID 与本地不同时：若本地尚无正文则认领远端 ID 以允许列表/拉取/恢复（新机空目录）；本地已有正文或上传入口仍拒绝，且拒绝把空书库上传覆盖已有云端快照。远端书库快照经本地备份恢复接口合并（有正文）或覆盖（空库拉取）；设置包在恢复/拉取后写入应用支持目录并触发 ViewModel 重载。桌面端可读旧版共享 `settings.json` 一次以迁移；移动端不读该旧文件，避免桌面侧栏宽度等布局污染手机。紧凑布局抽屉使用固定的 `WorkspaceLayout.mobileDrawerWidth`，不跟桌面可调 `sidebarWidth`。
 

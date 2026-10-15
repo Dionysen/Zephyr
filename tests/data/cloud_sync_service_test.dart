@@ -108,19 +108,6 @@ void main() {
     },
   );
 
-  test('auto sync preference saves through its store', () async {
-    final service = CloudSyncService(
-      authStore: auth,
-      preferencesStorage: preferences,
-    );
-    await service.load();
-
-    await service.setAutoSyncEnabled(false);
-
-    expect(service.preferences.autoSyncEnabled, isFalse);
-    expect(preferences.value.autoSyncEnabled, isFalse);
-  });
-
   test('cloud backup preference saves through its store', () async {
     preferences.value = const CloudSyncPreferences(cloudBackupEnabled: true);
     final service = CloudSyncService(

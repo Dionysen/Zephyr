@@ -121,20 +121,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Connect Nutstore for cloud backup';
 
   @override
-  String get cloudSyncPullNoChanges =>
-      'Cloud sync finished — no chapter changes';
-
-  @override
-  String cloudSyncPullSummary(int added, int updated, int removed) {
-    return 'Cloud sync: +$added · updated $updated · −$removed chapters';
-  }
-
-  @override
   String get cloudSyncEnableTitle => 'Enable cloud backup';
 
   @override
   String get cloudSyncEnableSubtitle =>
-      'Upload local backups to Nutstore; pull newer snapshots when opening, and upload on mobile backgrounding after edits';
+      'Upload local backups to Nutstore on exit or after mobile backgrounding with edits';
 
   @override
   String get cloudSyncLoginTitle => 'Connect Nutstore';
@@ -158,7 +149,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudSyncLogoutTitle => 'Sign out';
 
   @override
-  String get cloudSyncLogoutSubtitle => 'Stops cloud backup and automatic sync';
+  String get cloudSyncLogoutSubtitle => 'Stops cloud backup';
 
   @override
   String get cloudSyncBackupNowTitle => 'Back up to cloud now';
@@ -199,21 +190,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get cloudSyncWaitBeforeChoosingDirectory =>
       'Wait for cloud sync to finish before choosing another directory.';
-
-  @override
-  String get cloudSyncAutoTitle => 'Automatic sync';
-
-  @override
-  String get cloudSyncAutoSubtitle =>
-      'When opening the app, pull a newer cloud snapshot and merge by chapter update time';
-
-  @override
-  String cloudSyncLastSync(String time) {
-    return 'Last sync: $time';
-  }
-
-  @override
-  String get cloudSyncLastSyncNever => 'Not synced yet';
 
   @override
   String get cloudSyncCredentialsTitle => 'Connect Nutstore WebDAV';
