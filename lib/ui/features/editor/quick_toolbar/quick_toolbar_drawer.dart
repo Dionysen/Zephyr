@@ -158,7 +158,7 @@ class QuickToolbarDrawer extends StatelessWidget {
   }
 }
 
-class _StyleSliderRow extends StatelessWidget {
+class _StyleSliderRow extends StatefulWidget {
   const _StyleSliderRow({
     required this.label,
     required this.value,
@@ -184,57 +184,120 @@ class _StyleSliderRow extends StatelessWidget {
   final ValueChanged<double> onChanged;
 
   @override
+  State<_StyleSliderRow> createState() => _StyleSliderRowState();
+}
+
+class _StyleSliderRowState extends State<_StyleSliderRow> {
+  static const _sliderPadding = 4.0;
+  static const _baseThumbRadius = 7.0;
+  static const _pressDuration = Duration(milliseconds: 140);
+
+  var _dragging = false;
+
+  void _onDragStart(double _) => setState(() => _dragging = true);
+
+  void _onDragEnd(double _) => setState(() => _dragging = false);
+
+  String _readout(double v) =>
+      '${v.toStringAsFixed(widget.fractionDigits)}${widget.suffix}';
+
+  @override
   Widget build(BuildContext context) {
-    final clamped = value.clamp(min, max);
-    final readout = '${clamped.toStringAsFixed(fractionDigits)}$suffix';
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: chrome,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  height: 1.15,
+    final clamped = widget.value.clamp(widget.min, widget.max);
+    final readout = _readout(clamped);
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: _dragging ? 1.0 : 0.0),
+      duration: _pressDuration,
+      curve: Curves.easeOutCubic,
+      builder: (context, t, _) {
+        final thumbRadius = _baseThumbRadius + 4 * t;
+        final trackHeight = 2.5 + 1.5 * t;
+        return SizedBox(
+          height: 42,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: widget.chrome,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          height: 1.15,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      readout,
+                      style: TextStyle(
+                        color: widget.muted,
+                        fontSize: 12,
+                        height: 1.15,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            Text(
-              readout,
-              style: TextStyle(color: muted, fontSize: 12, height: 1.15),
-            ),
-          ],
-        ),
-        // Tight title → track gap; item-to-item spacing comes from the
-        // Expanded slots in the parent column.
-        SliderTheme(
-          data: SliderTheme.of(context).copyWith(
-            activeTrackColor: chrome.withValues(alpha: 0.85),
-            inactiveTrackColor: chrome.withValues(alpha: 0.22),
-            thumbColor: chrome,
-            overlayColor: chrome.withValues(alpha: 0.12),
-            trackHeight: 2.5,
-            overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: 28,
+                child: Listener(
+                  onPointerUp: (_) {
+                    if (_dragging) setState(() => _dragging = false);
+                  },
+                  onPointerCancel: (_) {
+                    if (_dragging) setState(() => _dragging = false);
+                  },
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      activeTrackColor: widget.chrome.withValues(alpha: 0.85),
+                      inactiveTrackColor: widget.chrome.withValues(alpha: 0.22),
+                      thumbColor: widget.chrome,
+                      overlayColor:
+                          widget.chrome.withValues(alpha: 0.08 + 0.1 * t),
+                      trackHeight: trackHeight,
+                      overlayShape: RoundSliderOverlayShape(
+                        overlayRadius: 12 + 10 * t,
+                      ),
+                      thumbShape: RoundSliderThumbShape(
+                        enabledThumbRadius: thumbRadius,
+                        elevation: 1 + 2 * t,
+                      ),
+                    ),
+                    child: Slider(
+                      value: clamped.toDouble(),
+                      min: widget.min,
+                      max: widget.max,
+                      divisions: widget.divisions,
+                      padding: const EdgeInsets.fromLTRB(
+                        _sliderPadding,
+                        0,
+                        _sliderPadding,
+                        0,
+                      ),
+                      onChanged: widget.onChanged,
+                      onChangeStart: _onDragStart,
+                      onChangeEnd: _onDragEnd,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          child: Slider(
-            value: clamped.toDouble(),
-            min: min,
-            max: max,
-            divisions: divisions,
-            // Keep thumbs clear of system edge gestures.
-            padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
-            onChanged: onChanged,
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 }

@@ -393,7 +393,7 @@ void main() {
     final drawer = find.byType(QuickToolbarDrawer);
     final box = tester.getRect(drawer);
     await tester.tapAt(Offset(box.center.dx, box.top + box.height * 0.75));
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(toolbar.toolsDrawerOpen, isTrue);
   });
 
