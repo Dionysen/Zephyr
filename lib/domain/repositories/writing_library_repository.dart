@@ -1,5 +1,6 @@
 import '../models/library_backup.dart';
 import '../models/purewriter_models.dart';
+import '../models/quick_toolbar_config.dart';
 
 /// PureWriter-compatible library operations. The Room database remains the
 /// source of truth; UI never talks to SQLite directly.
@@ -138,9 +139,9 @@ abstract interface class WritingLibraryRepository {
   /// Overwrite [ensureCloudLibraryId] (e.g. empty library claiming a cloud id).
   Future<void> setCloudLibraryId(String id);
 
-  /// Format-panel checkbox ids for this library (`null` when never saved).
-  Future<List<String>?> readQuickToolbarFormatSelectionIds();
+  /// IME quick-toolbar layout for this library (`null` when never saved).
+  Future<QuickToolbarConfig?> readQuickToolbarConfig();
 
-  /// Persists [ids] into ZephyrMeta so manual/auto `.pwb` backups include them.
-  Future<void> writeQuickToolbarFormatSelectionIds(List<String> ids);
+  /// Persists toolbar layout into ZephyrMeta (included in `.pwb` backups).
+  Future<void> writeQuickToolbarConfig(QuickToolbarConfig config);
 }

@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../domain/models/library_backup.dart';
 import '../../domain/models/purewriter_models.dart';
+import '../../domain/models/quick_toolbar_config.dart';
 import '../../domain/models/zephyr_meta_keys.dart';
 import '../../domain/repositories/writing_library_repository.dart';
 import '../../domain/use_cases/article_preview_summary.dart';
@@ -1296,8 +1297,54 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   static const _cloudLibraryIdKey = 'cloud_library_id';
 
   @override
-  Future<List<String>?> readQuickToolbarFormatSelectionIds() async {
+  Future<QuickToolbarConfig?> readQuickToolbarConfig() async {
     final db = _store.database;
+    final rows = await db.query(
+      'ZephyrMeta',
+      columns: ['value'],
+      where: 'key = ?',
+      whereArgs: [ZephyrMetaKeys.quickToolbarConfig],
+      limit: 1,
+    );
+    if (rows.isNotEmpty) {
+      final raw = rows.first['value'] as String?;
+      final config = _quickToolbarConfigFromMeta(raw);
+      if (config != null) return config;
+    }
+    final legacyIds = await _readLegacyQuickToolbarFormatSelectionIds(db);
+    if (legacyIds != null) {
+      return QuickToolbarConfig.defaults.copyWith(
+        formatSelectionIds: legacyIds,
+      );
+    }
+    return null;
+  }
+
+  @override
+  Future<void> writeQuickToolbarConfig(QuickToolbarConfig config) async {
+    _store.ensureWritable();
+    await _store.database.insert(
+      'ZephyrMeta',
+      {
+        'key': ZephyrMetaKeys.quickToolbarConfig,
+        'value': jsonEncode(config.normalized().toJson()),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  QuickToolbarConfig? _quickToolbarConfigFromMeta(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    final decoded = jsonDecode(raw);
+    if (decoded is! Map) return null;
+    return QuickToolbarConfig.fromJson(
+      decoded.map((key, value) => MapEntry(key.toString(), value)),
+    );
+  }
+
+  Future<List<String>?> _readLegacyQuickToolbarFormatSelectionIds(
+    Database db,
+  ) async {
     final rows = await db.query(
       'ZephyrMeta',
       columns: ['value'],
@@ -1311,19 +1358,6 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     final decoded = jsonDecode(raw);
     if (decoded is! List) return null;
     return decoded.whereType<String>().toList(growable: false);
-  }
-
-  @override
-  Future<void> writeQuickToolbarFormatSelectionIds(List<String> ids) async {
-    _store.ensureWritable();
-    await _store.database.insert(
-      'ZephyrMeta',
-      {
-        'key': ZephyrMetaKeys.quickToolbarFormatSelection,
-        'value': jsonEncode(ids),
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
   }
 
   @override

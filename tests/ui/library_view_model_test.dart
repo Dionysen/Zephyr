@@ -5,6 +5,7 @@ import 'package:zephyr/l10n/app_localizations_en.dart';
 import 'package:zephyr/domain/models/chapter_sort_mode.dart';
 import 'package:zephyr/domain/models/library_backup.dart';
 import 'package:zephyr/domain/models/purewriter_models.dart';
+import 'package:zephyr/domain/models/quick_toolbar_config.dart';
 import 'package:zephyr/domain/models/workspace_layout.dart';
 import 'package:zephyr/domain/repositories/workspace_layout_repository.dart';
 import 'package:zephyr/domain/repositories/writing_library_repository.dart';
@@ -1054,10 +1055,10 @@ class FakeLibraryRepository implements WritingLibraryRepository {
   Future<void> setCloudLibraryId(String id) async {}
 
   @override
-  Future<List<String>?> readQuickToolbarFormatSelectionIds() async => null;
+  Future<QuickToolbarConfig?> readQuickToolbarConfig() async => null;
 
   @override
-  Future<void> writeQuickToolbarFormatSelectionIds(List<String> ids) async {}
+  Future<void> writeQuickToolbarConfig(QuickToolbarConfig config) async {}
 }
 
 class FakeLayoutRepository implements WorkspaceLayoutRepository {

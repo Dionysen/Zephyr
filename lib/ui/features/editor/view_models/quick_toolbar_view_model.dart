@@ -19,8 +19,8 @@ class QuickToolbarViewModel extends ChangeNotifier {
   QuickToolbarConfig _config = QuickToolbarConfig.defaults;
   Timer? _pendingSave;
 
-  /// Writes format checkbox ids into the open library's ZephyrMeta (`.pwb`).
-  Future<void> Function(List<String> ids)? onFormatSelectionIdsChanged;
+  /// Mirrors toolbar layout into the open library's ZephyrMeta (`.pwb`).
+  Future<void> Function(QuickToolbarConfig config)? persistConfigToLibrary;
   var _toolsDrawerOpen = false;
   var _formatDrawerOpen = false;
   /// Keep the latched panel slot until the soft keyboard fills it again.
@@ -162,24 +162,17 @@ class QuickToolbarViewModel extends ChangeNotifier {
 
   void setFormatOption(PlainTextFormatOption option, bool selected) {
     final next = formatSelection.toggle(option, selected);
-    final ids = next.toIds();
-    _update(_config.copyWith(formatSelectionIds: ids));
-    unawaited(onFormatSelectionIdsChanged?.call(ids));
+    _update(_config.copyWith(formatSelectionIds: next.toIds()));
   }
 
-  /// Applies ids from library meta without re-firing [onFormatSelectionIdsChanged].
-  void applyFormatSelectionIds(List<String> ids) {
-    if (_listEquals(_config.formatSelectionIds, ids)) return;
-    _update(_config.copyWith(formatSelectionIds: ids));
+  /// Applies config loaded from library meta (also updates app-support file).
+  void applyLibraryConfig(QuickToolbarConfig config) {
+    if (_configJson(_config) == _configJson(config.normalized())) return;
+    _update(config);
   }
 
-  static bool _listEquals(List<String> a, List<String> b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
+  static String _configJson(QuickToolbarConfig config) =>
+      config.toJson().toString();
 
   /// [newIndex] is the destination after removal (as from [onReorderItem]).
   void reorderPinned(int oldIndex, int newIndex) {
@@ -300,6 +293,7 @@ class QuickToolbarViewModel extends ChangeNotifier {
   Future<void> _save(QuickToolbarConfig value) async {
     try {
       await _repository.save(value);
+      await persistConfigToLibrary?.call(value);
     } on Object {
       // In-memory layout remains usable.
     }

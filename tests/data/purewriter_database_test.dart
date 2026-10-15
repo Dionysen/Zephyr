@@ -8,6 +8,7 @@ import 'package:zephyr/data/repositories/purewriter_writing_library_repository.d
 import 'package:zephyr/data/services/purewriter_backup.dart';
 import 'package:zephyr/data/services/purewriter_database.dart';
 import 'package:zephyr/domain/models/library_backup.dart';
+import 'package:zephyr/domain/models/quick_toolbar_config.dart';
 import 'package:zephyr/ui/features/editor/view_models/library_view_model.dart';
 
 void main() {
@@ -60,11 +61,18 @@ void main() {
     );
   });
 
-  test('quick toolbar format selection round-trips in ZephyrMeta', () async {
+  test('quick toolbar layout round-trips in ZephyrMeta', () async {
     final repository = PureWriterWritingLibraryRepository(database);
-    const ids = ['removeParagraphBlanks', 'insertCjkLatinSpaces'];
-    await repository.writeQuickToolbarFormatSelectionIds(ids);
-    expect(await repository.readQuickToolbarFormatSelectionIds(), ids);
+    final config = QuickToolbarConfig.defaults.copyWith(
+      pinnedIds: const [QuickTool.undoId],
+      customIds: [QuickTool.formatId, QuickTool.indentId],
+      formatSelectionIds: const ['removeParagraphBlanks'],
+    );
+    await repository.writeQuickToolbarConfig(config);
+    final restored = await repository.readQuickToolbarConfig();
+    expect(restored?.pinnedIds, config.pinnedIds);
+    expect(restored?.customIds, config.customIds);
+    expect(restored?.formatSelectionIds, config.formatSelectionIds);
   });
 
   test(

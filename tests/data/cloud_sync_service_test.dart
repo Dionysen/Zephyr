@@ -10,6 +10,7 @@ import 'package:zephyr/data/services/cloud_sync_service.dart';
 import 'package:zephyr/data/services/webdav_client.dart';
 import 'package:zephyr/domain/models/cloud_sync.dart';
 import 'package:zephyr/domain/models/library_backup.dart';
+import 'package:zephyr/domain/models/quick_toolbar_config.dart';
 import 'package:zephyr/domain/repositories/writing_library_repository.dart';
 
 void main() {
@@ -669,10 +670,10 @@ class _CloudLibraryRepository implements WritingLibraryRepository {
   }
 
   @override
-  Future<List<String>?> readQuickToolbarFormatSelectionIds() async => null;
+  Future<QuickToolbarConfig?> readQuickToolbarConfig() async => null;
 
   @override
-  Future<void> writeQuickToolbarFormatSelectionIds(List<String> ids) async {}
+  Future<void> writeQuickToolbarConfig(QuickToolbarConfig config) async {}
 
   @override
   Future<BackupEntry> createBackup({required BackupKind kind}) async {

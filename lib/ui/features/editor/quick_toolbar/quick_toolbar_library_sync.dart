@@ -1,35 +1,37 @@
+import '../../../../domain/models/quick_toolbar_config.dart';
 import '../../../../domain/repositories/writing_library_repository.dart';
 import '../view_models/quick_toolbar_view_model.dart';
 
-/// Mirrors format-panel checkbox state into [ZephyrMeta] (`.pwb` backups).
+/// Mirrors IME quick-toolbar prefs into [ZephyrMeta] (`.pwb` backups).
 class QuickToolbarLibrarySync {
   QuickToolbarLibrarySync({
-    required this._toolbar,
-    required this._repository,
-  });
+    required QuickToolbarViewModel toolbar,
+    required WritingLibraryRepository libraryRepository,
+  }) : _toolbar = toolbar,
+       _repository = libraryRepository;
 
   final QuickToolbarViewModel _toolbar;
   final WritingLibraryRepository _repository;
 
   void install() {
-    _toolbar.onFormatSelectionIdsChanged = _writeToLibrary;
+    _toolbar.persistConfigToLibrary = _writeToLibrary;
   }
 
-  /// After a library opens, apply stored ids or seed meta from the toolbar file.
+  /// After a library opens, apply stored layout or seed meta from the toolbar file.
   Future<void> pullOrSeed() async {
     if (_repository.location == null) return;
-    final stored = await _repository.readQuickToolbarFormatSelectionIds();
+    final stored = await _repository.readQuickToolbarConfig();
     if (stored != null) {
-      _toolbar.applyFormatSelectionIds(stored);
+      _toolbar.applyLibraryConfig(stored);
       return;
     }
-    await _writeToLibrary(_toolbar.config.formatSelectionIds);
+    await _writeToLibrary(_toolbar.config);
   }
 
-  Future<void> _writeToLibrary(List<String> ids) async {
+  Future<void> _writeToLibrary(QuickToolbarConfig config) async {
     if (_repository.location == null) return;
     try {
-      await _repository.writeQuickToolbarFormatSelectionIds(ids);
+      await _repository.writeQuickToolbarConfig(config);
     } on Object {
       // Read-only libraries keep in-memory + app-support file only.
     }

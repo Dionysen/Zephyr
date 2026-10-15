@@ -1195,10 +1195,10 @@ class _LibraryRepository implements WritingLibraryRepository {
   Future<void> setCloudLibraryId(String id) async {}
 
   @override
-  Future<List<String>?> readQuickToolbarFormatSelectionIds() async => null;
+  Future<QuickToolbarConfig?> readQuickToolbarConfig() async => null;
 
   @override
-  Future<void> writeQuickToolbarFormatSelectionIds(List<String> ids) async {}
+  Future<void> writeQuickToolbarConfig(QuickToolbarConfig config) async {}
 }
 
 class _ThemeRepository implements ThemePreferencesRepository {
