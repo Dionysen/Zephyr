@@ -65,10 +65,18 @@ class QuickToolbarDrawer extends StatelessWidget {
                   builder: (context, _) {
                     final l10n = context.l10n;
                     final prefs = editorPreferences.preferences;
+                    final defaults = EditorPreferences.defaults;
+                    String defaultCaption(double v, int digits, String suffix) =>
+                        '（${l10n.numberPickerDefaultLabel('${v.toStringAsFixed(digits)}$suffix')}）';
                     // Five equal rows fill the remaining panel height.
                     final rows = <Widget>[
                       _StyleSliderRow(
                         label: l10n.editorLineHeightTitle,
+                        defaultCaption: defaultCaption(
+                          defaults.lineHeight,
+                          2,
+                          '×',
+                        ),
                         value: prefs.lineHeight,
                         min: 1.2,
                         max: 2.4,
@@ -80,6 +88,11 @@ class QuickToolbarDrawer extends StatelessWidget {
                       ),
                       _StyleSliderRow(
                         label: l10n.editorParagraphSpacingTitle,
+                        defaultCaption: defaultCaption(
+                          defaults.paragraphSpacing,
+                          2,
+                          '×',
+                        ),
                         value: prefs.paragraphSpacing,
                         min: 0,
                         max: 2.5,
@@ -91,6 +104,11 @@ class QuickToolbarDrawer extends StatelessWidget {
                       ),
                       _StyleSliderRow(
                         label: l10n.editorMarginLeftTitle,
+                        defaultCaption: defaultCaption(
+                          defaults.marginLeft,
+                          0,
+                          'px',
+                        ),
                         value: prefs.marginLeft,
                         min: EditorPreferences.minMargin,
                         max: EditorPreferences.maxMargin,
@@ -103,6 +121,11 @@ class QuickToolbarDrawer extends StatelessWidget {
                       ),
                       _StyleSliderRow(
                         label: l10n.editorMarginRightTitle,
+                        defaultCaption: defaultCaption(
+                          defaults.marginRight,
+                          0,
+                          'px',
+                        ),
                         value: prefs.marginRight,
                         min: EditorPreferences.minMargin,
                         max: EditorPreferences.maxMargin,
@@ -115,6 +138,11 @@ class QuickToolbarDrawer extends StatelessWidget {
                       ),
                       _StyleSliderRow(
                         label: l10n.editorFontSizeTitle,
+                        defaultCaption: defaultCaption(
+                          defaults.fontSize,
+                          0,
+                          'px',
+                        ),
                         value: prefs.fontSize,
                         min: 12,
                         max: 32,
@@ -161,6 +189,7 @@ class QuickToolbarDrawer extends StatelessWidget {
 class _StyleSliderRow extends StatefulWidget {
   const _StyleSliderRow({
     required this.label,
+    required this.defaultCaption,
     required this.value,
     required this.min,
     required this.max,
@@ -173,6 +202,7 @@ class _StyleSliderRow extends StatefulWidget {
   });
 
   final String label;
+  final String defaultCaption;
   final double value;
   final double min;
   final double max;
@@ -225,15 +255,26 @@ class _StyleSliderRowState extends State<_StyleSliderRow> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        widget.label,
+                      child: Text.rich(
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: widget.chrome,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          height: 1.15,
+                        TextSpan(
+                          style: TextStyle(
+                            color: widget.chrome,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            height: 1.15,
+                          ),
+                          children: [
+                            TextSpan(text: widget.label),
+                            TextSpan(
+                              text: widget.defaultCaption,
+                              style: TextStyle(
+                                color: widget.muted,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),

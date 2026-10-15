@@ -287,8 +287,8 @@ void main() {
       QuickToolButton.height,
     );
     expect(find.text('Edit toolbar'), findsOneWidget);
-    expect(find.text('Line height'), findsOneWidget);
-    expect(find.text('Font size'), findsOneWidget);
+    expect(find.textContaining('Line height'), findsOneWidget);
+    expect(find.textContaining('Font size'), findsOneWidget);
 
     // Obstruction replaces the latched panel so total cover stays constant.
     expect(
@@ -388,7 +388,7 @@ void main() {
     bridge.setBodyFocused(false);
     await tester.pump();
     expect(toolbar.toolsDrawerOpen, isTrue);
-    expect(find.text('Line height'), findsOneWidget);
+    expect(find.textContaining('Line height'), findsOneWidget);
 
     final drawer = find.byType(QuickToolbarDrawer);
     final box = tester.getRect(drawer);
