@@ -357,6 +357,24 @@ class ThemeViewModel extends ChangeNotifier {
   void updateShowChapterDetails(bool value) =>
       _updateUi(_ui.copyWith(showChapterDetails: value));
 
+  void updateScrollToHideMobileTopBar(bool value) =>
+      _updateUi(_ui.copyWith(scrollToHideMobileTopBar: value));
+
+  void updateOpenSidebarAfterBookSwitch(bool value) =>
+      _updateUi(_ui.copyWith(openSidebarAfterBookSwitch: value));
+
+  void updateKeepScreenOn(bool value) =>
+      _updateUi(_ui.copyWith(keepScreenOn: value));
+
+  void updateDoubleBackToExit(bool value) =>
+      _updateUi(_ui.copyWith(doubleBackToExit: value));
+
+  void updateOpenBookListOnStartup(bool value) =>
+      _updateUi(_ui.copyWith(openBookListOnStartup: value));
+
+  void updateOpenSidebarOnStartup(bool value) =>
+      _updateUi(_ui.copyWith(openSidebarOnStartup: value));
+
   void updateEditorBackgroundEnabled(bool value) =>
       _updateUi(_ui.copyWith(editorBackgroundEnabled: value));
 

@@ -37,6 +37,7 @@ import '../../settings/views/settings_page.dart';
 import 'cloud_backup_quick_button.dart';
 import 'library_search_sheet.dart';
 import 'workspace_editor.dart';
+import 'workspace_mobile_body_host.dart';
 import 'workspace_settings_panel.dart';
 import 'workspace_sidebar.dart';
 
@@ -64,6 +65,7 @@ class _WorkspacePageState extends State<WorkspacePage>
 
   /// Root back is exiting after scheduling background backup.
   var _handlingExit = false;
+  DateTime? _lastRootBackPress;
   Object? _leaveBackupError;
   Object? _reportedSaveError;
 
@@ -204,6 +206,17 @@ class _WorkspacePageState extends State<WorkspacePage>
       return;
     }
     if (WindowChrome.isDesktop) return;
+
+    final scope = ZephyrScope.of(context);
+    if (scope.theme.ui.doubleBackToExit) {
+      final now = DateTime.now();
+      final last = _lastRootBackPress;
+      if (last == null || now.difference(last) > const Duration(seconds: 2)) {
+        _lastRootBackPress = now;
+        ZephyrSnackBar.show(context, context.l10n.pressBackAgainToExit);
+        return;
+      }
+    }
 
     FocusManager.instance.primaryFocus?.unfocus();
     _handlingExit = true;
@@ -392,13 +405,17 @@ class _WorkspacePageState extends State<WorkspacePage>
                                             ),
                                           ),
                                         ),
-                                        body: _MobileEditorChrome(
+                                        body: WorkspaceMobileBodyHost(
                                           model: model,
-                                          preferences: scope.editorPreferences,
-                                          invadeStatusBar: invadeStatusBand,
-                                          transparentTopBar:
-                                              bleedEditorBackground,
-                                          openSettings: _openSettings,
+                                          child: _MobileEditorChrome(
+                                            model: model,
+                                            preferences:
+                                                scope.editorPreferences,
+                                            invadeStatusBar: invadeStatusBand,
+                                            transparentTopBar:
+                                                bleedEditorBackground,
+                                            openSettings: _openSettings,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -823,6 +840,12 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
   }
 
   bool _onScroll(ScrollNotification notification) {
+    if (!ZephyrScope.of(context).theme.ui.scrollToHideMobileTopBar) {
+      if (!_isVisible) {
+        _showBar(immediate: true);
+      }
+      return false;
+    }
     if (notification.metrics.axis != Axis.vertical) {
       return false;
     }

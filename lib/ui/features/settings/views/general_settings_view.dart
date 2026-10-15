@@ -11,6 +11,7 @@ class GeneralSettingsView extends StatelessWidget {
     required this.viewModel,
     this.compact = false,
     this.showStatusBarSettings = true,
+    this.showMobileBehaviorSettings = false,
   });
 
   final ThemeViewModel viewModel;
@@ -19,6 +20,9 @@ class GeneralSettingsView extends StatelessWidget {
   /// Immersive / hide-icons toggles only apply on mobile shells.
   final bool showStatusBarSettings;
 
+  /// Compact-editor behavior toggles (mobile settings only).
+  final bool showMobileBehaviorSettings;
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: viewModel,
@@ -26,7 +30,7 @@ class GeneralSettingsView extends StatelessWidget {
       final l10n = context.l10n;
       final immersive = viewModel.ui.immersiveStatusBar;
       final locale = viewModel.ui.localePreference;
-      final children = <Widget>[
+      final coreChildren = <Widget>[
         ZephyrSettingsChoiceTile<AppLocalePreference>(
           icon: Icons.language,
           title: l10n.languageTitle,
@@ -61,9 +65,54 @@ class GeneralSettingsView extends StatelessWidget {
           title: l10n.showChapterDetailsTitle,
           subtitle: l10n.showChapterDetailsSubtitle,
           value: viewModel.ui.showChapterDetails,
-          showDivider: showStatusBarSettings,
+          showDivider: showMobileBehaviorSettings || showStatusBarSettings,
           onChanged: viewModel.updateShowChapterDetails,
         ),
+        if (showMobileBehaviorSettings) ...[
+          ZephyrSettingsSwitchTile(
+            icon: Icons.vertical_align_top_outlined,
+            title: l10n.scrollToHideMobileTopBarTitle,
+            subtitle: l10n.scrollToHideMobileTopBarSubtitle,
+            value: viewModel.ui.scrollToHideMobileTopBar,
+            onChanged: viewModel.updateScrollToHideMobileTopBar,
+          ),
+          ZephyrSettingsSwitchTile(
+            icon: Icons.menu_open_rounded,
+            title: l10n.openSidebarAfterBookSwitchTitle,
+            subtitle: l10n.openSidebarAfterBookSwitchSubtitle,
+            value: viewModel.ui.openSidebarAfterBookSwitch,
+            onChanged: viewModel.updateOpenSidebarAfterBookSwitch,
+          ),
+          ZephyrSettingsSwitchTile(
+            icon: Icons.light_mode_outlined,
+            title: l10n.keepScreenOnTitle,
+            subtitle: l10n.keepScreenOnSubtitle,
+            value: viewModel.ui.keepScreenOn,
+            onChanged: viewModel.updateKeepScreenOn,
+          ),
+          ZephyrSettingsSwitchTile(
+            icon: Icons.reply_rounded,
+            title: l10n.doubleBackToExitTitle,
+            subtitle: l10n.doubleBackToExitSubtitle,
+            value: viewModel.ui.doubleBackToExit,
+            onChanged: viewModel.updateDoubleBackToExit,
+          ),
+          ZephyrSettingsSwitchTile(
+            icon: Icons.library_books_outlined,
+            title: l10n.openBookListOnStartupTitle,
+            subtitle: l10n.openBookListOnStartupSubtitle,
+            value: viewModel.ui.openBookListOnStartup,
+            onChanged: viewModel.updateOpenBookListOnStartup,
+          ),
+          ZephyrSettingsSwitchTile(
+            icon: Icons.list_alt_outlined,
+            title: l10n.openSidebarOnStartupTitle,
+            subtitle: l10n.openSidebarOnStartupSubtitle,
+            value: viewModel.ui.openSidebarOnStartup,
+            showDivider: showStatusBarSettings,
+            onChanged: viewModel.updateOpenSidebarOnStartup,
+          ),
+        ],
         if (showStatusBarSettings) ...[
           ZephyrSettingsSwitchTile(
             icon: Icons.fullscreen,
@@ -96,6 +145,20 @@ class GeneralSettingsView extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           ZephyrSettingsSection(children: children),
+          if (showMobileBehaviorSettings) ...[
+            const SizedBox(height: 24),
+            Text(
+              l10n.mobileBehaviorSectionTitle,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.mobileBehaviorSectionSubtitle,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ],
       );
     },

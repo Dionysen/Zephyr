@@ -685,23 +685,33 @@ class WorkspaceMobileBookBar extends StatelessWidget {
     BuildContext context, {
     required WritingLibrary library,
   }) async {
-    FocusManager.instance.primaryFocus?.unfocus();
-    await showZephyrModalSheet<void>(
-      context: context,
-      builder: (sheetContext) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.5,
-        minChildSize: 0.35,
-        maxChildSize: 0.92,
-        builder: (_, scrollController) => _MobileBookSheet(
-          hostContext: context,
-          model: model,
-          library: library,
-          scrollController: scrollController,
-        ),
-      ),
-    );
+    await showWorkspaceMobileBookSheet(context, model: model);
   }
+}
+
+/// Mobile book grid / list picker (toolbar book name or startup pref).
+Future<void> showWorkspaceMobileBookSheet(
+  BuildContext context, {
+  required LibraryViewModel model,
+}) async {
+  final library = model.library;
+  if (library == null) return;
+  FocusManager.instance.primaryFocus?.unfocus();
+  await showZephyrModalSheet<void>(
+    context: context,
+    builder: (sheetContext) => DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.5,
+      minChildSize: 0.35,
+      maxChildSize: 0.92,
+      builder: (_, scrollController) => _MobileBookSheet(
+        hostContext: context,
+        model: model,
+        library: library,
+        scrollController: scrollController,
+      ),
+    ),
+  );
 }
 
 /// Resolve overflow tools in persisted order.

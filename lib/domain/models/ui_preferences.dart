@@ -35,6 +35,12 @@ class UiPreferences {
     required this.hideStatusBarIcons,
     required this.hideQuickToolbar,
     required this.showChapterDetails,
+    required this.scrollToHideMobileTopBar,
+    required this.openSidebarAfterBookSwitch,
+    required this.keepScreenOn,
+    required this.doubleBackToExit,
+    required this.openBookListOnStartup,
+    required this.openSidebarOnStartup,
     required this.editorBackgroundEnabled,
     required this.localePreference,
     this.mobileToolsOrder = const [],
@@ -58,6 +64,12 @@ class UiPreferences {
     hideStatusBarIcons: true,
     hideQuickToolbar: false,
     showChapterDetails: true,
+    scrollToHideMobileTopBar: true,
+    openSidebarAfterBookSwitch: true,
+    keepScreenOn: true,
+    doubleBackToExit: true,
+    openBookListOnStartup: false,
+    openSidebarOnStartup: false,
     editorBackgroundEnabled: true,
     localePreference: AppLocalePreference.system,
     mobileToolsOrder: [],
@@ -111,6 +123,24 @@ class UiPreferences {
   /// When false, only the chapter title is shown.
   final bool showChapterDetails;
 
+  /// Compact editor: hide the floating book bar while scrolling down.
+  final bool scrollToHideMobileTopBar;
+
+  /// After choosing another book, open the library swipe drawer (chapter list).
+  final bool openSidebarAfterBookSwitch;
+
+  /// Keep the display awake while the app is in the foreground (mobile).
+  final bool keepScreenOn;
+
+  /// Require two system-back presses within a short window to exit.
+  final bool doubleBackToExit;
+
+  /// On launch, open the mobile book-picker sheet once the library is ready.
+  final bool openBookListOnStartup;
+
+  /// On launch, open the library swipe drawer once the library is ready.
+  final bool openSidebarOnStartup;
+
   /// Master switch for writing-column background images. When false, stored
   /// light/dark configs are kept but not painted.
   final bool editorBackgroundEnabled;
@@ -162,6 +192,12 @@ class UiPreferences {
     bool? hideStatusBarIcons,
     bool? hideQuickToolbar,
     bool? showChapterDetails,
+    bool? scrollToHideMobileTopBar,
+    bool? openSidebarAfterBookSwitch,
+    bool? keepScreenOn,
+    bool? doubleBackToExit,
+    bool? openBookListOnStartup,
+    bool? openSidebarOnStartup,
     bool? editorBackgroundEnabled,
     AppLocalePreference? localePreference,
     List<String>? mobileToolsOrder,
@@ -183,6 +219,16 @@ class UiPreferences {
     hideStatusBarIcons: hideStatusBarIcons ?? this.hideStatusBarIcons,
     hideQuickToolbar: hideQuickToolbar ?? this.hideQuickToolbar,
     showChapterDetails: showChapterDetails ?? this.showChapterDetails,
+    scrollToHideMobileTopBar:
+        scrollToHideMobileTopBar ?? this.scrollToHideMobileTopBar,
+    openSidebarAfterBookSwitch:
+        openSidebarAfterBookSwitch ?? this.openSidebarAfterBookSwitch,
+    keepScreenOn: keepScreenOn ?? this.keepScreenOn,
+    doubleBackToExit: doubleBackToExit ?? this.doubleBackToExit,
+    openBookListOnStartup:
+        openBookListOnStartup ?? this.openBookListOnStartup,
+    openSidebarOnStartup:
+        openSidebarOnStartup ?? this.openSidebarOnStartup,
     editorBackgroundEnabled:
         editorBackgroundEnabled ?? this.editorBackgroundEnabled,
     localePreference: localePreference ?? this.localePreference,
