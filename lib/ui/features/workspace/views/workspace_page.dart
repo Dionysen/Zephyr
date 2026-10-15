@@ -932,6 +932,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                       toolbar: quickToolbar,
                       bridge: _editorBridge,
                       foreground: foreground,
+                      editorPreferences: widget.preferences,
                       bodyFontFamily: widget.preferences.preferences.fontFamily,
                       hidden: themeVm.ui.hideQuickToolbar,
                       child: WorkspaceEditor(

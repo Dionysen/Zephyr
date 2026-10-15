@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../../domain/models/quick_toolbar_config.dart';
+import '../view_models/editor_preferences_view_model.dart';
 import '../view_models/quick_toolbar_view_model.dart';
 import 'quick_toolbar_bar.dart';
 import 'quick_toolbar_drawer.dart';
@@ -17,6 +18,7 @@ class QuickToolbarHost extends StatefulWidget {
     required this.toolbar,
     required this.bridge,
     required this.foreground,
+    required this.editorPreferences,
     required this.child,
     this.bodyFontFamily,
     this.hidden = false,
@@ -25,6 +27,7 @@ class QuickToolbarHost extends StatefulWidget {
   final QuickToolbarViewModel toolbar;
   final WorkspaceEditorBridge bridge;
   final Color foreground;
+  final EditorPreferencesViewModel editorPreferences;
   final Widget child;
 
   /// Article body font for phrase chips on the bar.
@@ -178,6 +181,7 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
                           child: QuickToolbarDrawer(
                             height: panelHeight,
                             foreground: widget.foreground,
+                            editorPreferences: widget.editorPreferences,
                             onEditToolbar: () {
                               showQuickToolbarEditSheet(
                                 context,

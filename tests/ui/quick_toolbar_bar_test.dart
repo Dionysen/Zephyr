@@ -2,15 +2,19 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zephyr/domain/models/editor_preferences.dart';
 import 'package:zephyr/domain/models/quick_toolbar_config.dart';
+import 'package:zephyr/domain/repositories/editor_preferences_repository.dart';
 import 'package:zephyr/l10n/app_localizations.dart';
 import 'package:zephyr/ui/features/editor/quick_toolbar/quick_tool_button.dart';
 import 'package:zephyr/ui/features/editor/quick_toolbar/quick_toolbar_bar.dart';
 import 'package:zephyr/ui/features/editor/quick_toolbar/quick_toolbar_host.dart';
 import 'package:zephyr/ui/features/editor/quick_toolbar/tools_panel_toggle_gate.dart';
 import 'package:zephyr/ui/features/editor/quick_toolbar/workspace_editor_bridge.dart';
+import 'package:zephyr/ui/features/editor/view_models/editor_preferences_view_model.dart';
 import 'package:zephyr/ui/features/editor/view_models/quick_toolbar_view_model.dart';
 import 'package:zephyr/domain/repositories/quick_toolbar_preferences_repository.dart';
+import 'package:zephyr/ui/features/settings/view_models/font_library.dart';
 
 void main() {
   test('symbol phrase labels are short punctuation only', () {
@@ -251,6 +255,8 @@ void main() {
   ) async {
     final toolbar = QuickToolbarViewModel(_Repo());
     final bridge = WorkspaceEditorBridge()..setBodyFocused(true);
+    final editorPreferences = _editorPreferences();
+    addTearDown(editorPreferences.dispose);
     toolbar.openToolsDrawer(keyboardHeight: 300);
 
     await tester.pumpWidget(
@@ -264,6 +270,7 @@ void main() {
               toolbar: toolbar,
               bridge: bridge,
               foreground: Colors.white,
+              editorPreferences: editorPreferences,
               child: const SizedBox.expand(),
             ),
           ),
@@ -278,7 +285,8 @@ void main() {
       QuickToolButton.height,
     );
     expect(find.text('Edit toolbar'), findsOneWidget);
-    expect(find.text('Tool panel content coming soon'), findsOneWidget);
+    expect(find.text('Line height'), findsOneWidget);
+    expect(find.text('Font size'), findsOneWidget);
 
     // Obstruction replaces the latched panel so total cover stays constant.
     expect(
@@ -399,6 +407,8 @@ void main() {
   ) async {
     final toolbar = QuickToolbarViewModel(_Repo());
     final bridge = WorkspaceEditorBridge()..setBodyFocused(true);
+    final editorPreferences = _editorPreferences();
+    addTearDown(editorPreferences.dispose);
     toolbar.openToolsDrawer(keyboardHeight: 300);
 
     await tester.pumpWidget(
@@ -412,6 +422,7 @@ void main() {
               toolbar: toolbar,
               bridge: bridge,
               foreground: Colors.white,
+              editorPreferences: editorPreferences,
               child: const SizedBox.expand(),
             ),
           ),
@@ -445,4 +456,31 @@ class _Repo implements QuickToolbarPreferencesRepository {
 
   @override
   Future<void> save(QuickToolbarConfig config) async {}
+}
+
+EditorPreferencesViewModel _editorPreferences() {
+  final fonts = FontLibrary(_FontRepository());
+  return EditorPreferencesViewModel(_MemoryEditorRepository(), fonts);
+}
+
+class _MemoryEditorRepository implements EditorPreferencesRepository {
+  @override
+  Future<EditorPreferences> load() async => EditorPreferences.defaults;
+
+  @override
+  Future<void> save(EditorPreferences preferences) async {}
+}
+
+class _FontRepository implements SystemFontRepository {
+  @override
+  Future<List<SystemFont>> listFonts() async => const [];
+
+  @override
+  Future<String?> loadFont(SystemFont font) async => font.family;
+
+  @override
+  Future<SystemFont?> importFont(String sourcePath) async => null;
+
+  @override
+  Future<bool> deleteImportedFont(SystemFont font) async => false;
 }
