@@ -27,7 +27,48 @@ void main() {
     expect(compactSymbolChipLabel('“”'), '“”');
   });
 
-  testWidgets('fixed tools stay outside the horizontal scroller', (tester) async {
+  testWidgets(
+    'default long punctuation shows short labels and sends full text',
+    (tester) async {
+      final pressed = <QuickTool>[];
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Center(
+              child: Row(
+                children: [
+                  for (final tool in QuickTool.defaultPhrases.where(
+                    (tool) =>
+                        tool.id == 'default-dash' ||
+                        tool.id == 'default-ellipsis',
+                  ))
+                    QuickToolButton(
+                      tool: tool,
+                      foreground: Colors.black,
+                      onPressed: () => pressed.add(tool),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('—'), findsOneWidget);
+      expect(find.text('…'), findsOneWidget);
+      expect(find.text('——'), findsNothing);
+      expect(find.text('……'), findsNothing);
+      await tester.tap(find.text('—'));
+      await tester.tap(find.text('…'));
+      expect(pressed.map((tool) => tool.payload), ['——', '……']);
+    },
+  );
+
+  testWidgets('fixed tools stay outside the horizontal scroller', (
+    tester,
+  ) async {
     final pressed = <String>[];
     await tester.pumpWidget(
       MaterialApp(
@@ -77,11 +118,85 @@ void main() {
     expect(pressed, [QuickTool.toolsId]);
   });
 
+  testWidgets('custom tools scroll horizontally with Material stretch', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: 240,
+              child: QuickToolbarBar(
+                config: QuickToolbarConfig.defaults,
+                foreground: Colors.black,
+                toolsDrawerOpen: false,
+                canUndo: true,
+                onToolPressed: (_) {},
+                onReorderCustom: (_, _) {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final scrollable = find.descendant(
+      of: find.byType(QuickToolbarBar),
+      matching: find.byType(Scrollable),
+    );
+    final position = tester.state<ScrollableState>(scrollable).position;
+    expect(position.maxScrollExtent, greaterThan(0));
+    expect(find.byType(StretchingOverscrollIndicator), findsOneWidget);
+    await tester.drag(scrollable, const Offset(-100, 0));
+    await tester.pumpAndSettle();
+    expect(position.pixels, greaterThan(0));
+  });
+
+  testWidgets('short custom zone still accepts edge drag for stretch', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: 240,
+              child: QuickToolbarBar(
+                config: QuickToolbarConfig(
+                  pinnedIds: const [QuickTool.undoId, QuickTool.pasteId],
+                  customIds: const [QuickTool.indentId],
+                  catalog: QuickTool.builtins,
+                ),
+                foreground: Colors.black,
+                toolsDrawerOpen: false,
+                canUndo: true,
+                onToolPressed: (_) {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final scrollable = find.descendant(
+      of: find.byType(QuickToolbarBar),
+      matching: find.byType(Scrollable),
+    );
+    final position = tester.state<ScrollableState>(scrollable).position;
+    expect(position.maxScrollExtent, 0);
+    expect(position.physics.shouldAcceptUserOffset(position), isTrue);
+    expect(find.byType(StretchingOverscrollIndicator), findsOneWidget);
+  });
+
   testWidgets('long-press drag reorders custom-zone tools', (tester) async {
-    var customIds = <String>[
-      QuickTool.indentId,
-      QuickTool.formatId,
-    ];
+    var customIds = <String>[QuickTool.indentId, QuickTool.formatId];
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -203,13 +318,16 @@ void main() {
     expect(toolbar.holdingPanelForIme, isTrue);
   });
 
-  test('openToolsDrawer keeps latched height when live inset is collapsing', () {
-    final toolbar = QuickToolbarViewModel(_Repo());
-    toolbar.openToolsDrawer(keyboardHeight: 300);
-    toolbar.closeToolsDrawer();
-    toolbar.openToolsDrawer(keyboardHeight: 120);
-    expect(toolbar.toolsPanelHeight, 300);
-  });
+  test(
+    'openToolsDrawer keeps latched height when live inset is collapsing',
+    () {
+      final toolbar = QuickToolbarViewModel(_Repo());
+      toolbar.openToolsDrawer(keyboardHeight: 300);
+      toolbar.closeToolsDrawer();
+      toolbar.openToolsDrawer(keyboardHeight: 120);
+      expect(toolbar.toolsPanelHeight, 300);
+    },
+  );
 
   test('tools toggle gate coalesces double-tap to no-op', () {
     fakeAsync((async) {

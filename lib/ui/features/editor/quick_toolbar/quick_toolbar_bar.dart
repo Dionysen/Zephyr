@@ -9,8 +9,8 @@ const quickToolbarHeight = QuickToolButton.height;
 /// Light themes: white strip; dark themes: solid black (IME accessory chrome).
 Color quickToolbarBackgroundOf(BuildContext context) =>
     Theme.of(context).brightness == Brightness.light
-        ? Colors.white
-        : const Color(0xFF000000);
+    ? Colors.white
+    : const Color(0xFF000000);
 
 /// Light themes: black glyphs; dark themes use the host [fallback] (usually onSurface).
 Color quickToolbarForegroundOf(BuildContext context, Color fallback) =>
@@ -100,14 +100,15 @@ class QuickToolbarBar extends StatelessWidget {
     );
   }
 
-  String? _tooltip(AppLocalizations l10n, QuickTool tool) => switch (tool.kind) {
-    QuickToolKind.undo => l10n.quickToolbarUndoTooltip,
-    QuickToolKind.paste => l10n.quickToolbarPasteTooltip,
-    QuickToolKind.indent => l10n.quickToolbarIndentTooltip,
-    QuickToolKind.format => l10n.quickToolbarFormatTooltip,
-    QuickToolKind.phrase => tool.label,
-    QuickToolKind.tools => l10n.quickToolbarToolsTooltip,
-  };
+  String? _tooltip(AppLocalizations l10n, QuickTool tool) =>
+      switch (tool.kind) {
+        QuickToolKind.undo => l10n.quickToolbarUndoTooltip,
+        QuickToolKind.paste => l10n.quickToolbarPasteTooltip,
+        QuickToolKind.indent => l10n.quickToolbarIndentTooltip,
+        QuickToolKind.format => l10n.quickToolbarFormatTooltip,
+        QuickToolKind.phrase => tool.label,
+        QuickToolKind.tools => l10n.quickToolbarToolsTooltip,
+      };
 }
 
 class _ReorderableToolRow extends StatelessWidget {
@@ -148,18 +149,24 @@ class _ReorderableToolRow extends StatelessWidget {
       if (!scrollable) {
         return Row(mainAxisSize: MainAxisSize.min, children: children);
       }
-      return ListView(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.zero,
-        children: children,
+      return ScrollConfiguration(
+        behavior: const _QuickToolbarScrollBehavior(),
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: ClampingScrollPhysics(),
+          ),
+          padding: EdgeInsets.zero,
+          children: children,
+        ),
       );
     }
 
-    return ReorderableListView.builder(
+    final list = ReorderableListView.builder(
       scrollDirection: Axis.horizontal,
       shrinkWrap: !scrollable,
       physics: scrollable
-          ? null
+          ? const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics())
           : const NeverScrollableScrollPhysics(),
       buildDefaultDragHandles: false,
       padding: EdgeInsets.zero,
@@ -196,7 +203,29 @@ class _ReorderableToolRow extends StatelessWidget {
         );
       },
     );
+    return scrollable
+        ? ScrollConfiguration(
+            behavior: const _QuickToolbarScrollBehavior(),
+            child: list,
+          )
+        : list;
   }
+}
+
+/// Material's stretch feedback is available on every supported platform,
+/// including when the custom zone is shorter than its viewport.
+class _QuickToolbarScrollBehavior extends MaterialScrollBehavior {
+  const _QuickToolbarScrollBehavior();
+
+  @override
+  Widget buildOverscrollIndicator(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) => StretchingOverscrollIndicator(
+    axisDirection: details.direction,
+    child: child,
+  );
 }
 
 class _ShortDivider extends StatelessWidget {

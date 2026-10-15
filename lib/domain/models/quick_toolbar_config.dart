@@ -25,6 +25,59 @@ class QuickTool {
 
   static const builtins = [tools, undo, paste, indent, format];
 
+  /// Editable starter phrases. Their stable ids are only part of the initial
+  /// layout; saved toolbar configurations keep the user's own catalog.
+  static const defaultPhrases = [
+    QuickTool(
+      id: 'default-quotes',
+      kind: QuickToolKind.phrase,
+      label: '“”',
+      payload: '“”',
+    ),
+    QuickTool(
+      id: 'default-single-quotes',
+      kind: QuickToolKind.phrase,
+      label: '‘’',
+      payload: '‘’',
+    ),
+    QuickTool(
+      id: 'default-comma',
+      kind: QuickToolKind.phrase,
+      label: '、',
+      payload: '、',
+    ),
+    QuickTool(
+      id: 'default-parentheses',
+      kind: QuickToolKind.phrase,
+      label: '（）',
+      payload: '（）',
+    ),
+    QuickTool(
+      id: 'default-book-title',
+      kind: QuickToolKind.phrase,
+      label: '《》',
+      payload: '《》',
+    ),
+    QuickTool(
+      id: 'default-ceiling',
+      kind: QuickToolKind.phrase,
+      label: '⌈⌋',
+      payload: '⌈⌋',
+    ),
+    QuickTool(
+      id: 'default-dash',
+      kind: QuickToolKind.phrase,
+      label: '—',
+      payload: '——',
+    ),
+    QuickTool(
+      id: 'default-ellipsis',
+      kind: QuickToolKind.phrase,
+      label: '…',
+      payload: '……',
+    ),
+  ];
+
   final String id;
   final QuickToolKind kind;
   final String? label;
@@ -86,8 +139,11 @@ class QuickToolbarConfig {
 
   static final defaults = QuickToolbarConfig(
     pinnedIds: const [QuickTool.undoId, QuickTool.pasteId],
-    customIds: const [QuickTool.indentId],
-    catalog: List<QuickTool>.from(QuickTool.builtins),
+    customIds: [
+      QuickTool.indentId,
+      for (final phrase in QuickTool.defaultPhrases) phrase.id,
+    ],
+    catalog: [...QuickTool.builtins, ...QuickTool.defaultPhrases],
   );
 
   final List<String> pinnedIds;

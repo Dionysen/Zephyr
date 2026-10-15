@@ -2,14 +2,35 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/domain/models/quick_toolbar_config.dart';
 
 void main() {
-  test('defaults pin undo/paste and keep tools reserved', () {
+  test('defaults pin undo/paste and include editable Chinese punctuation', () {
     final config = QuickToolbarConfig.defaults;
     expect(config.fixedZoneIds, [
       QuickTool.toolsId,
       QuickTool.undoId,
       QuickTool.pasteId,
     ]);
-    expect(config.customIds, [QuickTool.indentId]);
+    expect(config.customIds, [
+      QuickTool.indentId,
+      ...QuickTool.defaultPhrases.map((phrase) => phrase.id),
+    ]);
+    expect(
+      QuickTool.defaultPhrases.map((phrase) => (phrase.label, phrase.payload)),
+      [
+        ('“”', '“”'),
+        ('‘’', '‘’'),
+        ('、', '、'),
+        ('（）', '（）'),
+        ('《》', '《》'),
+        ('⌈⌋', '⌈⌋'),
+        ('—', '——'),
+        ('…', '……'),
+      ],
+    );
+    expect(config.customTools.skip(1).toList(), QuickTool.defaultPhrases);
+    expect(
+      QuickToolbarConfig.fromJson(config.toJson()).customTools,
+      config.customTools,
+    );
   });
 
   test('round-trips phrase catalog and layout', () {
@@ -46,7 +67,10 @@ void main() {
       catalog: QuickTool.builtins,
     ).normalized();
 
-    expect(config.pinnedIds.length, lessThanOrEqualTo(QuickToolbarConfig.maxPinned));
+    expect(
+      config.pinnedIds.length,
+      lessThanOrEqualTo(QuickToolbarConfig.maxPinned),
+    );
     expect(config.pinnedIds.toSet().length, config.pinnedIds.length);
     expect(config.customIds, isEmpty);
     expect(config.fixedZoneIds.contains(QuickTool.toolsId), isTrue);

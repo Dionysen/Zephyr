@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 const pairedPunctuationClosers = <String, String>{
   '\u201c': '\u201d', // “ ”
   '\u2018': '\u2019', // ‘ ’
+  '⌈': '⌋',
   '"': '"',
   "'": "'",
   '「': '」',
@@ -100,7 +101,8 @@ TextEditRange? findTextEditRange(String before, String after) {
   if (before == after) return null;
   var start = 0;
   final minLen = before.length < after.length ? before.length : after.length;
-  while (start < minLen && before.codeUnitAt(start) == after.codeUnitAt(start)) {
+  while (start < minLen &&
+      before.codeUnitAt(start) == after.codeUnitAt(start)) {
     start++;
   }
   var beforeEnd = before.length;
@@ -170,10 +172,7 @@ PairedPunctuationInsert? resolvePairedPunctuationInsert(String payload) {
 /// pair (`“”` → caret between, do not add another closer). Also accepts IME
 /// composing commits that replace a short range with the pair payload.
 ({PairedPunctuationInsert pair, int openIndex, bool needsCloser})?
-detectTypedPairedPunctuation({
-  required String before,
-  required String after,
-}) {
+detectTypedPairedPunctuation({required String before, required String after}) {
   final edit = findTextEditRange(before, after);
   if (edit == null) return null;
   final inserted = edit.insertedIn(after);

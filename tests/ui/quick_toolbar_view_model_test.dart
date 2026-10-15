@@ -31,11 +31,15 @@ void main() {
     () {
       model.moveToPinned(QuickTool.indentId, index: 0);
       expect(model.config.pinnedIds.first, QuickTool.indentId);
-      expect(model.config.customIds, isEmpty);
+      expect(model.config.customIds, isNot(contains(QuickTool.indentId)));
 
       model.moveToCustom(QuickTool.indentId);
       expect(model.config.pinnedIds, isNot(contains(QuickTool.indentId)));
-      expect(model.config.customIds, [QuickTool.indentId]);
+      expect(model.config.customIds.last, QuickTool.indentId);
+      expect(
+        model.config.customIds.take(QuickTool.defaultPhrases.length),
+        QuickTool.defaultPhrases.map((tool) => tool.id),
+      );
 
       final before = model.config.fixedZoneIds;
       model.moveToPinned(QuickTool.toolsId);
@@ -56,6 +60,22 @@ void main() {
     model.removeTool(id);
     expect(model.config.toolById(id), isNull);
     expect(model.config.placedIds, isNot(contains(id)));
+  });
+
+  test('default punctuation can be edited and removed permanently', () async {
+    const dashId = 'default-dash';
+    const ellipsisId = 'default-ellipsis';
+    model.updatePhrase(dashId, label: 'dash', payload: '--');
+    model.removeTool(ellipsisId);
+
+    expect(model.config.toolById(dashId)?.label, 'dash');
+    expect(model.config.toolById(dashId)?.payload, '--');
+    expect(model.config.toolById(ellipsisId), isNull);
+    expect(model.config.customIds, isNot(contains(ellipsisId)));
+
+    final restored = QuickToolbarConfig.fromJson(model.config.toJson());
+    expect(restored.toolById(dashId)?.payload, '--');
+    expect(restored.toolById(ellipsisId), isNull);
   });
 
   test('empty phrase input and duplicate builtins do not change layout', () {

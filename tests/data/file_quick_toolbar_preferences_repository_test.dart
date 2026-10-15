@@ -23,6 +23,25 @@ void main() {
     final config = await repository.load();
     expect(config.pinnedIds, QuickToolbarConfig.defaults.pinnedIds);
     expect(config.customIds, QuickToolbarConfig.defaults.customIds);
+    expect(config.customTools.skip(1).toList(), QuickTool.defaultPhrases);
+  });
+
+  test('saved layout does not restore removed default punctuation', () async {
+    final config = QuickToolbarConfig.defaults;
+    await repository.save(
+      config.copyWith(
+        customIds: config.customIds
+            .where((id) => id != 'default-dash')
+            .toList(),
+        catalog: config.catalog
+            .where((tool) => tool.id != 'default-dash')
+            .toList(),
+      ),
+    );
+
+    final restored = await repository.load();
+    expect(restored.toolById('default-dash'), isNull);
+    expect(restored.customIds, isNot(contains('default-dash')));
   });
 
   test(

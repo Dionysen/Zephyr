@@ -4,6 +4,8 @@ import 'package:zephyr/domain/use_cases/paired_punctuation.dart';
 
 void main() {
   test('single opener expands to a full pair', () {
+    expect(resolvePairedPunctuationInsert('‘')?.text, '‘’');
+    expect(resolvePairedPunctuationInsert('⌈')?.text, '⌈⌋');
     expect(resolvePairedPunctuationInsert('“')?.text, '“”');
     expect(resolvePairedPunctuationInsert('《')?.text, '《》');
     expect(resolvePairedPunctuationInsert('（')?.text, '（）');
@@ -12,9 +14,31 @@ void main() {
   });
 
   test('full pair payload is accepted as-is', () {
+    expect(resolvePairedPunctuationInsert('‘’')?.text, '‘’');
+    expect(resolvePairedPunctuationInsert('⌈⌋')?.text, '⌈⌋');
     expect(resolvePairedPunctuationInsert('“”')?.text, '“”');
     expect(resolvePairedPunctuationInsert('「」')?.text, '「」');
     expect(resolvePairedPunctuationInsert('（）')?.text, '（）');
+  });
+
+  test('new default pairs retain an interior for highlight and Enter exit', () {
+    for (final text in ['‘’', '⌈⌋']) {
+      final pair = resolvePairedPunctuationInsert(text)!;
+      final session = PairedPunctuationSession(
+        openIndex: 0,
+        closeIndex: pair.open.length,
+        openChar: pair.open,
+        closeChar: pair.close,
+      );
+      expect(session.matches(pair.text), isTrue);
+      expect(
+        session.containsSelection(
+          TextSelection.collapsed(offset: session.interiorStart),
+        ),
+        isTrue,
+      );
+      expect(session.highlightEnd, pair.text.length);
+    }
   });
 
   test('non-pair phrases are ignored', () {
@@ -112,6 +136,14 @@ void main() {
     expect(typed, isNotNull);
     expect(typed!.needsCloser, isFalse);
     expect(typed.openIndex, 1);
+  });
+
+  test('detects typed ceiling and single-quote pairs', () {
+    for (final pair in ['⌈⌋', '‘’']) {
+      final typed = detectTypedPairedPunctuation(before: 'A', after: 'A$pair');
+      expect(typed?.pair.text, pair);
+      expect(typed?.needsCloser, isFalse);
+    }
   });
 
   test('distinguishes lone opener from full pair', () {

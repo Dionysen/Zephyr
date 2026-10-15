@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add editable single-quote punctuation to the quick input toolbar, pair ceiling brackets and single quotes with caret exit on Enter, and enable horizontal Material stretch feedback for the toolbar.
+
+- Add editable Chinese punctuation presets to the quick input toolbar, with short labels for long dashes and ellipses.
+
 - Skip cloud backup on exit while no cloud account is connected; keep local automatic backup available without reporting a setup error.
 
 - Keep search-result and paired-punctuation highlights fitted to text instead of filling line spacing or paragraph gaps.
