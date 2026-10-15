@@ -290,15 +290,22 @@ class WebDavClient {
       final href = _firstText(item, 'href');
       if (href == null) continue;
       final uri = folder.resolve(href);
-      if (uri == folder ||
-          uri.path.endsWith('/') ||
-          uri.scheme != folder.scheme ||
-          uri.host != folder.host ||
-          uri.port != folder.port ||
-          !uri.path.startsWith(folder.path)) {
+      final name = uri.pathSegments.last;
+      if (name.isEmpty ||
+          name == '.' ||
+          name == '..' ||
+          name.contains('/') ||
+          name.contains('\\')) {
         continue;
       }
-      final name = uri.pathSegments.last;
+      final canonical = _child(folder, name);
+      if (uri.scheme != folder.scheme ||
+          uri.host != folder.host ||
+          uri.port != folder.port ||
+          uri.userInfo.isNotEmpty ||
+          uri.path != canonical.path) {
+        continue;
+      }
       if (!name.toLowerCase().endsWith('.pwb')) continue;
       final modified = HttpDate.parse(
         _firstText(item, 'getlastmodified') ??
@@ -308,7 +315,7 @@ class WebDavClient {
           int.tryParse(_firstText(item, 'getcontentlength') ?? '') ?? 0;
       entries.add(
         CloudBackupEntry(
-          fileId: uri.toString(),
+          fileId: canonical.toString(),
           fileName: name,
           modified: modified,
           sizeBytes: size,
@@ -351,15 +358,12 @@ class WebDavClient {
     final uri = Uri.parse(entry.fileId);
     final root = _root(session);
     final backupRoot = _folder(_folder(root, 'Zephyr'), 'Backups');
-    if (uri.scheme != root.scheme ||
-        uri.host != root.host ||
-        uri.port != root.port ||
-        !uri.path.startsWith(backupRoot.path) ||
-        path.basename(uri.path) != entry.fileName ||
+    if (entry.fileName.isEmpty ||
         entry.fileName == '.' ||
         entry.fileName == '..' ||
         entry.fileName.contains('/') ||
-        entry.fileName.contains('\\')) {
+        entry.fileName.contains('\\') ||
+        uri.toString() != _child(backupRoot, entry.fileName).toString()) {
       throw const FormatException('Backup is outside this WebDAV account.');
     }
     final response = await _request(session, 'GET', uri);

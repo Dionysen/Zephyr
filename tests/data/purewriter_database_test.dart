@@ -61,6 +61,38 @@ void main() {
   });
 
   test(
+    'editor connection survives another engine closing the same library',
+    () async {
+      final repository = PureWriterWritingLibraryRepository(database);
+      final article = await repository.createArticle(
+        folderId: PureWriterDatabase.defaultFolderId,
+      );
+
+      // A background Flutter engine may open the same path through sqflite.
+      final worker = await databaseFactoryFfi.openDatabase(
+        database.roomDbFile.path,
+      );
+      await worker.close();
+
+      await repository.saveArticle(
+        article.copyWith(content: 'Keep every word'),
+      );
+      expect(
+        (await repository.getArticle(article.id)).content,
+        'Keep every word',
+      );
+      await database.close();
+      await database.openDefaultLibrary();
+      expect(
+        (await PureWriterWritingLibraryRepository(database)
+                .getArticle(article.id))
+            .content,
+        'Keep every word',
+      );
+    },
+  );
+
+  test(
     'creates App/Room.db when opening an empty folder as a new library',
     () async {
       final emptyRoot = await Directory.systemTemp.createTemp(

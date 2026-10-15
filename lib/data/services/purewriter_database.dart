@@ -87,10 +87,17 @@ class PureWriterDatabase {
     try {
       // Keep the factory local to this service. Assigning FFI as sqflite's
       // global default causes a warning and can affect other plugins.
+      // The WorkManager Flutter engine can open this path while the editor is
+      // still alive. A shared sqflite instance lets its close close the
+      // editor's connection too, leaving pending text unable to save.
       final options = isNewLibrary
-          ? OpenDatabaseOptions(version: 27, onCreate: _createSchema)
+          ? OpenDatabaseOptions(
+              version: 27,
+              onCreate: _createSchema,
+              singleInstance: false,
+            )
           // Open existing PureWriter databases as-is; do not bump user_version.
-          : OpenDatabaseOptions();
+          : OpenDatabaseOptions(singleInstance: false);
       _database = await _libraryDatabaseFactory.openDatabase(
         resolved.room.path,
         options: options,
@@ -339,7 +346,11 @@ class PureWriterDatabase {
     await _deleteSqliteFiles(room);
     return _libraryDatabaseFactory.openDatabase(
       room.path,
-      options: OpenDatabaseOptions(version: 27, onCreate: _createSchema),
+      options: OpenDatabaseOptions(
+        version: 27,
+        onCreate: _createSchema,
+        singleInstance: false,
+      ),
     );
   }
 }

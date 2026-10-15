@@ -154,6 +154,34 @@ void main() {
     );
   });
 
+  test('normalizes direct backup hrefs before deleting old history', () async {
+    final requests = <String>[];
+    final client = WebDavClient(
+      httpClient: MockClient((request) async {
+        requests.add('${request.method} ${request.url}');
+        if (request.method == 'DELETE') return http.Response('', 204);
+        return http.Response('''<?xml version="1.0"?>
+<d:multistatus xmlns:d="DAV:">
+  <d:response><d:href>/dav/Zephyr/Backups/Zephyr-old.pwb?view=1</d:href></d:response>
+  <d:response><d:href>/dav/Zephyr/Backups/nested/Zephyr-foreign.pwb</d:href></d:response>
+</d:multistatus>''', 207);
+      }),
+    );
+    addTearDown(client.close);
+
+    final entries = await client.listNamedBackups(
+      session: session,
+      libraryFolderId: '${session.serverUrl}Zephyr/',
+    );
+    expect(entries, hasLength(1));
+    expect(
+      entries.single.fileId,
+      '${session.serverUrl}Zephyr/Backups/Zephyr-old.pwb',
+    );
+    await client.deleteNamedBackup(session: session, entry: entries.single);
+    expect(requests.last, 'DELETE ${entries.single.fileId}');
+  });
+
   test('uploads snapshot data before its manifest', () async {
     final directory = await Directory.systemTemp.createTemp('zephyr-webdav-');
     addTearDown(() => directory.delete(recursive: true));
@@ -322,6 +350,19 @@ void main() {
         session: session,
         entry: CloudBackupEntry(
           fileId: 'https://dav.jianguoyun.com/dav/PureWriter/old/Backups/backup.pwb',
+          fileName: 'backup.pwb',
+          modified: DateTime.utc(2026, 9, 1),
+          sizeBytes: 12,
+        ),
+        staging: directory,
+      ),
+      throwsFormatException,
+    );
+    await expectLater(
+      client.downloadBackupFile(
+        session: session,
+        entry: CloudBackupEntry(
+          fileId: '${session.serverUrl}Zephyr/Backups/nested/backup.pwb',
           fileName: 'backup.pwb',
           modified: DateTime.utc(2026, 9, 1),
           sizeBytes: 12,
