@@ -537,6 +537,51 @@ class AppLocalizationsZh extends AppLocalizations {
   String get hideStatusBarIconsSubtitle => '仅在沉浸式通知栏开启时生效，图标自动隐藏，边缘滑动可临时显示';
 
   @override
+  String get mobileBehaviorSectionTitle => '移动端';
+
+  @override
+  String get mobileBehaviorSectionSubtitle => '仅影响手机和平板上的紧凑编辑界面。';
+
+  @override
+  String get scrollToHideMobileTopBarTitle => '滚动以隐藏顶栏';
+
+  @override
+  String get scrollToHideMobileTopBarSubtitle => '向下阅读时收起浮动书名栏，向上滚动时再次显示。';
+
+  @override
+  String get openSidebarAfterBookSwitchTitle => '切换书籍后打开文章列表';
+
+  @override
+  String get openSidebarAfterBookSwitchSubtitle => '选择另一本书后自动展开侧栏章节列表。';
+
+  @override
+  String get keepScreenOnTitle => '屏幕常亮';
+
+  @override
+  String get keepScreenOnSubtitle => '应用在前台时保持屏幕点亮。';
+
+  @override
+  String get doubleBackToExitTitle => '双击返回键退出应用';
+
+  @override
+  String get doubleBackToExitSubtitle => '关闭后，按一次返回键不会退出应用。';
+
+  @override
+  String get openBookListOnStartupTitle => '启动时打开书籍列表';
+
+  @override
+  String get openBookListOnStartupSubtitle => '进入工作区后自动打开书籍选择面板。';
+
+  @override
+  String get openSidebarOnStartupTitle => '启动时打开文章列表';
+
+  @override
+  String get openSidebarOnStartupSubtitle => '进入工作区后自动展开侧栏章节列表。';
+
+  @override
+  String get pressBackAgainToExit => '再按一次返回键退出';
+
+  @override
   String get hideQuickToolbarTitle => '隐藏快捷输入栏';
 
   @override

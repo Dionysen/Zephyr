@@ -65,10 +65,14 @@ class GeneralSettingsView extends StatelessWidget {
           title: l10n.showChapterDetailsTitle,
           subtitle: l10n.showChapterDetailsSubtitle,
           value: viewModel.ui.showChapterDetails,
-          showDivider: showMobileBehaviorSettings || showStatusBarSettings,
+          showDivider:
+              showStatusBarSettings ||
+              (compact && showMobileBehaviorSettings),
           onChanged: viewModel.updateShowChapterDetails,
         ),
-        if (showMobileBehaviorSettings) ...[
+      ];
+      final mobileChildren = showMobileBehaviorSettings
+          ? <Widget>[
           ZephyrSettingsSwitchTile(
             icon: Icons.vertical_align_top_outlined,
             title: l10n.scrollToHideMobileTopBarTitle,
@@ -109,11 +113,13 @@ class GeneralSettingsView extends StatelessWidget {
             title: l10n.openSidebarOnStartupTitle,
             subtitle: l10n.openSidebarOnStartupSubtitle,
             value: viewModel.ui.openSidebarOnStartup,
-            showDivider: showStatusBarSettings,
+            showDivider: false,
             onChanged: viewModel.updateOpenSidebarOnStartup,
           ),
-        ],
-        if (showStatusBarSettings) ...[
+        ]
+          : const <Widget>[];
+      final statusChildren = showStatusBarSettings
+          ? <Widget>[
           ZephyrSettingsSwitchTile(
             icon: Icons.fullscreen,
             title: l10n.immersiveStatusBarTitle,
@@ -129,11 +135,13 @@ class GeneralSettingsView extends StatelessWidget {
             showDivider: false,
             onChanged: immersive ? viewModel.updateHideStatusBarIcons : null,
           ),
-        ],
-      ];
+        ]
+          : const <Widget>[];
 
       if (compact) {
-        return ZephyrSettingsSection(children: children);
+        return ZephyrSettingsSection(
+          children: [...coreChildren, ...mobileChildren, ...statusChildren],
+        );
       }
 
       return ListView(
@@ -144,8 +152,8 @@ class GeneralSettingsView extends StatelessWidget {
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 16),
-          ZephyrSettingsSection(children: children),
-          if (showMobileBehaviorSettings) ...[
+          ZephyrSettingsSection(children: coreChildren),
+          if (mobileChildren.isNotEmpty) ...[
             const SizedBox(height: 24),
             Text(
               l10n.mobileBehaviorSectionTitle,
@@ -158,6 +166,12 @@ class GeneralSettingsView extends StatelessWidget {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
+            const SizedBox(height: 12),
+            ZephyrSettingsSection(children: mobileChildren),
+          ],
+          if (statusChildren.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            ZephyrSettingsSection(children: statusChildren),
           ],
         ],
       );

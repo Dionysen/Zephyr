@@ -558,6 +558,59 @@ class AppLocalizationsEn extends AppLocalizations {
       'Only when immersive is on. Icons auto-hide; swipe from the edge to peek.';
 
   @override
+  String get mobileBehaviorSectionTitle => 'Mobile';
+
+  @override
+  String get mobileBehaviorSectionSubtitle =>
+      'Applies to the compact editor on phones and tablets.';
+
+  @override
+  String get scrollToHideMobileTopBarTitle => 'Hide top bar while scrolling';
+
+  @override
+  String get scrollToHideMobileTopBarSubtitle =>
+      'Collapse the floating book bar when scrolling down; show it when scrolling up.';
+
+  @override
+  String get openSidebarAfterBookSwitchTitle =>
+      'Open chapter list after switching books';
+
+  @override
+  String get openSidebarAfterBookSwitchSubtitle =>
+      'Expand the library drawer after you pick another book.';
+
+  @override
+  String get keepScreenOnTitle => 'Keep screen on';
+
+  @override
+  String get keepScreenOnSubtitle =>
+      'Prevent the display from sleeping while the app is open.';
+
+  @override
+  String get doubleBackToExitTitle => 'Press back twice to exit';
+
+  @override
+  String get doubleBackToExitSubtitle =>
+      'When off, a single back press exits the app.';
+
+  @override
+  String get openBookListOnStartupTitle => 'Open book list on launch';
+
+  @override
+  String get openBookListOnStartupSubtitle =>
+      'Show the book picker when the workspace opens.';
+
+  @override
+  String get openSidebarOnStartupTitle => 'Open chapter list on launch';
+
+  @override
+  String get openSidebarOnStartupSubtitle =>
+      'Expand the library drawer when the workspace opens.';
+
+  @override
+  String get pressBackAgainToExit => 'Press back again to exit';
+
+  @override
   String get hideQuickToolbarTitle => 'Hide quick input bar';
 
   @override

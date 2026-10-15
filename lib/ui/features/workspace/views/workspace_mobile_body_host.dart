@@ -34,7 +34,7 @@ class _WorkspaceMobileBodyHostState extends State<WorkspaceMobileBodyHost> {
     widget.model.addListener(_onLibraryChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _applyStartupChrome();
-      _trackedBookId = widget.model.selectedBookId;
+      _trackedBookId = widget.model.selectedBook?.id;
     });
   }
 
@@ -51,7 +51,7 @@ class _WorkspaceMobileBodyHostState extends State<WorkspaceMobileBodyHost> {
         unawaited(_applyStartupChrome());
       });
     }
-    final bookId = widget.model.selectedBookId;
+    final bookId = widget.model.selectedBook?.id;
     if (_trackedBookId == null) {
       _trackedBookId = bookId;
       return;

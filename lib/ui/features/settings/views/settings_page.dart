@@ -187,6 +187,7 @@ class CompactSettingsList extends StatelessWidget {
           viewModel: scope.theme,
           compact: true,
           showStatusBarSettings: showStatusBarSettings,
+          showMobileBehaviorSettings: showStatusBarSettings,
         ),
       ],
       SettingsTab.backup => [

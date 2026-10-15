@@ -1118,6 +1118,96 @@ abstract class AppLocalizations {
   /// **'Only when immersive is on. Icons auto-hide; swipe from the edge to peek.'**
   String get hideStatusBarIconsSubtitle;
 
+  /// No description provided for @mobileBehaviorSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile'**
+  String get mobileBehaviorSectionTitle;
+
+  /// No description provided for @mobileBehaviorSectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Applies to the compact editor on phones and tablets.'**
+  String get mobileBehaviorSectionSubtitle;
+
+  /// No description provided for @scrollToHideMobileTopBarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide top bar while scrolling'**
+  String get scrollToHideMobileTopBarTitle;
+
+  /// No description provided for @scrollToHideMobileTopBarSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse the floating book bar when scrolling down; show it when scrolling up.'**
+  String get scrollToHideMobileTopBarSubtitle;
+
+  /// No description provided for @openSidebarAfterBookSwitchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open chapter list after switching books'**
+  String get openSidebarAfterBookSwitchTitle;
+
+  /// No description provided for @openSidebarAfterBookSwitchSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand the library drawer after you pick another book.'**
+  String get openSidebarAfterBookSwitchSubtitle;
+
+  /// No description provided for @keepScreenOnTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep screen on'**
+  String get keepScreenOnTitle;
+
+  /// No description provided for @keepScreenOnSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prevent the display from sleeping while the app is open.'**
+  String get keepScreenOnSubtitle;
+
+  /// No description provided for @doubleBackToExitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Press back twice to exit'**
+  String get doubleBackToExitTitle;
+
+  /// No description provided for @doubleBackToExitSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When off, a single back press exits the app.'**
+  String get doubleBackToExitSubtitle;
+
+  /// No description provided for @openBookListOnStartupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open book list on launch'**
+  String get openBookListOnStartupTitle;
+
+  /// No description provided for @openBookListOnStartupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the book picker when the workspace opens.'**
+  String get openBookListOnStartupSubtitle;
+
+  /// No description provided for @openSidebarOnStartupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open chapter list on launch'**
+  String get openSidebarOnStartupTitle;
+
+  /// No description provided for @openSidebarOnStartupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand the library drawer when the workspace opens.'**
+  String get openSidebarOnStartupSubtitle;
+
+  /// No description provided for @pressBackAgainToExit.
+  ///
+  /// In en, this message translates to:
+  /// **'Press back again to exit'**
+  String get pressBackAgainToExit;
+
   /// No description provided for @hideQuickToolbarTitle.
   ///
   /// In en, this message translates to:
