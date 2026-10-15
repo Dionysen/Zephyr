@@ -8,6 +8,7 @@ import 'package:zephyr/data/repositories/purewriter_writing_library_repository.d
 import 'package:zephyr/data/services/purewriter_backup.dart';
 import 'package:zephyr/data/services/purewriter_database.dart';
 import 'package:zephyr/domain/models/library_backup.dart';
+import 'package:zephyr/ui/features/editor/view_models/library_view_model.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -355,6 +356,36 @@ void main() {
       );
     },
   );
+
+  test('appends a chapter to a volume and reveals it in the library', () async {
+    final repository = PureWriterWritingLibraryRepository(database);
+    final volume = await repository.createCategory(
+      folderId: PureWriterDatabase.defaultFolderId,
+      name: 'Volume',
+    );
+    final first = await repository.createArticle(
+      folderId: PureWriterDatabase.defaultFolderId,
+      categoryId: volume.id,
+    );
+    final model = LibraryViewModel(repository);
+    addTearDown(model.dispose);
+    await model.load();
+    model.toggleVolume(volume.id);
+    expect(model.isVolumeExpanded(volume.id), isFalse);
+
+    await model.appendChapterToVolume(volume.id);
+
+    final chapters = model.library!.articles
+        .where((article) => article.categoryId == volume.id)
+        .toList();
+    expect(chapters.map((article) => article.id), [
+      first.id,
+      model.article!.id,
+    ]);
+    expect(model.isVolumeExpanded(volume.id), isTrue);
+    expect(model.article!.folderId, PureWriterDatabase.defaultFolderId);
+    expect(model.article!.categoryId, volume.id);
+  });
 
   test('converts a volume into a book with unfiled chapters', () async {
     final repository = PureWriterWritingLibraryRepository(database);

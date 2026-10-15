@@ -2379,6 +2379,10 @@ class _ChapterTreeState extends State<_ChapterTree> {
         showDragHandle: showDragHandles,
         isFirst: volumeIndex == 0,
         onToggle: () => _toggleVolume(volume.id),
+        onChapterAppended: () async {
+          await WidgetsBinding.instance.endOfFrame;
+          if (mounted) await scrollToCurrentArticle();
+        },
       );
       // Keep a stable SliverMainAxisGroup so collapsing during a volume drag
       // does not dispose the active Draggable.
@@ -2617,6 +2621,7 @@ class _VolumeRow extends StatelessWidget {
     required this.showDragHandle,
     required this.isFirst,
     required this.onToggle,
+    required this.onChapterAppended,
   });
 
   final WritingCategory volume;
@@ -2627,6 +2632,7 @@ class _VolumeRow extends StatelessWidget {
   final bool showDragHandle;
   final bool isFirst;
   final VoidCallback onToggle;
+  final Future<void> Function() onChapterAppended;
 
   Future<void> _openMenu(BuildContext context, {RelativeRect? position}) async {
     if (!canManage) return;
@@ -2642,6 +2648,7 @@ class _VolumeRow extends StatelessWidget {
       volume: volume,
       actionId: actionId,
     );
+    if (actionId == 'appendChapter') await onChapterAppended();
   }
 
   Future<void> _acceptVolumeDrop(

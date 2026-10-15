@@ -1108,6 +1108,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get volumeInsertBelow => 'Insert volume below';
 
   @override
+  String get volumeAppendChapter => 'Insert chapter at end of volume';
+
+  @override
   String get chapterInsertBelow => 'Insert chapter below';
 
   @override

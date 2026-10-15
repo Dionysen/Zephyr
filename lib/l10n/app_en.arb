@@ -490,6 +490,7 @@
   "editorEmptyState": "Choose or create a chapter to begin writing.",
   "jumpToEnd": "Focus end",
   "volumeInsertBelow": "Insert volume below",
+  "volumeAppendChapter": "Insert chapter at end of volume",
   "chapterInsertBelow": "Insert chapter below",
   "actionMoveToVolume": "Move to volume",
   "actionMoveToBook": "Move to book",

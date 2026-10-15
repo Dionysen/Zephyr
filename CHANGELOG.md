@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Match the mobile bottom drawer's drag-handle background to its content surface.
+- Add “Insert chapter at end of volume” to the volume menu, reveal the new chapter, and scroll it into view.
+- Restore Material tap ripples on selectable chapter-sort menu items.
+
 - 保存输入时立即写入恢复草稿，并串行写入正文与标题；保存失败会保留待写内容、提示错误并阻止正常退出或备份。桌面与移动端主动退出会等待已启用的云备份完成，失败时留在编辑器；云端合并时保留有差异的旧版本到时光机。
 - Show a draggable caret handle after placing the cursor on Android and iOS; hide it while typing, scrolling, or after focus leaves the editor.
 - Show a horizontal selection menu on Android and iOS with Cut, Copy, Paste, Share, and Select all; hide Select all when the entire chapter is selected.

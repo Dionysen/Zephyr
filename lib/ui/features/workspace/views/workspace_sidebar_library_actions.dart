@@ -119,6 +119,11 @@ List<SidebarMenuAction> volumeMenuActions(AppLocalizations l10n) => [
     icon: Icons.create_new_folder_outlined,
   ),
   SidebarMenuAction(
+    id: 'appendChapter',
+    label: l10n.volumeAppendChapter,
+    icon: Icons.note_add_outlined,
+  ),
+  SidebarMenuAction(
     id: 'rename',
     label: l10n.actionRename,
     icon: Icons.drive_file_rename_outline,
@@ -185,6 +190,8 @@ Future<void> handleVolumeMenuAction(
   switch (actionId) {
     case 'insert':
       await model.insertVolumeBelow(volume.id);
+    case 'appendChapter':
+      await model.appendChapterToVolume(volume.id);
     case 'rename':
       final name = await showRenameDialog(
         context,

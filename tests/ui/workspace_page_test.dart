@@ -325,6 +325,16 @@ void main() {
     await tester.tap(find.byTooltip('Sort order'));
     await tester.pumpAndSettle();
     expect(find.text('Manual order'), findsOneWidget);
+    final manualItem = tester.widget<MenuItemButton>(
+      find.ancestor(
+        of: find.text('Manual order'),
+        matching: find.byType(MenuItemButton),
+      ),
+    );
+    expect(
+      manualItem.style?.overlayColor?.resolve({WidgetState.pressed}),
+      isNot(Colors.transparent),
+    );
     await tester.tap(find.text('Adjust order'));
     await tester.pumpAndSettle();
     expect(find.byTooltip('Done adjusting order'), findsOneWidget);
@@ -471,6 +481,33 @@ void main() {
       ),
       isTrue,
     );
+  });
+
+  testWidgets('volume menu creates and reveals a chapter at its end', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final library = LibraryViewModel(
+      _LibraryRepository(scrollingSections: true),
+    );
+    await tester.pumpWidget(_app(library: library));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Volume A'), buttons: 2);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Insert chapter at end of volume'));
+    await tester.pumpAndSettle();
+
+    final created = find.descendant(
+      of: find.byType(WorkspaceSidebar),
+      matching: find.text('Untitled'),
+    );
+    expect(created, findsOneWidget);
+    expect(library.article?.categoryId, 'volume-a');
   });
 
   testWidgets('expanded settings open above the sidebar library dock', (
@@ -760,6 +797,7 @@ class _LibraryRepository implements WritingLibraryRepository {
 
   final bool scrollingSections;
   final extraCategories = <WritingCategory>[];
+  final extraArticles = <ArticleSummary>[];
 
   @override
   Future<WritingLibrary> loadLibrary() async => WritingLibrary(
@@ -820,6 +858,7 @@ class _LibraryRepository implements WritingLibraryRepository {
             updatedAt: DateTime.utc(2026, 1, 2),
             wordCount: 7,
           ),
+      ...extraArticles,
       if (scrollingSections)
         for (var index = 0; index < 14; index++)
           ArticleSummary(
@@ -884,7 +923,22 @@ class _LibraryRepository implements WritingLibraryRepository {
     required String folderId,
     String? categoryId,
     String? afterArticleId,
-  }) async => getArticle('article');
+  }) async {
+    final id = 'new-${extraArticles.length}';
+    extraArticles.add(
+      ArticleSummary(
+        id: id,
+        title: 'Untitled',
+        summary: '',
+        folderId: folderId,
+        categoryId: categoryId,
+        createdAt: DateTime.utc(2026, 1, 3),
+        updatedAt: DateTime.utc(2026, 1, 3),
+        wordCount: 0,
+      ),
+    );
+    return getArticle(id);
+  }
 
   @override
   Future<void> saveArticle(WritingArticle article) async {}

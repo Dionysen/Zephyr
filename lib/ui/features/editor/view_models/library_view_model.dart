@@ -640,6 +640,27 @@ class LibraryViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Appends a chapter to [volumeId] in the stored manual order.
+  Future<void> appendChapterToVolume(String volumeId) async {
+    if (isReadOnly) return;
+    final book = selectedBook;
+    if (book == null || book.isTrash) return;
+    final volume = _library?.categories
+        .where((category) => category.id == volumeId)
+        .firstOrNull;
+    if (volume == null || volume.folderId != book.id) return;
+    await flushPending();
+    _article = await _repository.createArticle(
+      folderId: book.id,
+      categoryId: volumeId,
+    );
+    _selectedArticleId = _article?.id;
+    _expandedVolumesByBook[book.id]?.add(volumeId);
+    _scheduleLayoutSave();
+    await load();
+    notifyListeners();
+  }
+
   Future<void> renameVolume({
     required String volumeId,
     required String name,

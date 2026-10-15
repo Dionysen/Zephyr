@@ -1048,6 +1048,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get volumeInsertBelow => '下方插入卷';
 
   @override
+  String get volumeAppendChapter => '在卷末尾插入章节';
+
+  @override
   String get chapterInsertBelow => '下方插入章节';
 
   @override

@@ -41,8 +41,6 @@ abstract final class ZephyrMenu {
           }
           return Colors.transparent;
         }),
-        // Avoid Material overlay stacking on top of [backgroundColor].
-        overlayColor: const WidgetStatePropertyAll(Colors.transparent),
         minimumSize: const WidgetStatePropertyAll(
           Size(ZephyrControls.menuMinWidth, ZephyrControls.menuItemHeight),
         ),

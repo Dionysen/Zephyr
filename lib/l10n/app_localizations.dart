@@ -2077,6 +2077,12 @@ abstract class AppLocalizations {
   /// **'Insert volume below'**
   String get volumeInsertBelow;
 
+  /// No description provided for @volumeAppendChapter.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert chapter at end of volume'**
+  String get volumeAppendChapter;
+
   /// No description provided for @chapterInsertBelow.
   ///
   /// In en, this message translates to:
