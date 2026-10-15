@@ -1289,6 +1289,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get quickToolbarFormatTooltip => '一键格式化';
 
   @override
+  String get quickToolbarSearchTooltip => '搜索';
+
+  @override
+  String get quickToolbarTimestampTooltip => '插入时间戳';
+
+  @override
   String get quickToolbarBackupTooltip => '立即备份';
 
   @override

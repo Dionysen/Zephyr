@@ -1349,6 +1349,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quickToolbarFormatTooltip => 'Format';
 
   @override
+  String get quickToolbarSearchTooltip => 'Search';
+
+  @override
+  String get quickToolbarTimestampTooltip => 'Insert timestamp';
+
+  @override
   String get quickToolbarBackupTooltip => 'Back up now';
 
   @override

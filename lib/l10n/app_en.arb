@@ -586,6 +586,8 @@
   "quickToolbarPasteTooltip": "Paste",
   "quickToolbarIndentTooltip": "Indent",
   "quickToolbarFormatTooltip": "Format",
+  "quickToolbarSearchTooltip": "Search",
+  "quickToolbarTimestampTooltip": "Insert timestamp",
   "quickToolbarBackupTooltip": "Back up now",
   "quickToolbarRestoreTooltip": "Restore backup",
   "quickToolbarEdit": "Edit toolbar",

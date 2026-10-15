@@ -88,6 +88,8 @@ class QuickToolButton extends StatelessWidget {
     QuickToolKind.paste => Icons.content_paste_rounded,
     QuickToolKind.indent => Icons.format_indent_increase_rounded,
     QuickToolKind.format => Icons.auto_fix_high_rounded,
+    QuickToolKind.search => Icons.search_rounded,
+    QuickToolKind.timestamp => Icons.schedule_rounded,
     QuickToolKind.phrase => Icons.short_text_rounded,
   };
 }

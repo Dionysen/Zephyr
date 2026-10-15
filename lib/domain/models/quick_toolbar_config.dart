@@ -1,7 +1,16 @@
 import 'plain_text_format_option.dart';
 
 /// Built-in and user-defined tools for the IME quick toolbar.
-enum QuickToolKind { tools, undo, paste, indent, format, phrase }
+enum QuickToolKind {
+  tools,
+  undo,
+  paste,
+  indent,
+  format,
+  search,
+  timestamp,
+  phrase,
+}
 
 /// A single toolbar tool. Built-ins use stable [id]s matching [kind].name;
 /// phrases use generated ids with [label] / [payload].
@@ -18,14 +27,29 @@ class QuickTool {
   static const pasteId = 'paste';
   static const indentId = 'indent';
   static const formatId = 'format';
+  static const searchId = 'search';
+  static const timestampId = 'timestamp';
 
   static const tools = QuickTool(id: toolsId, kind: QuickToolKind.tools);
   static const undo = QuickTool(id: undoId, kind: QuickToolKind.undo);
   static const paste = QuickTool(id: pasteId, kind: QuickToolKind.paste);
   static const indent = QuickTool(id: indentId, kind: QuickToolKind.indent);
   static const format = QuickTool(id: formatId, kind: QuickToolKind.format);
+  static const search = QuickTool(id: searchId, kind: QuickToolKind.search);
+  static const timestamp = QuickTool(
+    id: timestampId,
+    kind: QuickToolKind.timestamp,
+  );
 
-  static const builtins = [tools, undo, paste, indent, format];
+  static const builtins = [
+    tools,
+    undo,
+    paste,
+    indent,
+    format,
+    search,
+    timestamp,
+  ];
 
   /// Editable starter phrases. Their stable ids are only part of the initial
   /// layout; saved toolbar configurations keep the user's own catalog.

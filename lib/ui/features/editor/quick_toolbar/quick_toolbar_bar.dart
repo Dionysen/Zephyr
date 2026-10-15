@@ -112,6 +112,8 @@ class QuickToolbarBar extends StatelessWidget {
         QuickToolKind.paste => l10n.quickToolbarPasteTooltip,
         QuickToolKind.indent => l10n.quickToolbarIndentTooltip,
         QuickToolKind.format => l10n.quickToolbarFormatTooltip,
+        QuickToolKind.search => l10n.quickToolbarSearchTooltip,
+        QuickToolKind.timestamp => l10n.quickToolbarTimestampTooltip,
         QuickToolKind.phrase => tool.label,
         QuickToolKind.tools => l10n.quickToolbarToolsTooltip,
       };

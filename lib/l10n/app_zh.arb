@@ -511,6 +511,8 @@
   "quickToolbarPasteTooltip": "粘贴",
   "quickToolbarIndentTooltip": "缩进",
   "quickToolbarFormatTooltip": "一键格式化",
+  "quickToolbarSearchTooltip": "搜索",
+  "quickToolbarTimestampTooltip": "插入时间戳",
   "quickToolbarBackupTooltip": "立即备份",
   "quickToolbarRestoreTooltip": "恢复备份",
   "quickToolbarEdit": "编辑工具栏",

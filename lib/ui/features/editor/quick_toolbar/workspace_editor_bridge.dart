@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:plain_text_editor/input/plain_text_editing_controller.dart';
 
 import '../../../../domain/models/plain_text_format_option.dart';
+import '../../../../domain/use_cases/insert_timestamp_text.dart';
 import '../../../../domain/use_cases/plain_text_format.dart';
 import '../plain_text/zephyr_plain_text_editor.dart';
 
@@ -156,5 +157,9 @@ class WorkspaceEditorBridge extends ChangeNotifier {
       _controller?.insertText(text, coalesce: false);
     }
     notifyCanUndo();
+  }
+
+  void insertTimestamp({String? localeName}) {
+    insertPhrase(insertTimestampText(localeName: localeName));
   }
 }

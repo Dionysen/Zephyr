@@ -2551,6 +2551,18 @@ abstract class AppLocalizations {
   /// **'Format'**
   String get quickToolbarFormatTooltip;
 
+  /// No description provided for @quickToolbarSearchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get quickToolbarSearchTooltip;
+
+  /// No description provided for @quickToolbarTimestampTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert timestamp'**
+  String get quickToolbarTimestampTooltip;
+
   /// No description provided for @quickToolbarBackupTooltip.
   ///
   /// In en, this message translates to:

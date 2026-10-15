@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
 import '../../../../domain/models/quick_toolbar_config.dart';
+import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
+import '../../workspace/views/library_search_sheet.dart';
 import '../view_models/editor_preferences_view_model.dart';
 import '../view_models/quick_toolbar_view_model.dart';
 import 'quick_toolbar_bar.dart';
@@ -315,6 +318,17 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
         widget.bridge.insertIndent();
       case QuickToolKind.format:
         _formatGate.toggle();
+      case QuickToolKind.search:
+        unawaited(
+          showLibrarySearchSheet(
+            context,
+            model: ZephyrScope.of(context).library,
+          ),
+        );
+      case QuickToolKind.timestamp:
+        widget.bridge.insertTimestamp(
+          localeName: Localizations.localeOf(context).toString(),
+        );
       case QuickToolKind.phrase:
         widget.bridge.insertPhrase(tool.payload ?? '');
     }
