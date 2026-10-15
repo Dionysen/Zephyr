@@ -827,6 +827,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     // Rebuild so typewriter-mode title opacity tracks focus.
     setState(() {});
     if (_titleFocusNode.hasFocus) {
+      widget.bridge?.requestDismissToolsPanelForChromeFocus();
       // Ensure the body editor releases primary focus / IME.
       if (_focusNode.hasFocus) {
         _focusNode.unfocus();
@@ -1031,7 +1032,10 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
       children: [
         Positioned.fill(
           child: ListenableBuilder(
-            listenable: themeVm,
+            listenable: Listenable.merge([
+              themeVm,
+              if (widget.bridge != null) widget.bridge!,
+            ]),
             builder: (context, _) {
               final editor = RepaintBoundary(
                 child: ZephyrPlainTextEditor(
@@ -1050,6 +1054,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
                   ),
                   bottomObstruction: quickToolbarBottomObstructionOf(context),
                   typewriterMode: preferences.typewriterMode,
+                  suppressIme: widget.bridge?.suppressBodyIme ?? false,
                   consumeNewline: _consumePairNewline,
                   shortcuts: ZephyrScope.of(context).keyboardShortcuts,
                   onTextChanged: (_) {},

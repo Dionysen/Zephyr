@@ -8,14 +8,20 @@ import '../plain_text/zephyr_plain_text_editor.dart';
 class WorkspaceEditorBridge extends ChangeNotifier {
   bool _bodyFocused = false;
   bool _canUndo = false;
+  bool _suppressBodyIme = false;
   int _firstLineIndent = 2;
   PlainTextEditingController? _controller;
   ZephyrPlainTextEditorState? _editor;
   FocusNode? _focusNode;
   void Function(String text)? _insertPhrase;
+  VoidCallback? onDismissToolsPanel;
 
   bool get bodyFocused => _bodyFocused;
   bool get canUndo => _canUndo;
+
+  /// When true, body taps/scroll keep focus but must not re-show the soft keyboard
+  /// (tools panel open — dismiss only on focus loss or tools toggle).
+  bool get suppressBodyIme => _suppressBodyIme;
 
   /// Live editor body; null until [WorkspaceEditor] binds.
   PlainTextEditingController? get controller => _controller;
@@ -62,12 +68,39 @@ class WorkspaceEditorBridge extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setSuppressBodyIme(bool suppress) {
+    if (_suppressBodyIme == suppress) return;
+    _suppressBodyIme = suppress;
+    notifyListeners();
+  }
+
   void hideIme() => _editor?.hideIme();
 
   void showIme() => _editor?.showIme();
 
+  /// Chapter title or other chrome took focus — end the tools-panel session.
+  void requestDismissToolsPanelForChromeFocus() {
+    setSuppressBodyIme(false);
+    onDismissToolsPanel?.call();
+  }
+
+  /// Taps on the tools panel are outside the editable but should not end the
+  /// editing session — keep body primary focus without reopening the IME.
+  void retainBodyFocusForToolsOverlay() {
+    if (!_suppressBodyIme) return;
+    final focus = _focusNode;
+    if (focus != null && !focus.hasPrimaryFocus) {
+      focus.requestFocus();
+    }
+    if (!_bodyFocused) {
+      _bodyFocused = true;
+      notifyListeners();
+    }
+  }
+
   /// Keep / restore body focus and show the soft keyboard (caret unchanged).
   void focusBodyAndShowIme() {
+    setSuppressBodyIme(false);
     final focus = _focusNode;
     if (focus != null && !focus.hasPrimaryFocus) {
       focus.requestFocus();

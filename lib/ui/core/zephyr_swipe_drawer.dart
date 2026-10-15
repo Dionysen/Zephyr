@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 /// Dispatched by descendants (e.g. text selection handles) so the drawer does
@@ -5,6 +6,48 @@ import 'package:flutter/material.dart';
 class ZephyrDrawerDragBlockNotification extends Notification {
   ZephyrDrawerDragBlockNotification({required this.blocked});
   final bool blocked;
+}
+
+/// While the IME tools panel is open, block library sidebar open-swipes on the
+/// editor body (panel blanks sit above the same body gesture target).
+class ZephyrLibrarySidebarSwipeBlockNotification extends Notification {
+  ZephyrLibrarySidebarSwipeBlockNotification({required this.blocked});
+  final bool blocked;
+}
+
+/// Claims horizontal drags that begin on [child] so a parent
+/// [ZephyrSwipeDrawer] body pan does not open the library sidebar.
+///
+/// Use on IME quick-toolbar chrome (tools panel blanks, slider gaps).
+class ZephyrSwipeDrawerDragShield extends StatelessWidget {
+  const ZephyrSwipeDrawerDragShield({super.key, required this.child});
+
+  final Widget child;
+
+  void _setBlocked(BuildContext context, bool blocked) {
+    ZephyrDrawerDragBlockNotification(blocked: blocked).dispatch(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RawGestureDetector(
+      behavior: HitTestBehavior.opaque,
+      gestures: <Type, GestureRecognizerFactory>{
+        HorizontalDragGestureRecognizer:
+            GestureRecognizerFactoryWithHandlers<
+              HorizontalDragGestureRecognizer
+            >(HorizontalDragGestureRecognizer.new, (
+              HorizontalDragGestureRecognizer instance,
+            ) {
+              instance.onStart = (_) => _setBlocked(context, true);
+              instance.onUpdate = (_) {};
+              instance.onEnd = (_) => _setBlocked(context, false);
+              instance.onCancel = () => _setBlocked(context, false);
+            }),
+      },
+      child: child,
+    );
+  }
 }
 
 /// Full-screen, finger-following start drawer with a low open/close threshold.
@@ -35,9 +78,9 @@ class ZephyrSwipeDrawer extends StatefulWidget {
   /// Horizontal fling speed (px/s) that settles open (positive) or closed.
   final double minFlingVelocity;
 
-  static ZephyrSwipeDrawerController? maybeOf(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<_ZephyrSwipeDrawerScope>()
-          ?.controller;
+  static ZephyrSwipeDrawerController? maybeOf(BuildContext context) => context
+      .dependOnInheritedWidgetOfExactType<_ZephyrSwipeDrawerScope>()
+      ?.controller;
 
   static ZephyrSwipeDrawerController of(BuildContext context) {
     final controller = maybeOf(context);
@@ -81,10 +124,12 @@ class _ZephyrSwipeDrawerState extends State<ZephyrSwipeDrawer>
   late final AnimationController _progress;
   late final ZephyrSwipeDrawerController _controller;
   double _dragStartProgress = 0;
+
   /// Global X at drag start — pair with [_dragStartProgress] so clamping at
   /// open/closed does not desync the finger from drawer progress.
   double? _dragOriginGlobalX;
   bool _dragBlocked = false;
+  bool _librarySwipeBlocked = false;
   bool _ignoreActiveDrag = false;
 
   bool get _isOpen => _progress.value >= 1.0 - 0.001;
@@ -94,14 +139,15 @@ class _ZephyrSwipeDrawerState extends State<ZephyrSwipeDrawer>
   void initState() {
     super.initState();
     _controller = ZephyrSwipeDrawerController().._state = this;
-    _progress = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 250),
-      value: 0,
-    )..addListener(() {
-        _controller._emit();
-        setState(() {});
-      });
+    _progress =
+        AnimationController(
+          vsync: this,
+          duration: const Duration(milliseconds: 250),
+          value: 0,
+        )..addListener(() {
+          _controller._emit();
+          setState(() {});
+        });
   }
 
   @override
@@ -140,7 +186,7 @@ class _ZephyrSwipeDrawerState extends State<ZephyrSwipeDrawer>
   }
 
   void _onDragStart(DragStartDetails details) {
-    if (_dragBlocked) {
+    if (_dragBlocked || _librarySwipeBlocked) {
       _ignoreActiveDrag = true;
       return;
     }
@@ -155,18 +201,17 @@ class _ZephyrSwipeDrawerState extends State<ZephyrSwipeDrawer>
   }
 
   void _onDragUpdate(DragUpdateDetails details) {
-    if (_ignoreActiveDrag || _dragBlocked) return;
+    if (_ignoreActiveDrag || _dragBlocked || _librarySwipeBlocked) return;
     final origin = _dragOriginGlobalX;
     if (origin == null) return;
     final dx = details.globalPosition.dx - origin;
-    final next =
-        (_dragStartProgress + dx / widget.drawerWidth).clamp(0.0, 1.0);
+    final next = (_dragStartProgress + dx / widget.drawerWidth).clamp(0.0, 1.0);
     _progress.value = next;
   }
 
   void _onDragEnd(DragEndDetails details) {
     _dragOriginGlobalX = null;
-    if (_ignoreActiveDrag || _dragBlocked) {
+    if (_ignoreActiveDrag || _dragBlocked || _librarySwipeBlocked) {
       _ignoreActiveDrag = false;
       // Undo any accidental reveal from the same pointer.
       if (!_isOpen && _progress.value > 0) {
@@ -216,7 +261,7 @@ class _ZephyrSwipeDrawerState extends State<ZephyrSwipeDrawer>
 
   void _onDragCancel() {
     _dragOriginGlobalX = null;
-    if (_ignoreActiveDrag || _dragBlocked) {
+    if (_ignoreActiveDrag || _dragBlocked || _librarySwipeBlocked) {
       _ignoreActiveDrag = false;
       if (!_isOpen && _progress.value > 0) {
         close();
@@ -232,23 +277,33 @@ class _ZephyrSwipeDrawerState extends State<ZephyrSwipeDrawer>
 
     // Open gesture stays on the body only — a permanent full-screen overlay
     // above the editor made short open swipes unreliable.
-    final body = NotificationListener<ZephyrDrawerDragBlockNotification>(
-      onNotification: (notification) {
-        _dragBlocked = notification.blocked;
-        if (!notification.blocked) {
-          _ignoreActiveDrag = false;
-        }
-        return true;
-      },
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onHorizontalDragStart: widget.enabled ? _onDragStart : null,
-        onHorizontalDragUpdate: widget.enabled ? _onDragUpdate : null,
-        onHorizontalDragEnd: widget.enabled ? _onDragEnd : null,
-        onHorizontalDragCancel: widget.enabled ? _onDragCancel : null,
-        child: widget.body,
-      ),
-    );
+    final body =
+        NotificationListener<ZephyrLibrarySidebarSwipeBlockNotification>(
+          onNotification: (notification) {
+            _librarySwipeBlocked = notification.blocked;
+            if (!notification.blocked) {
+              _ignoreActiveDrag = false;
+            }
+            return true;
+          },
+          child: NotificationListener<ZephyrDrawerDragBlockNotification>(
+            onNotification: (notification) {
+              _dragBlocked = notification.blocked;
+              if (!notification.blocked) {
+                _ignoreActiveDrag = false;
+              }
+              return true;
+            },
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragStart: widget.enabled ? _onDragStart : null,
+              onHorizontalDragUpdate: widget.enabled ? _onDragUpdate : null,
+              onHorizontalDragEnd: widget.enabled ? _onDragEnd : null,
+              onHorizontalDragCancel: widget.enabled ? _onDragCancel : null,
+              child: widget.body,
+            ),
+          ),
+        );
 
     return _ZephyrSwipeDrawerScope(
       controller: _controller,

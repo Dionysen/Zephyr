@@ -8,6 +8,8 @@ import 'package:zephyr/domain/repositories/editor_preferences_repository.dart';
 import 'package:zephyr/l10n/app_localizations.dart';
 import 'package:zephyr/ui/features/editor/quick_toolbar/quick_tool_button.dart';
 import 'package:zephyr/ui/features/editor/quick_toolbar/quick_toolbar_bar.dart';
+import 'package:zephyr/ui/features/editor/quick_toolbar/quick_toolbar_drawer.dart';
+import 'package:zephyr/ui/core/zephyr_swipe_drawer.dart';
 import 'package:zephyr/ui/features/editor/quick_toolbar/quick_toolbar_host.dart';
 import 'package:zephyr/ui/features/editor/quick_toolbar/tools_panel_toggle_gate.dart';
 import 'package:zephyr/ui/features/editor/quick_toolbar/workspace_editor_bridge.dart';
@@ -311,7 +313,91 @@ void main() {
     expect(toolbar.holdingPanelForIme, isFalse);
   });
 
-  test('body IME rising while drawer open dismisses the drawer', () {
+  testWidgets('tools panel right-swipe does not open library sidebar', (
+    tester,
+  ) async {
+    final toolbar = QuickToolbarViewModel(_Repo());
+    final bridge = WorkspaceEditorBridge()
+      ..setBodyFocused(true)
+      ..setSuppressBodyIme(true);
+    final editorPreferences = _editorPreferences();
+    addTearDown(editorPreferences.dispose);
+    toolbar.openToolsDrawer(keyboardHeight: 300);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ZephyrSwipeDrawer(
+          drawerWidth: 280,
+          drawer: const ColoredBox(color: Color(0xFFFF0000)),
+          body: MediaQuery(
+            data: const MediaQueryData(viewInsets: EdgeInsets.zero),
+            child: QuickToolbarHost(
+              toolbar: toolbar,
+              bridge: bridge,
+              foreground: Colors.white,
+              editorPreferences: editorPreferences,
+              child: const SizedBox.expand(),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final drawer = find.byType(QuickToolbarDrawer);
+    final rect = tester.getRect(drawer);
+    final start = Offset(rect.center.dx, rect.top + rect.height * 0.8);
+    await tester.dragFrom(start, const Offset(120, 0));
+    await tester.pumpAndSettle();
+
+    final swipe = ZephyrSwipeDrawer.of(tester.element(find.byType(QuickToolbarHost)));
+    expect(swipe.isOpen, isFalse);
+  });
+
+  testWidgets('tools drawer survives transient body focus loss', (tester) async {
+    final toolbar = QuickToolbarViewModel(_Repo());
+    final bridge = WorkspaceEditorBridge()
+      ..setBodyFocused(true)
+      ..setSuppressBodyIme(true);
+    final editorPreferences = _editorPreferences();
+    addTearDown(editorPreferences.dispose);
+    toolbar.openToolsDrawer(keyboardHeight: 300);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: MediaQuery(
+          data: const MediaQueryData(viewInsets: EdgeInsets.zero),
+          child: Scaffold(
+            body: QuickToolbarHost(
+              toolbar: toolbar,
+              bridge: bridge,
+              foreground: Colors.white,
+              editorPreferences: editorPreferences,
+              child: const SizedBox.expand(),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    bridge.setBodyFocused(false);
+    await tester.pump();
+    expect(toolbar.toolsDrawerOpen, isTrue);
+    expect(find.text('Line height'), findsOneWidget);
+
+    final drawer = find.byType(QuickToolbarDrawer);
+    final box = tester.getRect(drawer);
+    await tester.tapAt(Offset(box.center.dx, box.top + box.height * 0.75));
+    await tester.pump();
+    expect(toolbar.toolsDrawerOpen, isTrue);
+  });
+
+  test('body IME rising while drawer open keeps the drawer', () {
     final toolbar = QuickToolbarViewModel(_Repo());
     toolbar.openToolsDrawer(keyboardHeight: 300);
     // Keyboard animating away after hide — must not dismiss the drawer.
@@ -320,10 +406,11 @@ void main() {
     toolbar.reportKeyboardInset(0);
     expect(toolbar.toolsDrawerOpen, isTrue);
 
-    // User taps the article; IME rises again.
+    // Tap/scroll on the article may briefly raise IME; panel stays until
+    // tools toggle or body focus loss.
     toolbar.reportKeyboardInset(80);
-    expect(toolbar.toolsDrawerOpen, isFalse);
-    expect(toolbar.holdingPanelForIme, isTrue);
+    expect(toolbar.toolsDrawerOpen, isTrue);
+    expect(toolbar.holdingPanelForIme, isFalse);
   });
 
   test(

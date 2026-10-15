@@ -102,13 +102,13 @@ void main() {
     expect(model.usesFixedPanel, isFalse);
   });
 
-  test('rising keyboard inset dismisses an open tools drawer', () {
+  test('rising keyboard inset does not dismiss an open tools drawer', () {
     model.openToolsDrawer(keyboardHeight: 250);
     model.reportKeyboardInset(0);
     model.reportKeyboardInset(100);
 
-    expect(model.toolsDrawerOpen, isFalse);
-    expect(model.holdingPanelForIme, isTrue);
+    expect(model.toolsDrawerOpen, isTrue);
+    expect(model.holdingPanelForIme, isFalse);
   });
 }
 

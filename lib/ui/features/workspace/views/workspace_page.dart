@@ -773,6 +773,17 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final toolbar = ZephyrScope.of(context).quickToolbar;
+    _editorBridge.onDismissToolsPanel = () {
+      if (toolbar.toolsDrawerOpen || toolbar.holdingPanelForIme) {
+        toolbar.closeToolsDrawer();
+      }
+    };
+  }
+
+  @override
   void dispose() {
     _hide.dispose();
     _editorBridge.dispose();

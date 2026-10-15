@@ -32,6 +32,7 @@ class ZephyrPlainTextEditor extends StatefulWidget {
     this.scrollbarPadding = EdgeInsets.zero,
     this.bottomObstruction = 0,
     this.typewriterMode = false,
+    this.suppressIme = false,
     this.consumeNewline,
     this.shortcuts,
   });
@@ -63,6 +64,10 @@ class ZephyrPlainTextEditor extends StatefulWidget {
 
   /// When true, centers the caret line and dims other paragraphs.
   final bool typewriterMode;
+
+  /// When true, body taps keep focus/caret but do not show the soft keyboard
+  /// (tools panel open). Explicit [showIme] still reopens it.
+  final bool suppressIme;
 
   /// When this returns true, Enter / IME newline is swallowed.
   final bool Function()? consumeNewline;
@@ -195,6 +200,9 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     if ((oldWidget.bottomObstruction - widget.bottomObstruction).abs() > 0.5) {
       _maybeEnsureCaretForBottomInset();
     }
+    if (widget.suppressIme && !oldWidget.suppressIme) {
+      hideIme();
+    }
     if (widget.typewriterMode != oldWidget.typewriterMode &&
         widget.typewriterMode &&
         _focusNode.hasPrimaryFocus) {
@@ -289,11 +297,11 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     if (!_focusNode.hasPrimaryFocus) {
       // requestFocus applies on a microtask; attach once primary focus lands.
       _focusNode.requestFocus();
-      _scheduleAttachIme();
+      _scheduleAttachIme(force: true);
       return;
     }
-    // Same path as a short tap on the caret: re-show without re-focus churn.
-    _attachIme();
+    // Explicit restore (e.g. tools panel close) bypasses [suppressIme].
+    _attachIme(force: true);
   }
 
   Future<void> paste() => _paste();
@@ -324,7 +332,7 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     // Use primary focus so a sibling field (chapter title) does not keep the
     // body IME/caret alive via ancestor [FocusNode.hasFocus].
     if (_focusNode.hasPrimaryFocus) {
-      if (!_suppressImeAttach) {
+      if (!_suppressImeAttach && !widget.suppressIme) {
         _attachIme();
       }
       _caretBlink.forward();
@@ -343,8 +351,11 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     setState(() {});
   }
 
-  void _attachIme() {
-    if (widget.readOnly || _suppressImeAttach || !_focusNode.hasPrimaryFocus) {
+  void _attachIme({bool force = false}) {
+    if (widget.readOnly || !_focusNode.hasPrimaryFocus) {
+      return;
+    }
+    if (!force && (_suppressImeAttach || widget.suppressIme)) {
       return;
     }
     // Windows (and multi-view desktop) reject setClient without viewId.
@@ -352,6 +363,10 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     _inputClient?.attach(viewId: viewId);
     _inputClient?.markImeDirty();
     _inputClient?.syncImeIfNeeded();
+    // Explicit force (tools restore) must also re-show after TextInput.hide.
+    if (force) {
+      _inputClient?.showIme();
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_focusNode.hasPrimaryFocus) return;
       _syncImeGeometryToPlatform();
@@ -383,13 +398,15 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
 
   /// [FocusNode.requestFocus] only becomes primary on a microtask — schedule
   /// attach so desktop keystrokes are not dropped before TextInput is live.
-  void _scheduleAttachIme() {
-    if (widget.readOnly || _suppressImeAttach) return;
+  void _scheduleAttachIme({bool force = false}) {
+    if (widget.readOnly) return;
+    if (!force && _suppressImeAttach) return;
     final focus = _focusNode;
     void tryAttach() {
-      if (!mounted || _suppressImeAttach) return;
+      if (!mounted) return;
+      if (!force && (_suppressImeAttach || widget.suppressIme)) return;
       if (!focus.hasPrimaryFocus) return;
-      _attachIme();
+      _attachIme(force: force);
     }
 
     Future<void>.microtask(tryAttach);
@@ -401,13 +418,15 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   void _onBodyTap() {
     final details = _pendingTapDetails;
     if (details == null) return;
-    _suppressImeAttach = false;
     _focusNode.requestFocus();
-    // Always re-show IME: focus may already be true after the user dismissed
-    // the soft keyboard. When focus is still settling, [_scheduleAttachIme]
-    // waits for primary focus (critical on Windows desktop).
-    _attachIme();
-    _scheduleAttachIme();
+    if (!widget.suppressIme) {
+      _suppressImeAttach = false;
+      // Always re-show IME: focus may already be true after the user dismissed
+      // the soft keyboard. When focus is still settling, [_scheduleAttachIme]
+      // waits for primary focus (critical on Windows desktop).
+      _attachIme();
+      _scheduleAttachIme();
+    }
     _gestures.handleTapDown(details, details.localPosition);
     if (_isMobile) setState(() => _showCaretHandle = true);
   }
@@ -415,12 +434,14 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   /// Tap in the trailing blank below the document: caret at end + IME.
   void _onEndPaddingTap() {
     if (widget.readOnly) return;
-    _suppressImeAttach = false;
     final end = widget.controller.text.length;
     widget.controller.setSelection(TextSelection.collapsed(offset: end));
     _focusNode.requestFocus();
-    _attachIme();
-    _scheduleAttachIme();
+    if (!widget.suppressIme) {
+      _suppressImeAttach = false;
+      _attachIme();
+      _scheduleAttachIme();
+    }
     if (_isMobile) setState(() => _showCaretHandle = true);
   }
 
@@ -1032,10 +1053,12 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                                 : (event) {
                                     if (event.kind == PointerDeviceKind.mouse &&
                                         event.buttons == kPrimaryButton) {
-                                      _suppressImeAttach = false;
                                       _focusNode.requestFocus();
-                                      _attachIme();
-                                      _scheduleAttachIme();
+                                      if (!widget.suppressIme) {
+                                        _suppressImeAttach = false;
+                                        _attachIme();
+                                        _scheduleAttachIme();
+                                      }
                                       _beginSelectionDrag(
                                         event,
                                         fromMouse: true,

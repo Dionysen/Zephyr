@@ -21,7 +21,6 @@ class QuickToolbarViewModel extends ChangeNotifier {
   /// Keep the latched panel slot until the soft keyboard fills it again.
   var _holdingPanelForIme = false;
   double _latchedKeyboardHeight = 0;
-  double _lastKeyboardInset = 0;
 
   QuickToolbarConfig get config => _config;
   bool get toolsDrawerOpen => _toolsDrawerOpen;
@@ -40,15 +39,11 @@ class QuickToolbarViewModel extends ChangeNotifier {
     }
   }
 
-  /// Tracks live IME inset. Rising inset while the tools drawer is open means
-  /// the user focused the body again — dismiss the drawer (keep the panel slot).
+  /// Tracks live IME inset for latching panel height.
+  ///
+  /// Does not dismiss an open tools drawer — the panel stays until the tools
+  /// toggle closes it or the body loses focus.
   void reportKeyboardInset(double height) {
-    final prev = _lastKeyboardInset;
-    _lastKeyboardInset = height;
-    if (_toolsDrawerOpen && height > prev + 8 && height > 40) {
-      restoreImeFromTools();
-      return;
-    }
     rememberKeyboardHeight(height);
   }
 
@@ -84,9 +79,6 @@ class QuickToolbarViewModel extends ChangeNotifier {
         : _latchedKeyboardHeight;
     if (candidate >= 80) {
       _latchedKeyboardHeight = candidate;
-    }
-    if (keyboardHeight > 0.5) {
-      _lastKeyboardInset = keyboardHeight;
     }
     _toolsDrawerOpen = true;
     notifyListeners();

@@ -32,121 +32,126 @@ class QuickToolbarDrawer extends StatelessWidget {
     final muted = chrome.withValues(alpha: 0.7);
     return Material(
       color: quickToolbarBackgroundOf(context),
-      child: SizedBox(
-        height: height,
-        width: double.infinity,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: onEditToolbar,
-                icon: Icon(Icons.edit_outlined, size: 18, color: chrome),
-                label: Text(
-                  context.l10n.quickToolbarEdit,
-                  style: TextStyle(color: chrome),
-                ),
-                style: TextButton.styleFrom(
-                  foregroundColor: chrome,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  visualDensity: VisualDensity.compact,
+      // Absorb taps/drags on empty gaps so they do not fall through to the
+      // editor (which would re-show the IME / feel like a dismiss).
+      child: Listener(
+        behavior: HitTestBehavior.opaque,
+        child: SizedBox(
+          height: height,
+          width: double.infinity,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: onEditToolbar,
+                  icon: Icon(Icons.edit_outlined, size: 18, color: chrome),
+                  label: Text(
+                    context.l10n.quickToolbarEdit,
+                    style: TextStyle(color: chrome),
+                  ),
+                  style: TextButton.styleFrom(
+                    foregroundColor: chrome,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    visualDensity: VisualDensity.compact,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListenableBuilder(
-                listenable: editorPreferences,
-                builder: (context, _) {
-                  final l10n = context.l10n;
-                  final prefs = editorPreferences.preferences;
-                  // Five equal rows fill the remaining panel height.
-                  final rows = <Widget>[
-                    _StyleSliderRow(
-                      label: l10n.editorLineHeightTitle,
-                      value: prefs.lineHeight,
-                      min: 1.2,
-                      max: 2.4,
-                      suffix: '×',
-                      fractionDigits: 2,
-                      chrome: chrome,
-                      muted: muted,
-                      onChanged: editorPreferences.updateLineHeight,
-                    ),
-                    _StyleSliderRow(
-                      label: l10n.editorParagraphSpacingTitle,
-                      value: prefs.paragraphSpacing,
-                      min: 0,
-                      max: 2.5,
-                      suffix: '×',
-                      fractionDigits: 2,
-                      chrome: chrome,
-                      muted: muted,
-                      onChanged: editorPreferences.updateParagraphSpacing,
-                    ),
-                    _StyleSliderRow(
-                      label: l10n.editorMarginLeftTitle,
-                      value: prefs.marginLeft,
-                      min: EditorPreferences.minMargin,
-                      max: EditorPreferences.maxMargin,
-                      suffix: 'px',
-                      fractionDigits: 0,
-                      divisions: EditorPreferences.maxMargin.toInt(),
-                      chrome: chrome,
-                      muted: muted,
-                      onChanged: editorPreferences.updateMarginLeft,
-                    ),
-                    _StyleSliderRow(
-                      label: l10n.editorMarginRightTitle,
-                      value: prefs.marginRight,
-                      min: EditorPreferences.minMargin,
-                      max: EditorPreferences.maxMargin,
-                      suffix: 'px',
-                      fractionDigits: 0,
-                      divisions: EditorPreferences.maxMargin.toInt(),
-                      chrome: chrome,
-                      muted: muted,
-                      onChanged: editorPreferences.updateMarginRight,
-                    ),
-                    _StyleSliderRow(
-                      label: l10n.editorFontSizeTitle,
-                      value: prefs.fontSize,
-                      min: 12,
-                      max: 32,
-                      suffix: 'px',
-                      fractionDigits: 0,
-                      divisions: 20,
-                      chrome: chrome,
-                      muted: muted,
-                      onChanged: editorPreferences.updateFontSize,
-                    ),
-                  ];
-                  return Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      sliderEdgeInset,
-                      0,
-                      sliderEdgeInset,
-                      22,
-                    ),
-                    child: Column(
-                      children: [
-                        for (final row in rows)
-                          Expanded(
-                            // Extra vertical room falls below each compact
-                            // row → larger gaps between items.
-                            child: Align(
-                              alignment: Alignment.topCenter,
-                              child: row,
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListenableBuilder(
+                  listenable: editorPreferences,
+                  builder: (context, _) {
+                    final l10n = context.l10n;
+                    final prefs = editorPreferences.preferences;
+                    // Five equal rows fill the remaining panel height.
+                    final rows = <Widget>[
+                      _StyleSliderRow(
+                        label: l10n.editorLineHeightTitle,
+                        value: prefs.lineHeight,
+                        min: 1.2,
+                        max: 2.4,
+                        suffix: '×',
+                        fractionDigits: 2,
+                        chrome: chrome,
+                        muted: muted,
+                        onChanged: editorPreferences.updateLineHeight,
+                      ),
+                      _StyleSliderRow(
+                        label: l10n.editorParagraphSpacingTitle,
+                        value: prefs.paragraphSpacing,
+                        min: 0,
+                        max: 2.5,
+                        suffix: '×',
+                        fractionDigits: 2,
+                        chrome: chrome,
+                        muted: muted,
+                        onChanged: editorPreferences.updateParagraphSpacing,
+                      ),
+                      _StyleSliderRow(
+                        label: l10n.editorMarginLeftTitle,
+                        value: prefs.marginLeft,
+                        min: EditorPreferences.minMargin,
+                        max: EditorPreferences.maxMargin,
+                        suffix: 'px',
+                        fractionDigits: 0,
+                        divisions: EditorPreferences.maxMargin.toInt(),
+                        chrome: chrome,
+                        muted: muted,
+                        onChanged: editorPreferences.updateMarginLeft,
+                      ),
+                      _StyleSliderRow(
+                        label: l10n.editorMarginRightTitle,
+                        value: prefs.marginRight,
+                        min: EditorPreferences.minMargin,
+                        max: EditorPreferences.maxMargin,
+                        suffix: 'px',
+                        fractionDigits: 0,
+                        divisions: EditorPreferences.maxMargin.toInt(),
+                        chrome: chrome,
+                        muted: muted,
+                        onChanged: editorPreferences.updateMarginRight,
+                      ),
+                      _StyleSliderRow(
+                        label: l10n.editorFontSizeTitle,
+                        value: prefs.fontSize,
+                        min: 12,
+                        max: 32,
+                        suffix: 'px',
+                        fractionDigits: 0,
+                        divisions: 20,
+                        chrome: chrome,
+                        muted: muted,
+                        onChanged: editorPreferences.updateFontSize,
+                      ),
+                    ];
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        sliderEdgeInset,
+                        0,
+                        sliderEdgeInset,
+                        22,
+                      ),
+                      child: Column(
+                        children: [
+                          for (final row in rows)
+                            Expanded(
+                              // Extra vertical room falls below each compact
+                              // row → larger gaps between items.
+                              child: Align(
+                                alignment: Alignment.topCenter,
+                                child: row,
+                              ),
                             ),
-                          ),
-                      ],
-                    ),
-                  );
-                },
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -181,8 +186,7 @@ class _StyleSliderRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final clamped = value.clamp(min, max);
-    final readout =
-        '${clamped.toStringAsFixed(fractionDigits)}$suffix';
+    final readout = '${clamped.toStringAsFixed(fractionDigits)}$suffix';
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -204,11 +208,7 @@ class _StyleSliderRow extends StatelessWidget {
             ),
             Text(
               readout,
-              style: TextStyle(
-                color: muted,
-                fontSize: 12,
-                height: 1.15,
-              ),
+              style: TextStyle(color: muted, fontSize: 12, height: 1.15),
             ),
           ],
         ),
