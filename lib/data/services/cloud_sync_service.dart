@@ -339,8 +339,13 @@ class CloudSyncService {
     final owned = backups
         .where((entry) => entry.fileName.startsWith('Zephyr-'))
         .toList();
+    // Upload already succeeded; never fail the whole backup on history cleanup.
     for (final entry in owned.skip(cloudBackupKeepCount)) {
-      await client.deleteNamedBackup(session: session, entry: entry);
+      try {
+        await client.deleteNamedBackup(session: session, entry: entry);
+      } on Object {
+        // Skip unreadable / non-canonical hrefs and continue.
+      }
     }
   }
 

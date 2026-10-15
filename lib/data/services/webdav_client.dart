@@ -326,17 +326,28 @@ class WebDavClient {
     return entries;
   }
 
+  /// True when [fileId] names the same resource as [expected], ignoring
+  /// query/fragment that some WebDAV servers attach to PROPFIND hrefs.
+  bool _sameBackupResource(Uri fileId, Uri expected) =>
+      fileId.scheme == expected.scheme &&
+      fileId.host == expected.host &&
+      fileId.port == expected.port &&
+      fileId.userInfo.isEmpty &&
+      fileId.path == expected.path;
+
+  Uri _namedBackupUri(CloudSyncSession session, String fileName) =>
+      _child(_folder(_folder(_root(session), 'Zephyr'), 'Backups'), fileName);
+
   /// Deletes a history file only when it belongs directly to this account's
   /// `Zephyr/Backups` folder. The latest `library.pwb` is never targeted.
   Future<void> deleteNamedBackup({
     required CloudSyncSession session,
     required CloudBackupEntry entry,
   }) async {
-    final folder = _folder(_folder(_root(session), 'Zephyr'), 'Backups');
-    final expected = _child(folder, entry.fileName);
+    final expected = _namedBackupUri(session, entry.fileName);
     if (!entry.fileName.startsWith('Zephyr-') ||
         !entry.fileName.toLowerCase().endsWith('.pwb') ||
-        entry.fileId != expected.toString()) {
+        !_sameBackupResource(Uri.parse(entry.fileId), expected)) {
       throw const FormatException('Backup is outside this WebDAV account.');
     }
     final response = await _request(session, 'DELETE', expected);
@@ -355,18 +366,18 @@ class WebDavClient {
     required CloudBackupEntry entry,
     required Directory staging,
   }) async {
-    final uri = Uri.parse(entry.fileId);
-    final root = _root(session);
-    final backupRoot = _folder(_folder(root, 'Zephyr'), 'Backups');
     if (entry.fileName.isEmpty ||
         entry.fileName == '.' ||
         entry.fileName == '..' ||
         entry.fileName.contains('/') ||
-        entry.fileName.contains('\\') ||
-        uri.toString() != _child(backupRoot, entry.fileName).toString()) {
+        entry.fileName.contains('\\')) {
       throw const FormatException('Backup is outside this WebDAV account.');
     }
-    final response = await _request(session, 'GET', uri);
+    final expected = _namedBackupUri(session, entry.fileName);
+    if (!_sameBackupResource(Uri.parse(entry.fileId), expected)) {
+      throw const FormatException('Backup is outside this WebDAV account.');
+    }
+    final response = await _request(session, 'GET', expected);
     _expect(response, {200});
     final out = File(path.join(staging.path, entry.fileName));
     await out.writeAsBytes(response.bodyBytes, flush: true);

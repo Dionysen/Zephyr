@@ -285,6 +285,16 @@ void main() {
         sizeBytes: 1,
       );
       await client.deleteNamedBackup(session: session, entry: valid);
+      // Nutstore-style hrefs may keep a query string on the listed fileId.
+      await client.deleteNamedBackup(
+        session: session,
+        entry: CloudBackupEntry(
+          fileId: '${session.serverUrl}Zephyr/Backups/Zephyr-old.pwb?view=1',
+          fileName: 'Zephyr-old.pwb',
+          modified: DateTime.utc(2026),
+          sizeBytes: 1,
+        ),
+      );
       await expectLater(
         client.deleteNamedBackup(
           session: session,
@@ -298,6 +308,7 @@ void main() {
         throwsFormatException,
       );
       expect(requests, [
+        'DELETE ${session.serverUrl}Zephyr/Backups/Zephyr-old.pwb',
         'DELETE ${session.serverUrl}Zephyr/Backups/Zephyr-old.pwb',
       ]);
     },
