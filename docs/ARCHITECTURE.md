@@ -2,6 +2,8 @@
 
 The mobile selection toolbar belongs to `ZephyrPlainTextEditor` in the app UI layer. Its `onShareSelectedText` callback passes the selected text and the share button's screen rectangle to the workspace, which invokes the platform share sheet. Selection and editing remain in `plain_text_editor`; the reusable package has no share-plugin dependency.
 
+In `plain_text_editor`, selection boxes fill line leading and paragraph gaps, while decoration boxes follow text glyph height. Search and paired-punctuation highlights use decoration boxes so their paint does not grow with line spacing.
+
 ## 依赖方向
 
 ```mermaid

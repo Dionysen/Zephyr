@@ -114,6 +114,39 @@ void main() {
     expect(exits, 1);
   });
 
+  testWidgets('root exit skips cloud backup when no account is connected', (
+    tester,
+  ) async {
+    final library = LibraryViewModel(_LibraryRepository());
+    final cloud = _ExitCloudSyncViewModel(library, signedIn: false);
+    var exits = 0;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'SystemNavigator.pop') exits++;
+        return null;
+      },
+    );
+    addTearDown(() {
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      );
+      cloud.dispose();
+      library.dispose();
+    });
+
+    await tester.pumpWidget(_app(library: library, cloudSync: cloud));
+    await tester.pumpAndSettle();
+    // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(exits, 1);
+    expect(cloud.backupCalls, 0);
+    expect(find.byType(SnackBar), findsNothing);
+  });
+
   testWidgets('volume header stays pinned only while its chapters scroll', (
     tester,
   ) async {
@@ -1235,23 +1268,27 @@ class _FontRepository implements SystemFontRepository {
 }
 
 class _ExitCloudSyncViewModel extends CloudSyncViewModel {
-  _ExitCloudSyncViewModel(LibraryViewModel library) : super(library: library);
+  _ExitCloudSyncViewModel(LibraryViewModel library, {this.signedIn = true})
+    : super(library: library);
 
+  final bool signedIn;
   final backupStarted = Completer<void>();
   final allowBackup = Completer<void>();
   Object? failure;
+  int backupCalls = 0;
 
   @override
   bool get cloudBackupEnabled => true;
 
   @override
-  bool get isSignedIn => true;
+  bool get isSignedIn => signedIn;
 
   @override
   Object? get error => failure;
 
   @override
   Future<void> backupNow() async {
+    backupCalls++;
     backupStarted.complete();
     await allowBackup.future;
   }

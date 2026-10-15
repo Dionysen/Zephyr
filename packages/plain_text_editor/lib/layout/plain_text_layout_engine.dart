@@ -206,9 +206,19 @@ class PlainTextLayoutEngine {
   }
 
   List<Rect> boxesForSelection(TextSelection selection) {
-    if (selection.isCollapsed || _metrics.isEmpty) return const [];
-    final start = selection.start.clamp(0, _document.length);
-    final end = selection.end.clamp(0, _document.length);
+    return _boxesForRange(selection.start, selection.end, decoration: false);
+  }
+
+  /// Tight glyph boxes for paint-only decorations, excluding line leading
+  /// and paragraph gaps while leaving selection geometry unchanged.
+  List<Rect> boxesForRange(int start, int end) {
+    return _boxesForRange(start, end, decoration: true);
+  }
+
+  List<Rect> _boxesForRange(int start, int end, {required bool decoration}) {
+    if (_metrics.isEmpty) return const [];
+    start = start.clamp(0, _document.length);
+    end = end.clamp(0, _document.length);
     if (start >= end) return const [];
 
     final boxes = <Rect>[];
@@ -218,10 +228,16 @@ class PlainTextLayoutEngine {
       final selStart = math.max(start, paraStart);
       final selEnd = math.min(end, paraEnd);
       final coversEmpty =
-          m.text.isEmpty && start <= paraStart && end > paraStart;
+          !decoration &&
+          m.text.isEmpty &&
+          start <= paraStart &&
+          end > paraStart;
       if (selStart >= selEnd && !coversEmpty) {
         // Selection covering only the trailing newline still needs the gap.
-        if (end > paraEnd && m.gapAfter > 0 && start <= paraEnd) {
+        if (!decoration &&
+            end > paraEnd &&
+            m.gapAfter > 0 &&
+            start <= paraEnd) {
           boxes.add(
             Rect.fromLTWH(
               contentLeft,
@@ -236,6 +252,7 @@ class PlainTextLayoutEngine {
 
       final paraBoxes = <Rect>[];
       if (m.text.isEmpty) {
+        if (decoration) continue;
         paraBoxes.add(
           Rect.fromLTWH(
             contentLeft,
@@ -247,11 +264,12 @@ class PlainTextLayoutEngine {
       } else {
         final localStart = selStart - paraStart;
         final localEnd = selEnd - paraStart;
-        // Strut height matches forced line height so line leading is filled
-        // (tight boxes leave visible gaps between wrapped lines).
+        // Selection fills line leading; decorations hug the glyph metrics.
         final textBoxes = m.painter.getBoxesForSelection(
           TextSelection(baseOffset: localStart, extentOffset: localEnd),
-          boxHeightStyle: BoxHeightStyle.strut,
+          boxHeightStyle: decoration
+              ? BoxHeightStyle.tight
+              : BoxHeightStyle.strut,
         );
         for (final box in textBoxes) {
           paraBoxes.add(
@@ -268,7 +286,7 @@ class PlainTextLayoutEngine {
 
       // Selection that continues past this paragraph's newline also owns the
       // paragraph gap — otherwise a solid band splits between paragraphs.
-      if (end > paraEnd && m.gapAfter > 0) {
+      if (!decoration && end > paraEnd && m.gapAfter > 0) {
         var left = contentLeft;
         var right = contentLeft + 4;
         if (paraBoxes.isNotEmpty) {
@@ -290,12 +308,5 @@ class PlainTextLayoutEngine {
       }
     }
     return boxes;
-  }
-
-  /// Line boxes for an arbitrary document range (decorations).
-  List<Rect> boxesForRange(int start, int end) {
-    return boxesForSelection(
-      TextSelection(baseOffset: start, extentOffset: end),
-    );
   }
 }

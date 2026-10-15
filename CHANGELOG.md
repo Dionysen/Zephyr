@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Skip cloud backup on exit while no cloud account is connected; keep local automatic backup available without reporting a setup error.
+
+- Keep search-result and paired-punctuation highlights fitted to text instead of filling line spacing or paragraph gaps.
+
 - Match the mobile bottom drawer's drag-handle background to its content surface.
 - Add “Insert chapter at end of volume” to the volume menu, reveal the new chapter, and scroll it into view.
 - Restore Material tap ripples on selectable chapter-sort menu items.

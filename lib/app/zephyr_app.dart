@@ -111,20 +111,15 @@ void runZephyr(
         if (root == null || library.needsLibrarySetup || library.isReadOnly) {
           return true;
         }
-        if (cloudSync.cloudBackupEnabled && !cloudSync.isSignedIn) {
-          throw StateError(
-            'Cloud backup is enabled but no account is connected.',
-          );
-        }
-        final needsWorker =
-            backup.autoBackupEnabled || cloudSync.cloudBackupEnabled;
+        final cloudReady = cloudSync.cloudBackupEnabled && cloudSync.isSignedIn;
+        final needsWorker = backup.autoBackupEnabled || cloudReady;
         if (!needsWorker) {
           return true;
         }
         await database.close();
         try {
           final result = await HeadlessExitBackup.run(expectedRoot: root);
-          if (cloudSync.cloudBackupEnabled && !result.didCloud) {
+          if (cloudReady && !result.didCloud) {
             throw StateError('Cloud backup did not complete.');
           }
           await database.openLibrary(root, createIfMissing: false);

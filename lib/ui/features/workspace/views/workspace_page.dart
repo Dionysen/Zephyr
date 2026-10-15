@@ -229,12 +229,7 @@ class _WorkspacePageState extends State<WorkspacePage>
       while (scope.backup.busy || scope.cloudSync.busy) {
         await Future<void>.delayed(const Duration(milliseconds: 100));
       }
-      if (scope.cloudSync.cloudBackupEnabled) {
-        if (!scope.cloudSync.isSignedIn) {
-          throw StateError(
-            'Cloud backup is enabled but no account is connected.',
-          );
-        }
+      if (scope.cloudSync.cloudBackupEnabled && scope.cloudSync.isSignedIn) {
         await scope.cloudSync.backupNow();
         if (scope.cloudSync.error case final error?) throw error;
       } else {
