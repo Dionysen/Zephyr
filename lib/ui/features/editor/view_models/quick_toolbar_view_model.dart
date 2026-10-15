@@ -21,6 +21,9 @@ class QuickToolbarViewModel extends ChangeNotifier {
 
   /// Mirrors toolbar layout into the open library's ZephyrMeta (`.pwb`).
   Future<void> Function(QuickToolbarConfig config)? persistConfigToLibrary;
+
+  /// Set by [QuickToolbarHost]; returns true when a tools/format panel was closed.
+  bool Function()? handleAuxiliaryPanelBack;
   var _toolsDrawerOpen = false;
   var _formatDrawerOpen = false;
   /// Keep the latched panel slot until the soft keyboard fills it again.

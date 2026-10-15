@@ -84,10 +84,12 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
       isDrawerOpen: () => widget.toolbar.formatDrawerOpen,
       onCommit: _commitFormatDrawer,
     );
+    widget.toolbar.handleAuxiliaryPanelBack = _handleAuxiliaryPanelBack;
   }
 
   @override
   void dispose() {
+    widget.toolbar.handleAuxiliaryPanelBack = null;
     if (_librarySidebarSwipeBlocked == true) {
       ZephyrLibrarySidebarSwipeBlockNotification(blocked: false)
           .dispatch(context);
@@ -95,6 +97,18 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
     _toolsGate.dispose();
     _formatGate.dispose();
     super.dispose();
+  }
+
+  bool _handleAuxiliaryPanelBack() {
+    if (widget.toolbar.toolsDrawerOpen) {
+      _toolsGate.close();
+      return true;
+    }
+    if (widget.toolbar.formatDrawerOpen) {
+      _formatGate.close();
+      return true;
+    }
+    return false;
   }
 
   void _syncLibrarySidebarSwipeBlock(bool blocked) {

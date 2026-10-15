@@ -280,6 +280,10 @@ class _WorkspacePageState extends State<WorkspacePage>
             canPop: WindowChrome.isDesktop,
             onPopInvokedWithResult: (didPop, _) {
               if (didPop) return;
+              if (scope.quickToolbar.handleAuxiliaryPanelBack?.call() ==
+                  true) {
+                return;
+              }
               unawaited(_onRootBack());
             },
             child: ListenableBuilder(
