@@ -18,6 +18,15 @@ abstract final class ZephyrBottomSheet {
   /// Default desktop dialog width for sheet-style panels.
   static const double desktopDialogWidth = 420;
 
+  /// Max height for short, fit-content sheets (choice pickers, brief lists).
+  static double fitContentMaxHeight(BuildContext context) =>
+      MediaQuery.sizeOf(context).height * 0.5;
+
+  /// [DraggableScrollableSheet] sizes for half-open sheets that can expand.
+  static const double sheetMinSize = 0.35;
+  static const double sheetInitialSize = 0.5;
+  static const double sheetMaxSize = 0.95;
+
   /// Sheet header — slightly smaller than [TextTheme.titleMedium], semibold.
   static TextStyle? titleStyle(ThemeData theme) =>
       theme.textTheme.titleSmall?.copyWith(

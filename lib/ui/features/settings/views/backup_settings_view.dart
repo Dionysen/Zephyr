@@ -583,41 +583,63 @@ class _BackupListSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final theme = Theme.of(context);
     final format = DateFormat.yMMMd().add_Hm();
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              l10n.backupRestoreTitle,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Flexible(
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: backups.length,
-                itemBuilder: (context, index) {
-                  final entry = backups[index];
-                  final kind = entry.kind == BackupKind.automatic
-                      ? l10n.backupKindAuto
-                      : l10n.backupKindManual;
-                  return ListTile(
-                    title: Text(entry.fileName),
-                    subtitle: Text(
-                      '$kind · ${format.format(entry.modified.toLocal())}',
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: ZephyrBottomSheet.sheetInitialSize,
+      minChildSize: ZephyrBottomSheet.sheetMinSize,
+      maxChildSize: ZephyrBottomSheet.sheetMaxSize,
+      builder: (context, scrollController) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  l10n.backupRestoreTitle,
+                  style: ZephyrBottomSheet.titleStyle(theme),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: ZephyrBottomSheet.listTheme(
+                    context: context,
+                    child: ListView.builder(
+                      controller: scrollController,
+                      itemCount: backups.length,
+                      itemBuilder: (context, index) {
+                        final entry = backups[index];
+                        final isAuto = entry.kind == BackupKind.automatic;
+                        final kind = isAuto
+                            ? l10n.backupKindAuto
+                            : l10n.backupKindManual;
+                        return ListTile(
+                          leading: Icon(
+                            isAuto
+                                ? Icons.schedule_outlined
+                                : Icons.backup_outlined,
+                            size: ZephyrBottomSheet.rowIconSize,
+                          ),
+                          title: Text(
+                            entry.fileName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(
+                            '$kind · ${format.format(entry.modified.toLocal())}',
+                          ),
+                          onTap: () => Navigator.pop(context, entry),
+                        );
+                      },
                     ),
-                    onTap: () => Navigator.pop(context, entry),
-                  );
-                },
-              ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -630,36 +652,57 @@ class _CloudBackupListSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final theme = Theme.of(context);
     final format = DateFormat.yMMMd().add_Hm();
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              l10n.cloudSyncRestoreTitle,
-              style: Theme.of(context).textTheme.titleMedium,
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: ZephyrBottomSheet.sheetInitialSize,
+      minChildSize: ZephyrBottomSheet.sheetMinSize,
+      maxChildSize: ZephyrBottomSheet.sheetMaxSize,
+      builder: (context, scrollController) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  l10n.cloudSyncRestoreTitle,
+                  style: ZephyrBottomSheet.titleStyle(theme),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: ZephyrBottomSheet.listTheme(
+                    context: context,
+                    child: ListView.builder(
+                      controller: scrollController,
+                      itemCount: backups.length,
+                      itemBuilder: (context, index) {
+                        final entry = backups[index];
+                        return ListTile(
+                          leading: const Icon(
+                            Icons.cloud_outlined,
+                            size: ZephyrBottomSheet.rowIconSize,
+                          ),
+                          title: Text(
+                            entry.fileName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(
+                            format.format(entry.modified.toLocal()),
+                          ),
+                          onTap: () => Navigator.pop(context, entry),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Flexible(
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: backups.length,
-                itemBuilder: (context, index) {
-                  final entry = backups[index];
-                  return ListTile(
-                    title: Text(entry.fileName),
-                    subtitle: Text(format.format(entry.modified.toLocal())),
-                    onTap: () => Navigator.pop(context, entry),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
