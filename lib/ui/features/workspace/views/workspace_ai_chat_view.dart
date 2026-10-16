@@ -50,7 +50,8 @@ class WorkspaceAiChatView extends StatefulWidget {
   State<WorkspaceAiChatView> createState() => _WorkspaceAiChatViewState();
 }
 
-class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
+class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
+    with WidgetsBindingObserver {
   final _scrollController = ScrollController();
   final _inputController = TextEditingController();
   final _inputFocus = FocusNode();
@@ -115,9 +116,23 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _inputFocus.addListener(_onComposerFocusChange);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_bindArticle(_currentArticleId()));
     });
+  }
+
+  void _onComposerFocusChange() {
+    if (!_inputFocus.hasFocus) return;
+    _scrollToEnd(force: true);
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    if (!_inputFocus.hasFocus || !mounted) return;
+    _scrollToEnd(force: true);
   }
 
   @override
@@ -275,6 +290,8 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _inputFocus.removeListener(_onComposerFocusChange);
     if (_drawerDragBlockedForList && context.mounted) {
       ZephyrDrawerDragBlockNotification(blocked: false).dispatch(context);
     }

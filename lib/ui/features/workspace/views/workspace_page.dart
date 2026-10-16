@@ -789,6 +789,14 @@ class _MobileTwoEditorWorkspace extends StatefulWidget {
       _MobileTwoEditorWorkspaceState();
 }
 
+/// Negative scroll delta while pinned at the list bottom (stretch / settle).
+bool _mobileScrollRubberBandAtBottom(ScrollMetrics metrics, double delta) {
+  if (delta >= 0) return false;
+  final max = metrics.maxScrollExtent;
+  if (!max.isFinite) return false;
+  return metrics.pixels >= max - 1.0;
+}
+
 class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
     with TickerProviderStateMixin {
   static const _barInset = 8.0;
@@ -1054,7 +1062,14 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
       }
       _topBarScrollSlop += delta;
       if (_topBarScrollSlop.abs() >= _barHideSlop) {
-        direction > 0 ? _hideTopBar() : _showTopBar();
+        if (direction > 0) {
+          _hideTopBar();
+        } else if (!_mobileScrollRubberBandAtBottom(
+          notification.metrics,
+          delta,
+        )) {
+          _showTopBar();
+        }
       }
     } else if (notification is ScrollEndNotification) {
       _topBarScrollSlop = 0;
@@ -1364,7 +1379,10 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
 
       if (dir > 0) {
         _hideBar();
-      } else {
+      } else if (!_mobileScrollRubberBandAtBottom(
+        notification.metrics,
+        delta,
+      )) {
         _showBar();
       }
     } else if (notification is ScrollEndNotification) {
