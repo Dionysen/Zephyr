@@ -1011,6 +1011,7 @@ class _AiChatComposer extends StatelessWidget {
                         hintText: l10n.aiChatInputHint,
                         style: fieldStyle,
                         hintStyle: hintStyle,
+                        onSubmit: desktop ? onSend : null,
                       ),
                     ),
                     Padding(

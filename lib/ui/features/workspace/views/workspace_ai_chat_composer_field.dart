@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/workspace_ai_composer_document.dart';
 
@@ -10,6 +11,7 @@ class WorkspaceAiChatComposerField extends StatelessWidget {
     required this.hintText,
     required this.style,
     required this.hintStyle,
+    this.onSubmit,
     this.maxLines = 6,
   });
 
@@ -17,6 +19,9 @@ class WorkspaceAiChatComposerField extends StatelessWidget {
   final String hintText;
   final TextStyle? style;
   final TextStyle? hintStyle;
+
+  /// Desktop: Enter sends. Shift+Enter still inserts a newline.
+  final VoidCallback? onSubmit;
   final int maxLines;
 
   @override
@@ -26,6 +31,12 @@ class WorkspaceAiChatComposerField extends StatelessWidget {
       fill: scheme.secondaryContainer,
       foreground: scheme.onSecondaryContainer,
     );
+    final desktop =
+        Theme.of(context).platform != TargetPlatform.android &&
+        Theme.of(context).platform != TargetPlatform.iOS;
+    composer.focusNode.onKeyEvent = desktop && onSubmit != null
+        ? _sendOnEnter
+        : null;
 
     return TextField(
       controller: composer.text,
@@ -48,5 +59,22 @@ class WorkspaceAiChatComposerField extends StatelessWidget {
         contentPadding: EdgeInsets.zero,
       ),
     );
+  }
+
+  KeyEventResult _sendOnEnter(FocusNode node, KeyEvent event) {
+    final enter =
+        event.logicalKey == LogicalKeyboardKey.enter ||
+        event.logicalKey == LogicalKeyboardKey.numpadEnter;
+    if (!enter || HardwareKeyboard.instance.isShiftPressed) {
+      return KeyEventResult.ignored;
+    }
+    final composing = composer.text.value.composing;
+    if (composing.isValid && !composing.isCollapsed) {
+      return KeyEventResult.ignored;
+    }
+    if (event is KeyDownEvent) {
+      onSubmit?.call();
+    }
+    return KeyEventResult.handled;
   }
 }
