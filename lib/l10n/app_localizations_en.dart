@@ -96,7 +96,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSectionGeneral => 'General';
 
   @override
-  String get settingsSectionCloud => 'Backup & sync';
+  String get settingsSectionCloud => 'Backup';
 
   @override
   String get backupGroupLocalTitle => 'Local backup';

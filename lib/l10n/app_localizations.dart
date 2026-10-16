@@ -269,7 +269,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsSectionCloud.
   ///
   /// In en, this message translates to:
-  /// **'Backup & sync'**
+  /// **'Backup'**
   String get settingsSectionCloud;
 
   /// No description provided for @backupGroupLocalTitle.

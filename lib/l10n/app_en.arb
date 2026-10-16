@@ -28,7 +28,7 @@
   "settingsComingSoonSubtitle": "These options are still being prepared.",
   "settingsPlaceholderBody": "Related options will appear here later.",
   "settingsSectionGeneral": "General",
-  "settingsSectionCloud": "Backup & sync",
+  "settingsSectionCloud": "Backup",
   "backupGroupLocalTitle": "Local backup",
   "backupGroupCloudTitle": "Cloud sync",
   "cloudSyncSubtitleSignedOut": "Connect Nutstore WebDAV for cloud backup and sync",
