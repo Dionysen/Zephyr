@@ -15,7 +15,9 @@ import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_markdown_body.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
+import '../models/workspace_ai_composer_document.dart';
 import '../models/workspace_ai_context_selection.dart';
+import 'workspace_ai_chat_composer_field.dart';
 import '../../settings/models/llm_thinking_labels.dart';
 import 'workspace_ai_chat_model_sheet.dart';
 import 'workspace_ai_chat_options_sheet.dart';
@@ -53,8 +55,7 @@ class WorkspaceAiChatView extends StatefulWidget {
 class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
     with WidgetsBindingObserver {
   final _scrollController = ScrollController();
-  final _inputController = TextEditingController();
-  final _inputFocus = FocusNode();
+  late final WorkspaceAiComposerController _composer;
   final _messages = <_AiChatMessage>[];
   final _liveAssistant = ValueNotifier<_StreamAssistantFrame?>(null);
   var _liveAssistantMessageIndex = -1;
@@ -116,28 +117,32 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
   @override
   void initState() {
     super.initState();
+    _composer = WorkspaceAiComposerController();
+    _composer.onTextFocusChanged = () {
+      if (!mounted) return;
+      _scrollToEnd(force: true);
+    };
+    widget.contextSelection?.attachComposer(_composer);
     WidgetsBinding.instance.addObserver(this);
-    _inputFocus.addListener(_onComposerFocusChange);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_bindArticle(_currentArticleId()));
     });
   }
 
-  void _onComposerFocusChange() {
-    if (!_inputFocus.hasFocus) return;
-    _scrollToEnd(force: true);
-  }
-
   @override
   void didChangeMetrics() {
     super.didChangeMetrics();
-    if (!_inputFocus.hasFocus || !mounted) return;
+    if (!_composer.hasTextFocus() || !mounted) return;
     _scrollToEnd(force: true);
   }
 
   @override
   void didUpdateWidget(covariant WorkspaceAiChatView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.contextSelection != widget.contextSelection) {
+      oldWidget.contextSelection?.detachComposer(_composer);
+      widget.contextSelection?.attachComposer(_composer);
+    }
     final articleId = _currentArticleId();
     if (articleId != _boundArticleId) {
       unawaited(_bindArticle(articleId));
@@ -291,20 +296,33 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _inputFocus.removeListener(_onComposerFocusChange);
+    widget.contextSelection?.detachComposer(_composer);
     if (_drawerDragBlockedForList && context.mounted) {
       ZephyrDrawerDragBlockNotification(blocked: false).dispatch(context);
     }
     _liveAssistant.dispose();
     _scrollController.dispose();
-    _inputController.dispose();
-    _inputFocus.dispose();
+    _composer.dispose();
     super.dispose();
   }
 
   Future<void> _send() async {
-    final text = _inputController.text.trim();
-    if (text.isEmpty || _sending || _loadingSession) return;
+    if (_composer.isEmpty || _sending || _loadingSession) return;
+    final displayText = _composer.composeDisplayText();
+    final library = widget.libraryModel;
+    final llmUserText = await composeLlmUserMessage(
+      composer: _composer,
+      loadChapterBlock: (articleId, title) async {
+        if (library == null) return '## $title\n\n(无法加载正文)';
+        try {
+          final full = await library.repository.getArticle(articleId);
+          return '## $title\n\n${full.content}';
+        } on Object {
+          return '## $title\n\n(无法加载正文)';
+        }
+      },
+    );
+    if (llmUserText.isEmpty) return;
     final l10n = context.l10n;
     final llm = ZephyrScope.of(context).llmSettings;
     final repo = _repository();
@@ -315,24 +333,26 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
     final prior = List<_AiChatMessage>.from(_messages);
     setState(() {
       _sending = true;
-      _messages.add(_AiChatMessage(role: _AiChatRole.user, text: text));
-      _inputController.clear();
+      _messages.add(_AiChatMessage(role: _AiChatRole.user, text: displayText));
+      _composer.clear();
     });
     final userStored = await repo.appendAiChatMessage(
       sessionId: sessionId,
       role: AiChatMessageRole.user,
-      body: text,
+      body: displayText,
     );
     if (_messages.isNotEmpty) {
       _messages[_messages.length - 1] = _AiChatMessage(
         storageId: userStored.id,
         role: _AiChatRole.user,
-        text: text,
+        text: displayText,
       );
     }
     final session = await repo.getAiChatSession(sessionId);
     if (session != null && session.title.length <= 5) {
-      final title = text.length > 36 ? '${text.substring(0, 36)}…' : text;
+      final title = displayText.length > 36
+          ? '${displayText.substring(0, 36)}…'
+          : displayText;
       await repo.renameAiChatSession(sessionId: sessionId, title: title);
     }
     _scrollToEnd(animate: true, force: true);
@@ -374,7 +394,6 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
       if (!llm.isConfigured) {
         replyText = l10n.aiChatNotConfigured;
       } else {
-        final system = await _buildContextSystemPrompt();
         final summary = _contextSummary.trim();
         final turns = <LlmChatMessage>[
           if (summary.isNotEmpty)
@@ -382,8 +401,6 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
               role: LlmChatRole.system,
               text: '${l10n.aiChatCompressedContextHeader}\n\n$summary',
             ),
-          if (system.isNotEmpty)
-            LlmChatMessage(role: LlmChatRole.system, text: system),
           for (final message in prior)
             if (message.role != _AiChatRole.assistant ||
                 message.text != l10n.aiChatWelcome)
@@ -393,7 +410,7 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
                     : LlmChatRole.user,
                 text: message.text,
               ),
-          LlmChatMessage(role: LlmChatRole.user, text: text),
+          LlmChatMessage(role: LlmChatRole.user, text: llmUserText),
         ];
         replyResult = await llm.completeChat(
           messages: turns,
@@ -455,24 +472,6 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
       }
     });
     _scrollToEndIfPinned();
-  }
-
-  Future<String> _buildContextSystemPrompt() async {
-    final selection = widget.contextSelection;
-    final library = widget.libraryModel;
-    if (selection == null || library == null) return '';
-    final articles = selection.articles;
-    if (articles.isEmpty) return '';
-    final blocks = <String>[];
-    for (final article in articles) {
-      try {
-        final full = await library.repository.getArticle(article.id);
-        blocks.add('## ${article.title}\n\n${full.content}');
-      } on Object {
-        blocks.add('## ${article.title}\n\n(无法加载正文)');
-      }
-    }
-    return '以下章节作为参考上下文：\n\n${blocks.join('\n\n---\n\n')}';
   }
 
   /// During streaming: scroll only while the user is already at the list bottom.
@@ -594,11 +593,9 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
                 ),
               ),
               _AiChatComposer(
-                controller: _inputController,
-                focusNode: _inputFocus,
+                composer: _composer,
                 bottomInset: bottomInset,
                 sending: _sending,
-                contextSelection: widget.contextSelection,
                 onSend: () => unawaited(_send()),
                 onOpenOptions: () => unawaited(
                   showWorkspaceAiChatOptionsSheet(
@@ -617,13 +614,11 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
 
 class _AiChatComposer extends StatelessWidget {
   const _AiChatComposer({
-    required this.controller,
-    required this.focusNode,
+    required this.composer,
     required this.bottomInset,
     required this.sending,
     required this.onSend,
     required this.onOpenOptions,
-    this.contextSelection,
   });
 
   static const _outerRadius = 50.0;
@@ -634,13 +629,11 @@ class _AiChatComposer extends StatelessWidget {
         : Color.lerp(Colors.white, scheme.surface, 0.06)!;
   }
 
-  final TextEditingController controller;
-  final FocusNode focusNode;
+  final WorkspaceAiComposerController composer;
   final double bottomInset;
   final bool sending;
   final VoidCallback onSend;
   final VoidCallback onOpenOptions;
-  final WorkspaceAiContextSelection? contextSelection;
 
   @override
   Widget build(BuildContext context) {
@@ -668,36 +661,6 @@ class _AiChatComposer extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (contextSelection != null)
-              ListenableBuilder(
-                listenable: contextSelection!,
-                builder: (context, _) {
-                  final articles = contextSelection!.articles;
-                  if (articles.isEmpty) return const SizedBox.shrink();
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        for (final article in articles)
-                          InputChip(
-                            label: Text(
-                              article.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            onDeleted: () =>
-                                contextSelection!.remove(article.id),
-                            visualDensity: VisualDensity.compact,
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                          ),
-                      ],
-                    ),
-                  );
-                },
-              ),
             DecoratedBox(
               decoration: zephyrContinuousRoundedDecoration(
                 color: fill,
@@ -716,42 +679,27 @@ class _AiChatComposer extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    TextField(
-                    controller: controller,
-                    focusNode: focusNode,
-                    minLines: 1,
-                    maxLines: 6,
-                    textInputAction: TextInputAction.newline,
-                    textAlignVertical: TextAlignVertical.top,
-                    style: fieldStyle,
-                    decoration: InputDecoration(
-                      hintText: l10n.aiChatInputHint,
-                      hintStyle: hintStyle,
-                      filled: false,
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      contentPadding: const EdgeInsets.fromLTRB(
-                        14,
-                        12,
-                        14,
-                        4,
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+                      child: WorkspaceAiChatComposerField(
+                        composer: composer,
+                        hintText: l10n.aiChatInputHint,
+                        style: fieldStyle,
+                        hintStyle: hintStyle,
                       ),
-                      isDense: true,
                     ),
-                  ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         _AiChatComposerModelButton(
-                          inputFocus: focusNode,
+                          inputFocus: composer.activeFocusNode,
                           onSurfaceVariant: scheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 2),
                         _AiChatComposerThinkingButton(
-                          inputFocus: focusNode,
+                          inputFocus: composer.activeFocusNode,
                           onSurfaceVariant: scheme.onSurfaceVariant,
                         ),
                         const Spacer(),
