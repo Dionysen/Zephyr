@@ -85,10 +85,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsComingSoonTitle => '即将推出';
 
   @override
-  String get settingsComingSoonSubtitle => '此分组的设置项稍后加入';
+  String get settingsComingSoonSubtitle => '这里的选项还在准备中';
 
   @override
-  String get settingsPlaceholderBody => '此设置分组将用于对应功能的选项';
+  String get settingsPlaceholderBody => '相关选项稍后会出现在这里';
 
   @override
   String get settingsSectionGeneral => '通用';
@@ -149,7 +149,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncBackupNowTitle => '立即云备份';
 
   @override
-  String get cloudSyncBackupNowSubtitle => '先创建本地备份，再将该文件上传到坚果云根目录的 Zephyr';
+  String get cloudSyncBackupNowSubtitle => '先在本机做一份备份，再上传到坚果云里的 Zephyr 文件夹';
 
   @override
   String get cloudSyncBackupNowSuccess => '云备份已完成';
@@ -176,8 +176,7 @@ class AppLocalizationsZh extends AppLocalizations {
       '云端 Zephyr 目录属于另一文库。请选择原本地目录或其他 WebDAV 账号；云同步已停止。';
 
   @override
-  String get cloudSyncMissingManifest =>
-      '云端 Zephyr 目录已有文件但缺少清单，请先处理该云端目录，再进行同步。';
+  String get cloudSyncMissingManifest => '云端的 Zephyr 文件夹不完整，请先整理后再同步。';
 
   @override
   String get cloudSyncWaitBeforeChoosingDirectory => '请等待云同步完成后再选择其他目录。';
@@ -226,7 +225,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupNowTitle => '立即备份';
 
   @override
-  String get backupNowSubtitle => '在 Backups 目录创建手动备份，与自动备份合计保留最近 25 份';
+  String get backupNowSubtitle => '立刻做一份手动备份。手动和自动备份一共保留最近 25 份';
 
   @override
   String get backupNowSuccess => '备份已完成';
@@ -253,13 +252,13 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get backupRestoreEmpty => '尚未找到 .pwb 备份';
+  String get backupRestoreEmpty => '还没有找到备份文件';
 
   @override
   String get backupRestoreModeTitle => '恢复方式';
 
   @override
-  String get backupRestoreModeMerge => '合并（按更新时间取较新）';
+  String get backupRestoreModeMerge => '合并（保留较新的内容）';
 
   @override
   String get backupRestoreModeOverwrite => '覆盖（替换整个文库）';
@@ -286,7 +285,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupKindManual => '手动';
 
   @override
-  String get backupFooter => '请勿与纯纯写作同时打开同一文库。备份为 PureWriter 兼容的 .pwb。';
+  String get backupFooter => '请不要和纯纯写作同时打开同一书库。备份可以在纯纯写作里打开。';
 
   @override
   String get historyTitle => '时光机';
@@ -528,7 +527,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get immersiveStatusBarTitle => '沉浸式通知栏';
 
   @override
-  String get immersiveStatusBarSubtitle => '开启后应用延伸到透明通知栏下（控件仍留白），正文可上滑进入该区域';
+  String get immersiveStatusBarSubtitle => '开启后，界面会延伸到透明通知栏下面，正文可以滑进这块区域';
 
   @override
   String get hideStatusBarIconsTitle => '隐藏通知栏图标';
@@ -564,7 +563,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get doubleBackToExitTitle => '双击返回键退出应用';
 
   @override
-  String get doubleBackToExitSubtitle => '关闭后，按一次返回键不会退出应用。';
+  String get doubleBackToExitSubtitle => '关闭后，按一次返回就会离开应用。';
 
   @override
   String get openBookListOnStartupTitle => '启动时打开书籍列表';
@@ -591,7 +590,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get hideAiAssistantAvatarTitle => '隐藏助手头像';
 
   @override
-  String get hideAiAssistantAvatarSubtitle => '开启后，对话气泡左侧不再显示头像，左右边距对齐。';
+  String get hideAiAssistantAvatarSubtitle => '开启后不再显示头像，气泡两边对齐。';
 
   @override
   String get hideQuickToolbarTitle => '隐藏快捷输入栏';
@@ -618,7 +617,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get editorFontLabel => '字体';
 
   @override
-  String get editorFontDescription => '写作区正文字体，导入后与 UI 字体共用应用字体库';
+  String get editorFontDescription => '写作时使用的字体。导入后，界面也可以选用';
 
   @override
   String get editorFontSizeTitle => '字体大小';
@@ -680,13 +679,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get editorWidthTitle => '编辑器宽度';
 
   @override
-  String get editorWidthDescription => '正文区域宽度，在窗口中始终左右居中；窗口更窄时随窗口收窄';
+  String get editorWidthDescription => '正文区域的宽度，在窗口里始终居中。窗口变窄时会一起变窄';
 
   @override
   String get appearanceSectionTitle => '外观';
 
   @override
-  String get appearanceSectionIntro => '选择配色，需要时可自定义语义色；字体、圆角等单独设置，不随主题切换';
+  String get appearanceSectionIntro => '选择一套配色，也可以逐项调整颜色。字体和圆角保持你单独的设置';
 
   @override
   String get themeModeTitle => '主题模式';
@@ -707,7 +706,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get uiFontLabel => 'UI 字体';
 
   @override
-  String get uiFontDescription => '用于界面与侧边栏的字体，导入后与正文字体共用应用字体库';
+  String get uiFontDescription => '界面和侧边栏使用的字体。导入后，正文也可以选用';
 
   @override
   String get uiFontSizeTitle => 'UI 字体大小';
@@ -725,19 +724,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get barCornerRadiusTitle => '栏圆角';
 
   @override
-  String get barCornerRadiusDescription => '编辑器顶栏与侧边栏底栏的圆角';
+  String get barCornerRadiusDescription => '编辑器顶部栏和侧边栏底部栏的圆角';
 
   @override
   String get chatBubbleCornerRadiusTitle => '对话气泡圆角';
 
   @override
-  String get chatBubbleCornerRadiusDescription => 'AI 对话气泡圆角（连续曲率；靠外侧的顶角保持直角）';
+  String get chatBubbleCornerRadiusDescription => 'AI 对话气泡的圆角。靠外侧的上角保持直角';
 
   @override
   String get showBordersTitle => '显示边框';
 
   @override
-  String get showBordersSubtitle => '关闭后控件无描边，开启时卷与书库栏显示边框';
+  String get showBordersSubtitle => '关闭后按钮和卡片没有边框。开启后，卷和书库栏会显示边框';
 
   @override
   String get sidebarItemInsetTitle => '侧边栏条目边距';
@@ -749,7 +748,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sidebarVolumeGapTitle => '侧边栏内容上下间距';
 
   @override
-  String get sidebarVolumeGapDescription => '卷与卷之间的间距，章节之间无间距，仅 1px 分隔线';
+  String get sidebarVolumeGapDescription => '卷与卷之间的间距。章节之间只留一条分隔线';
 
   @override
   String get themePresetsSectionTitle => '主题颜色';
@@ -790,13 +789,13 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get themePresetsFooter => '颜色预设只影响界面配色，字体、圆角等单独设置';
+  String get themePresetsFooter => '配色只改变颜色。字体、圆角等保持你单独的设置';
 
   @override
   String get customColorsTitle => '自定义颜色';
 
   @override
-  String get customColorsSubtitle => '调整当前模式的语义色，修改后立即生效';
+  String get customColorsSubtitle => '调整当前外观下的各项颜色，修改后立即生效';
 
   @override
   String get customizeTokensButton => '自定义颜色';
@@ -808,7 +807,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get themeTokensTitle => '主题色';
 
   @override
-  String get themeTokensIntro => '使用六位十六进制颜色，修改后立即生效';
+  String get themeTokensIntro => '填写颜色代码，例如 #336699。修改后立即生效';
 
   @override
   String get restoreDefaultColors => '恢复默认';
@@ -861,7 +860,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get tokenSidebarSurface => '侧边栏背景';
 
   @override
-  String get tokenControlSurface => '控件背景';
+  String get tokenControlSurface => '按钮和输入框';
 
   @override
   String get tokenBorder => '边框';
@@ -891,7 +890,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get tokenControlSurfaceDescription => '输入框、菜单与卡片的填充色';
 
   @override
-  String get tokenBorderDescription => '控件描边';
+  String get tokenBorderDescription => '按钮和输入框的边框';
 
   @override
   String get tokenDividerDescription => '侧边栏章节分隔线';
@@ -903,7 +902,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get tokenMutedTextDescription => '设置说明与说明文字的较淡色';
 
   @override
-  String get tokenAccentDescription => '交互高亮与选中状态';
+  String get tokenAccentDescription => '按钮高亮和选中状态';
 
   @override
   String get tokenCursorDescription => '写作区光标颜色';
@@ -1007,7 +1006,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get editorBackgroundBlurTitle => '背景模糊';
 
   @override
-  String get editorBackgroundBlurDescription => '对背景图做高斯模糊，不影响文字';
+  String get editorBackgroundBlurDescription => '只模糊背景图，文字保持清晰';
 
   @override
   String get editorBackgroundImportSuccess => '已添加到应用图库';
@@ -1073,8 +1072,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get librarySetupTitle => '选择 PureWriter 书库';
 
   @override
-  String get librarySetupBody =>
-      'Zephyr 需要打开包含 App/Room.db 的书库目录，也可以先使用临时书库开始写作，稍后再切换';
+  String get librarySetupBody => '选择纯纯写作的书库文件夹即可打开你的作品，也可以先用临时书库写作，稍后再切换';
 
   @override
   String get chooseLibraryDirectoryButton => '选择书库目录';
@@ -1237,7 +1235,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get tooltipAiAssistant => 'AI 助手';
 
   @override
-  String get aiChatWelcome => '你好，我是 Zephyr AI 演示助手。输入任意内容，我会用占位回复帮你预览对话样式。';
+  String get aiChatWelcome => '有什么想写的，直接发给我。';
 
   @override
   String get aiChatInputHint => '输入消息…';
@@ -1258,8 +1256,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get llmSettingsSubtitle => '供应商、API Key 与模型';
 
   @override
-  String get llmSettingsIntro =>
-      'API Key 仅保存在本设备安全存储中；其余选项写入 llm_preferences.json，并随本地设置包与云同步备份。';
+  String get llmSettingsIntro => '密钥只保存在这台设备上。其他设置会随备份一起保存。';
 
   @override
   String get llmBehaviorSectionTitle => '对话行为';
@@ -1268,43 +1265,43 @@ class AppLocalizationsZh extends AppLocalizations {
   String get llmStreamOutputTitle => '流式输出';
 
   @override
-  String get llmStreamOutputSubtitle => '逐字显示模型回复（OpenAI 兼容接口）';
+  String get llmStreamOutputSubtitle => '回复会一边生成一边显示';
 
   @override
   String get llmAllowThinkingTitle => '允许思考';
 
   @override
-  String get llmAllowThinkingSubtitle => '为支持思考的模型发送推理参数';
+  String get llmAllowThinkingSubtitle => '让可以深度思考的模型先想清楚再回答';
 
   @override
   String get llmPresetPromptTitle => '预设提示词';
 
   @override
-  String get llmPresetPromptHint => '作为 system 消息附加到每次对话';
+  String get llmPresetPromptHint => '每次对话都会先带上这段说明';
 
   @override
   String get llmMaxInputTokensTitle => '上下文上限（输入）';
 
   @override
-  String get llmMaxInputTokensSubtitle => '估算 token 后裁剪历史与上下文';
+  String get llmMaxInputTokensSubtitle => '超出后会自动精简较早的对话';
 
   @override
   String get llmMaxOutputTokensTitle => '回复上限（输出）';
 
   @override
-  String get llmMaxOutputTokensSubtitle => '单次回复 max_tokens';
+  String get llmMaxOutputTokensSubtitle => '单次回复最多写多长';
 
   @override
   String get llmThinkingLevelTitle => '思考程度';
 
   @override
-  String get llmThinkingLevelSubtitle => '按模型映射为 reasoning / thinking 参数';
+  String get llmThinkingLevelSubtitle => '思考越深，回答通常越慢';
 
   @override
   String get llmDefaultThinkingLevelTitle => '默认思考程度';
 
   @override
-  String get llmDefaultThinkingLevelSubtitle => '新对话的初始程度（可在输入栏旁再改）';
+  String get llmDefaultThinkingLevelSubtitle => '新对话一开始的思考程度，也可以在输入框旁边再改';
 
   @override
   String get llmThinkingDisabledInSettings => '请在 AI 模型设置中开启「允许思考」';
@@ -1391,7 +1388,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get aiChatCompressedContextHeader => '较早对话摘要（已压缩以节省上下文）：';
+  String get aiChatCompressedContextHeader => '以下是较早对话的摘要：';
 
   @override
   String get llmProviderTitle => '模型供应商';
@@ -1444,7 +1441,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String aiChatDemoReply(String message) {
-    return '（演示）已收到：$message';
+    return '已收到：$message';
   }
 
   @override
@@ -1611,7 +1608,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get quickToolbarMoveToCustom => '移到自定义栏';
 
   @override
-  String get quickToolbarDrawerEmpty => '工具面板内容将稍后加入';
+  String get quickToolbarDrawerEmpty => '这里还没有工具';
 
   @override
   String get quickToolbarFormatApplyAll => '一键排版';

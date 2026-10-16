@@ -251,13 +251,13 @@ abstract class AppLocalizations {
   /// No description provided for @settingsComingSoonSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Settings for this section will arrive later.'**
+  /// **'These options are still being prepared.'**
   String get settingsComingSoonSubtitle;
 
   /// No description provided for @settingsPlaceholderBody.
   ///
   /// In en, this message translates to:
-  /// **'This settings section is reserved for its own feature settings.'**
+  /// **'Related options will appear here later.'**
   String get settingsPlaceholderBody;
 
   /// No description provided for @settingsSectionGeneral.
@@ -371,7 +371,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncBackupNowSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Create a local backup, then upload that file to Zephyr on Nutstore'**
+  /// **'Create a backup on this device, then upload it to the Zephyr folder on Nutstore'**
   String get cloudSyncBackupNowSubtitle;
 
   /// No description provided for @cloudSyncBackupNowSuccess.
@@ -419,7 +419,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncMissingManifest.
   ///
   /// In en, this message translates to:
-  /// **'The Zephyr cloud folder contains files without a manifest. Resolve that cloud folder before syncing.'**
+  /// **'The Zephyr folder in the cloud looks incomplete. Sort it out before syncing again.'**
   String get cloudSyncMissingManifest;
 
   /// No description provided for @cloudSyncWaitBeforeChoosingDirectory.
@@ -515,7 +515,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupNowSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Write a manual .pwb under Backups. Manual and automatic backups share the 25-copy limit.'**
+  /// **'Create a manual backup now. Manual and automatic backups together keep the latest 25.'**
   String get backupNowSubtitle;
 
   /// No description provided for @backupNowSuccess.
@@ -557,7 +557,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupRestoreEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No .pwb backups found.'**
+  /// **'No backup files found.'**
   String get backupRestoreEmpty;
 
   /// No description provided for @backupRestoreModeTitle.
@@ -569,7 +569,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupRestoreModeMerge.
   ///
   /// In en, this message translates to:
-  /// **'Merge (newer updateTime wins)'**
+  /// **'Merge (keep the newer version)'**
   String get backupRestoreModeMerge;
 
   /// No description provided for @backupRestoreModeOverwrite.
@@ -623,7 +623,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupFooter.
   ///
   /// In en, this message translates to:
-  /// **'Do not open the same library in Pure Writer at the same time. Backups are PureWriter-compatible .pwb files.'**
+  /// **'Don\'t open the same library in Pure Writer at the same time. Backup files can be opened in Pure Writer.'**
   String get backupFooter;
 
   /// No description provided for @historyTitle.
@@ -1103,7 +1103,7 @@ abstract class AppLocalizations {
   /// No description provided for @immersiveStatusBarSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Draw under a transparent status bar (chrome stays padded); text may scroll into that band.'**
+  /// **'The app extends under a transparent status bar, and text can scroll into that area.'**
   String get immersiveStatusBarSubtitle;
 
   /// No description provided for @hideStatusBarIconsTitle.
@@ -1115,7 +1115,7 @@ abstract class AppLocalizations {
   /// No description provided for @hideStatusBarIconsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Only when immersive is on. Icons auto-hide; swipe from the edge to peek.'**
+  /// **'Only while the immersive status bar is on. Icons hide on their own; swipe from the edge to show them briefly.'**
   String get hideStatusBarIconsSubtitle;
 
   /// No description provided for @mobileBehaviorSectionTitle.
@@ -1127,7 +1127,7 @@ abstract class AppLocalizations {
   /// No description provided for @mobileBehaviorSectionSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Applies to the compact editor on phones and tablets.'**
+  /// **'Applies to phones and tablets.'**
   String get mobileBehaviorSectionSubtitle;
 
   /// No description provided for @scrollToHideMobileTopBarTitle.
@@ -1151,7 +1151,7 @@ abstract class AppLocalizations {
   /// No description provided for @openSidebarAfterBookSwitchSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Expand the library drawer after you pick another book.'**
+  /// **'Show the chapter list after you pick another book.'**
   String get openSidebarAfterBookSwitchSubtitle;
 
   /// No description provided for @keepScreenOnTitle.
@@ -1199,7 +1199,7 @@ abstract class AppLocalizations {
   /// No description provided for @openSidebarOnStartupSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Expand the library drawer when the workspace opens.'**
+  /// **'Show the chapter list when the workspace opens.'**
   String get openSidebarOnStartupSubtitle;
 
   /// No description provided for @pressBackAgainToExit.
@@ -1229,7 +1229,7 @@ abstract class AppLocalizations {
   /// No description provided for @hideAiAssistantAvatarSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'When on, assistant bubbles omit the avatar and use the same left and right inset.'**
+  /// **'Hide the avatar so chat bubbles line up on both sides.'**
   String get hideAiAssistantAvatarSubtitle;
 
   /// No description provided for @hideQuickToolbarTitle.
@@ -1253,7 +1253,7 @@ abstract class AppLocalizations {
   /// No description provided for @showChapterDetailsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'When off, the sidebar shows chapter titles only—no preview or meta.'**
+  /// **'When off, the sidebar shows chapter titles only.'**
   String get showChapterDetailsSubtitle;
 
   /// No description provided for @editorSectionTitle.
@@ -1265,7 +1265,7 @@ abstract class AppLocalizations {
   /// No description provided for @editorSectionIntro.
   ///
   /// In en, this message translates to:
-  /// **'Typography and reading-column preferences apply immediately.'**
+  /// **'Font and layout preferences apply right away.'**
   String get editorSectionIntro;
 
   /// No description provided for @editorSectionFooter.
@@ -1283,7 +1283,7 @@ abstract class AppLocalizations {
   /// No description provided for @editorFontDescription.
   ///
   /// In en, this message translates to:
-  /// **'Typeface used in the writing editor. Imports are shared with the UI font library.'**
+  /// **'Font used while writing. Imported fonts can also be used in the interface.'**
   String get editorFontDescription;
 
   /// No description provided for @editorFontSizeTitle.
@@ -1403,7 +1403,7 @@ abstract class AppLocalizations {
   /// No description provided for @editorWidthDescription.
   ///
   /// In en, this message translates to:
-  /// **'Width of the text column, always centered in the window. Shrinks with the viewport when space is tight.'**
+  /// **'Width of the text column, always centered. It narrows when the window is too small.'**
   String get editorWidthDescription;
 
   /// No description provided for @appearanceSectionTitle.
@@ -1415,7 +1415,7 @@ abstract class AppLocalizations {
   /// No description provided for @appearanceSectionIntro.
   ///
   /// In en, this message translates to:
-  /// **'Choose a color palette, then tweak semantic colors if needed. Fonts, radius, and other chrome stay separate from themes.'**
+  /// **'Choose a palette, or adjust individual colors. Fonts and corner radius stay as you set them.'**
   String get appearanceSectionIntro;
 
   /// No description provided for @themeModeTitle.
@@ -1457,7 +1457,7 @@ abstract class AppLocalizations {
   /// No description provided for @uiFontDescription.
   ///
   /// In en, this message translates to:
-  /// **'Typeface used by the writing shell chrome. Imports are shared with the editor font library.'**
+  /// **'Font used for the sidebar, settings, and other interface text. Imported fonts can also be used while writing.'**
   String get uiFontDescription;
 
   /// No description provided for @uiFontSizeTitle.
@@ -1469,7 +1469,7 @@ abstract class AppLocalizations {
   /// No description provided for @uiFontSizeDescription.
   ///
   /// In en, this message translates to:
-  /// **'Size of sidebar, settings, and chrome text.'**
+  /// **'Size of text in the sidebar, settings, and the rest of the interface.'**
   String get uiFontSizeDescription;
 
   /// No description provided for @cornerRadiusTitle.
@@ -1493,7 +1493,7 @@ abstract class AppLocalizations {
   /// No description provided for @barCornerRadiusDescription.
   ///
   /// In en, this message translates to:
-  /// **'Roundness of the floating editor top bar and sidebar library dock.'**
+  /// **'Roundness of the editor top bar and the bar at the bottom of the sidebar.'**
   String get barCornerRadiusDescription;
 
   /// No description provided for @chatBubbleCornerRadiusTitle.
@@ -1505,7 +1505,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatBubbleCornerRadiusDescription.
   ///
   /// In en, this message translates to:
-  /// **'Roundness of AI chat bubbles (smooth continuous corners; the outer top corner stays square).'**
+  /// **'Roundness of AI chat bubbles. The outer top corner stays square.'**
   String get chatBubbleCornerRadiusDescription;
 
   /// No description provided for @showBordersTitle.
@@ -1517,7 +1517,7 @@ abstract class AppLocalizations {
   /// No description provided for @showBordersSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'When off, controls have no outlines. When on, volumes and the library dock show borders.'**
+  /// **'When off, buttons and cards have no outline. When on, volumes and the library bar show a border.'**
   String get showBordersSubtitle;
 
   /// No description provided for @sidebarItemInsetTitle.
@@ -1541,7 +1541,7 @@ abstract class AppLocalizations {
   /// No description provided for @sidebarVolumeGapDescription.
   ///
   /// In en, this message translates to:
-  /// **'Gap between volumes. Chapters stay flush with a 1px divider.'**
+  /// **'Space between volumes. Chapters stay close, separated by a line.'**
   String get sidebarVolumeGapDescription;
 
   /// No description provided for @themePresetsSectionTitle.
@@ -1607,7 +1607,7 @@ abstract class AppLocalizations {
   /// No description provided for @themePresetsFooter.
   ///
   /// In en, this message translates to:
-  /// **'Color presets only change the palette. Fonts, radius, and other chrome stay separate.'**
+  /// **'Palettes only change colors. Fonts, corners, and other layout stay as you set them.'**
   String get themePresetsFooter;
 
   /// No description provided for @customColorsTitle.
@@ -1619,13 +1619,13 @@ abstract class AppLocalizations {
   /// No description provided for @customColorsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Adjust semantic colors for the current mode; changes apply immediately.'**
+  /// **'Adjust colors for the current appearance. Changes apply right away.'**
   String get customColorsSubtitle;
 
   /// No description provided for @customizeTokensButton.
   ///
   /// In en, this message translates to:
-  /// **'Customize tokens'**
+  /// **'Customize colors'**
   String get customizeTokensButton;
 
   /// No description provided for @backToThemesButton.
@@ -1637,13 +1637,13 @@ abstract class AppLocalizations {
   /// No description provided for @themeTokensTitle.
   ///
   /// In en, this message translates to:
-  /// **'Theme tokens'**
+  /// **'Theme colors'**
   String get themeTokensTitle;
 
   /// No description provided for @themeTokensIntro.
   ///
   /// In en, this message translates to:
-  /// **'Use a six-digit hexadecimal color. Changes apply immediately.'**
+  /// **'Enter a color code such as #336699. Changes apply right away.'**
   String get themeTokensIntro;
 
   /// No description provided for @restoreDefaultColors.
@@ -1733,19 +1733,19 @@ abstract class AppLocalizations {
   /// No description provided for @tokenEditorSurface.
   ///
   /// In en, this message translates to:
-  /// **'Editor surface'**
+  /// **'Writing background'**
   String get tokenEditorSurface;
 
   /// No description provided for @tokenSidebarSurface.
   ///
   /// In en, this message translates to:
-  /// **'Sidebar surface'**
+  /// **'Sidebar background'**
   String get tokenSidebarSurface;
 
   /// No description provided for @tokenControlSurface.
   ///
   /// In en, this message translates to:
-  /// **'Control surface'**
+  /// **'Buttons and fields'**
   String get tokenControlSurface;
 
   /// No description provided for @tokenBorder.
@@ -1793,7 +1793,7 @@ abstract class AppLocalizations {
   /// No description provided for @tokenSidebarSurfaceDescription.
   ///
   /// In en, this message translates to:
-  /// **'Background of side panels and chrome.'**
+  /// **'Background of the sidebar and surrounding panels.'**
   String get tokenSidebarSurfaceDescription;
 
   /// No description provided for @tokenControlSurfaceDescription.
@@ -1805,7 +1805,7 @@ abstract class AppLocalizations {
   /// No description provided for @tokenBorderDescription.
   ///
   /// In en, this message translates to:
-  /// **'Hairlines around controls.'**
+  /// **'Outlines around buttons and fields.'**
   String get tokenBorderDescription;
 
   /// No description provided for @tokenDividerDescription.
@@ -1823,13 +1823,13 @@ abstract class AppLocalizations {
   /// No description provided for @tokenMutedTextDescription.
   ///
   /// In en, this message translates to:
-  /// **'Dimmer copy used for setting hints and captions.'**
+  /// **'Softer color for hints and captions.'**
   String get tokenMutedTextDescription;
 
   /// No description provided for @tokenAccentDescription.
   ///
   /// In en, this message translates to:
-  /// **'Interactive highlights and selected states.'**
+  /// **'Highlights and selected items.'**
   String get tokenAccentDescription;
 
   /// No description provided for @tokenCursorDescription.
@@ -2033,7 +2033,7 @@ abstract class AppLocalizations {
   /// No description provided for @editorBackgroundBlurDescription.
   ///
   /// In en, this message translates to:
-  /// **'Gaussian blur on the image only; text stays sharp.'**
+  /// **'Softens the image only. Text stays sharp.'**
   String get editorBackgroundBlurDescription;
 
   /// No description provided for @editorBackgroundImportSuccess.
@@ -2140,7 +2140,7 @@ abstract class AppLocalizations {
   /// No description provided for @librarySetupBody.
   ///
   /// In en, this message translates to:
-  /// **'Zephyr needs a library folder that contains App/Room.db. You can also start with a temporary library and switch later.'**
+  /// **'Choose your PureWriter library folder to open your work, or start with a temporary library and switch later.'**
   String get librarySetupBody;
 
   /// No description provided for @chooseLibraryDirectoryButton.
@@ -2458,7 +2458,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiChatWelcome.
   ///
   /// In en, this message translates to:
-  /// **'Hi — this is the Zephyr AI demo. Send any message and I\'ll echo it so you can preview the chat layout.'**
+  /// **'Tell me what you\'re working on.'**
   String get aiChatWelcome;
 
   /// No description provided for @aiChatInputHint.
@@ -2500,7 +2500,7 @@ abstract class AppLocalizations {
   /// No description provided for @llmSettingsIntro.
   ///
   /// In en, this message translates to:
-  /// **'API keys stay in secure storage on this device. Other options are saved to llm_preferences.json and included in local and cloud settings backups.'**
+  /// **'Your key stays on this device. Other settings are included in backups.'**
   String get llmSettingsIntro;
 
   /// No description provided for @llmBehaviorSectionTitle.
@@ -2518,7 +2518,7 @@ abstract class AppLocalizations {
   /// No description provided for @llmStreamOutputSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Stream tokens as they arrive (OpenAI-compatible APIs)'**
+  /// **'Show the reply as it is written'**
   String get llmStreamOutputSubtitle;
 
   /// No description provided for @llmAllowThinkingTitle.
@@ -2530,19 +2530,19 @@ abstract class AppLocalizations {
   /// No description provided for @llmAllowThinkingSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Send reasoning parameters on supported models'**
+  /// **'Let models that can reason think before they answer'**
   String get llmAllowThinkingSubtitle;
 
   /// No description provided for @llmPresetPromptTitle.
   ///
   /// In en, this message translates to:
-  /// **'Preset system prompt'**
+  /// **'Preset prompt'**
   String get llmPresetPromptTitle;
 
   /// No description provided for @llmPresetPromptHint.
   ///
   /// In en, this message translates to:
-  /// **'Prepended as a system message on every chat'**
+  /// **'Included at the start of every conversation'**
   String get llmPresetPromptHint;
 
   /// No description provided for @llmMaxInputTokensTitle.
@@ -2554,7 +2554,7 @@ abstract class AppLocalizations {
   /// No description provided for @llmMaxInputTokensSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Trim history and context to this token budget'**
+  /// **'Older messages are shortened once this limit is reached'**
   String get llmMaxInputTokensSubtitle;
 
   /// No description provided for @llmMaxOutputTokensTitle.
@@ -2566,7 +2566,7 @@ abstract class AppLocalizations {
   /// No description provided for @llmMaxOutputTokensSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'max_tokens for each completion'**
+  /// **'How long a single reply can be'**
   String get llmMaxOutputTokensSubtitle;
 
   /// No description provided for @llmThinkingLevelTitle.
@@ -2578,7 +2578,7 @@ abstract class AppLocalizations {
   /// No description provided for @llmThinkingLevelSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Mapped per model (reasoning effort, budgets, etc.)'**
+  /// **'Deeper thinking usually takes longer'**
   String get llmThinkingLevelSubtitle;
 
   /// No description provided for @llmDefaultThinkingLevelTitle.
@@ -2590,7 +2590,7 @@ abstract class AppLocalizations {
   /// No description provided for @llmDefaultThinkingLevelSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Initial level for chat (adjust beside the composer)'**
+  /// **'Starting level for new chats. You can change it beside the message box.'**
   String get llmDefaultThinkingLevelSubtitle;
 
   /// No description provided for @llmThinkingDisabledInSettings.
@@ -2752,7 +2752,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiChatCompressedContextHeader.
   ///
   /// In en, this message translates to:
-  /// **'Earlier conversation summary (compressed for context):'**
+  /// **'Summary of the earlier conversation:'**
   String get aiChatCompressedContextHeader;
 
   /// No description provided for @llmProviderTitle.
@@ -2848,7 +2848,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiChatDemoReply.
   ///
   /// In en, this message translates to:
-  /// **'(Demo) Received: {message}'**
+  /// **'Received: {message}'**
   String aiChatDemoReply(String message);
 
   /// No description provided for @tooltipOpenLibrary.
@@ -3172,7 +3172,7 @@ abstract class AppLocalizations {
   /// No description provided for @quickToolbarDrawerEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Tool panel content coming soon'**
+  /// **'Nothing here yet'**
   String get quickToolbarDrawerEmpty;
 
   /// No description provided for @quickToolbarFormatApplyAll.

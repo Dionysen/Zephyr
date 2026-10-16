@@ -23,19 +23,25 @@ String _providerLabel(LlmProviderKind kind, AppLocalizations l10n) {
 
 Future<void> showWorkspaceAiChatOptionsSheet(
   BuildContext context, {
+  VoidCallback? onNewConversation,
   VoidCallback? onManageSessions,
 }) {
   return showZephyrModalSheet<void>(
     context: context,
     builder: (context) => _WorkspaceAiChatOptionsSheet(
+      onNewConversation: onNewConversation,
       onManageSessions: onManageSessions,
     ),
   );
 }
 
 class _WorkspaceAiChatOptionsSheet extends StatelessWidget {
-  const _WorkspaceAiChatOptionsSheet({this.onManageSessions});
+  const _WorkspaceAiChatOptionsSheet({
+    this.onNewConversation,
+    this.onManageSessions,
+  });
 
+  final VoidCallback? onNewConversation;
   final VoidCallback? onManageSessions;
 
   @override
@@ -48,6 +54,48 @@ class _WorkspaceAiChatOptionsSheet extends StatelessWidget {
         final prefs = vm.preferences;
         final configured = vm.configuredProviders;
         final selected = prefs.effectiveChatProvider;
+        final groupChildren = <Widget>[
+          if (onManageSessions != null)
+            ZephyrSettingsListTile(
+              icon: Icons.forum_outlined,
+              title: l10n.aiChatSessionsTitle,
+              subtitle: l10n.aiChatSessionsSubtitle,
+              onTap: () {
+                Navigator.of(context).pop();
+                onManageSessions!();
+              },
+            ),
+          if (configured.isEmpty)
+            ZephyrSettingsListTile(
+              icon: Icons.hub_outlined,
+              title: l10n.aiChatSessionProviderTitle,
+              subtitle: l10n.aiChatSessionOptionsNeedTest,
+              onTap: () => _openAiModelSettingsFromChat(context),
+            )
+          else
+            ZephyrSettingsChoiceTile<LlmProviderKind>(
+              icon: Icons.hub_outlined,
+              title: l10n.aiChatSessionProviderTitle,
+              subtitle: l10n.aiChatSessionProviderSubtitle,
+              selected: selected,
+              valueLabel: _providerLabel(selected, l10n),
+              choices: [
+                for (final kind in configured)
+                  ZephyrSettingsChoice(
+                    value: kind,
+                    label: _providerLabel(kind, l10n),
+                  ),
+              ],
+              onSelected: vm.setChatProvider,
+            ),
+          ZephyrSettingsListTile(
+            icon: Icons.auto_awesome_outlined,
+            title: l10n.aiChatAiSettingsEntry,
+            subtitle: l10n.llmSettingsSubtitle,
+            showDivider: false,
+            onTap: () => _openAiModelSettingsFromChat(context),
+          ),
+        ];
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -60,62 +108,23 @@ class _WorkspaceAiChatOptionsSheet extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 12),
-                if (onManageSessions != null)
+                if (onNewConversation != null)
                   ZephyrSettingsSection(
                     children: [
                       ZephyrSettingsListTile(
-                        icon: Icons.forum_outlined,
-                        title: l10n.aiChatSessionsTitle,
-                        subtitle: l10n.aiChatSessionsSubtitle,
+                        icon: Icons.add_comment_outlined,
+                        title: l10n.aiChatNewSession,
+                        showDivider: false,
                         onTap: () {
                           Navigator.of(context).pop();
-                          onManageSessions!();
+                          onNewConversation!();
                         },
-                        showDivider: false,
                       ),
                     ],
                   ),
-                if (onManageSessions != null) const SizedBox(height: 12),
-                if (configured.isEmpty)
-                  Text(
-                    l10n.aiChatSessionOptionsNeedTest,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  )
-                else
-                  ZephyrSettingsSection(
-                    children: [
-                      ZephyrSettingsChoiceTile<LlmProviderKind>(
-                        icon: Icons.hub_outlined,
-                        title: l10n.aiChatSessionProviderTitle,
-                        subtitle: l10n.aiChatSessionProviderSubtitle,
-                        selected: selected,
-                        valueLabel: _providerLabel(selected, l10n),
-                        choices: [
-                          for (final kind in configured)
-                            ZephyrSettingsChoice(
-                              value: kind,
-                              label: _providerLabel(kind, l10n),
-                            ),
-                        ],
-                        onSelected: vm.setChatProvider,
-                        showDivider: false,
-                      ),
-                    ],
-                  ),
-                const SizedBox(height: 12),
-                ZephyrSettingsSection(
-                  children: [
-                    ZephyrSettingsListTile(
-                      icon: Icons.auto_awesome_outlined,
-                      title: l10n.aiChatAiSettingsEntry,
-                      subtitle: l10n.llmSettingsSubtitle,
-                      showDivider: false,
-                      onTap: () => _openAiModelSettingsFromChat(context),
-                    ),
-                  ],
-                ),
+                if (onNewConversation != null) const SizedBox(height: 12),
+                if (groupChildren.isNotEmpty)
+                  ZephyrSettingsSection(children: groupChildren),
               ],
             ),
           ),

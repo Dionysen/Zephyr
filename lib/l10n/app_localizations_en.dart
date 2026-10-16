@@ -86,11 +86,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsComingSoonSubtitle =>
-      'Settings for this section will arrive later.';
+      'These options are still being prepared.';
 
   @override
   String get settingsPlaceholderBody =>
-      'This settings section is reserved for its own feature settings.';
+      'Related options will appear here later.';
 
   @override
   String get settingsSectionGeneral => 'General';
@@ -156,7 +156,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cloudSyncBackupNowSubtitle =>
-      'Create a local backup, then upload that file to Zephyr on Nutstore';
+      'Create a backup on this device, then upload it to the Zephyr folder on Nutstore';
 
   @override
   String get cloudSyncBackupNowSuccess => 'Cloud backup completed.';
@@ -185,7 +185,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cloudSyncMissingManifest =>
-      'The Zephyr cloud folder contains files without a manifest. Resolve that cloud folder before syncing.';
+      'The Zephyr folder in the cloud looks incomplete. Sort it out before syncing again.';
 
   @override
   String get cloudSyncWaitBeforeChoosingDirectory =>
@@ -238,7 +238,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupNowSubtitle =>
-      'Write a manual .pwb under Backups. Manual and automatic backups share the 25-copy limit.';
+      'Create a manual backup now. Manual and automatic backups together keep the latest 25.';
 
   @override
   String get backupNowSuccess => 'Backup completed.';
@@ -265,13 +265,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get backupRestoreEmpty => 'No .pwb backups found.';
+  String get backupRestoreEmpty => 'No backup files found.';
 
   @override
   String get backupRestoreModeTitle => 'Restore mode';
 
   @override
-  String get backupRestoreModeMerge => 'Merge (newer updateTime wins)';
+  String get backupRestoreModeMerge => 'Merge (keep the newer version)';
 
   @override
   String get backupRestoreModeOverwrite =>
@@ -302,7 +302,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupFooter =>
-      'Do not open the same library in Pure Writer at the same time. Backups are PureWriter-compatible .pwb files.';
+      'Don\'t open the same library in Pure Writer at the same time. Backup files can be opened in Pure Writer.';
 
   @override
   String get historyTitle => 'History';
@@ -548,21 +548,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get immersiveStatusBarSubtitle =>
-      'Draw under a transparent status bar (chrome stays padded); text may scroll into that band.';
+      'The app extends under a transparent status bar, and text can scroll into that area.';
 
   @override
   String get hideStatusBarIconsTitle => 'Hide status bar icons';
 
   @override
   String get hideStatusBarIconsSubtitle =>
-      'Only when immersive is on. Icons auto-hide; swipe from the edge to peek.';
+      'Only while the immersive status bar is on. Icons hide on their own; swipe from the edge to show them briefly.';
 
   @override
   String get mobileBehaviorSectionTitle => 'Mobile';
 
   @override
-  String get mobileBehaviorSectionSubtitle =>
-      'Applies to the compact editor on phones and tablets.';
+  String get mobileBehaviorSectionSubtitle => 'Applies to phones and tablets.';
 
   @override
   String get scrollToHideMobileTopBarTitle => 'Hide top bar while scrolling';
@@ -577,7 +576,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get openSidebarAfterBookSwitchSubtitle =>
-      'Expand the library drawer after you pick another book.';
+      'Show the chapter list after you pick another book.';
 
   @override
   String get keepScreenOnTitle => 'Keep screen on';
@@ -605,7 +604,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get openSidebarOnStartupSubtitle =>
-      'Expand the library drawer when the workspace opens.';
+      'Show the chapter list when the workspace opens.';
 
   @override
   String get pressBackAgainToExit => 'Press back again to exit';
@@ -622,7 +621,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hideAiAssistantAvatarSubtitle =>
-      'When on, assistant bubbles omit the avatar and use the same left and right inset.';
+      'Hide the avatar so chat bubbles line up on both sides.';
 
   @override
   String get hideQuickToolbarTitle => 'Hide quick input bar';
@@ -636,14 +635,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get showChapterDetailsSubtitle =>
-      'When off, the sidebar shows chapter titles only—no preview or meta.';
+      'When off, the sidebar shows chapter titles only.';
 
   @override
   String get editorSectionTitle => 'Editor';
 
   @override
   String get editorSectionIntro =>
-      'Typography and reading-column preferences apply immediately.';
+      'Font and layout preferences apply right away.';
 
   @override
   String get editorSectionFooter =>
@@ -654,7 +653,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get editorFontDescription =>
-      'Typeface used in the writing editor. Imports are shared with the UI font library.';
+      'Font used while writing. Imported fonts can also be used in the interface.';
 
   @override
   String get editorFontSizeTitle => 'Font size';
@@ -724,14 +723,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get editorWidthDescription =>
-      'Width of the text column, always centered in the window. Shrinks with the viewport when space is tight.';
+      'Width of the text column, always centered. It narrows when the window is too small.';
 
   @override
   String get appearanceSectionTitle => 'Appearance';
 
   @override
   String get appearanceSectionIntro =>
-      'Choose a color palette, then tweak semantic colors if needed. Fonts, radius, and other chrome stay separate from themes.';
+      'Choose a palette, or adjust individual colors. Fonts and corner radius stay as you set them.';
 
   @override
   String get themeModeTitle => 'Theme mode';
@@ -754,14 +753,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get uiFontDescription =>
-      'Typeface used by the writing shell chrome. Imports are shared with the editor font library.';
+      'Font used for the sidebar, settings, and other interface text. Imported fonts can also be used while writing.';
 
   @override
   String get uiFontSizeTitle => 'UI font size';
 
   @override
   String get uiFontSizeDescription =>
-      'Size of sidebar, settings, and chrome text.';
+      'Size of text in the sidebar, settings, and the rest of the interface.';
 
   @override
   String get cornerRadiusTitle => 'Corner radius';
@@ -775,21 +774,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get barCornerRadiusDescription =>
-      'Roundness of the floating editor top bar and sidebar library dock.';
+      'Roundness of the editor top bar and the bar at the bottom of the sidebar.';
 
   @override
   String get chatBubbleCornerRadiusTitle => 'Chat bubble corners';
 
   @override
   String get chatBubbleCornerRadiusDescription =>
-      'Roundness of AI chat bubbles (smooth continuous corners; the outer top corner stays square).';
+      'Roundness of AI chat bubbles. The outer top corner stays square.';
 
   @override
   String get showBordersTitle => 'Show borders';
 
   @override
   String get showBordersSubtitle =>
-      'When off, controls have no outlines. When on, volumes and the library dock show borders.';
+      'When off, buttons and cards have no outline. When on, volumes and the library bar show a border.';
 
   @override
   String get sidebarItemInsetTitle => 'Sidebar item inset';
@@ -803,7 +802,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sidebarVolumeGapDescription =>
-      'Gap between volumes. Chapters stay flush with a 1px divider.';
+      'Space between volumes. Chapters stay close, separated by a line.';
 
   @override
   String get themePresetsSectionTitle => 'Theme colors';
@@ -845,27 +844,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get themePresetsFooter =>
-      'Color presets only change the palette. Fonts, radius, and other chrome stay separate.';
+      'Palettes only change colors. Fonts, corners, and other layout stay as you set them.';
 
   @override
   String get customColorsTitle => 'Custom colors';
 
   @override
   String get customColorsSubtitle =>
-      'Adjust semantic colors for the current mode; changes apply immediately.';
+      'Adjust colors for the current appearance. Changes apply right away.';
 
   @override
-  String get customizeTokensButton => 'Customize tokens';
+  String get customizeTokensButton => 'Customize colors';
 
   @override
   String get backToThemesButton => 'Back to themes';
 
   @override
-  String get themeTokensTitle => 'Theme tokens';
+  String get themeTokensTitle => 'Theme colors';
 
   @override
   String get themeTokensIntro =>
-      'Use a six-digit hexadecimal color. Changes apply immediately.';
+      'Enter a color code such as #336699. Changes apply right away.';
 
   @override
   String get restoreDefaultColors => 'Restore defaults';
@@ -912,13 +911,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themePresetDarkModern => 'Dark Modern';
 
   @override
-  String get tokenEditorSurface => 'Editor surface';
+  String get tokenEditorSurface => 'Writing background';
 
   @override
-  String get tokenSidebarSurface => 'Sidebar surface';
+  String get tokenSidebarSurface => 'Sidebar background';
 
   @override
-  String get tokenControlSurface => 'Control surface';
+  String get tokenControlSurface => 'Buttons and fields';
 
   @override
   String get tokenBorder => 'Border';
@@ -944,14 +943,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tokenSidebarSurfaceDescription =>
-      'Background of side panels and chrome.';
+      'Background of the sidebar and surrounding panels.';
 
   @override
   String get tokenControlSurfaceDescription =>
       'Fill color for fields, menus, and cards.';
 
   @override
-  String get tokenBorderDescription => 'Hairlines around controls.';
+  String get tokenBorderDescription => 'Outlines around buttons and fields.';
 
   @override
   String get tokenDividerDescription => 'Sidebar chapter separators.';
@@ -962,11 +961,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tokenMutedTextDescription =>
-      'Dimmer copy used for setting hints and captions.';
+      'Softer color for hints and captions.';
 
   @override
-  String get tokenAccentDescription =>
-      'Interactive highlights and selected states.';
+  String get tokenAccentDescription => 'Highlights and selected items.';
 
   @override
   String get tokenCursorDescription => 'Caret color in the writing editor.';
@@ -1075,7 +1073,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get editorBackgroundBlurDescription =>
-      'Gaussian blur on the image only; text stays sharp.';
+      'Softens the image only. Text stays sharp.';
 
   @override
   String get editorBackgroundImportSuccess => 'Image added to the app library.';
@@ -1143,7 +1141,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get librarySetupBody =>
-      'Zephyr needs a library folder that contains App/Room.db. You can also start with a temporary library and switch later.';
+      'Choose your PureWriter library folder to open your work, or start with a temporary library and switch later.';
 
   @override
   String get chooseLibraryDirectoryButton => 'Choose library folder';
@@ -1306,8 +1304,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tooltipAiAssistant => 'AI assistant';
 
   @override
-  String get aiChatWelcome =>
-      'Hi — this is the Zephyr AI demo. Send any message and I\'ll echo it so you can preview the chat layout.';
+  String get aiChatWelcome => 'Tell me what you\'re working on.';
 
   @override
   String get aiChatInputHint => 'Type a message…';
@@ -1329,7 +1326,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get llmSettingsIntro =>
-      'API keys stay in secure storage on this device. Other options are saved to llm_preferences.json and included in local and cloud settings backups.';
+      'Your key stays on this device. Other settings are included in backups.';
 
   @override
   String get llmBehaviorSectionTitle => 'Chat behavior';
@@ -1338,49 +1335,47 @@ class AppLocalizationsEn extends AppLocalizations {
   String get llmStreamOutputTitle => 'Streaming output';
 
   @override
-  String get llmStreamOutputSubtitle =>
-      'Stream tokens as they arrive (OpenAI-compatible APIs)';
+  String get llmStreamOutputSubtitle => 'Show the reply as it is written';
 
   @override
   String get llmAllowThinkingTitle => 'Allow thinking';
 
   @override
   String get llmAllowThinkingSubtitle =>
-      'Send reasoning parameters on supported models';
+      'Let models that can reason think before they answer';
 
   @override
-  String get llmPresetPromptTitle => 'Preset system prompt';
+  String get llmPresetPromptTitle => 'Preset prompt';
 
   @override
   String get llmPresetPromptHint =>
-      'Prepended as a system message on every chat';
+      'Included at the start of every conversation';
 
   @override
   String get llmMaxInputTokensTitle => 'Context limit (input)';
 
   @override
   String get llmMaxInputTokensSubtitle =>
-      'Trim history and context to this token budget';
+      'Older messages are shortened once this limit is reached';
 
   @override
   String get llmMaxOutputTokensTitle => 'Reply limit (output)';
 
   @override
-  String get llmMaxOutputTokensSubtitle => 'max_tokens for each completion';
+  String get llmMaxOutputTokensSubtitle => 'How long a single reply can be';
 
   @override
   String get llmThinkingLevelTitle => 'Thinking intensity';
 
   @override
-  String get llmThinkingLevelSubtitle =>
-      'Mapped per model (reasoning effort, budgets, etc.)';
+  String get llmThinkingLevelSubtitle => 'Deeper thinking usually takes longer';
 
   @override
   String get llmDefaultThinkingLevelTitle => 'Default thinking intensity';
 
   @override
   String get llmDefaultThinkingLevelSubtitle =>
-      'Initial level for chat (adjust beside the composer)';
+      'Starting level for new chats. You can change it beside the message box.';
 
   @override
   String get llmThinkingDisabledInSettings =>
@@ -1473,7 +1468,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiChatCompressedContextHeader =>
-      'Earlier conversation summary (compressed for context):';
+      'Summary of the earlier conversation:';
 
   @override
   String get llmProviderTitle => 'Provider';
@@ -1528,7 +1523,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String aiChatDemoReply(String message) {
-    return '(Demo) Received: $message';
+    return 'Received: $message';
   }
 
   @override
@@ -1698,7 +1693,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quickToolbarMoveToCustom => 'Move to custom bar';
 
   @override
-  String get quickToolbarDrawerEmpty => 'Tool panel content coming soon';
+  String get quickToolbarDrawerEmpty => 'Nothing here yet';
 
   @override
   String get quickToolbarFormatApplyAll => 'Format document';
