@@ -262,7 +262,8 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     final uiFontFamily = values['uiFontFamily'] as String?;
     return UiPreferences(
       // Null family with no custom path → bundled default (霞鹜文楷).
-      fontFamily: uiFontFamily ??
+      fontFamily:
+          uiFontFamily ??
           (uiFontPath == null ? UiPreferences.defaults.fontFamily : null),
       fontPath: uiFontPath,
       fontSize: _double(values, 'uiFontSize', UiPreferences.defaults.fontSize),
@@ -354,6 +355,11 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
         'uiAiFeaturesEnabled',
         UiPreferences.defaults.aiFeaturesEnabled,
       ),
+      hideAiAssistantAvatar: _bool(
+        values,
+        'uiHideAiAssistantAvatar',
+        UiPreferences.defaults.hideAiAssistantAvatar,
+      ),
       localePreference: AppLocalePreference.fromStorage(
         values['uiLocale'] as String?,
       ),
@@ -386,6 +392,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'uiOpenSidebarOnStartup': ui.openSidebarOnStartup,
     'uiEditorBackgroundEnabled': ui.editorBackgroundEnabled,
     'uiAiFeaturesEnabled': ui.aiFeaturesEnabled,
+    'uiHideAiAssistantAvatar': ui.hideAiAssistantAvatar,
     'uiLocale': ui.localePreference.storageValue,
     'uiMobileToolsOrder': ui.mobileToolsOrder,
     'uiCloudBackupMenuOrder': ui.cloudBackupMenuOrder,

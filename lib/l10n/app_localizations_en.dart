@@ -618,6 +618,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'When off, the AI button is hidden in the workspace and any open assistant returns to the book.';
 
   @override
+  String get hideAiAssistantAvatarTitle => 'Hide assistant avatar';
+
+  @override
+  String get hideAiAssistantAvatarSubtitle =>
+      'When on, assistant bubbles omit the avatar and use the same left and right inset.';
+
+  @override
   String get hideQuickToolbarTitle => 'Hide quick input bar';
 
   @override
@@ -1307,6 +1314,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiChatSend => 'Send';
+
+  @override
+  String get aiChatStopGenerating => 'Stop generating';
 
   @override
   String get aiContextRemoveArticle => 'Remove from context';

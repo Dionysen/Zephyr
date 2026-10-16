@@ -44,6 +44,7 @@ class UiPreferences {
     required this.openSidebarOnStartup,
     required this.editorBackgroundEnabled,
     required this.aiFeaturesEnabled,
+    required this.hideAiAssistantAvatar,
     required this.localePreference,
     this.mobileToolsOrder = const [],
     this.cloudBackupMenuOrder = const [],
@@ -75,6 +76,7 @@ class UiPreferences {
     openSidebarOnStartup: false,
     editorBackgroundEnabled: true,
     aiFeaturesEnabled: true,
+    hideAiAssistantAvatar: false,
     localePreference: AppLocalePreference.system,
     mobileToolsOrder: [],
     cloudBackupMenuOrder: [],
@@ -157,6 +159,9 @@ class UiPreferences {
   /// When false, workspace AI chrome and sidebar context picks are hidden.
   final bool aiFeaturesEnabled;
 
+  /// When true, AI chat omits the assistant avatar so bubble insets match.
+  final bool hideAiAssistantAvatar;
+
   /// App UI language: system, Simplified Chinese, or English.
   final AppLocalePreference localePreference;
 
@@ -213,6 +218,7 @@ class UiPreferences {
     bool? openSidebarOnStartup,
     bool? editorBackgroundEnabled,
     bool? aiFeaturesEnabled,
+    bool? hideAiAssistantAvatar,
     AppLocalePreference? localePreference,
     List<String>? mobileToolsOrder,
     List<String>? cloudBackupMenuOrder,
@@ -241,18 +247,16 @@ class UiPreferences {
         openSidebarAfterBookSwitch ?? this.openSidebarAfterBookSwitch,
     keepScreenOn: keepScreenOn ?? this.keepScreenOn,
     doubleBackToExit: doubleBackToExit ?? this.doubleBackToExit,
-    openBookListOnStartup:
-        openBookListOnStartup ?? this.openBookListOnStartup,
-    openSidebarOnStartup:
-        openSidebarOnStartup ?? this.openSidebarOnStartup,
+    openBookListOnStartup: openBookListOnStartup ?? this.openBookListOnStartup,
+    openSidebarOnStartup: openSidebarOnStartup ?? this.openSidebarOnStartup,
     editorBackgroundEnabled:
         editorBackgroundEnabled ?? this.editorBackgroundEnabled,
     aiFeaturesEnabled: aiFeaturesEnabled ?? this.aiFeaturesEnabled,
+    hideAiAssistantAvatar: hideAiAssistantAvatar ?? this.hideAiAssistantAvatar,
     localePreference: localePreference ?? this.localePreference,
     mobileToolsOrder: mobileToolsOrder ?? this.mobileToolsOrder,
     cloudBackupMenuOrder: cloudBackupMenuOrder ?? this.cloudBackupMenuOrder,
-    lightEditorBackground:
-        lightEditorBackground ?? this.lightEditorBackground,
+    lightEditorBackground: lightEditorBackground ?? this.lightEditorBackground,
     darkEditorBackground: darkEditorBackground ?? this.darkEditorBackground,
   );
 }

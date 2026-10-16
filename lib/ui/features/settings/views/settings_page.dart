@@ -207,6 +207,16 @@ class CompactSettingsList extends StatelessWidget {
               ),
             ),
             ListenableBuilder(
+              listenable: scope.theme,
+              builder: (context, _) => ZephyrSettingsSwitchTile(
+                icon: Icons.account_circle_outlined,
+                title: l10n.hideAiAssistantAvatarTitle,
+                subtitle: l10n.hideAiAssistantAvatarSubtitle,
+                value: scope.theme.ui.hideAiAssistantAvatar,
+                onChanged: scope.theme.updateHideAiAssistantAvatar,
+              ),
+            ),
+            ListenableBuilder(
               listenable: scope.llmSettings,
               builder: (context, _) {
                 final llm = scope.llmSettings;
@@ -228,9 +238,12 @@ class CompactSettingsList extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.end,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
                         ),
                       ),
                       const SizedBox(width: 4),

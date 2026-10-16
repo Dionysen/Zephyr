@@ -13,9 +13,8 @@ import '../view_models/llm_settings_view_model.dart';
 class LlmSettingsPage extends StatefulWidget {
   const LlmSettingsPage({super.key});
 
-  static Route<void> route() => MaterialPageRoute<void>(
-    builder: (_) => const LlmSettingsPage(),
-  );
+  static Route<void> route() =>
+      MaterialPageRoute<void>(builder: (_) => const LlmSettingsPage());
 
   @override
   State<LlmSettingsPage> createState() => _LlmSettingsPageState();
@@ -54,16 +53,20 @@ class _LlmSettingsPageState extends State<LlmSettingsPage> {
   }
 
   void _onBaseUrlEdited() {
-    ZephyrScope.of(context).llmSettings.setCustomBaseUrl(_baseUrlController.text);
+    ZephyrScope.of(context).llmSettings
+        .setCustomBaseUrl(_baseUrlController.text);
   }
 
   void _onPresetEdited() {
-    ZephyrScope.of(context).llmSettings.setPresetSystemPrompt(_presetController.text);
+    ZephyrScope.of(context).llmSettings
+        .setPresetSystemPrompt(_presetController.text);
   }
 
   String _providerLabel(LlmProviderKind kind, AppLocalizations l10n) {
     final zh = l10n.localeName.startsWith('zh');
-    return zh ? LlmProviderCatalog.labelZh(kind) : LlmProviderCatalog.labelEn(kind);
+    return zh
+        ? LlmProviderCatalog.labelZh(kind)
+        : LlmProviderCatalog.labelEn(kind);
   }
 
   @override
@@ -127,6 +130,13 @@ class _LlmSettingsPageState extends State<LlmSettingsPage> {
                           value: themeVm.ui.aiFeaturesEnabled,
                           onChanged: themeVm.updateAiFeaturesEnabled,
                         ),
+                        ZephyrSettingsSwitchTile(
+                          icon: Icons.account_circle_outlined,
+                          title: l10n.hideAiAssistantAvatarTitle,
+                          subtitle: l10n.hideAiAssistantAvatarSubtitle,
+                          value: themeVm.ui.hideAiAssistantAvatar,
+                          onChanged: themeVm.updateHideAiAssistantAvatar,
+                        ),
                         ZephyrSettingsChoiceTile<LlmProviderKind>(
                           icon: Icons.hub_outlined,
                           title: l10n.llmProviderTitle,
@@ -176,7 +186,9 @@ class _LlmSettingsPageState extends State<LlmSettingsPage> {
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                           child: FilledButton.icon(
-                            onPressed: vm.testing ? null : () => _test(vm, l10n),
+                            onPressed: vm.testing
+                                ? null
+                                : () => _test(vm, l10n),
                             icon: vm.testing
                                 ? const SizedBox(
                                     width: 18,
@@ -317,7 +329,10 @@ class _LlmSettingsPageState extends State<LlmSettingsPage> {
     await vm.testConnection();
     if (!mounted) return;
     if (vm.error == null && vm.preferences.hasVerifiedModels) {
-      ZephyrSnackBar.show(context, l10n.llmTestSuccess(vm.preferences.verifiedModelIds.length));
+      ZephyrSnackBar.show(
+        context,
+        l10n.llmTestSuccess(vm.preferences.verifiedModelIds.length),
+      );
     }
   }
 }

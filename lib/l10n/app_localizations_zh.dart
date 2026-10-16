@@ -588,6 +588,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aiFeaturesEnabledSubtitle => '关闭后，工作区顶栏不再显示 AI 按钮，已打开的助手会回到书籍界面。';
 
   @override
+  String get hideAiAssistantAvatarTitle => '隐藏助手头像';
+
+  @override
+  String get hideAiAssistantAvatarSubtitle => '开启后，对话气泡左侧不再显示头像，左右边距对齐。';
+
+  @override
   String get hideQuickToolbarTitle => '隐藏快捷输入栏';
 
   @override
@@ -1238,6 +1244,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aiChatSend => '发送';
+
+  @override
+  String get aiChatStopGenerating => '停止生成';
 
   @override
   String get aiContextRemoveArticle => '从上下文中移除';

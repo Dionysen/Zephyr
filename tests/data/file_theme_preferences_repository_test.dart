@@ -75,6 +75,7 @@ void main() {
           openSidebarOnStartup: true,
           editorBackgroundEnabled: false,
           aiFeaturesEnabled: false,
+          hideAiAssistantAvatar: true,
           localePreference: AppLocalePreference.system,
           mobileToolsOrder: ['settings', 'search'],
           cloudBackupMenuOrder: ['auto', 'backup', 'restore'],
@@ -131,20 +132,18 @@ void main() {
         expected.ui.editorBackgroundEnabled,
       );
       expect(actual.ui.aiFeaturesEnabled, expected.ui.aiFeaturesEnabled);
+      expect(
+        actual.ui.hideAiAssistantAvatar,
+        expected.ui.hideAiAssistantAvatar,
+      );
       expect(actual.ui.localePreference, expected.ui.localePreference);
       expect(actual.ui.mobileToolsOrder, expected.ui.mobileToolsOrder);
-      expect(
-        actual.ui.cloudBackupMenuOrder,
-        expected.ui.cloudBackupMenuOrder,
-      );
+      expect(actual.ui.cloudBackupMenuOrder, expected.ui.cloudBackupMenuOrder);
       expect(
         actual.ui.lightEditorBackground,
         expected.ui.lightEditorBackground,
       );
-      expect(
-        actual.ui.darkEditorBackground,
-        expected.ui.darkEditorBackground,
-      );
+      expect(actual.ui.darkEditorBackground, expected.ui.darkEditorBackground);
     },
   );
 
@@ -169,7 +168,10 @@ void main() {
 
     expect(appearance.ui.fontSize, UiPreferences.defaults.fontSize);
     expect(appearance.ui.cornerRadius, UiPreferences.defaults.cornerRadius);
-    expect(appearance.ui.barCornerRadius, UiPreferences.defaults.barCornerRadius);
+    expect(
+      appearance.ui.barCornerRadius,
+      UiPreferences.defaults.barCornerRadius,
+    );
     expect(
       appearance.ui.chatBubbleCornerRadius,
       UiPreferences.defaults.chatBubbleCornerRadius,
@@ -203,7 +205,14 @@ void main() {
       appearance.ui.editorBackgroundEnabled,
       UiPreferences.defaults.editorBackgroundEnabled,
     );
-    expect(appearance.ui.localePreference, UiPreferences.defaults.localePreference);
+    expect(
+      appearance.ui.hideAiAssistantAvatar,
+      UiPreferences.defaults.hideAiAssistantAvatar,
+    );
+    expect(
+      appearance.ui.localePreference,
+      UiPreferences.defaults.localePreference,
+    );
     expect(appearance.ui.fontFamily, UiPreferences.defaults.fontFamily);
     expect(appearance.ui.fontPath, isNull);
     expect(appearance.darkTokens.cursor, ThemeTokens.defaults.cursor);
@@ -212,23 +221,28 @@ void main() {
     expect(appearance.customPacks, isEmpty);
   });
 
-  test('legacy uiStatusBarMode immersive migrates to immersiveStatusBar', () async {
-    final directory = await Directory.systemTemp.createTemp(
-      'zephyr-theme-status-legacy-',
-    );
-    addTearDown(() => directory.delete(recursive: true));
-    final storage = ThemeFileStorage(directoryProvider: () async => directory);
-    await storage.write({
-      'editorSurface': ThemeTokens.defaults.editorSurface,
-      'sidebarSurface': ThemeTokens.defaults.sidebarSurface,
-      'controlSurface': ThemeTokens.defaults.controlSurface,
-      'border': ThemeTokens.defaults.border,
-      'primaryText': ThemeTokens.defaults.primaryText,
-      'mutedText': ThemeTokens.defaults.mutedText,
-      'accent': ThemeTokens.defaults.accent,
-      'uiStatusBarMode': 'immersive',
-    });
-    final appearance = await FileThemePreferencesRepository(storage).load();
-    expect(appearance.ui.immersiveStatusBar, isTrue);
-  });
+  test(
+    'legacy uiStatusBarMode immersive migrates to immersiveStatusBar',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'zephyr-theme-status-legacy-',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      final storage = ThemeFileStorage(
+        directoryProvider: () async => directory,
+      );
+      await storage.write({
+        'editorSurface': ThemeTokens.defaults.editorSurface,
+        'sidebarSurface': ThemeTokens.defaults.sidebarSurface,
+        'controlSurface': ThemeTokens.defaults.controlSurface,
+        'border': ThemeTokens.defaults.border,
+        'primaryText': ThemeTokens.defaults.primaryText,
+        'mutedText': ThemeTokens.defaults.mutedText,
+        'accent': ThemeTokens.defaults.accent,
+        'uiStatusBarMode': 'immersive',
+      });
+      final appearance = await FileThemePreferencesRepository(storage).load();
+      expect(appearance.ui.immersiveStatusBar, isTrue);
+    },
+  );
 }

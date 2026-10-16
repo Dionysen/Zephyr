@@ -212,24 +212,32 @@ class LlmSettingsViewModel extends ChangeNotifier {
       final options = _completionOptions();
       if (_preferences.streamOutput) {
         var result = const LlmChatResult();
-        await for (final part in _gateway.streamChat(
+        try {
+          await for (final part in _gateway.streamChat(
+            connection: connection,
+            modelId: modelId,
+            messages: prepared,
+            options: options,
+          )) {
+            result = result.applyPart(part);
+            onPartial?.call(result);
+          }
+        } on LlmChatCancelledException {
+          return result.copyWith(thinkingInProgress: false);
+        }
+        return result.copyWith(thinkingInProgress: false);
+      }
+      try {
+        final result = await _gateway.completeChat(
           connection: connection,
           modelId: modelId,
           messages: prepared,
           options: options,
-        )) {
-          result = result.applyPart(part);
-          onPartial?.call(result);
-        }
+        );
         return result.copyWith(thinkingInProgress: false);
+      } on LlmChatCancelledException {
+        return const LlmChatResult();
       }
-      final result = await _gateway.completeChat(
-        connection: connection,
-        modelId: modelId,
-        messages: prepared,
-        options: options,
-      );
-      return result.copyWith(thinkingInProgress: false);
     } on Object catch (error) {
       _error = error;
       rethrow;
@@ -242,6 +250,11 @@ class LlmSettingsViewModel extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  void cancelChat() {
+    if (!_chatting) return;
+    _gateway.cancelActiveChat();
   }
 
   /// Summarizes older turns for long-session context compression.

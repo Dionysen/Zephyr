@@ -1220,6 +1220,18 @@ abstract class AppLocalizations {
   /// **'When off, the AI button is hidden in the workspace and any open assistant returns to the book.'**
   String get aiFeaturesEnabledSubtitle;
 
+  /// No description provided for @hideAiAssistantAvatarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide assistant avatar'**
+  String get hideAiAssistantAvatarTitle;
+
+  /// No description provided for @hideAiAssistantAvatarSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When on, assistant bubbles omit the avatar and use the same left and right inset.'**
+  String get hideAiAssistantAvatarSubtitle;
+
   /// No description provided for @hideQuickToolbarTitle.
   ///
   /// In en, this message translates to:
@@ -2460,6 +2472,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send'**
   String get aiChatSend;
+
+  /// No description provided for @aiChatStopGenerating.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop generating'**
+  String get aiChatStopGenerating;
 
   /// No description provided for @aiContextRemoveArticle.
   ///

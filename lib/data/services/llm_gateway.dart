@@ -18,12 +18,42 @@ class LlmGatewayException implements Exception {
   String toString() => message;
 }
 
+/// User stopped an in-flight chat request before it finished.
+class LlmChatCancelledException implements Exception {
+  @override
+  String toString() => 'Chat request cancelled.';
+}
+
 /// HTTP client for listing models and chat completions across vendors.
 class LlmGateway {
   LlmGateway({http.Client? client}) : _client = client ?? http.Client();
 
   final http.Client _client;
   static const _timeout = Duration(seconds: 45);
+
+  http.Client? _cancellableClient;
+  var _chatCancelRequested = false;
+
+  bool get chatCancelRequested => _chatCancelRequested;
+
+  void cancelActiveChat() {
+    _chatCancelRequested = true;
+    _cancellableClient?.close();
+  }
+
+  http.Client _openCancellableChat() {
+    _chatCancelRequested = false;
+    final client = http.Client();
+    _cancellableClient = client;
+    return client;
+  }
+
+  void _closeCancellableChat(http.Client client) {
+    if (_cancellableClient == client) {
+      _cancellableClient = null;
+    }
+    client.close();
+  }
 
   Future<List<LlmModelOption>> listModels(LlmConnection connection) async {
     final key = connection.apiKey.trim();
@@ -56,33 +86,51 @@ class LlmGateway {
     if (modelId.isEmpty) {
       throw LlmGatewayException('Model is required.');
     }
-    final result = await switch (connection.provider) {
-      LlmProviderKind.anthropic => _chatAnthropic(
-        connection,
-        key,
-        modelId,
-        messages,
-        options,
-      ),
-      LlmProviderKind.google => _chatGoogle(
-        connection,
-        key,
-        modelId,
-        messages,
-        options,
-      ),
-      LlmProviderKind.openai ||
-      LlmProviderKind.deepseek ||
-      LlmProviderKind.zhipu ||
-      LlmProviderKind.openAiCompatible => _chatOpenAiCompatible(
-        connection,
-        key,
-        modelId,
-        messages,
-        options,
-      ),
-    };
-    return _present(result, options);
+    final client = _openCancellableChat();
+    try {
+      final result = await switch (connection.provider) {
+        LlmProviderKind.anthropic => _chatAnthropic(
+          client,
+          connection,
+          key,
+          modelId,
+          messages,
+          options,
+        ),
+        LlmProviderKind.google => _chatGoogle(
+          client,
+          connection,
+          key,
+          modelId,
+          messages,
+          options,
+        ),
+        LlmProviderKind.openai ||
+        LlmProviderKind.deepseek ||
+        LlmProviderKind.zhipu ||
+        LlmProviderKind.openAiCompatible => _chatOpenAiCompatible(
+          client,
+          connection,
+          key,
+          modelId,
+          messages,
+          options,
+        ),
+      };
+      if (_chatCancelRequested) {
+        throw LlmChatCancelledException();
+      }
+      return _present(result, options);
+    } on LlmChatCancelledException {
+      rethrow;
+    } on Object {
+      if (_chatCancelRequested) {
+        throw LlmChatCancelledException();
+      }
+      rethrow;
+    } finally {
+      _closeCancellableChat(client);
+    }
   }
 
   Stream<LlmStreamPart> streamChat({
@@ -98,39 +146,83 @@ class LlmGateway {
     if (modelId.isEmpty) {
       throw LlmGatewayException('Model is required.');
     }
-    switch (connection.provider) {
-      case LlmProviderKind.anthropic:
-      case LlmProviderKind.google:
-        final result = await completeChat(
-          connection: connection,
-          modelId: modelId,
-          messages: messages,
-          options: options,
-        );
-        if (result.thinking.isNotEmpty) {
-          yield LlmStreamPart(
-            kind: LlmStreamPartKind.thinking,
-            delta: result.thinking,
+    final client = _openCancellableChat();
+    try {
+      switch (connection.provider) {
+        case LlmProviderKind.anthropic:
+          final anthropic = await _chatAnthropic(
+            client,
+            connection,
+            key,
+            modelId,
+            messages,
+            options,
           );
-        }
-        if (result.text.isNotEmpty) {
-          yield LlmStreamPart(
-            kind: LlmStreamPartKind.answer,
-            delta: result.text,
+          if (_chatCancelRequested) {
+            throw LlmChatCancelledException();
+          }
+          final presented = _present(anthropic, options);
+          if (presented.thinking.isNotEmpty) {
+            yield LlmStreamPart(
+              kind: LlmStreamPartKind.thinking,
+              delta: presented.thinking,
+            );
+          }
+          if (presented.text.isNotEmpty) {
+            yield LlmStreamPart(
+              kind: LlmStreamPartKind.answer,
+              delta: presented.text,
+            );
+          }
+          return;
+        case LlmProviderKind.google:
+          final google = await _chatGoogle(
+            client,
+            connection,
+            key,
+            modelId,
+            messages,
+            options,
           );
-        }
-        return;
-      case LlmProviderKind.openai:
-      case LlmProviderKind.deepseek:
-      case LlmProviderKind.zhipu:
-      case LlmProviderKind.openAiCompatible:
-        yield* _streamOpenAiCompatible(
-          connection,
-          key,
-          modelId,
-          messages,
-          options,
-        );
+          if (_chatCancelRequested) {
+            throw LlmChatCancelledException();
+          }
+          final presented = _present(google, options);
+          if (presented.thinking.isNotEmpty) {
+            yield LlmStreamPart(
+              kind: LlmStreamPartKind.thinking,
+              delta: presented.thinking,
+            );
+          }
+          if (presented.text.isNotEmpty) {
+            yield LlmStreamPart(
+              kind: LlmStreamPartKind.answer,
+              delta: presented.text,
+            );
+          }
+          return;
+        case LlmProviderKind.openai:
+        case LlmProviderKind.deepseek:
+        case LlmProviderKind.zhipu:
+        case LlmProviderKind.openAiCompatible:
+          yield* _streamOpenAiCompatible(
+            client,
+            connection,
+            key,
+            modelId,
+            messages,
+            options,
+          );
+      }
+    } on LlmChatCancelledException {
+      rethrow;
+    } on Object {
+      if (_chatCancelRequested) {
+        throw LlmChatCancelledException();
+      }
+      rethrow;
+    } finally {
+      _closeCancellableChat(client);
     }
   }
 
@@ -267,6 +359,7 @@ class LlmGateway {
   }
 
   Future<LlmChatResult> _chatOpenAiCompatible(
+    http.Client client,
     LlmConnection connection,
     String key,
     String modelId,
@@ -281,7 +374,7 @@ class LlmGateway {
     final body = jsonEncode(
       _openAiChatBody(connection, modelId, messages, options, stream: false),
     );
-    final response = await _client
+    final response = await client
         .post(uri, headers: _bearerHeaders(key), body: body)
         .timeout(_timeout);
     _ensureSuccess(response);
@@ -303,6 +396,7 @@ class LlmGateway {
   }
 
   Stream<LlmStreamPart> _streamOpenAiCompatible(
+    http.Client client,
     LlmConnection connection,
     String key,
     String modelId,
@@ -320,7 +414,7 @@ class LlmGateway {
     request.body = jsonEncode(
       _openAiChatBody(connection, modelId, messages, options, stream: true),
     );
-    final response = await _client.send(request).timeout(_timeout);
+    final response = await client.send(request).timeout(_timeout);
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final body = await response.stream.bytesToString();
       throw LlmGatewayException(
@@ -362,6 +456,7 @@ class LlmGateway {
   }
 
   Future<LlmChatResult> _chatAnthropic(
+    http.Client client,
     LlmConnection connection,
     String key,
     String modelId,
@@ -398,7 +493,7 @@ class LlmGateway {
       bodyMap['thinking'] = thinking.anthropicThinking;
     }
     final body = jsonEncode(bodyMap);
-    final response = await _client
+    final response = await client
         .post(
           uri,
           headers: {
@@ -423,6 +518,7 @@ class LlmGateway {
   }
 
   Future<LlmChatResult> _chatGoogle(
+    http.Client client,
     LlmConnection connection,
     String key,
     String modelId,
@@ -469,7 +565,7 @@ class LlmGateway {
       'contents': contents,
       'generationConfig': generationConfig,
     });
-    final response = await _client
+    final response = await client
         .post(uri, headers: {'content-type': 'application/json'}, body: body)
         .timeout(_timeout);
     _ensureSuccess(response);

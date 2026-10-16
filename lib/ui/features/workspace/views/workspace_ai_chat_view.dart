@@ -10,6 +10,7 @@ import '../../../../domain/models/llm_chat.dart';
 import '../../../../domain/models/llm_settings.dart';
 import '../../../../domain/repositories/writing_library_repository.dart';
 import '../../../../domain/use_cases/ai_chat_context_compression.dart';
+import '../../editor/plain_text/zephyr_editor_scrollbar.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../../core/zephyr_chat_bubble_shape.dart';
 import '../../../core/zephyr_l10n.dart';
@@ -64,7 +65,11 @@ class _AiChatTailScrollPosition extends ScrollPositionWithSingleContext {
     ScrollMetrics newPosition,
   ) {
     final distanceFromEnd = oldPosition.maxScrollExtent - oldPosition.pixels;
-    final stick = followTail() && distanceFromEnd <= 1;
+    // A thumb drag jumpTo runs before this correction, while [oldPosition]
+    // can still be the pre-jump metrics parked at the end. Only keep the tail
+    // when the live offset has not moved away from that end.
+    final pixelsUnchanged = (pixels - oldPosition.pixels).abs() <= 1;
+    final stick = followTail() && distanceFromEnd <= 1 && pixelsUnchanged;
     if (!stick) {
       return super.correctForNewDimensions(oldPosition, newPosition);
     }
@@ -119,7 +124,10 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
 
   var _drawerDragBlockedForList = false;
 
-  /// Bottom reserve for the floating composer (measured each layout).
+  /// Composer card height, excluding the soft keyboard.
+  ///
+  /// The keyboard is added from [MediaQuery.viewInsets] on each build so the
+  /// list padding and scrollbar track match the IME in the same frame.
   var _composerOverlayHeight = 112.0;
 
   Timer? _scrollSaveDebounce;
@@ -456,6 +464,17 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
     super.dispose();
   }
 
+  void _stopGeneration() {
+    if (!_sending) return;
+    ZephyrScope.of(context).llmSettings.cancelChat();
+    _revealTimer?.cancel();
+    _revealTimer = null;
+    _streamReveal.snap();
+    if (_liveAssistantMessageIndex >= 0) {
+      _publishStreamReveal();
+    }
+  }
+
   Future<void> _send() async {
     if (_composer.isEmpty || _sending || _loadingSession) return;
     final displayText = _composer.composeDisplayText();
@@ -707,70 +726,81 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final themeVm = ZephyrScope.of(context).theme;
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     return ListenableBuilder(
       listenable: themeVm,
       builder: (context, _) {
         final bubbleRadius = themeVm.ui.chatBubbleCornerRadius;
+        final hideAvatar = themeVm.ui.hideAiAssistantAvatar;
         final immersiveChrome = widget.bleedEditorBackground;
         final listTopPadding = immersiveChrome
             ? widget.contentTopInset + 12
             : 12.0;
-        final listBottomPadding = _composerOverlayHeight + 8;
+        // Keyboard sits under the composer; both cover the bottom of the list.
+        final coveredBottom = _composerOverlayHeight + keyboardInset;
+        final listBottomPadding = coveredBottom + 8;
+        final trackTop = immersiveChrome ? widget.contentTopInset : 0.0;
         final messageList = _loadingSession
             ? const Center(child: CircularProgressIndicator())
             : Opacity(
                 opacity: _holdListUntilScrollRestored ? 0 : 1,
                 child: IgnorePointer(
                   ignoring: _holdListUntilScrollRestored,
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: _handleListScrollNotification,
-                    child: ScrollConfiguration(
-                      behavior: const _AiChatListScrollBehavior(),
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        physics: const AlwaysScrollableScrollPhysics(
-                          parent: ClampingScrollPhysics(),
-                        ),
-                        keyboardDismissBehavior:
-                            ScrollViewKeyboardDismissBehavior.onDrag,
-                        padding: widget.contentPadding.copyWith(
-                          top: listTopPadding,
-                          bottom: listBottomPadding,
-                        ),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, index) {
-                          if (index == _liveAssistantMessageIndex) {
-                            return ValueListenableBuilder<
-                              _StreamAssistantFrame?
-                            >(
-                              valueListenable: _liveAssistant,
-                              builder: (context, frame, _) {
-                                final base = _messages[index];
-                                final message = frame == null
-                                    ? base
-                                    : _AiChatMessage(
-                                        role: _AiChatRole.assistant,
-                                        text: frame.text,
-                                        thinking: frame.thinking,
-                                        thinkingInProgress:
-                                            frame.thinkingInProgress,
-                                      );
-                                return _AiChatBubble(
-                                  message: message,
-                                  radius: bubbleRadius,
-                                  markdownLiveStream: frame != null,
-                                );
-                              },
+                  child: _AiChatScrollbar(
+                    controller: _scrollController,
+                    topInset: trackTop,
+                    bottomInset: coveredBottom,
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: _handleListScrollNotification,
+                      child: ScrollConfiguration(
+                        behavior: const _AiChatListScrollBehavior(),
+                        child: ListView.builder(
+                          controller: _scrollController,
+                          physics: const AlwaysScrollableScrollPhysics(
+                            parent: ClampingScrollPhysics(),
+                          ),
+                          keyboardDismissBehavior:
+                              ScrollViewKeyboardDismissBehavior.onDrag,
+                          padding: widget.contentPadding.copyWith(
+                            top: listTopPadding,
+                            bottom: listBottomPadding,
+                          ),
+                          itemCount: _messages.length,
+                          itemBuilder: (context, index) {
+                            if (index == _liveAssistantMessageIndex) {
+                              return ValueListenableBuilder<
+                                _StreamAssistantFrame?
+                              >(
+                                valueListenable: _liveAssistant,
+                                builder: (context, frame, _) {
+                                  final base = _messages[index];
+                                  final message = frame == null
+                                      ? base
+                                      : _AiChatMessage(
+                                          role: _AiChatRole.assistant,
+                                          text: frame.text,
+                                          thinking: frame.thinking,
+                                          thinkingInProgress:
+                                              frame.thinkingInProgress,
+                                        );
+                                  return _AiChatBubble(
+                                    message: message,
+                                    radius: bubbleRadius,
+                                    hideAvatar: hideAvatar,
+                                    markdownLiveStream: frame != null,
+                                  );
+                                },
+                              );
+                            }
+                            final message = _messages[index];
+                            return _AiChatBubble(
+                              key: ValueKey('chat-msg-$index'),
+                              message: message,
+                              radius: bubbleRadius,
+                              hideAvatar: hideAvatar,
                             );
-                          }
-                          final message = _messages[index];
-                          return _AiChatBubble(
-                            key: ValueKey('chat-msg-$index'),
-                            message: message,
-                            radius: bubbleRadius,
-                          );
-                        },
+                          },
+                        ),
                       ),
                     ),
                   ),
@@ -795,20 +825,23 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: _AiChatComposerSizeReporter(
-                  onHeightChanged: (height) {
-                    if (height == _composerOverlayHeight) return;
-                    setState(() => _composerOverlayHeight = height);
-                  },
-                  child: _AiChatComposer(
-                    composer: _composer,
-                    bottomInset: bottomInset,
-                    sending: _sending,
-                    onSend: () => unawaited(_send()),
-                    onOpenOptions: () => unawaited(
-                      showWorkspaceAiChatOptionsSheet(
-                        context,
-                        onManageSessions: openSessionsSheet,
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: keyboardInset),
+                  child: _AiChatComposerSizeReporter(
+                    onHeightChanged: (height) {
+                      if (height == _composerOverlayHeight) return;
+                      setState(() => _composerOverlayHeight = height);
+                    },
+                    child: _AiChatComposer(
+                      composer: _composer,
+                      sending: _sending,
+                      onSend: () => unawaited(_send()),
+                      onStop: _stopGeneration,
+                      onOpenOptions: () => unawaited(
+                        showWorkspaceAiChatOptionsSheet(
+                          context,
+                          onManageSessions: openSessionsSheet,
+                        ),
                       ),
                     ),
                   ),
@@ -872,9 +905,9 @@ class _AiChatComposerSizeReporterState
 class _AiChatComposer extends StatelessWidget {
   const _AiChatComposer({
     required this.composer,
-    required this.bottomInset,
     required this.sending,
     required this.onSend,
+    required this.onStop,
     required this.onOpenOptions,
   });
 
@@ -887,9 +920,9 @@ class _AiChatComposer extends StatelessWidget {
   }
 
   final WorkspaceAiComposerController composer;
-  final double bottomInset;
   final bool sending;
   final VoidCallback onSend;
+  final VoidCallback onStop;
   final VoidCallback onOpenOptions;
 
   @override
@@ -913,7 +946,7 @@ class _AiChatComposer extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(14, 6, 14, 10 + bottomInset),
+        padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -978,26 +1011,29 @@ class _AiChatComposer extends StatelessWidget {
                             ),
                           ),
                           Tooltip(
-                            message: l10n.aiChatSend,
+                            message: sending
+                                ? l10n.aiChatStopGenerating
+                                : l10n.aiChatSend,
                             child: Material(
-                              color: sending
-                                  ? scheme.primary.withValues(alpha: 0.45)
-                                  : scheme.primary,
+                              color: scheme.primary,
                               shape: const CircleBorder(),
                               clipBehavior: Clip.antiAlias,
                               child: InkWell(
-                                onTap: sending ? null : onSend,
+                                onTap: sending ? onStop : onSend,
                                 child: SizedBox(
                                   width: 34,
                                   height: 34,
                                   child: Center(
                                     child: sending
-                                        ? SizedBox(
-                                            width: 16,
-                                            height: 16,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
+                                        ? DecoratedBox(
+                                            decoration: BoxDecoration(
                                               color: scheme.onPrimary,
+                                              borderRadius:
+                                                  BorderRadius.circular(2.5),
+                                            ),
+                                            child: const SizedBox(
+                                              width: 12,
+                                              height: 12,
                                             ),
                                           )
                                         : Icon(
@@ -1148,8 +1184,56 @@ class _AiChatComposerPickerButton extends StatelessWidget {
 }
 
 /// Matches the plain-text editor: always scrollable + Material stretch overscroll.
+/// Same thumb as the plain-text editor. The track stops above the composer
+/// and the soft keyboard.
+class _AiChatScrollbar extends StatelessWidget {
+  const _AiChatScrollbar({
+    required this.controller,
+    required this.child,
+    required this.topInset,
+    required this.bottomInset,
+  });
+
+  final ScrollController controller;
+  final Widget child;
+  final double topInset;
+  final double bottomInset;
+
+  @override
+  Widget build(BuildContext context) {
+    final platform = Theme.of(context).platform;
+    final mobile =
+        platform == TargetPlatform.android || platform == TargetPlatform.iOS;
+    if (mobile) {
+      return ZephyrEditorScrollbar(
+        controller: controller,
+        padding: EdgeInsets.only(top: topInset),
+        bottomTrackInset: bottomInset,
+        child: child,
+      );
+    }
+    return RawScrollbar(
+      controller: controller,
+      padding: EdgeInsets.only(top: topInset, bottom: bottomInset),
+      thumbVisibility: false,
+      interactive: true,
+      child: child,
+    );
+  }
+}
+
 class _AiChatListScrollBehavior extends ScrollBehavior {
   const _AiChatListScrollBehavior();
+
+  @override
+  Widget buildScrollbar(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    // Parent wraps with ZephyrEditorScrollbar (mobile) or Scrollbar (desktop).
+    return child;
+  }
 
   @override
   Widget buildOverscrollIndicator(
@@ -1211,11 +1295,13 @@ class _AiChatBubble extends StatefulWidget {
     super.key,
     required this.message,
     required this.radius,
+    this.hideAvatar = false,
     this.markdownLiveStream = false,
   });
 
   final _AiChatMessage message;
   final double radius;
+  final bool hideAvatar;
   final bool markdownLiveStream;
 
   @override
@@ -1282,7 +1368,7 @@ class _AiChatBubbleState extends State<_AiChatBubble> {
             : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!isUser) ...[
+          if (!isUser && !widget.hideAvatar) ...[
             CircleAvatar(
               radius: 14,
               backgroundColor: theme.colorScheme.secondaryContainer,

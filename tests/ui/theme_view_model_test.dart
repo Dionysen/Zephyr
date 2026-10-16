@@ -237,6 +237,16 @@ void main() {
     expect(model.ui.aiFeaturesEnabled, isTrue);
   });
 
+  test('hide AI assistant avatar defaults off and updates independently', () {
+    final model = ThemeViewModel(_ThemeRepository());
+
+    expect(model.ui.hideAiAssistantAvatar, isFalse);
+    model.updateHideAiAssistantAvatar(true);
+    expect(model.ui.hideAiAssistantAvatar, isTrue);
+    model.updateHideAiAssistantAvatar(false);
+    expect(model.ui.hideAiAssistantAvatar, isFalse);
+  });
+
   test('show chapter details defaults on and updates independently', () {
     final model = ThemeViewModel(_ThemeRepository());
 
@@ -289,10 +299,7 @@ void main() {
     );
     model.updateEditorBackground(dark: true, config: dark);
     expect(model.ui.editorBackgroundEnabled, isTrue);
-    expect(
-      model.ui.activeEditorBackgroundFor(dark: true),
-      dark,
-    );
+    expect(model.ui.activeEditorBackgroundFor(dark: true), dark);
 
     model.updateEditorBackgroundEnabled(false);
     expect(model.ui.editorBackgroundEnabled, isFalse);
@@ -303,10 +310,7 @@ void main() {
     );
 
     model.updateEditorBackgroundEnabled(true);
-    expect(
-      model.ui.activeEditorBackgroundFor(dark: true),
-      dark,
-    );
+    expect(model.ui.activeEditorBackgroundFor(dark: true), dark);
   });
 
   test('deleting a background image clears modes that reference it', () async {

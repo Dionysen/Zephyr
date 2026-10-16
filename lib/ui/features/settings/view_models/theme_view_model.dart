@@ -392,15 +392,17 @@ class ThemeViewModel extends ChangeNotifier {
   void updateAiFeaturesEnabled(bool value) =>
       _updateUi(_ui.copyWith(aiFeaturesEnabled: value));
 
+  void updateHideAiAssistantAvatar(bool value) =>
+      _updateUi(_ui.copyWith(hideAiAssistantAvatar: value));
+
   void updateLocalePreference(AppLocalePreference value) =>
       _updateUi(_ui.copyWith(localePreference: value));
 
   void updateMobileToolsOrder(List<String> order) =>
       _updateUi(_ui.copyWith(mobileToolsOrder: List<String>.from(order)));
 
-  void updateCloudBackupMenuOrder(List<String> order) => _updateUi(
-    _ui.copyWith(cloudBackupMenuOrder: List<String>.from(order)),
-  );
+  void updateCloudBackupMenuOrder(List<String> order) =>
+      _updateUi(_ui.copyWith(cloudBackupMenuOrder: List<String>.from(order)));
 
   EditorBackgroundConfig editorBackground({required bool dark}) =>
       _ui.editorBackgroundFor(dark: dark);
@@ -436,9 +438,7 @@ class ThemeViewModel extends ChangeNotifier {
     var ui = _ui;
     var changed = false;
     if (ui.lightEditorBackground.imagePath == image.path) {
-      ui = ui.copyWith(
-        lightEditorBackground: EditorBackgroundConfig.defaults,
-      );
+      ui = ui.copyWith(lightEditorBackground: EditorBackgroundConfig.defaults);
       changed = true;
     }
     if (ui.darkEditorBackground.imagePath == image.path) {
@@ -527,9 +527,7 @@ class ThemeViewModel extends ChangeNotifier {
     var changed = false;
     final lightPath = ui.lightEditorBackground.imagePath;
     if (lightPath != null && await library.imageFileMissing(lightPath)) {
-      ui = ui.copyWith(
-        lightEditorBackground: EditorBackgroundConfig.defaults,
-      );
+      ui = ui.copyWith(lightEditorBackground: EditorBackgroundConfig.defaults);
       changed = true;
     }
     final darkPath = ui.darkEditorBackground.imagePath;
