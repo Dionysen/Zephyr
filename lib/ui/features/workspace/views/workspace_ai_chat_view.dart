@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../../../../domain/models/llm_chat.dart';
 import '../../../../domain/models/llm_settings.dart';
@@ -38,6 +39,41 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
   final _messages = <_AiChatMessage>[];
   var _sending = false;
 
+  /// Finger is on the list and dragging (hold-scroll); blocks stream pin jumps.
+  var _userInteractingWithScroll = false;
+
+  /// Invalidates queued [addPostFrameCallback] pin scrolls when the user drags.
+  var _scrollPinEpoch = 0;
+
+  static const _followSlop = 72.0;
+
+  bool _handleListScrollNotification(ScrollNotification notification) {
+    if (notification.depth != 0) return false;
+    if (notification is ScrollStartNotification &&
+        notification.dragDetails != null) {
+      _userInteractingWithScroll = true;
+      _scrollPinEpoch++;
+    } else if (notification is UserScrollNotification) {
+      _userInteractingWithScroll =
+          notification.direction != ScrollDirection.idle;
+    } else if (notification is ScrollEndNotification) {
+      _userInteractingWithScroll = false;
+    }
+    return false;
+  }
+
+  bool _canPinStreamTail({bool force = false}) {
+    if (force) return true;
+    if (_userInteractingWithScroll) return false;
+    return _isNearListBottom();
+  }
+
+  bool _isNearListBottom() {
+    if (!_scrollController.hasClients) return true;
+    final position = _scrollController.position;
+    return position.pixels >= position.maxScrollExtent - _followSlop;
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -70,7 +106,7 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
       _messages.add(_AiChatMessage(role: _AiChatRole.user, text: text));
       _inputController.clear();
     });
-    _scrollToEnd();
+    _scrollToEnd(animate: true, force: true);
     var assistantIndex = -1;
     final expectsThinking = llm.isConfigured &&
         llm.preferences.allowThinking &&
@@ -87,6 +123,7 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
         );
         assistantIndex = _messages.length - 1;
       });
+      _scrollToEnd(animate: false, force: true);
     }
     LlmChatResult? replyResult;
     String replyText;
@@ -122,7 +159,7 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
                       thinkingInProgress: partial.thinkingInProgress,
                     );
                   });
-                  _scrollToEnd();
+                  _scrollToEndIfPinned();
                 }
               : null,
         );
@@ -151,7 +188,7 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
         );
       }
     });
-    _scrollToEnd();
+    _scrollToEndIfPinned();
   }
 
   Future<String> _buildContextSystemPrompt() async {
@@ -172,15 +209,48 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
     return '以下章节作为参考上下文：\n\n${blocks.join('\n\n---\n\n')}';
   }
 
-  void _scrollToEnd() {
+  /// During streaming: scroll only while the user is already at the list bottom.
+  void _scrollToEndIfPinned() {
+    final epoch = _scrollPinEpoch;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scrollController.hasClients) return;
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOutCubic,
-      );
+      if (!mounted || epoch != _scrollPinEpoch) return;
+      _scrollToEndNow(animate: false);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || epoch != _scrollPinEpoch) return;
+        _scrollToEndNow(animate: false);
+      });
     });
+  }
+
+  void _scrollToEnd({bool animate = false, bool force = false}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _scrollToEndNow(animate: animate, force: force);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _scrollToEndNow(animate: false, force: force);
+      });
+    });
+  }
+
+  void _scrollToEndNow({required bool animate, bool force = false}) {
+    if (!_canPinStreamTail(force: force)) return;
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    final target = position.maxScrollExtent;
+    if (animate) {
+      unawaited(
+        position.animateTo(
+          target,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+        ),
+      );
+      return;
+    }
+    if (position.pixels != target) {
+      position.jumpTo(target);
+    }
   }
 
   @override
@@ -195,14 +265,19 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
         children: [
           SizedBox(height: widget.contentTopInset),
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: widget.contentPadding.copyWith(top: 12, bottom: 12),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                return _AiChatBubble(message: message, radius: radius);
-              },
+            child: NotificationListener<ScrollNotification>(
+              onNotification: _handleListScrollNotification,
+              child: ListView.builder(
+                controller: _scrollController,
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: widget.contentPadding.copyWith(top: 12, bottom: 12),
+                itemCount: _messages.length,
+                itemBuilder: (context, index) {
+                  final message = _messages[index];
+                  return _AiChatBubble(message: message, radius: radius);
+                },
+              ),
             ),
           ),
           Material(
