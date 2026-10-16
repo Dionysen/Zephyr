@@ -89,6 +89,7 @@ class WorkspaceAiChatView extends StatefulWidget {
     this.bleedEditorBackground = false,
     this.contextSelection,
     this.libraryModel,
+    this.onOpenDesktopAiSettings,
   });
 
   /// Clears floating chrome (e.g. mobile book bar).
@@ -101,6 +102,10 @@ class WorkspaceAiChatView extends StatefulWidget {
   final EdgeInsets contentPadding;
   final WorkspaceAiContextSelection? contextSelection;
   final LibraryViewModel? libraryModel;
+
+  /// Desktop: open the floating settings panel on the AI tab.
+  /// Mobile leaves this null and pushes the model settings page.
+  final VoidCallback? onOpenDesktopAiSettings;
 
   @override
   State<WorkspaceAiChatView> createState() => _WorkspaceAiChatViewState();
@@ -866,6 +871,8 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
                           context,
                           onNewConversation: openNewConversation,
                           onManageSessions: openSessionsSheet,
+                          onOpenDesktopAiSettings:
+                              widget.onOpenDesktopAiSettings,
                         ),
                       ),
                     ),
@@ -954,6 +961,9 @@ class _AiChatComposer extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
+    final desktop =
+        theme.platform != TargetPlatform.android &&
+        theme.platform != TargetPlatform.iOS;
     final scheme = theme.colorScheme;
     final fill = _composerFill(scheme, theme.brightness);
     final fieldStyle = theme.textTheme.bodyMedium?.copyWith(
@@ -1035,6 +1045,7 @@ class _AiChatComposer extends StatelessWidget {
                               minHeight: 32,
                             ),
                           ),
+                          if (desktop) const SizedBox(width: 12),
                           Tooltip(
                             message: sending
                                 ? l10n.aiChatStopGenerating

@@ -34,6 +34,7 @@ import '../../editor/view_models/editor_preferences_view_model.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../settings/view_models/theme_view_model.dart';
 import '../../settings/views/backup_settings_view.dart';
+import '../../settings/models/settings_tab.dart';
 import '../../settings/views/settings_page.dart';
 import 'cloud_backup_quick_button.dart';
 import 'library_search_sheet.dart';
@@ -563,6 +564,8 @@ class _WorkspacePageState extends State<WorkspacePage>
                                                   contextSelection:
                                                       _desktopAiContext,
                                                   libraryModel: model,
+                                                  onOpenDesktopAiSettings:
+                                                      _openDesktopAiSettings,
                                                 )
                                               : WorkspaceEditor(
                                                   model: model,
@@ -589,14 +592,15 @@ class _WorkspacePageState extends State<WorkspacePage>
                                   ),
                                 ],
                               ),
-                              Positioned(
-                                left: 12,
-                                bottom: 12,
-                                child: const CloudBackupQuickButton(
-                                  iconSize: 16,
-                                  hoverBorder: true,
+                              if (!desktopAiChatVisible)
+                                const Positioned(
+                                  left: 12,
+                                  bottom: 12,
+                                  child: CloudBackupQuickButton(
+                                    iconSize: 16,
+                                    hoverBorder: true,
+                                  ),
                                 ),
-                              ),
                             ],
                           ),
                         ),
@@ -766,6 +770,14 @@ class _WorkspacePageState extends State<WorkspacePage>
     if (_settingsOpen) {
       prefetchWorkspaceSettingsFonts(context);
     }
+  }
+
+  /// Same floating panel as the sidebar settings button, on the AI tab.
+  void _openDesktopAiSettings() {
+    ZephyrScope.of(context).settings.selectTab(SettingsTab.ai);
+    if (_settingsOpen) return;
+    setState(() => _settingsOpen = true);
+    prefetchWorkspaceSettingsFonts(context);
   }
 
   void _closeSettings() {

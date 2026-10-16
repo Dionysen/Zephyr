@@ -8,9 +8,16 @@ import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_settings.dart';
 
-void _openAiModelSettingsFromChat(BuildContext context) {
+void _openAiModelSettingsFromChat(
+  BuildContext context, {
+  VoidCallback? onOpenDesktopAiSettings,
+}) {
   final navigator = Navigator.of(context);
   navigator.pop();
+  if (onOpenDesktopAiSettings != null) {
+    onOpenDesktopAiSettings();
+    return;
+  }
   navigator.push(LlmSettingsPage.route());
 }
 
@@ -25,12 +32,14 @@ Future<void> showWorkspaceAiChatOptionsSheet(
   BuildContext context, {
   VoidCallback? onNewConversation,
   VoidCallback? onManageSessions,
+  VoidCallback? onOpenDesktopAiSettings,
 }) {
   return showZephyrModalSheet<void>(
     context: context,
     builder: (context) => _WorkspaceAiChatOptionsSheet(
       onNewConversation: onNewConversation,
       onManageSessions: onManageSessions,
+      onOpenDesktopAiSettings: onOpenDesktopAiSettings,
     ),
   );
 }
@@ -39,10 +48,12 @@ class _WorkspaceAiChatOptionsSheet extends StatelessWidget {
   const _WorkspaceAiChatOptionsSheet({
     this.onNewConversation,
     this.onManageSessions,
+    this.onOpenDesktopAiSettings,
   });
 
   final VoidCallback? onNewConversation;
   final VoidCallback? onManageSessions;
+  final VoidCallback? onOpenDesktopAiSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +81,10 @@ class _WorkspaceAiChatOptionsSheet extends StatelessWidget {
               icon: Icons.hub_outlined,
               title: l10n.aiChatSessionProviderTitle,
               subtitle: l10n.aiChatSessionOptionsNeedTest,
-              onTap: () => _openAiModelSettingsFromChat(context),
+              onTap: () => _openAiModelSettingsFromChat(
+                context,
+                onOpenDesktopAiSettings: onOpenDesktopAiSettings,
+              ),
             )
           else
             ZephyrSettingsChoiceTile<LlmProviderKind>(
@@ -93,7 +107,10 @@ class _WorkspaceAiChatOptionsSheet extends StatelessWidget {
             title: l10n.aiChatAiSettingsEntry,
             subtitle: l10n.llmSettingsSubtitle,
             showDivider: false,
-            onTap: () => _openAiModelSettingsFromChat(context),
+            onTap: () => _openAiModelSettingsFromChat(
+              context,
+              onOpenDesktopAiSettings: onOpenDesktopAiSettings,
+            ),
           ),
         ];
         return SafeArea(
