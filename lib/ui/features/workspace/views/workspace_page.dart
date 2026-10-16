@@ -151,6 +151,10 @@ class _WorkspacePageState extends State<WorkspacePage>
     if (library == null) return;
     await library.load();
     if (!mounted) return;
+    if (library.recoveredToTemporaryLibrary) {
+      library.clearRecoveredToTemporaryLibraryNotice();
+      ZephyrSnackBar.show(context, context.l10n.libraryRecoveredToTemporary);
+    }
     if (!_offeredDraftRecovery) {
       _offeredDraftRecovery = true;
       await _offerDraftRecovery(library);
@@ -360,6 +364,8 @@ class _WorkspacePageState extends State<WorkspacePage>
                     child: _LibrarySetupPage(
                       error: model.error,
                       openLibrary: _openLibrary,
+                      startTemporaryLibrary: () =>
+                          model.startWithTemporaryLibrary(),
                     ),
                   );
                 }
@@ -1177,8 +1183,10 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
           valueListenable: _activeEditor,
           builder: (context, activeEditor, _) {
             final model = activeEditor == 0 ? widget.model : _companion;
-            final aiEnabled =
-                ZephyrScope.of(context).theme.ui.aiFeaturesEnabled;
+            final aiEnabled = ZephyrScope.of(context)
+                .theme
+                .ui
+                .aiFeaturesEnabled;
             return WorkspaceMobileBookBar(
               model: model,
               onOpenMenu: () {
@@ -1556,7 +1564,8 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
           final hideT = chromeHide.value;
           final aiBleedsChrome =
               widget.transparentTopBar || widget.invadeStatusBar;
-          final paintBleedBackground = widget.transparentTopBar ||
+          final paintBleedBackground =
+              widget.transparentTopBar ||
               (widget.aiChatOpen && widget.invadeStatusBar);
           // Match the opaque-band fade: while the bar is visible, hide text
           // above its bottom edge; as it hides, release the clip.
@@ -1750,10 +1759,15 @@ class _LibrarySetupBanner extends StatelessWidget {
 }
 
 class _LibrarySetupPage extends StatelessWidget {
-  const _LibrarySetupPage({required this.openLibrary, this.error});
+  const _LibrarySetupPage({
+    required this.openLibrary,
+    required this.startTemporaryLibrary,
+    this.error,
+  });
 
   final Object? error;
   final Future<void> Function() openLibrary;
+  final Future<void> Function() startTemporaryLibrary;
 
   @override
   Widget build(BuildContext context) {
@@ -1791,7 +1805,7 @@ class _LibrarySetupPage extends StatelessWidget {
                   if (error != null) ...[
                     const SizedBox(height: 16),
                     Text(
-                      '$error',
+                      l10n.libraryLoadFailedHint,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.error,
                       ),
@@ -1800,8 +1814,14 @@ class _LibrarySetupPage extends StatelessWidget {
                   ],
                   const SizedBox(height: 24),
                   FilledButton.icon(
+                    onPressed: () => unawaited(startTemporaryLibrary()),
+                    icon: const Icon(Icons.edit_outlined),
+                    label: Text(l10n.startTemporaryLibraryButton),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
                     onPressed: openLibrary,
-                    icon: const Icon(Icons.folder_open),
+                    icon: const Icon(Icons.folder_open_outlined),
                     label: Text(l10n.chooseLibraryDirectoryButton),
                   ),
                 ],

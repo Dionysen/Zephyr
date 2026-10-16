@@ -520,6 +520,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSectionAbout => 'About';
 
   @override
+  String get settingsSectionAi => 'AI';
+
+  @override
+  String get aboutSettingsListSubtitle => 'Version, updates, and links';
+
+  @override
   String aboutVersionLabel(String version) {
     return 'Version $version';
   }
@@ -1137,14 +1143,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chooseLibraryButton => 'Choose library';
 
   @override
-  String get librarySetupTitle => 'Choose a PureWriter library';
+  String get librarySetupTitle => 'Welcome to Zephyr';
 
   @override
   String get librarySetupBody =>
-      'Choose your PureWriter library folder to open your work, or start with a temporary library and switch later.';
+      'Start writing in a local temporary library, or connect an existing PureWriter folder when you are ready.';
 
   @override
-  String get chooseLibraryDirectoryButton => 'Choose library folder';
+  String get startTemporaryLibraryButton => 'Start writing';
+
+  @override
+  String get libraryLoadFailedHint =>
+      'Could not open the last library. Start fresh or choose another folder.';
+
+  @override
+  String get libraryRecoveredToTemporary =>
+      'Opened the temporary library instead. You can reconnect your PureWriter folder from the banner.';
+
+  @override
+  String get chooseLibraryDirectoryButton => 'Choose PureWriter folder';
 
   @override
   String get editorEmptyState => 'Choose or create a chapter to begin writing.';
@@ -1348,8 +1365,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get llmPresetPromptTitle => 'Preset prompt';
 
   @override
+  String get llmPresetPromptDescription =>
+      'Sent as system instructions on every chat—use it for genre, tone, POV, and other standing preferences.';
+
+  @override
   String get llmPresetPromptHint =>
-      'Included at the start of every conversation';
+      'e.g. You are a writing assistant. Reply concisely; when continuing prose, match POV, tense, and voice.';
 
   @override
   String get llmMaxInputTokensTitle => 'Context limit (input)';

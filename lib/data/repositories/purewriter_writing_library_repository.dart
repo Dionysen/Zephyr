@@ -20,6 +20,20 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   PureWriterWritingLibraryRepository(this._store, {Uuid? uuid})
     : _uuid = uuid ?? Uuid(),
       _aiChat = ZephyrAiChatStore(_store, uuid: uuid);
+
+  /// Article columns for sidebar lists — never load [content] in bulk (Android
+  /// CursorWindow limit per row).
+  static const _articleSummaryColumns = [
+    'id',
+    'title',
+    'summary',
+    'folderId',
+    'categoryId',
+    'createTime',
+    'updateTime',
+    'count',
+  ];
+
   final PureWriterDatabase _store;
   final Uuid _uuid;
   final ZephyrAiChatStore _aiChat;
@@ -47,6 +61,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     );
     final articles = await db.query(
       'Article',
+      columns: _articleSummaryColumns,
       where: 'deleted = 0',
       orderBy: 'orderKey ASC, rank ASC, updateTime DESC',
     );
@@ -1327,14 +1342,10 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   @override
   Future<void> writeQuickToolbarConfig(QuickToolbarConfig config) async {
     _store.ensureWritable();
-    await _store.database.insert(
-      'ZephyrMeta',
-      {
-        'key': ZephyrMetaKeys.quickToolbarConfig,
-        'value': jsonEncode(config.normalized().toJson()),
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await _store.database.insert('ZephyrMeta', {
+      'key': ZephyrMetaKeys.quickToolbarConfig,
+      'value': jsonEncode(config.normalized().toJson()),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   QuickToolbarConfig? _quickToolbarConfigFromMeta(String? raw) {

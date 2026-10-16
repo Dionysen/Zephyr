@@ -12,6 +12,7 @@ extension SettingsSectionLabels on SettingsSection {
     SettingsSection.editor => l10n.settingsSectionEditor,
     SettingsSection.shortcuts => l10n.settingsSectionShortcuts,
     SettingsSection.theme => l10n.settingsSectionTheme,
+    SettingsSection.ai => l10n.settingsSectionAi,
     SettingsSection.about => l10n.settingsSectionAbout,
   };
 
@@ -21,6 +22,7 @@ extension SettingsSectionLabels on SettingsSection {
     SettingsSection.editor => Icons.edit_outlined,
     SettingsSection.shortcuts => Icons.keyboard_outlined,
     SettingsSection.theme => Icons.palette_outlined,
+    SettingsSection.ai => Icons.auto_awesome_outlined,
     SettingsSection.about => Icons.info_outline,
   };
 }

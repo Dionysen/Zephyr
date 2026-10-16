@@ -1,1 +1,1 @@
-enum SettingsSection { general, cloud, editor, shortcuts, theme, about }
+enum SettingsSection { general, cloud, editor, shortcuts, theme, ai, about }

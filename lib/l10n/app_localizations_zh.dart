@@ -501,6 +501,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsSectionAbout => '关于';
 
   @override
+  String get settingsSectionAi => 'AI';
+
+  @override
+  String get aboutSettingsListSubtitle => '版本、更新与链接';
+
+  @override
   String aboutVersionLabel(String version) {
     return '版本 $version';
   }
@@ -1069,13 +1075,23 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chooseLibraryButton => '选择书库';
 
   @override
-  String get librarySetupTitle => '选择 PureWriter 书库';
+  String get librarySetupTitle => '欢迎使用 Zephyr';
 
   @override
-  String get librarySetupBody => '选择纯纯写作的书库文件夹即可打开你的作品，也可以先用临时书库写作，稍后再切换';
+  String get librarySetupBody => '可直接在本地临时书库开始写作，准备好后再连接纯纯写作的书库文件夹。';
 
   @override
-  String get chooseLibraryDirectoryButton => '选择书库目录';
+  String get startTemporaryLibraryButton => '开始写作';
+
+  @override
+  String get libraryLoadFailedHint => '无法打开上次的书库。可以重新开始，或选择其他书库目录。';
+
+  @override
+  String get libraryRecoveredToTemporary =>
+      '已改用临时书库。你仍可通过顶部横幅重新连接 PureWriter 书库。';
+
+  @override
+  String get chooseLibraryDirectoryButton => '选择 PureWriter 书库';
 
   @override
   String get editorEmptyState => '选择或创建章节以开始写作';
@@ -1277,7 +1293,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get llmPresetPromptTitle => '预设提示词';
 
   @override
-  String get llmPresetPromptHint => '每次对话都会先带上这段说明';
+  String get llmPresetPromptDescription => '每次对话都会作为系统说明发给模型，可固定体裁、文风、人称等偏好。';
+
+  @override
+  String get llmPresetPromptHint => '例如：你是写作助手，用简洁中文回答；续写时保持现有人称、时态与语气。';
 
   @override
   String get llmMaxInputTokensTitle => '上下文上限（输入）';

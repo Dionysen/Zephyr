@@ -63,6 +63,20 @@ void main() {
     );
   });
 
+  test('loadLibrary lists chapters without reading article content', () async {
+    final repository = PureWriterWritingLibraryRepository(database);
+    final article = await repository.createArticle(
+      folderId: PureWriterDatabase.defaultFolderId,
+    );
+    final hugeBody = List.filled(3 * 1024 * 1024, 'x').join();
+    await repository.saveArticle(article.copyWith(content: hugeBody));
+
+    final library = await repository.loadLibrary();
+
+    expect(library.articles.any((item) => item.id == article.id), isTrue);
+    expect((await repository.getArticle(article.id)).content, hugeBody);
+  });
+
   test('quick toolbar layout round-trips in ZephyrMeta', () async {
     final repository = PureWriterWritingLibraryRepository(database);
     final config = QuickToolbarConfig.defaults.copyWith(

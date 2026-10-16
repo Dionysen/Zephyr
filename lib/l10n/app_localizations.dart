@@ -1052,6 +1052,18 @@ abstract class AppLocalizations {
   /// **'About'**
   String get settingsSectionAbout;
 
+  /// No description provided for @settingsSectionAi.
+  ///
+  /// In en, this message translates to:
+  /// **'AI'**
+  String get settingsSectionAi;
+
+  /// No description provided for @aboutSettingsListSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Version, updates, and links'**
+  String get aboutSettingsListSubtitle;
+
   /// No description provided for @aboutVersionLabel.
   ///
   /// In en, this message translates to:
@@ -2134,19 +2146,37 @@ abstract class AppLocalizations {
   /// No description provided for @librarySetupTitle.
   ///
   /// In en, this message translates to:
-  /// **'Choose a PureWriter library'**
+  /// **'Welcome to Zephyr'**
   String get librarySetupTitle;
 
   /// No description provided for @librarySetupBody.
   ///
   /// In en, this message translates to:
-  /// **'Choose your PureWriter library folder to open your work, or start with a temporary library and switch later.'**
+  /// **'Start writing in a local temporary library, or connect an existing PureWriter folder when you are ready.'**
   String get librarySetupBody;
+
+  /// No description provided for @startTemporaryLibraryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Start writing'**
+  String get startTemporaryLibraryButton;
+
+  /// No description provided for @libraryLoadFailedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the last library. Start fresh or choose another folder.'**
+  String get libraryLoadFailedHint;
+
+  /// No description provided for @libraryRecoveredToTemporary.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened the temporary library instead. You can reconnect your PureWriter folder from the banner.'**
+  String get libraryRecoveredToTemporary;
 
   /// No description provided for @chooseLibraryDirectoryButton.
   ///
   /// In en, this message translates to:
-  /// **'Choose library folder'**
+  /// **'Choose PureWriter folder'**
   String get chooseLibraryDirectoryButton;
 
   /// No description provided for @editorEmptyState.
@@ -2539,10 +2569,16 @@ abstract class AppLocalizations {
   /// **'Preset prompt'**
   String get llmPresetPromptTitle;
 
+  /// No description provided for @llmPresetPromptDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent as system instructions on every chat—use it for genre, tone, POV, and other standing preferences.'**
+  String get llmPresetPromptDescription;
+
   /// No description provided for @llmPresetPromptHint.
   ///
   /// In en, this message translates to:
-  /// **'Included at the start of every conversation'**
+  /// **'e.g. You are a writing assistant. Reply concisely; when continuing prose, match POV, tense, and voice.'**
   String get llmPresetPromptHint;
 
   /// No description provided for @llmMaxInputTokensTitle.

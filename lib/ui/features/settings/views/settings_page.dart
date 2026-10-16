@@ -10,11 +10,11 @@ import '../../../core/zephyr_status_bar.dart';
 import '../../../core/zephyr_theme.dart';
 import '../models/settings_section.dart';
 import '../models/settings_tab.dart';
-import 'about_settings_view.dart';
+import 'about_settings_page.dart';
+import 'ai_settings_view.dart';
 import 'backup_settings_view.dart';
 import 'editor_settings_view.dart';
 import 'general_settings_view.dart';
-import 'llm_settings_view.dart';
 import 'shortcuts_settings_page.dart';
 import 'theme_settings_view.dart';
 
@@ -190,73 +190,19 @@ class CompactSettingsList extends StatelessWidget {
           showStatusBarSettings: showStatusBarSettings,
           showMobileBehaviorSettings: showStatusBarSettings,
         ),
-        ZephyrSettingsCategoryHeader(
-          icon: Icons.auto_awesome_outlined,
-          title: l10n.llmSettingsTitle,
-        ),
         ZephyrSettingsSection(
           children: [
-            ListenableBuilder(
-              listenable: scope.theme,
-              builder: (context, _) => ZephyrSettingsSwitchTile(
-                icon: Icons.auto_awesome_outlined,
-                title: l10n.aiFeaturesEnabledTitle,
-                subtitle: l10n.aiFeaturesEnabledSubtitle,
-                value: scope.theme.ui.aiFeaturesEnabled,
-                onChanged: scope.theme.updateAiFeaturesEnabled,
+            ZephyrSettingsListTile(
+              icon: SettingsSection.about.icon,
+              title: SettingsSection.about.title(l10n),
+              subtitle: l10n.aboutSettingsListSubtitle,
+              showDivider: false,
+              trailing: Icon(
+                Icons.chevron_right,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-            ),
-            ListenableBuilder(
-              listenable: scope.theme,
-              builder: (context, _) => ZephyrSettingsSwitchTile(
-                icon: Icons.account_circle_outlined,
-                title: l10n.hideAiAssistantAvatarTitle,
-                subtitle: l10n.hideAiAssistantAvatarSubtitle,
-                value: scope.theme.ui.hideAiAssistantAvatar,
-                onChanged: scope.theme.updateHideAiAssistantAvatar,
-              ),
-            ),
-            ListenableBuilder(
-              listenable: scope.llmSettings,
-              builder: (context, _) {
-                final llm = scope.llmSettings;
-                final modelLabel = llm.preferences.selectedModelId.isEmpty
-                    ? l10n.llmModelNotSelected
-                    : llm.preferences.selectedModelId;
-                return ZephyrSettingsListTile(
-                  icon: Icons.auto_awesome_outlined,
-                  title: l10n.llmSettingsTitle,
-                  subtitle: l10n.llmSettingsSubtitle,
-                  showDivider: false,
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 120),
-                        child: Text(
-                          modelLabel,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.end,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                              ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.chevron_right,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ],
-                  ),
-                  onTap: () {
-                    Navigator.of(context).push(LlmSettingsPage.route());
-                  },
-                );
+              onTap: () {
+                Navigator.of(context).push(AboutSettingsPage.route());
               },
             ),
           ],
@@ -302,12 +248,12 @@ class CompactSettingsList extends StatelessWidget {
       SettingsTab.appearance => [
         ThemeCatalog(viewModel: scope.theme, compact: true),
       ],
-      SettingsTab.about => [
+      SettingsTab.ai => [
         ZephyrSettingsCategoryHeader(
-          icon: SettingsSection.about.icon,
-          title: SettingsSection.about.title(l10n),
+          icon: SettingsSection.ai.icon,
+          title: SettingsSection.ai.title(l10n),
         ),
-        const AboutSettingsView(compact: true),
+        const AiSettingsView(),
       ],
     };
   }

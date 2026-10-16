@@ -57,6 +57,7 @@ class LibraryViewModel extends ChangeNotifier {
   WritingArticle? _article;
   Object? _error;
   bool _needsLibrarySetup;
+  var _recoveredToTemporaryLibrary = false;
   Timer? _pendingSave;
   Timer? _pendingTitleSave;
   Timer? _pendingLayoutSave;
@@ -127,6 +128,14 @@ class LibraryViewModel extends ChangeNotifier {
 
   /// True until the user has chosen a PureWriter library folder.
   bool get needsLibrarySetup => _needsLibrarySetup;
+
+  /// Set once when [load] fell back to the app-support temporary library.
+  bool get recoveredToTemporaryLibrary => _recoveredToTemporaryLibrary;
+
+  void clearRecoveredToTemporaryLibraryNotice() {
+    _recoveredToTemporaryLibrary = false;
+  }
+
   bool get isSidebarExpanded => _isSidebarExpanded;
 
   /// When true, sidebar rows show immediate-drag handles for reordering.
@@ -545,30 +554,88 @@ class LibraryViewModel extends ChangeNotifier {
   bool _sameLibraryPath(String a, String b) =>
       path.normalize(a) == path.normalize(b);
 
-  Future<void> load() async {
+  /// Opens the app-support temporary library and clears any saved folder choice.
+  Future<void> startWithTemporaryLibrary() async {
     try {
       await flushPending();
-      await _loadLayout();
-      if (_activeLibraryId != null || _lastLibraryRoot != null) {
-        _needsLibrarySetup = false;
-      } else if (_layoutRepository != null) {
-        // A persisted layout with no chosen folder means temporary-library mode.
-        _needsLibrarySetup = true;
-      }
-      if (_repository.location == null) {
-        await _repository.openDefaultLibrary();
-      }
-      _library = await _repository.loadLibrary();
-      _restoreSelection();
-      await _restoreArticle();
-      _recoverableDrafts = await _repository.listDraftsNewerThanArticles();
+      _clearChosenLibraryPointers();
+      await _repository.closeLibrary();
+      await _repository.openDefaultLibrary();
+      await _saveLayout();
+      await _loadLibraryContent();
       _error = null;
+      _recoveredToTemporaryLibrary = false;
     } on Object catch (error) {
+      _library = null;
       _error = error;
     }
     notifyListeners();
     if (_error == null) {
       await onLibraryLoaded?.call();
+    }
+  }
+
+  Future<void> load() async {
+    _recoveredToTemporaryLibrary = false;
+    try {
+      await flushPending();
+      await _loadLayout();
+      _applyLibrarySetupFlagFromLayout();
+      await _loadLibraryContent();
+      _error = null;
+    } on Object catch (error) {
+      if (await _recoverToTemporaryLibrary()) {
+        _recoveredToTemporaryLibrary = true;
+      } else {
+        _library = null;
+        _error = error;
+      }
+    }
+    notifyListeners();
+    if (_error == null) {
+      await onLibraryLoaded?.call();
+    }
+  }
+
+  void _applyLibrarySetupFlagFromLayout() {
+    if (_activeLibraryId != null || _lastLibraryRoot != null) {
+      _needsLibrarySetup = false;
+    } else if (_layoutRepository != null) {
+      // A persisted layout with no chosen folder means temporary-library mode.
+      _needsLibrarySetup = true;
+    }
+  }
+
+  Future<void> _loadLibraryContent() async {
+    if (_repository.location == null) {
+      await _repository.openDefaultLibrary();
+    }
+    _library = await _repository.loadLibrary();
+    _restoreSelection();
+    await _restoreArticle();
+    _recoverableDrafts = await _repository.listDraftsNewerThanArticles();
+  }
+
+  void _clearChosenLibraryPointers() {
+    _lastLibraryRoot = null;
+    _lastLibraryBookmark = null;
+    _activeLibraryId = null;
+    _libraries = const [];
+    _needsLibrarySetup = true;
+    _resetBookUiState();
+  }
+
+  Future<bool> _recoverToTemporaryLibrary() async {
+    try {
+      _clearChosenLibraryPointers();
+      await _repository.closeLibrary();
+      await _repository.openDefaultLibrary();
+      await _saveLayout();
+      await _loadLibraryContent();
+      _error = null;
+      return true;
+    } on Object {
+      return false;
     }
   }
 
