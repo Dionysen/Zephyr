@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:text_editor_foundation/text/three_way_text_merge.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/models/ai_chat_session.dart';
@@ -15,6 +17,17 @@ import '../../domain/use_cases/article_preview_summary.dart';
 import '../services/device_label.dart';
 import '../services/purewriter_database.dart';
 import 'zephyr_ai_chat_store.dart';
+
+class _ArticleTextPlan {
+  const _ArticleTextPlan.metadata() : row = null, keepLocal = false;
+
+  const _ArticleTextPlan.keepLocal() : row = null, keepLocal = true;
+
+  const _ArticleTextPlan.apply(this.row) : keepLocal = false;
+
+  final Map<String, Object?>? row;
+  final bool keepLocal;
+}
 
 class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   PureWriterWritingLibraryRepository(this._store, {Uuid? uuid})
@@ -99,14 +112,8 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
 
   @override
   Future<WritingArticle> getArticle(String id) async {
-    final rows = await _store.database.query(
-      'Article',
-      where: 'id = ?',
-      whereArgs: [id],
-      limit: 1,
-    );
-    if (rows.isEmpty) throw StateError('PureWriter article not found: $id');
-    final row = rows.single;
+    final row = await _readArticleRow(_store.database, id);
+    if (row == null) throw StateError('PureWriter article not found: $id');
     return WritingArticle(
       id: id,
       title: row['title']! as String,
@@ -224,16 +231,14 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     final now = DateTime.now().millisecondsSinceEpoch;
     final trimmed = title.trim().isEmpty ? 'Untitled' : title.trim();
     await _store.database.transaction((transaction) async {
-      final rows = await transaction.query(
-        'Article',
-        where: 'id = ? AND deleted = 0',
-        whereArgs: [articleId],
-        limit: 1,
+      final original = await _readArticleRow(
+        transaction,
+        articleId,
+        excludeDeleted: true,
       );
-      if (rows.isEmpty) {
+      if (original == null) {
         throw StateError('PureWriter article not found: $articleId');
       }
-      final original = rows.single;
       if (original['title'] == trimmed) return;
       if (await _hasHistoryTable(transaction)) {
         await transaction.insert('History', _historySnapshot(original, now));
@@ -251,16 +256,10 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   Future<void> saveArticle(WritingArticle article) async {
     _store.ensureWritable();
     await _store.database.transaction((transaction) async {
-      final rows = await transaction.query(
-        'Article',
-        where: 'id = ?',
-        whereArgs: [article.id],
-        limit: 1,
-      );
-      if (rows.isEmpty) {
+      final original = await _readArticleRow(transaction, article.id);
+      if (original == null) {
         throw StateError('PureWriter article not found: ${article.id}');
       }
-      final original = rows.single;
       if (original['content'] == article.content) return;
       final now = DateTime.now().millisecondsSinceEpoch;
       if (await _hasHistoryTable(transaction)) {
@@ -1086,24 +1085,34 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   }
 
   @override
-  Future<List<ArticleHistory>> listHistory(String articleId) async =>
-      !(await _hasHistoryTable(_store.database))
-      ? const []
-      : (await _store.database.query(
-              'History',
-              columns: ['createTime', 'article_content', 'article_title'],
-              where: 'article_id = ?',
-              whereArgs: [articleId],
-              orderBy: 'createTime DESC',
-            ))
-            .map(
-              (row) => ArticleHistory(
-                createdAt: _date(row['createTime']! as int),
-                content: row['article_content'] as String? ?? '',
-                title: row['article_title'] as String?,
-              ),
-            )
-            .toList(growable: false);
+  Future<List<ArticleHistory>> listHistory(String articleId) async {
+    final database = _store.database;
+    if (!await _hasHistoryTable(database)) return const [];
+    final rows = await database.query(
+      'History',
+      columns: ['id', 'createTime', 'article_title'],
+      where: 'article_id = ?',
+      whereArgs: [articleId],
+      orderBy: 'createTime DESC',
+    );
+    final history = <ArticleHistory>[];
+    for (final row in rows) {
+      history.add(
+        ArticleHistory(
+          createdAt: _date(row['createTime']! as int),
+          content: await _readTextColumn(
+            database: database,
+            table: 'History',
+            column: 'article_content',
+            where: 'id = ?',
+            whereArgs: [row['id']],
+          ),
+          title: row['article_title'] as String?,
+        ),
+      );
+    }
+    return history;
+  }
 
   @override
   Future<List<DailyWriting>> listDaily() async =>
@@ -1151,7 +1160,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     }
     final rows = await _store.database.query(
       'History',
-      columns: ['article_content', 'article_title'],
+      columns: ['id', 'article_title'],
       where: 'article_id = ? AND createTime = ?',
       whereArgs: [articleId, createdAt.millisecondsSinceEpoch],
       limit: 1,
@@ -1159,12 +1168,15 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     if (rows.isEmpty) {
       throw StateError('History revision not found.');
     }
-    final article = await getArticle(articleId);
-    await saveArticle(
-      article.copyWith(
-        content: rows.single['article_content'] as String? ?? '',
-      ),
+    final content = await _readTextColumn(
+      database: _store.database,
+      table: 'History',
+      column: 'article_content',
+      where: 'id = ?',
+      whereArgs: [rows.single['id']],
     );
+    final article = await getArticle(articleId);
+    await saveArticle(article.copyWith(content: content));
     final title = rows.single['article_title'] as String?;
     if (title != null && title != article.title) {
       await renameArticle(articleId: articleId, title: title);
@@ -1202,12 +1214,24 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     try {
       final rows = await _store.database.query(
         'ZephyrDraft',
+        columns: ['article_id', 'title', 'updated_at'],
         where: 'article_id = ?',
         whereArgs: [articleId],
         limit: 1,
       );
       if (rows.isEmpty) return null;
-      return _draftFromRow(rows.single);
+      return ArticleDraft(
+        articleId: rows.single['article_id']! as String,
+        content: await _readTextColumn(
+          database: _store.database,
+          table: 'ZephyrDraft',
+          column: 'content',
+          where: 'article_id = ?',
+          whereArgs: [articleId],
+        ),
+        title: rows.single['title']! as String,
+        updatedAt: _date(rows.single['updated_at']! as int),
+      );
     } on Object {
       return null;
     }
@@ -1217,13 +1241,27 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   Future<List<ArticleDraft>> listDraftsNewerThanArticles() async {
     if (_store.location == null) return const [];
     try {
-      final drafts = await _store.database.query('ZephyrDraft');
+      final drafts = await _store.database.query(
+        'ZephyrDraft',
+        columns: ['article_id', 'title', 'updated_at'],
+      );
       final out = <ArticleDraft>[];
       for (final row in drafts) {
-        final draft = _draftFromRow(row);
+        final draft = ArticleDraft(
+          articleId: row['article_id']! as String,
+          content: await _readTextColumn(
+            database: _store.database,
+            table: 'ZephyrDraft',
+            column: 'content',
+            where: 'article_id = ?',
+            whereArgs: [row['article_id']],
+          ),
+          title: row['title']! as String,
+          updatedAt: _date(row['updated_at']! as int),
+        );
         final articles = await _store.database.query(
           'Article',
-          columns: ['content', 'title', 'updateTime'],
+          columns: ['title', 'updateTime'],
           where: 'id = ?',
           whereArgs: [draft.articleId],
           limit: 1,
@@ -1234,8 +1272,15 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
         }
         final article = articles.single;
         final articleUpdated = _date(article['updateTime']! as int);
+        final content = await _readTextColumn(
+          database: _store.database,
+          table: 'Article',
+          column: 'content',
+          where: 'id = ?',
+          whereArgs: [draft.articleId],
+        );
         final contentDiffers =
-            (article['content'] as String? ?? '') != draft.content ||
+            content != draft.content ||
             (article['title'] as String? ?? '') != draft.title;
         if (contentDiffers && !draft.updatedAt.isBefore(articleUpdated)) {
           out.add(draft);
@@ -1246,13 +1291,6 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
       return const [];
     }
   }
-
-  ArticleDraft _draftFromRow(Map<String, Object?> row) => ArticleDraft(
-    articleId: row['article_id']! as String,
-    content: row['content']! as String,
-    title: row['title']! as String,
-    updatedAt: _date(row['updated_at']! as int),
-  );
 
   @override
   Future<List<BackupEntry>> listBackups() =>
@@ -1515,12 +1553,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     final localRows = await localDb.query(
       table,
       columns: trackArticleStats
-          ? [
-              idColumn,
-              timeColumn,
-              if (hasDeleted) 'deleted',
-              'title',
-            ]
+          ? [idColumn, timeColumn, if (hasDeleted) 'deleted', 'title']
           : [idColumn, timeColumn],
     );
     final localById = {
@@ -1548,6 +1581,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     var added = 0;
     var updated = 0;
     var removed = 0;
+    var historyClock = DateTime.now().millisecondsSinceEpoch;
     await localDb.transaction((txn) async {
       final batch = txn.batch();
       for (final remoteMeta in remoteRows) {
@@ -1556,15 +1590,74 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
         final remoteTime = (remoteMeta[timeColumn] as int?) ?? 0;
         final localTime = localTimes[id];
         final local = localById[id];
+        if (trackArticleStats && localTime != null) {
+          final remote = await _readArticleRow(backupDb, id);
+          if (remote == null) continue;
+          final plan = await _planDivergedArticle(
+            backupDb: backupDb,
+            local: txn,
+            id: id,
+            localTime: localTime,
+            remoteTime: remoteTime,
+            remote: remote,
+            hasHistory: hasHistory,
+          );
+          if (plan.keepLocal) {
+            if (hasHistory) {
+              _archiveArticle(
+                batch: batch,
+                historyKeys: historyKeys,
+                article: remote,
+                createTime: historyClock++,
+              );
+            }
+            continue;
+          }
+          if (plan.row != null) {
+            final localFull = await _readArticleRow(txn, id);
+            if (localFull == null) continue;
+            if (hasHistory &&
+                (localFull['content'] != plan.row!['content'] ||
+                    localFull['title'] != plan.row!['title'])) {
+              _archiveArticle(
+                batch: batch,
+                historyKeys: historyKeys,
+                article: localFull,
+                createTime: historyClock++,
+              );
+            }
+            if (hasHistory && plan.row!['content'] != remote['content']) {
+              _archiveArticle(
+                batch: batch,
+                historyKeys: historyKeys,
+                article: remote,
+                createTime: historyClock++,
+              );
+            }
+            batch.update(
+              table,
+              plan.row!,
+              where: '$idColumn = ?',
+              whereArgs: [id],
+            );
+            final remoteDeleted = hasDeleted
+                ? ((plan.row!['deleted'] as int?) ?? 0)
+                : 0;
+            final wasDeleted = localDeleted[id] ?? 0;
+            if (remoteDeleted == 1 && wasDeleted != 1) {
+              removed++;
+            } else if (remoteDeleted != 1) {
+              updated++;
+            }
+            continue;
+          }
+          if (remoteTime <= localTime) continue;
+        }
         if (localTime != null && remoteTime <= localTime) continue;
         final remote = trackArticleStats
-            ? (await backupDb.query(
-                table,
-                where: '$idColumn = ?',
-                whereArgs: [id],
-                limit: 1,
-              )).single
+            ? await _readArticleRow(backupDb, id)
             : remoteMeta;
+        if (remote == null) continue;
         final remoteDeleted = hasDeleted
             ? ((remote['deleted'] as int?) ?? 0)
             : 0;
@@ -1579,12 +1672,8 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
           }
         } else {
           if (hasHistory && local != null) {
-            final localFull = (await txn.query(
-              table,
-              where: '$idColumn = ?',
-              whereArgs: [id],
-              limit: 1,
-            )).single;
+            final localFull = await _readArticleRow(txn, id);
+            if (localFull == null) continue;
             if (localFull['content'] != remote['content'] ||
                 localFull['title'] != remote['title']) {
               final preserved = remoteTime > localTime ? localFull : remote;
@@ -1621,12 +1710,256 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     );
   }
 
+  void _archiveArticle({
+    required Batch batch,
+    required Set<(Object?, Object?)> historyKeys,
+    required Map<String, Object?> article,
+    required int createTime,
+  }) {
+    final key = (article['id'], article['updateTime']);
+    if (historyKeys.add(key)) {
+      batch.insert('History', _historySnapshot(article, createTime));
+    }
+  }
+
+  /// When both sides changed a chapter, keep both texts if they diverged from
+  /// the same saved version. Otherwise the newer [updateTime] still wins, and
+  /// the copy that drops out of the chapter is written to History.
+  Future<_ArticleTextPlan> _planDivergedArticle({
+    required Database backupDb,
+    required DatabaseExecutor local,
+    required Object id,
+    required int localTime,
+    required int remoteTime,
+    required Map<String, Object?> remote,
+    required bool hasHistory,
+  }) async {
+    final localArticle = await _readArticleRow(local, id);
+    if (localArticle == null) return const _ArticleTextPlan.metadata();
+    final localContent = localArticle['content'] as String? ?? '';
+    final remoteContent = remote['content'] as String? ?? '';
+    if (localContent == remoteContent) return const _ArticleTextPlan.metadata();
+
+    final base = hasHistory
+        ? await _sharedArticleVersion(
+            local: local,
+            backupDb: backupDb,
+            id: id,
+            localArticle: localArticle,
+            remoteArticle: remote,
+          )
+        : null;
+    final localUnchanged =
+        base != null && localContent == base.content && localTime == base.time;
+    final remoteUnchanged =
+        base != null &&
+        remoteContent == base.content &&
+        remoteTime == base.time;
+    if (remoteUnchanged) return const _ArticleTextPlan.keepLocal();
+    if (!localUnchanged &&
+        (base == null ||
+            localContent == base.content ||
+            remoteContent == base.content)) {
+      if (remoteTime > localTime) {
+        return _ArticleTextPlan.apply(
+          _withNewerStamp(remote, localTime, remoteTime),
+        );
+      }
+      return const _ArticleTextPlan.keepLocal();
+    }
+
+    final merged = localUnchanged
+        ? remoteContent
+        : mergeDivergedText(
+            base: base.content,
+            local: localContent,
+            remote: remoteContent,
+          ).text;
+    if (merged == localContent) return const _ArticleTextPlan.keepLocal();
+    if (merged == remoteContent) {
+      return _ArticleTextPlan.apply(
+        _withNewerStamp(remote, localTime, remoteTime),
+      );
+    }
+    final row = Map<String, Object?>.from(localArticle);
+    final localTitleTime = (localArticle['titleUpdateTime'] as int?) ?? 0;
+    final remoteTitleTime = (remote['titleUpdateTime'] as int?) ?? 0;
+    if (remoteTitleTime > localTitleTime) {
+      row['title'] = remote['title'];
+      row['titleUpdateTime'] = remote['titleUpdateTime'];
+    }
+    row['content'] = merged;
+    row['summary'] = articlePreviewSummary(merged);
+    row['count'] = _count(merged);
+    row['deleted'] = 0;
+    row['updateTime'] = _mergedStamp(localTime, remoteTime);
+    return _ArticleTextPlan.apply(row);
+  }
+
+  Map<String, Object?> _withNewerStamp(
+    Map<String, Object?> remote,
+    int localTime,
+    int remoteTime,
+  ) {
+    final row = Map<String, Object?>.from(remote);
+    row['updateTime'] = _mergedStamp(localTime, remoteTime);
+    return row;
+  }
+
+  int _mergedStamp(int localTime, int remoteTime) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final latest = localTime > remoteTime ? localTime : remoteTime;
+    return now > latest ? now : latest + 1;
+  }
+
+  Future<({int time, String content})?> _sharedArticleVersion({
+    required DatabaseExecutor local,
+    required Database backupDb,
+    required Object id,
+    required Map<String, Object?> localArticle,
+    required Map<String, Object?> remoteArticle,
+  }) async {
+    final localVersions = await _articleVersions(local, id);
+    final remoteVersions = await _articleVersions(backupDb, id);
+    localVersions.add((
+      (localArticle['updateTime'] as int?) ?? 0,
+      localArticle['content'] as String? ?? '',
+    ));
+    remoteVersions.add((
+      (remoteArticle['updateTime'] as int?) ?? 0,
+      remoteArticle['content'] as String? ?? '',
+    ));
+    (int, String)? best;
+    for (final version in localVersions) {
+      if (!remoteVersions.contains(version)) continue;
+      if (best == null || version.$1 >= best.$1) best = version;
+    }
+    if (best == null) return null;
+    return (time: best.$1, content: best.$2);
+  }
+
+  Future<Set<(int, String)>> _articleVersions(
+    DatabaseExecutor database,
+    Object id,
+  ) async {
+    if (!await _hasHistoryTable(database)) return {};
+    final rows = await database.query(
+      'History',
+      columns: ['id', 'article_updateTime'],
+      where: 'article_id = ?',
+      whereArgs: [id],
+    );
+    final versions = <(int, String)>{};
+    for (final row in rows) {
+      versions.add((
+        (row['article_updateTime'] as int?) ?? 0,
+        await _readTextColumn(
+          database: database,
+          table: 'History',
+          column: 'article_content',
+          where: 'id = ?',
+          whereArgs: [row['id']],
+        ),
+      ));
+    }
+    return versions;
+  }
+
+  /// Android's CursorWindow rejects a single row larger than about 2MB.
+  /// Chapter text is read in byte pieces so a long article can still be restored.
+  static const _textReadChunk = 65536;
+
+  Future<Map<String, Object?>?> _readArticleRow(
+    DatabaseExecutor database,
+    Object id, {
+    bool excludeDeleted = false,
+  }) async {
+    final columns = await _tableColumns(database, 'Article');
+    final rows = await database.query(
+      'Article',
+      columns: [
+        for (final name in columns)
+          if (name != 'content') name,
+      ],
+      where: excludeDeleted ? 'id = ? AND deleted = 0' : 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    final row = Map<String, Object?>.from(rows.single);
+    row['content'] = await _readTextColumn(
+      database: database,
+      table: 'Article',
+      column: 'content',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    return row;
+  }
+
+  Future<List<String>> _tableColumns(
+    DatabaseExecutor database,
+    String table,
+  ) async => [
+    for (final row in await database.rawQuery('PRAGMA table_info($table)'))
+      row['name']! as String,
+  ];
+
+  Future<String> _readTextColumn({
+    required DatabaseExecutor database,
+    required String table,
+    required String column,
+    required String where,
+    required List<Object?> whereArgs,
+  }) async {
+    final bytes = BytesBuilder(copy: false);
+    var start = 1;
+    while (true) {
+      final rows = await database.rawQuery(
+        'SELECT hex(substr(cast($column AS BLOB), ?, ?)) AS c '
+        'FROM $table WHERE $where',
+        [start, _textReadChunk, ...whereArgs],
+      );
+      if (rows.isEmpty) break;
+      final hexText = rows.single['c'] as String? ?? '';
+      if (hexText.isEmpty) break;
+      bytes.add(_hexToBytes(hexText));
+      if (hexText.length < _textReadChunk * 2) break;
+      start += _textReadChunk;
+    }
+    if (bytes.isEmpty) return '';
+    return utf8.decode(bytes.takeBytes());
+  }
+
+  Uint8List _hexToBytes(String hex) {
+    final out = Uint8List(hex.length >> 1);
+    for (var i = 0; i < out.length; i++) {
+      final high = hex.codeUnitAt(i * 2);
+      final low = hex.codeUnitAt(i * 2 + 1);
+      out[i] = (_hexNibble(high) << 4) | _hexNibble(low);
+    }
+    return out;
+  }
+
+  int _hexNibble(int unit) {
+    if (unit >= 48 && unit <= 57) return unit - 48;
+    if (unit >= 65 && unit <= 70) return unit - 55;
+    return unit - 87;
+  }
+
   Future<void> _mergeHistory(Database backupDb) async {
     final localDb = _store.database;
     if (!await _hasHistoryTable(localDb) || !await _hasHistoryTable(backupDb)) {
       return;
     }
-    final remoteRows = await backupDb.query('History');
+    final historyColumns = await _tableColumns(backupDb, 'History');
+    final remoteRows = await backupDb.query(
+      'History',
+      columns: [
+        for (final name in historyColumns)
+          if (name != 'article_content') name,
+      ],
+    );
     if (remoteRows.isEmpty) return;
     final existingRows = await localDb.query(
       'History',
@@ -1646,6 +1979,13 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
         if (existing.contains(key)) continue;
         existing.add(key);
         final copy = Map<String, Object?>.from(remote)..remove('id');
+        copy['article_content'] = await _readTextColumn(
+          database: backupDb,
+          table: 'History',
+          column: 'article_content',
+          where: 'id = ?',
+          whereArgs: [remote['id']],
+        );
         batch.insert('History', copy);
       }
       await batch.commit(noResult: true);
@@ -1658,7 +1998,14 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
         !await _hasTable(backupDb, 'ZephyrDraft')) {
       return;
     }
-    final remoteRows = await backupDb.query('ZephyrDraft');
+    final draftColumns = await _tableColumns(backupDb, 'ZephyrDraft');
+    final remoteRows = await backupDb.query(
+      'ZephyrDraft',
+      columns: [
+        for (final name in draftColumns)
+          if (name != 'content') name,
+      ],
+    );
     if (remoteRows.isEmpty) return;
     final localRows = await localDb.query(
       'ZephyrDraft',
@@ -1676,9 +2023,17 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
         final remoteTime = (remote['updated_at'] as int?) ?? 0;
         final localTime = localTimes[id];
         if (localTime == null || remoteTime >= localTime) {
+          final copy = Map<String, Object?>.from(remote);
+          copy['content'] = await _readTextColumn(
+            database: backupDb,
+            table: 'ZephyrDraft',
+            column: 'content',
+            where: 'article_id = ?',
+            whereArgs: [id],
+          );
           batch.insert(
             'ZephyrDraft',
-            remote,
+            copy,
             conflictAlgorithm: ConflictAlgorithm.replace,
           );
         }
