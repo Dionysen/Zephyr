@@ -1282,6 +1282,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chapterSortTitleDesc => 'Name · Z→A';
 
   @override
+  String get tooltipAiAssistant => 'AI assistant';
+
+  @override
+  String get aiChatWelcome =>
+      'Hi — this is the Zephyr AI demo. Send any message and I\'ll echo it so you can preview the chat layout.';
+
+  @override
+  String get aiChatInputHint => 'Type a message…';
+
+  @override
+  String get aiChatSend => 'Send';
+
+  @override
+  String get aiContextRemoveArticle => 'Remove from context';
+
+  @override
+  String aiChatDemoReply(String message) {
+    return '(Demo) Received: $message';
+  }
+
+  @override
   String get tooltipOpenLibrary => 'Open library';
 
   @override

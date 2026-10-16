@@ -1216,6 +1216,26 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chapterSortTitleDesc => '名称 · Z→A';
 
   @override
+  String get tooltipAiAssistant => 'AI 助手';
+
+  @override
+  String get aiChatWelcome => '你好，我是 Zephyr AI 演示助手。输入任意内容，我会用占位回复帮你预览对话样式。';
+
+  @override
+  String get aiChatInputHint => '输入消息…';
+
+  @override
+  String get aiChatSend => '发送';
+
+  @override
+  String get aiContextRemoveArticle => '从上下文中移除';
+
+  @override
+  String aiChatDemoReply(String message) {
+    return '（演示）已收到：$message';
+  }
+
+  @override
   String get tooltipOpenLibrary => '打开书库';
 
   @override

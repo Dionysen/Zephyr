@@ -488,6 +488,19 @@
   "chapterSortUpdatedDesc": "修改时间 · 降序",
   "chapterSortTitleAsc": "名称 · A→Z",
   "chapterSortTitleDesc": "名称 · Z→A",
+  "tooltipAiAssistant": "AI 助手",
+  "aiChatWelcome": "你好，我是 Zephyr AI 演示助手。输入任意内容，我会用占位回复帮你预览对话样式。",
+  "aiChatInputHint": "输入消息…",
+  "aiChatSend": "发送",
+  "aiContextRemoveArticle": "从上下文中移除",
+  "aiChatDemoReply": "（演示）已收到：{message}",
+  "@aiChatDemoReply": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "tooltipOpenLibrary": "打开书库",
   "librarySwitcherChooseDirectory": "重新选择目录",
   "tooltipOpenSidebar": "打开侧边栏",

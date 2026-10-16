@@ -26,6 +26,7 @@ import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_menu.dart';
 import '../../../core/zephyr_theme.dart';
 import '../../editor/view_models/library_view_model.dart';
+import '../models/workspace_ai_context_selection.dart';
 import 'cloud_backup_quick_button.dart';
 import 'library_search_sheet.dart';
 import 'library_switcher_menu.dart';
@@ -95,12 +96,18 @@ class WorkspaceSidebar extends StatefulWidget {
     required this.mode,
     required this.openLibrary,
     required this.openSettings,
+    this.aiContextEnabled = false,
+    this.aiContext,
   });
 
   final LibraryViewModel model;
   final SidebarMode mode;
   final Future<void> Function() openLibrary;
   final VoidCallback openSettings;
+
+  /// When true, chapter rows show a checkbox for [aiContext] selection.
+  final bool aiContextEnabled;
+  final WorkspaceAiContextSelection? aiContext;
 
   @override
   State<WorkspaceSidebar> createState() => _WorkspaceSidebarState();
@@ -227,6 +234,8 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                       model: model,
                       library: model.library!,
                       bottomInset: _LibraryDock.overlayExtentFor(context),
+                      aiContextEnabled: widget.aiContextEnabled,
+                      aiContext: widget.aiContext,
                     ),
                   ),
                   Positioned(
@@ -559,6 +568,8 @@ class WorkspaceMobileBookBar extends StatelessWidget {
     this.toolsBuilder,
     this.transparentBackground = false,
     this.reverse = false,
+    this.aiActive = false,
+    this.onAiPressed,
   });
 
   /// Compact floating bar; icon buttons sit at 40 inside a 48-tall shell.
@@ -582,8 +593,21 @@ class WorkspaceMobileBookBar extends StatelessWidget {
   /// Mirrors the compact chrome for the right-hand editor page.
   final bool reverse;
 
+  /// When true, the editor surface is showing the AI chat demo.
+  final bool aiActive;
+
+  /// Toggles AI chat mode; omitted when the control should stay hidden.
+  final VoidCallback? onAiPressed;
+
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: model,
+      builder: (context, _) => _buildBar(context),
+    );
+  }
+
+  Widget _buildBar(BuildContext context) {
     final theme = Theme.of(context);
     final library = model.library;
     if (library == null) return const SizedBox.shrink();
@@ -605,6 +629,7 @@ class WorkspaceMobileBookBar extends StatelessWidget {
             children: [
               _endpoint(context, l10n, opensLibrary: !reverse),
               _bookButton(context, theme, library, bookName, book?.id, isTrash),
+              if (onAiPressed != null) _aiButton(context, theme),
               _backupButton(context),
               _endpoint(context, l10n, opensLibrary: reverse),
             ],
@@ -642,6 +667,26 @@ class WorkspaceMobileBookBar extends StatelessWidget {
     libraryTooltip: l10n.tooltipOpenLibrary,
     moreTooltip: l10n.tooltipMore,
   );
+
+  Widget _aiButton(BuildContext context, ThemeData theme) {
+    final fg = aiActive
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurface.withValues(alpha: 0.76);
+    final style = _mobileBarIconStyle(context).copyWith(
+      foregroundColor: WidgetStatePropertyAll(fg),
+    );
+    return Center(
+      child: IconButton(
+        onPressed: onAiPressed,
+        style: style,
+        tooltip: context.l10n.tooltipAiAssistant,
+        icon: Icon(
+          aiActive ? Icons.auto_awesome : Icons.auto_awesome_outlined,
+          size: _iconSize,
+        ),
+      ),
+    );
+  }
 
   Widget _backupButton(BuildContext context) => Center(
     child: CloudBackupQuickButton(
@@ -1639,6 +1684,8 @@ class WorkspaceHeader extends StatelessWidget {
     this.transparent = false,
     this.tools = const [],
     this.toolsBuilder,
+    this.aiActive = false,
+    this.onAiPressed,
   });
 
   static double get height => WindowChrome.titleBarHeight;
@@ -1666,6 +1713,9 @@ class WorkspaceHeader extends StatelessWidget {
 
   /// Optional builder merged after [tools] when the overflow menu opens.
   final List<WorkspaceMobileTool> Function(BuildContext context)? toolsBuilder;
+
+  final bool aiActive;
+  final VoidCallback? onAiPressed;
 
   bool get _hasOverflowTools => tools.isNotEmpty || toolsBuilder != null;
 
@@ -1714,6 +1764,21 @@ class WorkspaceHeader extends StatelessWidget {
                     ),
                   ),
                 const Expanded(child: WindowDragArea(child: SizedBox.expand())),
+                if (onAiPressed != null)
+                  WindowNonDragArea(
+                    child: Center(
+                      child: IconButton(
+                        onPressed: onAiPressed,
+                        tooltip: l10n.tooltipAiAssistant,
+                        icon: Icon(
+                          aiActive
+                              ? Icons.auto_awesome
+                              : Icons.auto_awesome_outlined,
+                        ),
+                        color: aiActive ? theme.colorScheme.primary : null,
+                      ),
+                    ),
+                  ),
                 if (_hasOverflowTools)
                   WindowNonDragArea(
                     child: Center(
@@ -2152,11 +2217,15 @@ class _ChapterTree extends StatefulWidget {
     required this.model,
     required this.library,
     this.bottomInset = 0,
+    this.aiContextEnabled = false,
+    this.aiContext,
   });
 
   final LibraryViewModel model;
   final WritingLibrary library;
   final double bottomInset;
+  final bool aiContextEnabled;
+  final WorkspaceAiContextSelection? aiContext;
 
   @override
   State<_ChapterTree> createState() => _ChapterTreeState();
@@ -2556,6 +2625,8 @@ class _ChapterTreeState extends State<_ChapterTree> {
                 canManage: canManage,
                 showDragHandle: showDragHandles,
                 isFirst: index == 0,
+                aiContextEnabled: widget.aiContextEnabled,
+                aiContext: widget.aiContext,
               ),
             );
           },
@@ -2610,6 +2681,8 @@ class _ChapterTreeState extends State<_ChapterTree> {
                       canManage: canManage,
                       showDragHandle: showDragHandles,
                       isFirst: index == 0,
+                      aiContextEnabled: widget.aiContextEnabled,
+                      aiContext: widget.aiContext,
                     ),
                   );
                 },
@@ -2960,6 +3033,8 @@ class _ChapterRow extends StatelessWidget {
     required this.canManage,
     required this.showDragHandle,
     required this.isFirst,
+    this.aiContextEnabled = false,
+    this.aiContext,
   });
 
   static const _lineGap = 2.0;
@@ -2972,6 +3047,8 @@ class _ChapterRow extends StatelessWidget {
   final bool canManage;
   final bool showDragHandle;
   final bool isFirst;
+  final bool aiContextEnabled;
+  final WorkspaceAiContextSelection? aiContext;
 
   Future<void> _openMenu(BuildContext context, {RelativeRect? position}) async {
     if (!canManage) return;
@@ -3080,6 +3157,22 @@ class _ChapterRow extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                if (aiContextEnabled && aiContext != null)
+                  ListenableBuilder(
+                    listenable: aiContext!,
+                    builder: (context, _) => Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Checkbox(
+                        value: aiContext!.contains(chapter.id),
+                        onChanged: (_) => aiContext!.toggle(
+                          chapter,
+                          displayTitle: title,
+                        ),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                  ),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

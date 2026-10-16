@@ -2413,6 +2413,42 @@ abstract class AppLocalizations {
   /// **'Name · Z→A'**
   String get chapterSortTitleDesc;
 
+  /// No description provided for @tooltipAiAssistant.
+  ///
+  /// In en, this message translates to:
+  /// **'AI assistant'**
+  String get tooltipAiAssistant;
+
+  /// No description provided for @aiChatWelcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi — this is the Zephyr AI demo. Send any message and I\'ll echo it so you can preview the chat layout.'**
+  String get aiChatWelcome;
+
+  /// No description provided for @aiChatInputHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a message…'**
+  String get aiChatInputHint;
+
+  /// No description provided for @aiChatSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get aiChatSend;
+
+  /// No description provided for @aiContextRemoveArticle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from context'**
+  String get aiContextRemoveArticle;
+
+  /// No description provided for @aiChatDemoReply.
+  ///
+  /// In en, this message translates to:
+  /// **'(Demo) Received: {message}'**
+  String aiChatDemoReply(String message);
+
   /// No description provided for @tooltipOpenLibrary.
   ///
   /// In en, this message translates to:

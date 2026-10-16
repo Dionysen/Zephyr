@@ -37,6 +37,8 @@ import '../../settings/views/backup_settings_view.dart';
 import '../../settings/views/settings_page.dart';
 import 'cloud_backup_quick_button.dart';
 import 'library_search_sheet.dart';
+import '../models/workspace_ai_context_selection.dart';
+import 'workspace_ai_chat_view.dart';
 import 'workspace_editor.dart';
 import 'workspace_mobile_body_host.dart';
 import 'workspace_settings_panel.dart';
@@ -60,6 +62,10 @@ class _WorkspacePageState extends State<WorkspacePage>
 
   /// Chrome title when the in-editor chapter title has scrolled away.
   var _showTitleInChrome = false;
+
+  var _desktopAiChatOpen = false;
+  final _desktopAiContext = WorkspaceAiContextSelection();
+  String? _desktopBookId;
 
   /// Avoid enqueueing leave backup twice across leave-hint → paused → detached.
   var _leaveBackupScheduled = false;
@@ -89,8 +95,18 @@ class _WorkspacePageState extends State<WorkspacePage>
       return;
     }
     _started = true;
-    _library!.addListener(_reportSaveError);
+    _library!
+      ..addListener(_reportSaveError)
+      ..addListener(_onDesktopBookChanged);
+    _desktopBookId = _library!.selectedBook?.id;
     unawaited(_bootstrapLibrary());
+  }
+
+  void _onDesktopBookChanged() {
+    final id = _library?.selectedBook?.id;
+    if (id == _desktopBookId) return;
+    _desktopBookId = id;
+    _desktopAiContext.clear();
   }
 
   void _reportSaveError() {
@@ -277,9 +293,12 @@ class _WorkspacePageState extends State<WorkspacePage>
     unawaited(AndroidLeaveBackup.clearUserLeavingListener());
     final library = _library;
     if (library != null) {
-      library.removeListener(_reportSaveError);
+      library
+        ..removeListener(_reportSaveError)
+        ..removeListener(_onDesktopBookChanged);
       unawaited(library.flushPending().catchError((Object _) {}));
     }
+    _desktopAiContext.dispose();
     super.dispose();
   }
 
@@ -437,6 +456,8 @@ class _WorkspacePageState extends State<WorkspacePage>
                                 mode: SidebarMode.docked,
                                 openLibrary: _openLibrary,
                                 openSettings: _openSettings,
+                                aiContextEnabled: _desktopAiChatOpen,
+                                aiContext: _desktopAiContext,
                               ),
                             ),
                           ),
@@ -473,6 +494,8 @@ class _WorkspacePageState extends State<WorkspacePage>
                                         .preferences
                                         .typewriterMode,
                                     transparent: bleedEditorBackground,
+                                    aiActive: _desktopAiChatOpen,
+                                    onAiPressed: _toggleDesktopAiChat,
                                     toolsBuilder: (headerContext) =>
                                         buildWorkspaceOverflowTools(
                                           headerContext,
@@ -493,24 +516,30 @@ class _WorkspacePageState extends State<WorkspacePage>
                                             ),
                                           ),
                                         Expanded(
-                                          child: WorkspaceEditor(
-                                            model: model,
-                                            preferences:
-                                                scope.editorPreferences,
-                                            showBackground:
-                                                !bleedEditorBackground,
-                                            onDocumentTitleObscured:
-                                                (obscured) {
-                                                  if (_showTitleInChrome ==
-                                                      obscured) {
-                                                    return;
-                                                  }
-                                                  setState(
-                                                    () => _showTitleInChrome =
-                                                        obscured,
-                                                  );
-                                                },
-                                          ),
+                                          child: _desktopAiChatOpen
+                                              ? WorkspaceAiChatView(
+                                                  contextSelection:
+                                                      _desktopAiContext,
+                                                )
+                                              : WorkspaceEditor(
+                                                  model: model,
+                                                  preferences:
+                                                      scope.editorPreferences,
+                                                  showBackground:
+                                                      !bleedEditorBackground,
+                                                  onDocumentTitleObscured:
+                                                      (obscured) {
+                                                        if (_showTitleInChrome ==
+                                                            obscured) {
+                                                          return;
+                                                        }
+                                                        setState(
+                                                          () =>
+                                                              _showTitleInChrome =
+                                                                  obscured,
+                                                        );
+                                                      },
+                                                ),
                                         ),
                                       ],
                                     ),
@@ -703,6 +732,11 @@ class _WorkspacePageState extends State<WorkspacePage>
     setState(() => _settingsOpen = false);
   }
 
+  void _toggleDesktopAiChat() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() => _desktopAiChatOpen = !_desktopAiChatOpen);
+  }
+
   double _maxSidebarWidth(double workspaceWidth) {
     final available = workspaceWidth - 360 - SidebarResizeHandle.width;
     return available.clamp(
@@ -765,6 +799,12 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
   var _refreshingCompanionSnapshot = false;
   String _primaryStructure = '';
   String _companionStructure = '';
+  var _primaryAiChatOpen = false;
+  var _companionAiChatOpen = false;
+  final _primaryAiContext = WorkspaceAiContextSelection();
+  final _companionAiContext = WorkspaceAiContextSelection();
+  String? _primaryBookId;
+  String? _companionBookId;
 
   @override
   void initState() {
@@ -777,6 +817,9 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
       widget.model.repository,
       needsLibrarySetup: widget.model.needsLibrarySetup,
     );
+    _primaryBookId = widget.model.selectedBook?.id;
+    widget.model.addListener(_onPrimaryBookChanged);
+    _companion.addListener(_onCompanionBookChanged);
     _companion.onLocalContentPersisted = () async {
       widget.model.markContentDirtyFromCompanion();
       await widget.model.onLocalContentPersisted?.call();
@@ -804,13 +847,32 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
     _companionBridge.onDismissToolsPanel = dismissToolsPanel;
   }
 
+  void _onPrimaryBookChanged() {
+    final id = widget.model.selectedBook?.id;
+    if (id == _primaryBookId) return;
+    _primaryBookId = id;
+    _primaryAiContext.clear();
+  }
+
+  void _onCompanionBookChanged() {
+    final id = _companion.selectedBook?.id;
+    if (id == _companionBookId) return;
+    _companionBookId = id;
+    _companionAiContext.clear();
+  }
+
   @override
   void dispose() {
     widget.model
       ..removeListener(_onPrimaryChanged)
+      ..removeListener(_onPrimaryBookChanged)
       ..flushMobileCompanion = null
       ..markMobileCompanionBackupCompleted = null;
-    _companion.removeListener(_onCompanionChanged);
+    _companion
+      ..removeListener(_onCompanionChanged)
+      ..removeListener(_onCompanionBookChanged);
+    _primaryAiContext.dispose();
+    _companionAiContext.dispose();
     _primaryBridge.dispose();
     _companionBridge.dispose();
     _activeEditor.dispose();
@@ -824,6 +886,7 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
     if (!mounted) return;
     await _restoreCompanionSelection();
     if (!mounted) return;
+    _companionBookId = _companion.selectedBook?.id;
     _primaryStructure = _structureOf(widget.model);
     _companionStructure = _structureOf(_companion);
     widget.model
@@ -948,6 +1011,20 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
     _activeEditor.value = index;
   }
 
+  bool _aiChatOpenFor(int editorIndex) =>
+      editorIndex == 0 ? _primaryAiChatOpen : _companionAiChatOpen;
+
+  void _toggleAiChatFor(int editorIndex) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() {
+      if (editorIndex == 0) {
+        _primaryAiChatOpen = !_primaryAiChatOpen;
+      } else {
+        _companionAiChatOpen = !_companionAiChatOpen;
+      }
+    });
+  }
+
   bool _onWorkspaceScroll(ScrollNotification notification) {
     if (!ZephyrScope.of(context).theme.ui.scrollToHideMobileTopBar) {
       if (_topBarHide.value > 0) _topBarHide.value = 0;
@@ -1023,6 +1100,8 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
               },
               reverse: activeEditor == 1,
               transparentBackground: widget.transparentTopBar,
+              aiActive: _aiChatOpenFor(activeEditor),
+              onAiPressed: () => _toggleAiChatFor(activeEditor),
               toolsBuilder: (barContext) => buildWorkspaceOverflowTools(
                 barContext,
                 model: model,
@@ -1035,7 +1114,11 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
     );
   }
 
-  Widget _drawerFor(LibraryViewModel model) => ListenableBuilder(
+  Widget _drawerFor(
+    LibraryViewModel model, {
+    required bool aiContextEnabled,
+    required WorkspaceAiContextSelection aiContext,
+  }) => ListenableBuilder(
     listenable: model,
     builder: (context, _) => Material(
       color: widget.sidebarColor,
@@ -1051,6 +1134,8 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
                 mode: SidebarMode.drawer,
                 openLibrary: widget.openLibrary,
                 openSettings: widget.openSettings,
+                aiContextEnabled: aiContextEnabled,
+                aiContext: aiContext,
               ),
       ),
     ),
@@ -1065,7 +1150,11 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
       fixedOverlay: Builder(
         builder: (pagerContext) => _fixedTopBar(pagerContext),
       ),
-      startDrawer: _drawerFor(widget.model),
+      startDrawer: _drawerFor(
+        widget.model,
+        aiContextEnabled: _primaryAiChatOpen,
+        aiContext: _primaryAiContext,
+      ),
       primaryEditor: Builder(
         builder: (editorContext) => WorkspaceMobileBodyHost(
           model: widget.model,
@@ -1076,6 +1165,8 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
             onOpenMenu: () =>
                 ZephyrDualEditorPager.of(editorContext).openStartDrawer(),
             showBookBar: false,
+            aiChatOpen: _primaryAiChatOpen,
+            aiContextSelection: _primaryAiContext,
             invadeStatusBar: widget.invadeStatusBar,
             transparentTopBar: widget.transparentTopBar,
             openSettings: widget.openSettings,
@@ -1093,13 +1184,19 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
                 ZephyrDualEditorPager.of(editorContext).openEndDrawer(),
             reverse: true,
             showBookBar: false,
+            aiChatOpen: _companionAiChatOpen,
+            aiContextSelection: _companionAiContext,
             invadeStatusBar: widget.invadeStatusBar,
             transparentTopBar: widget.transparentTopBar,
             openSettings: widget.openSettings,
           ),
         ),
       ),
-      endDrawer: _drawerFor(_companion),
+      endDrawer: _drawerFor(
+        _companion,
+        aiContextEnabled: _companionAiChatOpen,
+        aiContext: _companionAiContext,
+      ),
     );
     return NotificationListener<ScrollNotification>(
       onNotification: _onWorkspaceScroll,
@@ -1132,6 +1229,8 @@ class _MobileEditorChrome extends StatefulWidget {
     required this.onOpenMenu,
     this.reverse = false,
     this.showBookBar = true,
+    this.aiChatOpen = false,
+    this.aiContextSelection,
     this.invadeStatusBar = false,
     this.transparentTopBar = false,
   });
@@ -1143,6 +1242,8 @@ class _MobileEditorChrome extends StatefulWidget {
   final VoidCallback onOpenMenu;
   final bool reverse;
   final bool showBookBar;
+  final bool aiChatOpen;
+  final WorkspaceAiContextSelection? aiContextSelection;
 
   /// When true, the editor extends under the status band so scrolled text can
   /// enter it naturally. Top-bar show/hide never changes scroll padding.
@@ -1346,17 +1447,25 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                   clipper: textClipTop > 0.5
                       ? _TopExcludeClipper(textClipTop)
                       : null,
-                  child: ListenableBuilder(
-                    listenable: Listenable.merge([widget.preferences, themeVm]),
-                    builder: (context, _) => WorkspaceEditor(
-                      model: widget.model,
-                      preferences: widget.preferences,
-                      contentTopInset: contentTop,
-                      showWordCount: false,
-                      bridge: widget.bridge,
-                      showBackground: !widget.transparentTopBar,
-                    ),
-                  ),
+                  child: widget.aiChatOpen
+                      ? WorkspaceAiChatView(
+                          contentTopInset: contentTop,
+                          contextSelection: widget.aiContextSelection,
+                        )
+                      : ListenableBuilder(
+                          listenable: Listenable.merge([
+                            widget.preferences,
+                            themeVm,
+                          ]),
+                          builder: (context, _) => WorkspaceEditor(
+                            model: widget.model,
+                            preferences: widget.preferences,
+                            contentTopInset: contentTop,
+                            showWordCount: false,
+                            bridge: widget.bridge,
+                            showBackground: !widget.transparentTopBar,
+                          ),
+                        ),
                 ),
               ),
               // Opaque band above the bar when there is no background image.
@@ -1383,6 +1492,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                       onOpenMenu: widget.onOpenMenu,
                       reverse: widget.reverse,
                       transparentBackground: widget.transparentTopBar,
+                      aiActive: widget.aiChatOpen,
                       toolsBuilder: (barContext) => buildWorkspaceOverflowTools(
                         barContext,
                         model: widget.model,
@@ -1391,7 +1501,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                     ),
                   ),
                 ),
-              if (wordCount != null)
+              if (wordCount != null && !widget.aiChatOpen)
                 Positioned(
                   // Below the book bar, top-right of the reading area.
                   top: statusTop + _barTravel,

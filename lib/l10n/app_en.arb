@@ -540,6 +540,19 @@
   "chapterSortUpdatedDesc": "Modified · Newest first",
   "chapterSortTitleAsc": "Name · A→Z",
   "chapterSortTitleDesc": "Name · Z→A",
+  "tooltipAiAssistant": "AI assistant",
+  "aiChatWelcome": "Hi — this is the Zephyr AI demo. Send any message and I'll echo it so you can preview the chat layout.",
+  "aiChatInputHint": "Type a message…",
+  "aiChatSend": "Send",
+  "aiContextRemoveArticle": "Remove from context",
+  "aiChatDemoReply": "(Demo) Received: {message}",
+  "@aiChatDemoReply": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "tooltipOpenLibrary": "Open library",
   "librarySwitcherChooseDirectory": "Choose another directory",
   "tooltipOpenSidebar": "Open sidebar",
