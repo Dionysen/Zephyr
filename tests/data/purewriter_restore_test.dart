@@ -64,6 +64,111 @@ void main() {
     },
   );
 
+  test(
+    'merge restore does not bulk-read article content from backup',
+    () async {
+      PackageInfo.setMockInitialValues(
+        appName: 'Zephyr',
+        packageName: 'zephyr',
+        version: '0.1.0',
+        buildNumber: '1',
+        buildSignature: '',
+      );
+      final directory = await Directory.systemTemp.createTemp(
+        'zephyr-merge-huge-',
+      );
+      final database = PureWriterDatabase(
+        supportDirectory: () async => directory,
+      );
+      addTearDown(() async {
+        await database.close();
+        await directory.delete(recursive: true);
+      });
+      await database.openDefaultLibrary();
+      final repository = PureWriterWritingLibraryRepository(database);
+      final article = await repository.createArticle(
+        folderId: PureWriterDatabase.defaultFolderId,
+      );
+      final hugeBody = List.filled(3 * 1024 * 1024, 'x').join();
+      await repository.saveArticle(article.copyWith(content: hugeBody));
+      final backup = await repository.createBackup(kind: BackupKind.manual);
+
+      await repository.restoreBackup(
+        entry: BackupEntry(
+          path: backup.path,
+          fileName: backup.fileName,
+          modified: backup.modified,
+          sizeBytes: backup.sizeBytes,
+          kind: BackupKind.manual,
+        ),
+        mode: RestoreMode.merge,
+      );
+
+      expect((await repository.getArticle(article.id)).content, hugeBody);
+      expect((await repository.loadLibrary()).articles, isNotEmpty);
+    },
+  );
+
+  test(
+    'merge restore does not bulk-read huge article content from local library',
+    () async {
+      PackageInfo.setMockInitialValues(
+        appName: 'Zephyr',
+        packageName: 'zephyr',
+        version: '0.1.0',
+        buildNumber: '1',
+        buildSignature: '',
+      );
+      final directory = await Directory.systemTemp.createTemp(
+        'zephyr-merge-local-huge-',
+      );
+      final database = PureWriterDatabase(
+        supportDirectory: () async => directory,
+      );
+      addTearDown(() async {
+        await database.close();
+        await directory.delete(recursive: true);
+      });
+      await database.openDefaultLibrary();
+      final repository = PureWriterWritingLibraryRepository(database);
+      final article = await repository.createArticle(
+        folderId: PureWriterDatabase.defaultFolderId,
+      );
+      await repository.saveArticle(article.copyWith(content: 'remote small'));
+      final rows = await database.database.query(
+        'Article',
+        columns: ['updateTime'],
+        where: 'id = ?',
+        whereArgs: [article.id],
+      );
+      final remoteTime = rows.single['updateTime']! as int;
+      final backup = await repository.createBackup(kind: BackupKind.manual);
+      final hugeBody = List.filled(3 * 1024 * 1024, 'y').join();
+      await repository.saveArticle(article.copyWith(content: hugeBody));
+      await database.database.update(
+        'Article',
+        {'updateTime': remoteTime - 1},
+        where: 'id = ?',
+        whereArgs: [article.id],
+      );
+
+      await repository.restoreBackup(
+        entry: BackupEntry(
+          path: backup.path,
+          fileName: backup.fileName,
+          modified: backup.modified,
+          sizeBytes: backup.sizeBytes,
+          kind: BackupKind.manual,
+        ),
+        mode: RestoreMode.merge,
+      );
+
+      expect((await repository.getArticle(article.id)).content, 'remote small');
+      final history = await repository.listHistory(article.id);
+      expect(history.map((revision) => revision.content), contains(hugeBody));
+    },
+  );
+
   test('merge restore keeps books created after the snapshot', () async {
     // ignore: invalid_use_of_visible_for_testing_member
     PackageInfo.setMockInitialValues(

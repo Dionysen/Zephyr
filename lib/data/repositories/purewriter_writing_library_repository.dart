@@ -1501,31 +1501,40 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     if (!await _hasTable(localDb, table) || !await _hasTable(backupDb, table)) {
       return LibraryMergeStats.empty;
     }
-    final remoteRows = await backupDb.query(table);
-    if (remoteRows.isEmpty) return LibraryMergeStats.empty;
     final hasDeleted =
         await _hasColumn(localDb, table, 'deleted') &&
         await _hasColumn(backupDb, table, 'deleted');
+    // Article rows can exceed Android CursorWindow when selected in bulk.
+    final remoteRows = trackArticleStats
+        ? await backupDb.query(
+            table,
+            columns: [idColumn, timeColumn, if (hasDeleted) 'deleted'],
+          )
+        : await backupDb.query(table);
+    if (remoteRows.isEmpty) return LibraryMergeStats.empty;
     final localRows = await localDb.query(
       table,
-      columns: trackArticleStats ? null : [idColumn, timeColumn],
+      columns: trackArticleStats
+          ? [
+              idColumn,
+              timeColumn,
+              if (hasDeleted) 'deleted',
+              'title',
+            ]
+          : [idColumn, timeColumn],
     );
     final localById = {
       if (trackArticleStats)
         for (final row in localRows) row[idColumn]: row,
     };
     final hasHistory = trackArticleStats && await _hasHistoryTable(localDb);
-    final historyKeys = <(Object?, Object?, Object?)>{
+    final historyKeys = <(Object?, Object?)>{
       if (hasHistory)
         for (final row in await localDb.query(
           'History',
-          columns: ['article_id', 'article_content', 'article_updateTime'],
+          columns: ['article_id', 'article_updateTime'],
         ))
-          (
-            row['article_id'],
-            row['article_content'],
-            row['article_updateTime'],
-          ),
+          (row['article_id'], row['article_updateTime']),
     };
     final localTimes = <Object?, int>{
       for (final row in localRows)
@@ -1541,12 +1550,21 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     var removed = 0;
     await localDb.transaction((txn) async {
       final batch = txn.batch();
-      for (final remote in remoteRows) {
-        final id = remote[idColumn];
+      for (final remoteMeta in remoteRows) {
+        final id = remoteMeta[idColumn];
         if (id == null) continue;
-        final remoteTime = (remote[timeColumn] as int?) ?? 0;
+        final remoteTime = (remoteMeta[timeColumn] as int?) ?? 0;
         final localTime = localTimes[id];
         final local = localById[id];
+        if (localTime != null && remoteTime <= localTime) continue;
+        final remote = trackArticleStats
+            ? (await backupDb.query(
+                table,
+                where: '$idColumn = ?',
+                whereArgs: [id],
+                limit: 1,
+              )).single
+            : remoteMeta;
         final remoteDeleted = hasDeleted
             ? ((remote['deleted'] as int?) ?? 0)
             : 0;
@@ -1560,25 +1578,28 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
             }
           }
         } else {
-          if (hasHistory &&
-              local != null &&
-              (local['content'] != remote['content'] ||
-                  local['title'] != remote['title'])) {
-            final preserved = remoteTime > localTime ? local : remote;
-            final key = (id, preserved['content'], preserved[timeColumn]);
-            if (historyKeys.add(key)) {
-              batch.insert(
-                'History',
-                _historySnapshot(
-                  preserved,
-                  DateTime.now().millisecondsSinceEpoch,
-                ),
-              );
+          if (hasHistory && local != null) {
+            final localFull = (await txn.query(
+              table,
+              where: '$idColumn = ?',
+              whereArgs: [id],
+              limit: 1,
+            )).single;
+            if (localFull['content'] != remote['content'] ||
+                localFull['title'] != remote['title']) {
+              final preserved = remoteTime > localTime ? localFull : remote;
+              final key = (id, preserved[timeColumn]);
+              if (historyKeys.add(key)) {
+                batch.insert(
+                  'History',
+                  _historySnapshot(
+                    preserved,
+                    DateTime.now().millisecondsSinceEpoch,
+                  ),
+                );
+              }
             }
           }
-          // Equal timestamps are ambiguous across devices: keep the local
-          // article and retain the remote text in History.
-          if (remoteTime <= localTime) continue;
           batch.update(table, remote, where: '$idColumn = ?', whereArgs: [id]);
           if (trackArticleStats) {
             final wasDeleted = localDeleted[id] ?? 0;
@@ -1609,20 +1630,19 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     if (remoteRows.isEmpty) return;
     final existingRows = await localDb.query(
       'History',
-      columns: ['article_id', 'createTime', 'article_content'],
+      columns: ['article_id', 'createTime'],
     );
     final existing = <String>{
       for (final row in existingRows)
-        '${row['article_id']}|${row['createTime']}|${row['article_content']}',
+        '${row['article_id']}|${row['createTime']}',
     };
     await localDb.transaction((txn) async {
       final batch = txn.batch();
       for (final remote in remoteRows) {
         final articleId = remote['article_id'];
         final createTime = remote['createTime'];
-        final content = remote['article_content'] as String? ?? '';
         if (articleId == null || createTime == null) continue;
-        final key = '$articleId|$createTime|$content';
+        final key = '$articleId|$createTime';
         if (existing.contains(key)) continue;
         existing.add(key);
         final copy = Map<String, Object?>.from(remote)..remove('id');
