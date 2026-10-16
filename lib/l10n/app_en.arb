@@ -545,6 +545,36 @@
   "aiChatInputHint": "Type a message…",
   "aiChatSend": "Send",
   "aiContextRemoveArticle": "Remove from context",
+  "llmSettingsTitle": "AI models",
+  "llmSettingsSubtitle": "Provider, API key, and model",
+  "llmSettingsIntro": "API keys stay in this device's secure storage. They are not stored in your library or cloud settings bundle.",
+  "llmProviderTitle": "Provider",
+  "llmProviderSubtitle": "Choose an API vendor",
+  "llmApiKeyTitle": "API key",
+  "llmApiKeyHint": "Paste your key",
+  "llmBaseUrlTitle": "API base URL",
+  "llmBaseUrlHint": "e.g. https://api.example.com/v1",
+  "llmTestConnection": "Test connection",
+  "llmTestSuccess": "Connected — {count} models available",
+  "@llmTestSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "llmModelTitle": "Chat model",
+  "llmModelSubtitle": "Available after a successful test",
+  "llmModelNotSelected": "Not selected",
+  "aiChatNotConfigured": "Set up your API key and run a connection test in Settings first.",
+  "aiChatError": "Request failed: {error}",
+  "@aiChatError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "aiChatDemoReply": "(Demo) Received: {message}",
   "@aiChatDemoReply": {
     "placeholders": {

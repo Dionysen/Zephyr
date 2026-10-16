@@ -5,6 +5,7 @@ import '../features/editor/view_models/library_view_model.dart';
 import '../features/editor/view_models/quick_toolbar_view_model.dart';
 import '../features/settings/view_models/backup_view_model.dart';
 import '../features/settings/view_models/cloud_sync_view_model.dart';
+import '../features/settings/view_models/llm_settings_view_model.dart';
 import '../features/settings/view_models/keyboard_shortcuts_view_model.dart';
 import '../features/settings/view_models/settings_view_model.dart';
 import '../features/settings/view_models/theme_view_model.dart';
@@ -22,6 +23,7 @@ class ZephyrScope extends InheritedWidget {
     required this.settings,
     required this.backup,
     required this.cloudSync,
+    required this.llmSettings,
     required super.child,
   });
 
@@ -33,6 +35,7 @@ class ZephyrScope extends InheritedWidget {
   final SettingsViewModel settings;
   final BackupViewModel backup;
   final CloudSyncViewModel cloudSync;
+  final LlmSettingsViewModel llmSettings;
 
   static ZephyrScope of(BuildContext context) {
     final scope = maybeOf(context);
@@ -52,5 +55,6 @@ class ZephyrScope extends InheritedWidget {
       keyboardShortcuts != oldWidget.keyboardShortcuts ||
       settings != oldWidget.settings ||
       backup != oldWidget.backup ||
-      cloudSync != oldWidget.cloudSync;
+      cloudSync != oldWidget.cloudSync ||
+      llmSettings != oldWidget.llmSettings;
 }

@@ -14,6 +14,7 @@ import 'about_settings_view.dart';
 import 'backup_settings_view.dart';
 import 'editor_settings_view.dart';
 import 'general_settings_view.dart';
+import 'llm_settings_view.dart';
 import 'shortcuts_settings_page.dart';
 import 'theme_settings_view.dart';
 
@@ -188,6 +189,54 @@ class CompactSettingsList extends StatelessWidget {
           compact: true,
           showStatusBarSettings: showStatusBarSettings,
           showMobileBehaviorSettings: showStatusBarSettings,
+        ),
+        ZephyrSettingsCategoryHeader(
+          icon: Icons.auto_awesome_outlined,
+          title: l10n.llmSettingsTitle,
+        ),
+        ZephyrSettingsSection(
+          children: [
+            ListenableBuilder(
+              listenable: scope.llmSettings,
+              builder: (context, _) {
+                final llm = scope.llmSettings;
+                final modelLabel = llm.preferences.selectedModelId.isEmpty
+                    ? l10n.llmModelNotSelected
+                    : llm.preferences.selectedModelId;
+                return ZephyrSettingsListTile(
+                  icon: Icons.auto_awesome_outlined,
+                  title: l10n.llmSettingsTitle,
+                  subtitle: l10n.llmSettingsSubtitle,
+                  showDivider: false,
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 120),
+                        child: Text(
+                          modelLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.chevron_right,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ),
+                  onTap: () {
+                    Navigator.of(context).push(LlmSettingsPage.route());
+                  },
+                );
+              },
+            ),
+          ],
         ),
       ],
       SettingsTab.backup => [

@@ -493,6 +493,36 @@
   "aiChatInputHint": "输入消息…",
   "aiChatSend": "发送",
   "aiContextRemoveArticle": "从上下文中移除",
+  "llmSettingsTitle": "AI 模型",
+  "llmSettingsSubtitle": "供应商、API Key 与模型",
+  "llmSettingsIntro": "API Key 仅保存在本设备的安全存储中，不会写入书库或云同步包。",
+  "llmProviderTitle": "模型供应商",
+  "llmProviderSubtitle": "选择 API 服务商",
+  "llmApiKeyTitle": "API Key",
+  "llmApiKeyHint": "粘贴密钥",
+  "llmBaseUrlTitle": "API 地址",
+  "llmBaseUrlHint": "例如 https://api.example.com/v1",
+  "llmTestConnection": "连接测试",
+  "llmTestSuccess": "连接成功，发现 {count} 个模型",
+  "@llmTestSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "llmModelTitle": "对话模型",
+  "llmModelSubtitle": "连接测试后可选",
+  "llmModelNotSelected": "未选择",
+  "aiChatNotConfigured": "请先在设置中配置 API Key 并完成连接测试。",
+  "aiChatError": "请求失败：{error}",
+  "@aiChatError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "aiChatDemoReply": "（演示）已收到：{message}",
   "@aiChatDemoReply": {
     "placeholders": {

@@ -1231,6 +1231,58 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aiContextRemoveArticle => '从上下文中移除';
 
   @override
+  String get llmSettingsTitle => 'AI 模型';
+
+  @override
+  String get llmSettingsSubtitle => '供应商、API Key 与模型';
+
+  @override
+  String get llmSettingsIntro => 'API Key 仅保存在本设备的安全存储中，不会写入书库或云同步包。';
+
+  @override
+  String get llmProviderTitle => '模型供应商';
+
+  @override
+  String get llmProviderSubtitle => '选择 API 服务商';
+
+  @override
+  String get llmApiKeyTitle => 'API Key';
+
+  @override
+  String get llmApiKeyHint => '粘贴密钥';
+
+  @override
+  String get llmBaseUrlTitle => 'API 地址';
+
+  @override
+  String get llmBaseUrlHint => '例如 https://api.example.com/v1';
+
+  @override
+  String get llmTestConnection => '连接测试';
+
+  @override
+  String llmTestSuccess(int count) {
+    return '连接成功，发现 $count 个模型';
+  }
+
+  @override
+  String get llmModelTitle => '对话模型';
+
+  @override
+  String get llmModelSubtitle => '连接测试后可选';
+
+  @override
+  String get llmModelNotSelected => '未选择';
+
+  @override
+  String get aiChatNotConfigured => '请先在设置中配置 API Key 并完成连接测试。';
+
+  @override
+  String aiChatError(String error) {
+    return '请求失败：$error';
+  }
+
+  @override
   String aiChatDemoReply(String message) {
     return '（演示）已收到：$message';
   }

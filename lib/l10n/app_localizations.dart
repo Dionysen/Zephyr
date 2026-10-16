@@ -2443,6 +2443,102 @@ abstract class AppLocalizations {
   /// **'Remove from context'**
   String get aiContextRemoveArticle;
 
+  /// No description provided for @llmSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI models'**
+  String get llmSettingsTitle;
+
+  /// No description provided for @llmSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider, API key, and model'**
+  String get llmSettingsSubtitle;
+
+  /// No description provided for @llmSettingsIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'API keys stay in this device\'s secure storage. They are not stored in your library or cloud settings bundle.'**
+  String get llmSettingsIntro;
+
+  /// No description provided for @llmProviderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get llmProviderTitle;
+
+  /// No description provided for @llmProviderSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an API vendor'**
+  String get llmProviderSubtitle;
+
+  /// No description provided for @llmApiKeyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get llmApiKeyTitle;
+
+  /// No description provided for @llmApiKeyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste your key'**
+  String get llmApiKeyHint;
+
+  /// No description provided for @llmBaseUrlTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'API base URL'**
+  String get llmBaseUrlTitle;
+
+  /// No description provided for @llmBaseUrlHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. https://api.example.com/v1'**
+  String get llmBaseUrlHint;
+
+  /// No description provided for @llmTestConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Test connection'**
+  String get llmTestConnection;
+
+  /// No description provided for @llmTestSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected — {count} models available'**
+  String llmTestSuccess(int count);
+
+  /// No description provided for @llmModelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat model'**
+  String get llmModelTitle;
+
+  /// No description provided for @llmModelSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Available after a successful test'**
+  String get llmModelSubtitle;
+
+  /// No description provided for @llmModelNotSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not selected'**
+  String get llmModelNotSelected;
+
+  /// No description provided for @aiChatNotConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up your API key and run a connection test in Settings first.'**
+  String get aiChatNotConfigured;
+
+  /// No description provided for @aiChatError.
+  ///
+  /// In en, this message translates to:
+  /// **'Request failed: {error}'**
+  String aiChatError(String error);
+
   /// No description provided for @aiChatDemoReply.
   ///
   /// In en, this message translates to:

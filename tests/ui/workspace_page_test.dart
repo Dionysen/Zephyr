@@ -29,7 +29,10 @@ import 'package:zephyr/ui/features/editor/view_models/quick_toolbar_view_model.d
 import 'package:zephyr/ui/features/settings/view_models/backup_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/cloud_sync_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/font_library.dart';
+import 'package:zephyr/domain/models/llm_settings.dart';
+import 'package:zephyr/domain/repositories/llm_settings_repository.dart';
 import 'package:zephyr/ui/features/settings/view_models/keyboard_shortcuts_view_model.dart';
+import 'package:zephyr/ui/features/settings/view_models/llm_settings_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/settings_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/theme_view_model.dart';
 import 'package:zephyr/l10n/app_localizations.dart';
@@ -812,6 +815,7 @@ Widget _app({
     preferencesRepository: _BackupPreferencesRepository(),
   );
   cloudSync ??= CloudSyncViewModel(library: library);
+  final llmSettings = LlmSettingsViewModel(repository: _LlmSettingsRepository());
   return ZephyrScope(
     library: library,
     theme: theme,
@@ -821,6 +825,7 @@ Widget _app({
     settings: settings,
     backup: backup,
     cloudSync: cloudSync,
+    llmSettings: llmSettings,
     child: MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -1327,5 +1332,31 @@ class _ExitCloudSyncViewModel extends CloudSyncViewModel {
   Future<CloudPullResult?> syncNow() async {
     syncCalls++;
     return CloudPullResult.skipped;
+  }
+}
+
+class _LlmSettingsRepository implements LlmSettingsRepository {
+  LlmPreferences _preferences = LlmPreferences.defaults;
+  final Map<LlmProviderKind, String> _keys = {};
+
+  @override
+  Future<LlmPreferences> loadPreferences() async => _preferences;
+
+  @override
+  Future<void> savePreferences(LlmPreferences preferences) async {
+    _preferences = preferences;
+  }
+
+  @override
+  Future<String?> loadApiKey(LlmProviderKind provider) async => _keys[provider];
+
+  @override
+  Future<void> saveApiKey(LlmProviderKind provider, String apiKey) async {
+    final trimmed = apiKey.trim();
+    if (trimmed.isEmpty) {
+      _keys.remove(provider);
+      return;
+    }
+    _keys[provider] = trimmed;
   }
 }

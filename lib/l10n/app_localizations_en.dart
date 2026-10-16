@@ -1298,6 +1298,60 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiContextRemoveArticle => 'Remove from context';
 
   @override
+  String get llmSettingsTitle => 'AI models';
+
+  @override
+  String get llmSettingsSubtitle => 'Provider, API key, and model';
+
+  @override
+  String get llmSettingsIntro =>
+      'API keys stay in this device\'s secure storage. They are not stored in your library or cloud settings bundle.';
+
+  @override
+  String get llmProviderTitle => 'Provider';
+
+  @override
+  String get llmProviderSubtitle => 'Choose an API vendor';
+
+  @override
+  String get llmApiKeyTitle => 'API key';
+
+  @override
+  String get llmApiKeyHint => 'Paste your key';
+
+  @override
+  String get llmBaseUrlTitle => 'API base URL';
+
+  @override
+  String get llmBaseUrlHint => 'e.g. https://api.example.com/v1';
+
+  @override
+  String get llmTestConnection => 'Test connection';
+
+  @override
+  String llmTestSuccess(int count) {
+    return 'Connected — $count models available';
+  }
+
+  @override
+  String get llmModelTitle => 'Chat model';
+
+  @override
+  String get llmModelSubtitle => 'Available after a successful test';
+
+  @override
+  String get llmModelNotSelected => 'Not selected';
+
+  @override
+  String get aiChatNotConfigured =>
+      'Set up your API key and run a connection test in Settings first.';
+
+  @override
+  String aiChatError(String error) {
+    return 'Request failed: $error';
+  }
+
+  @override
   String aiChatDemoReply(String message) {
     return '(Demo) Received: $message';
   }

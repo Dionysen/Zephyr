@@ -520,6 +520,7 @@ class _WorkspacePageState extends State<WorkspacePage>
                                               ? WorkspaceAiChatView(
                                                   contextSelection:
                                                       _desktopAiContext,
+                                                  libraryModel: model,
                                                 )
                                               : WorkspaceEditor(
                                                   model: model,
@@ -1451,6 +1452,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                       ? WorkspaceAiChatView(
                           contentTopInset: contentTop,
                           contextSelection: widget.aiContextSelection,
+                          libraryModel: widget.model,
                         )
                       : ListenableBuilder(
                           listenable: Listenable.merge([

@@ -13,6 +13,7 @@ import '../data/repositories/file_system_background_image_repository.dart';
 import '../data/repositories/file_system_font_repository.dart';
 import '../data/repositories/file_theme_preferences_repository.dart';
 import '../data/repositories/file_window_frame_repository.dart';
+import '../data/repositories/file_llm_settings_repository.dart';
 import '../data/repositories/file_workspace_layout_repository.dart';
 import '../data/repositories/purewriter_writing_library_repository.dart';
 import '../data/services/backup_preferences_file_storage.dart';
@@ -45,6 +46,7 @@ import '../ui/features/settings/view_models/background_image_library.dart';
 import '../ui/features/settings/view_models/cloud_sync_view_model.dart';
 import '../ui/features/settings/view_models/font_library.dart';
 import '../ui/features/settings/view_models/keyboard_shortcuts_view_model.dart';
+import '../ui/features/settings/view_models/llm_settings_view_model.dart';
 import '../ui/features/settings/view_models/settings_view_model.dart';
 import '../ui/features/settings/view_models/theme_view_model.dart';
 import '../ui/features/workspace/views/workspace_page.dart';
@@ -102,6 +104,9 @@ void runZephyr(
       await keyboardShortcuts.load();
       await backup.load();
     },
+  )..load();
+  final llmSettings = LlmSettingsViewModel(
+    repository: FileLlmSettingsRepository(),
   )..load();
   final messengerKey = GlobalKey<ScaffoldMessengerState>();
   if (WindowChrome.isDesktop) {
@@ -171,6 +176,7 @@ void runZephyr(
       )..load(),
       backup: backup,
       cloudSync: cloudSync,
+      llmSettings: llmSettings,
     ),
   );
 }
@@ -187,6 +193,7 @@ class ZephyrApp extends StatelessWidget {
     required this.settings,
     required this.backup,
     required this.cloudSync,
+    required this.llmSettings,
   });
 
   final GlobalKey<ScaffoldMessengerState> messengerKey;
@@ -198,6 +205,7 @@ class ZephyrApp extends StatelessWidget {
   final SettingsViewModel settings;
   final BackupViewModel backup;
   final CloudSyncViewModel cloudSync;
+  final LlmSettingsViewModel llmSettings;
 
   @override
   Widget build(BuildContext context) => ZephyrScope(
@@ -209,6 +217,7 @@ class ZephyrApp extends StatelessWidget {
     settings: settings,
     backup: backup,
     cloudSync: cloudSync,
+    llmSettings: llmSettings,
     child: ListenableBuilder(
       listenable: theme,
       builder: (context, _) => MaterialApp(

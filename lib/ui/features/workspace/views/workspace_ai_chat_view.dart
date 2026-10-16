@@ -1,6 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../../../../data/services/llm_gateway.dart';
+import '../../editor/view_models/library_view_model.dart';
 import '../../../core/zephyr_l10n.dart';
+import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_theme.dart';
 import '../models/workspace_ai_context_selection.dart';
 
@@ -11,12 +16,14 @@ class WorkspaceAiChatView extends StatefulWidget {
     this.contentTopInset = 0,
     this.contentPadding = const EdgeInsets.symmetric(horizontal: 16),
     this.contextSelection,
+    this.libraryModel,
   });
 
   /// Clears floating chrome (e.g. mobile book bar).
   final double contentTopInset;
   final EdgeInsets contentPadding;
   final WorkspaceAiContextSelection? contextSelection;
+  final LibraryViewModel? libraryModel;
 
   @override
   State<WorkspaceAiChatView> createState() => _WorkspaceAiChatViewState();
@@ -27,6 +34,7 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
   final _inputController = TextEditingController();
   final _inputFocus = FocusNode();
   final _messages = <_AiChatMessage>[];
+  var _sending = false;
 
   @override
   void didChangeDependencies() {
@@ -49,19 +57,70 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
     super.dispose();
   }
 
-  void _send() {
+  Future<void> _send() async {
     final text = _inputController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _sending) return;
+    final l10n = context.l10n;
+    final llm = ZephyrScope.of(context).llmSettings;
+    final prior = List<_AiChatMessage>.from(_messages);
     setState(() {
+      _sending = true;
       _messages.add(_AiChatMessage(role: _AiChatRole.user, text: text));
-      _messages.add(
-        _AiChatMessage(
-          role: _AiChatRole.assistant,
-          text: context.l10n.aiChatDemoReply(text),
-        ),
-      );
       _inputController.clear();
     });
+    _scrollToEnd();
+    String reply;
+    try {
+      if (!llm.isConfigured) {
+        reply = l10n.aiChatNotConfigured;
+      } else {
+        final system = await _buildContextSystemPrompt();
+        final turns = <LlmChatMessage>[
+          if (system.isNotEmpty)
+            LlmChatMessage(role: LlmChatRole.system, text: system),
+          for (final message in prior)
+            if (message.role != _AiChatRole.assistant ||
+                message.text != l10n.aiChatWelcome)
+              LlmChatMessage(
+                role: message.role == _AiChatRole.assistant
+                    ? LlmChatRole.assistant
+                    : LlmChatRole.user,
+                text: message.text,
+              ),
+          LlmChatMessage(role: LlmChatRole.user, text: text),
+        ];
+        reply = await llm.completeChat(messages: turns);
+      }
+    } on Object catch (error) {
+      reply = l10n.aiChatError(error.toString());
+    }
+    if (!mounted) return;
+    setState(() {
+      _sending = false;
+      _messages.add(_AiChatMessage(role: _AiChatRole.assistant, text: reply));
+    });
+    _scrollToEnd();
+  }
+
+  Future<String> _buildContextSystemPrompt() async {
+    final selection = widget.contextSelection;
+    final library = widget.libraryModel;
+    if (selection == null || library == null) return '';
+    final articles = selection.articles;
+    if (articles.isEmpty) return '';
+    final blocks = <String>[];
+    for (final article in articles) {
+      try {
+        final full = await library.repository.getArticle(article.id);
+        blocks.add('## ${article.title}\n\n${full.content}');
+      } on Object {
+        blocks.add('## ${article.title}\n\n(无法加载正文)');
+      }
+    }
+    return '以下章节作为参考上下文：\n\n${blocks.join('\n\n---\n\n')}';
+  }
+
+  void _scrollToEnd() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
       _scrollController.animateTo(
@@ -163,9 +222,15 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
                     ),
                     const SizedBox(width: 8),
                     IconButton.filled(
-                      onPressed: _send,
+                      onPressed: _sending ? null : () => unawaited(_send()),
                       tooltip: context.l10n.aiChatSend,
-                      icon: const Icon(Icons.arrow_upward_rounded),
+                      icon: _sending
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.arrow_upward_rounded),
                     ),
                   ],
                 ),
