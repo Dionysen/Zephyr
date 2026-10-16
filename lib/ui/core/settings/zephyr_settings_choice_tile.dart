@@ -27,6 +27,7 @@ class ZephyrSettingsChoice<T> {
 Future<T?> showZephyrSettingsChoicePicker<T>(
   BuildContext context, {
   required String title,
+  String? subtitle,
   required List<ZephyrSettingsChoice<T>> choices,
   required T? selected,
   String? actionLabel,
@@ -53,6 +54,7 @@ Future<T?> showZephyrSettingsChoicePicker<T>(
     builder: (context) {
       return _ZephyrSettingsChoiceSheet<T>(
         title: title,
+        subtitle: subtitle,
         initialChoices: choices,
         selected: selected,
         actionLabel: actionLabel,
@@ -70,6 +72,7 @@ Future<T?> showZephyrSettingsChoicePicker<T>(
 class _ZephyrSettingsChoiceSheet<T> extends StatefulWidget {
   const _ZephyrSettingsChoiceSheet({
     required this.title,
+    this.subtitle,
     required this.initialChoices,
     required this.selected,
     this.actionLabel,
@@ -82,6 +85,7 @@ class _ZephyrSettingsChoiceSheet<T> extends StatefulWidget {
   });
 
   final String title;
+  final String? subtitle;
   final List<ZephyrSettingsChoice<T>> initialChoices;
   final T? selected;
   final String? actionLabel;
@@ -146,9 +150,21 @@ class _ZephyrSettingsChoiceSheetState<T>
               children: [
                 Padding(
                   padding: ZephyrBottomSheet.titlePadding,
-                  child: Text(
-                    widget.title,
-                    style: ZephyrBottomSheet.titleStyle(theme),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.title,
+                        style: ZephyrBottomSheet.titleStyle(theme),
+                      ),
+                      if (widget.subtitle != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.subtitle!,
+                          style: ZephyrBottomSheet.bodyStyle(theme),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 if (widget.actionLabel != null && widget.onAction != null)

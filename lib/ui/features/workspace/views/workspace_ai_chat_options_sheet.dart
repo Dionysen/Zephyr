@@ -2,10 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../../../../domain/models/llm_settings.dart';
 import '../../settings/models/llm_thinking_labels.dart';
+import '../../settings/views/llm_settings_view.dart';
 import '../../../core/zephyr_bottom_sheet.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_settings.dart';
+
+void _openAiModelSettingsFromChat(BuildContext context) {
+  final navigator = Navigator.of(context);
+  navigator.pop();
+  navigator.push(LlmSettingsPage.route());
+}
 
 Future<void> showWorkspaceAiChatOptionsSheet(
   BuildContext context, {
@@ -117,6 +124,18 @@ class _WorkspaceAiChatOptionsSheet extends StatelessWidget {
                       ),
                     ],
                   ),
+                const SizedBox(height: 12),
+                ZephyrSettingsSection(
+                  children: [
+                    ZephyrSettingsListTile(
+                      icon: Icons.auto_awesome_outlined,
+                      title: l10n.aiChatAiSettingsEntry,
+                      subtitle: l10n.llmSettingsSubtitle,
+                      showDivider: false,
+                      onTap: () => _openAiModelSettingsFromChat(context),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),

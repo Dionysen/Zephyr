@@ -1313,6 +1313,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get llmThinkingAuto => '自动';
 
   @override
+  String get aiChatAiSettingsEntry => 'AI 设置';
+
+  @override
   String get aiChatSessionOptionsTitle => '对话模型与思考';
 
   @override
@@ -1320,6 +1323,11 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aiChatSessionModelSubtitle => '可覆盖设置中的默认模型';
+
+  @override
+  String aiChatThinkingForModel(String model) {
+    return '模型：$model';
+  }
 
   @override
   String get aiChatSessionsTitle => '对话列表';

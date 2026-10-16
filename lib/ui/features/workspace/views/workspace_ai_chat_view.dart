@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../domain/models/ai_chat_session.dart' show AiChatMessageRole, AiChatStoredMessage, AiChatSession, kAiChatNewConversation;
+import '../../../../domain/models/ai_chat_session.dart' show AiChatMessageRole, AiChatStoredMessage, kAiChatNewConversation;
 import '../../../../domain/models/llm_chat.dart';
 import '../../../../domain/models/llm_settings.dart';
 import '../../../../domain/repositories/writing_library_repository.dart';
@@ -14,10 +14,13 @@ import '../../../core/zephyr_chat_bubble_shape.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_markdown_body.dart';
 import '../../../core/zephyr_scope.dart';
-import '../../../core/zephyr_theme.dart';
 import '../models/workspace_ai_context_selection.dart';
+import 'workspace_ai_chat_model_sheet.dart';
 import 'workspace_ai_chat_options_sheet.dart';
 import 'workspace_ai_sessions_sheet.dart';
+
+/// Keeps [TextField] IME active when tapping other controls in the composer.
+final Object _aiChatComposerTapGroup = Object();
 
 /// Demo AI chat surface that replaces the plain-text editor while active.
 class WorkspaceAiChatView extends StatefulWidget {
@@ -485,8 +488,6 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
     final theme = Theme.of(context);
     final themeVm = ZephyrScope.of(context).theme;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-    final shellRadius = context.zephyrCornerRadius;
-
     return ListenableBuilder(
       listenable: themeVm,
       builder: (context, _) {
@@ -550,115 +551,286 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
                   ),
                 ),
               ),
-              Material(
-                elevation: 0,
-                color: theme.colorScheme.surfaceContainerHighest,
-                child: SafeArea(
-                  top: false,
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(12, 8, 12, 8 + bottomInset),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        if (widget.contextSelection != null)
-                          ListenableBuilder(
-                            listenable: widget.contextSelection!,
-                            builder: (context, _) {
-                              final articles =
-                                  widget.contextSelection!.articles;
-                              if (articles.isEmpty)
-                                return const SizedBox.shrink();
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: Wrap(
-                                  spacing: 6,
-                                  runSpacing: 6,
-                                  children: [
-                                    for (final article in articles)
-                                      InputChip(
-                                        label: Text(
-                                          article.title,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        onDeleted: () => widget
-                                            .contextSelection!
-                                            .remove(article.id),
-                                        visualDensity: VisualDensity.compact,
-                                        materialTapTargetSize:
-                                            MaterialTapTargetSize.shrinkWrap,
-                                      ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _inputController,
-                                focusNode: _inputFocus,
-                                minLines: 1,
-                                maxLines: 5,
-                                textInputAction: TextInputAction.send,
-                                onSubmitted: (_) => _send(),
-                                decoration: InputDecoration(
-                                  hintText: context.l10n.aiChatInputHint,
-                                  filled: true,
-                                  fillColor: theme.colorScheme.surface,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      shellRadius,
-                                    ),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 10,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            IconButton(
-                              onPressed: _sending
-                                  ? null
-                          : () => unawaited(
-                              showWorkspaceAiChatOptionsSheet(
-                                context,
-                                onManageSessions: openSessionsSheet,
-                              ),
-                            ),
-                              tooltip: context.l10n.aiChatSessionOptionsTitle,
-                              icon: const Icon(Icons.tune_rounded),
-                            ),
-                            const SizedBox(width: 4),
-                            IconButton.filled(
-                              onPressed: _sending
-                                  ? null
-                                  : () => unawaited(_send()),
-                              tooltip: context.l10n.aiChatSend,
-                              icon: _sending
-                                  ? const SizedBox(
-                                      width: 22,
-                                      height: 22,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Icon(Icons.arrow_upward_rounded),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+              _AiChatComposer(
+                controller: _inputController,
+                focusNode: _inputFocus,
+                bottomInset: bottomInset,
+                sending: _sending,
+                contextSelection: widget.contextSelection,
+                onSend: () => unawaited(_send()),
+                onOpenOptions: () => unawaited(
+                  showWorkspaceAiChatOptionsSheet(
+                    context,
+                    onManageSessions: openSessionsSheet,
                   ),
                 ),
               ),
             ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AiChatComposer extends StatelessWidget {
+  const _AiChatComposer({
+    required this.controller,
+    required this.focusNode,
+    required this.bottomInset,
+    required this.sending,
+    required this.onSend,
+    required this.onOpenOptions,
+    this.contextSelection,
+  });
+
+  static const _outerRadius = 50.0;
+
+  static Color _composerFill(ColorScheme scheme, Brightness brightness) {
+    return brightness == Brightness.dark
+        ? Color.lerp(Colors.black, scheme.surface, 0.1)!
+        : Color.lerp(Colors.white, scheme.surface, 0.06)!;
+  }
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final double bottomInset;
+  final bool sending;
+  final VoidCallback onSend;
+  final VoidCallback onOpenOptions;
+  final WorkspaceAiContextSelection? contextSelection;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final scheme = theme.colorScheme;
+    final fill = _composerFill(scheme, theme.brightness);
+    final fieldStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: scheme.onSurface,
+      height: 1.45,
+    );
+    final hintStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: scheme.onSurfaceVariant,
+      height: 1.45,
+    );
+    final shadow = theme.brightness == Brightness.dark
+        ? Colors.black.withValues(alpha: 0.35)
+        : Colors.black.withValues(alpha: 0.1);
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(14, 6, 14, 10 + bottomInset),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (contextSelection != null)
+              ListenableBuilder(
+                listenable: contextSelection!,
+                builder: (context, _) {
+                  final articles = contextSelection!.articles;
+                  if (articles.isEmpty) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        for (final article in articles)
+                          InputChip(
+                            label: Text(
+                              article.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            onDeleted: () =>
+                                contextSelection!.remove(article.id),
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            DecoratedBox(
+              decoration: zephyrContinuousRoundedDecoration(
+                color: fill,
+                radius: _outerRadius,
+                shadows: [
+                  BoxShadow(
+                    color: shadow,
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: TapRegion(
+                groupId: _aiChatComposerTapGroup,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                    controller: controller,
+                    focusNode: focusNode,
+                    minLines: 1,
+                    maxLines: 6,
+                    textInputAction: TextInputAction.newline,
+                    textAlignVertical: TextAlignVertical.top,
+                    style: fieldStyle,
+                    decoration: InputDecoration(
+                      hintText: l10n.aiChatInputHint,
+                      hintStyle: hintStyle,
+                      filled: false,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: const EdgeInsets.fromLTRB(
+                        14,
+                        12,
+                        14,
+                        4,
+                      ),
+                      isDense: true,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        _AiChatComposerModelButton(
+                          inputFocus: focusNode,
+                          onSurfaceVariant: scheme.onSurfaceVariant,
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          onPressed: sending ? null : onOpenOptions,
+                          tooltip: l10n.aiChatSessionOptionsTitle,
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            foregroundColor: scheme.onSurfaceVariant,
+                            visualDensity: VisualDensity.compact,
+                            splashFactory: NoSplash.splashFactory,
+                            highlightColor: Colors.transparent,
+                          ),
+                          icon: const Icon(Icons.tune_rounded, size: 22),
+                          padding: const EdgeInsets.all(6),
+                          constraints: const BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
+                        ),
+                        Tooltip(
+                          message: l10n.aiChatSend,
+                          child: Material(
+                            color: sending
+                                ? scheme.primary.withValues(alpha: 0.45)
+                                : scheme.primary,
+                            shape: const CircleBorder(),
+                            clipBehavior: Clip.antiAlias,
+                            child: InkWell(
+                              onTap: sending ? null : onSend,
+                              child: SizedBox(
+                                width: 34,
+                                height: 34,
+                                child: Center(
+                                  child: sending
+                                      ? SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: scheme.onPrimary,
+                                          ),
+                                        )
+                                      : Icon(
+                                          Icons.send_rounded,
+                                          size: 18,
+                                          color: scheme.onPrimary,
+                                        ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AiChatComposerModelButton extends StatelessWidget {
+  const _AiChatComposerModelButton({
+    required this.inputFocus,
+    required this.onSurfaceVariant,
+  });
+
+  final FocusNode inputFocus;
+  final Color onSurfaceVariant;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final vm = ZephyrScope.of(context).llmSettings;
+    return ListenableBuilder(
+      listenable: vm,
+      builder: (context, _) {
+        final prefs = vm.preferences;
+        final modelId = prefs.effectiveChatModelId;
+        final label =
+            modelId.isEmpty ? l10n.llmModelNotSelected : modelId;
+        return Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: () => showWorkspaceAiChatModelAndThinkingSheets(
+              context,
+              inputFocus: inputFocus,
+            ),
+            borderRadius: BorderRadius.circular(18),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.smart_toy_outlined,
+                    size: 16,
+                    color: onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 140),
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.expand_more_rounded,
+                    size: 18,
+                    color: onSurfaceVariant,
+                  ),
+                ],
+              ),
+            ),
           ),
         );
       },

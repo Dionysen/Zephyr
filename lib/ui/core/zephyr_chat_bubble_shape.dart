@@ -31,3 +31,19 @@ ShapeDecoration zephyrChatBubbleDecoration({
     ),
   );
 }
+
+/// Continuous-curve pill / rounded rect (e.g. AI chat composer chrome).
+ShapeDecoration zephyrContinuousRoundedDecoration({
+  required Color color,
+  required double radius,
+  List<BoxShadow>? shadows,
+}) {
+  final r = radius.clamp(0.0, 80.0);
+  return ShapeDecoration(
+    color: color,
+    shadows: shadows,
+    shape: ContinuousRectangleBorder(
+      borderRadius: BorderRadius.circular(r),
+    ),
+  );
+}

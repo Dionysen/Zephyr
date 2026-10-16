@@ -1388,6 +1388,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get llmThinkingAuto => 'Auto';
 
   @override
+  String get aiChatAiSettingsEntry => 'AI settings';
+
+  @override
   String get aiChatSessionOptionsTitle => 'Model & thinking';
 
   @override
@@ -1397,6 +1400,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get aiChatSessionModelSubtitle =>
       'Override the default model from settings';
+
+  @override
+  String aiChatThinkingForModel(String model) {
+    return 'Model: $model';
+  }
 
   @override
   String get aiChatSessionsTitle => 'Conversations';

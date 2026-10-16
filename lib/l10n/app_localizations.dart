@@ -2605,6 +2605,12 @@ abstract class AppLocalizations {
   /// **'Auto'**
   String get llmThinkingAuto;
 
+  /// No description provided for @aiChatAiSettingsEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'AI settings'**
+  String get aiChatAiSettingsEntry;
+
   /// No description provided for @aiChatSessionOptionsTitle.
   ///
   /// In en, this message translates to:
@@ -2622,6 +2628,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Override the default model from settings'**
   String get aiChatSessionModelSubtitle;
+
+  /// No description provided for @aiChatThinkingForModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model: {model}'**
+  String aiChatThinkingForModel(String model);
 
   /// No description provided for @aiChatSessionsTitle.
   ///

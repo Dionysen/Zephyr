@@ -572,9 +572,18 @@
   "llmThinkingMedium": "Medium",
   "llmThinkingHigh": "High",
   "llmThinkingAuto": "Auto",
+  "aiChatAiSettingsEntry": "AI settings",
   "aiChatSessionOptionsTitle": "Model & thinking",
   "aiChatSessionOptionsNeedTest": "Run a connection test in AI model settings first.",
   "aiChatSessionModelSubtitle": "Override the default model from settings",
+  "aiChatThinkingForModel": "Model: {model}",
+  "@aiChatThinkingForModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
   "aiChatSessionsTitle": "Conversations",
   "aiChatSessionsSubtitle": "Switch, archive, or delete saved chats for this chapter",
   "aiChatNewSession": "New chat",
