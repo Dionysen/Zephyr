@@ -1239,10 +1239,23 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
   @override
   Widget build(BuildContext context) {
     final scope = ZephyrScope.of(context);
-    final aiEnabled = scope.theme.ui.aiFeaturesEnabled;
+    final themeVm = scope.theme;
+    final aiEnabled = themeVm.ui.aiFeaturesEnabled;
+    final pinnedEditorBackground = widget.transparentTopBar
+        ? ListenableBuilder(
+            listenable: themeVm,
+            builder: (context, _) => EditorBackgroundLayer(
+              config: themeVm.ui.activeEditorBackgroundFor(
+                dark: themeVm.isEffectivelyDark,
+              ),
+              child: const SizedBox.expand(),
+            ),
+          )
+        : null;
     final pager = ZephyrDualEditorPager(
       drawerWidth: widget.drawerWidth,
       onActiveEditorChanged: _setActiveEditor,
+      fixedUnderlay: pinnedEditorBackground,
       fixedOverlay: Builder(
         builder: (pagerContext) => _fixedTopBar(pagerContext),
       ),
@@ -1552,7 +1565,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
               : 0.0;
           return Stack(
             children: [
-              if (paintBleedBackground)
+              if (paintBleedBackground && !widget.transparentTopBar)
                 Positioned.fill(
                   child: ListenableBuilder(
                     listenable: themeVm,

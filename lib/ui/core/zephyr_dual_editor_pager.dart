@@ -14,6 +14,7 @@ class ZephyrDualEditorPager extends StatefulWidget {
     required this.endDrawer,
     required this.drawerWidth,
     this.onActiveEditorChanged,
+    this.fixedUnderlay,
     this.fixedOverlay,
   });
 
@@ -23,6 +24,9 @@ class ZephyrDualEditorPager extends StatefulWidget {
   final Widget endDrawer;
   final double drawerWidth;
   final ValueChanged<int>? onActiveEditorChanged;
+
+  /// Pinned behind the sliding editor row (e.g. full-bleed writing background).
+  final Widget? fixedUnderlay;
 
   /// A stable layer above both editor pages and below either library drawer.
   final Widget? fixedOverlay;
@@ -384,6 +388,8 @@ class _ZephyrDualEditorPagerState extends State<ZephyrDualEditorPager>
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
+                              if (widget.fixedUnderlay != null)
+                                Positioned.fill(child: widget.fixedUnderlay!),
                               Positioned(
                                 left: -_page.value * viewportWidth,
                                 top: 0,
