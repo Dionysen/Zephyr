@@ -31,6 +31,7 @@ class UiPreferences {
     required this.chatBubbleCornerRadius,
     required this.showBorders,
     required this.sidebarItemInset,
+    required this.sidebarItemCornerRadius,
     required this.sidebarVolumeGap,
     required this.immersiveStatusBar,
     required this.hideStatusBarIcons,
@@ -63,6 +64,7 @@ class UiPreferences {
     chatBubbleCornerRadius: 30,
     showBorders: false,
     sidebarItemInset: 0,
+    sidebarItemCornerRadius: 4,
     sidebarVolumeGap: 1,
     immersiveStatusBar: true,
     hideStatusBarIcons: true,
@@ -115,6 +117,9 @@ class UiPreferences {
 
   /// Equal left/right inset for sidebar volume and chapter rows.
   final double sidebarItemInset;
+
+  /// Corner radius for sidebar volume headers and chapter rows.
+  final double sidebarItemCornerRadius;
 
   /// Vertical gap between volume groups in the sidebar.
   final double sidebarVolumeGap;
@@ -205,6 +210,7 @@ class UiPreferences {
     double? chatBubbleCornerRadius,
     bool? showBorders,
     double? sidebarItemInset,
+    double? sidebarItemCornerRadius,
     double? sidebarVolumeGap,
     bool? immersiveStatusBar,
     bool? hideStatusBarIcons,
@@ -236,6 +242,8 @@ class UiPreferences {
         chatBubbleCornerRadius ?? this.chatBubbleCornerRadius,
     showBorders: showBorders ?? this.showBorders,
     sidebarItemInset: sidebarItemInset ?? this.sidebarItemInset,
+    sidebarItemCornerRadius:
+        sidebarItemCornerRadius ?? this.sidebarItemCornerRadius,
     sidebarVolumeGap: sidebarVolumeGap ?? this.sidebarVolumeGap,
     immersiveStatusBar: immersiveStatusBar ?? this.immersiveStatusBar,
     hideStatusBarIcons: hideStatusBarIcons ?? this.hideStatusBarIcons,

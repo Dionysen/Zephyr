@@ -1592,6 +1592,18 @@ abstract class AppLocalizations {
   /// **'Equal left/right padding for volumes and chapters.'**
   String get sidebarItemInsetDescription;
 
+  /// No description provided for @sidebarItemCornerRadiusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sidebar volume & chapter corners'**
+  String get sidebarItemCornerRadiusTitle;
+
+  /// No description provided for @sidebarItemCornerRadiusDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Corner radius for volume headers and chapter rows in the library sidebar.'**
+  String get sidebarItemCornerRadiusDescription;
+
   /// No description provided for @sidebarVolumeGapTitle.
   ///
   /// In en, this message translates to:

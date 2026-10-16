@@ -15,6 +15,7 @@ class ZephyrShapeTheme extends ThemeExtension<ZephyrShapeTheme> {
     this.barCornerRadius = 4,
     this.showBorders = false,
     this.sidebarItemInset = 0,
+    this.sidebarItemCornerRadius = 4,
     this.sidebarVolumeGap = 1,
   });
 
@@ -22,9 +23,13 @@ class ZephyrShapeTheme extends ThemeExtension<ZephyrShapeTheme> {
   final double barCornerRadius;
   final bool showBorders;
   final double sidebarItemInset;
+  final double sidebarItemCornerRadius;
   final double sidebarVolumeGap;
 
   BorderRadius get borderRadius => BorderRadius.circular(cornerRadius);
+
+  BorderRadius get sidebarItemBorderRadius =>
+      BorderRadius.circular(sidebarItemCornerRadius);
 
   BorderRadius get barBorderRadius => BorderRadius.circular(barCornerRadius);
 
@@ -46,12 +51,15 @@ class ZephyrShapeTheme extends ThemeExtension<ZephyrShapeTheme> {
     double? barCornerRadius,
     bool? showBorders,
     double? sidebarItemInset,
+    double? sidebarItemCornerRadius,
     double? sidebarVolumeGap,
   }) => ZephyrShapeTheme(
     cornerRadius: cornerRadius ?? this.cornerRadius,
     barCornerRadius: barCornerRadius ?? this.barCornerRadius,
     showBorders: showBorders ?? this.showBorders,
     sidebarItemInset: sidebarItemInset ?? this.sidebarItemInset,
+    sidebarItemCornerRadius:
+        sidebarItemCornerRadius ?? this.sidebarItemCornerRadius,
     sidebarVolumeGap: sidebarVolumeGap ?? this.sidebarVolumeGap,
   );
 
@@ -65,6 +73,11 @@ class ZephyrShapeTheme extends ThemeExtension<ZephyrShapeTheme> {
       sidebarItemInset: lerpDouble(
         sidebarItemInset,
         other.sidebarItemInset,
+        t,
+      )!,
+      sidebarItemCornerRadius: lerpDouble(
+        sidebarItemCornerRadius,
+        other.sidebarItemCornerRadius,
         t,
       )!,
       sidebarVolumeGap: lerpDouble(
@@ -92,6 +105,9 @@ extension ZephyrThemeContext on BuildContext {
   bool get zephyrShowBorders => zephyrShape.showBorders;
 
   double get zephyrSidebarItemInset => zephyrShape.sidebarItemInset;
+
+  BorderRadius get zephyrSidebarItemBorderRadius =>
+      zephyrShape.sidebarItemBorderRadius;
 
   double get zephyrSidebarVolumeGap => zephyrShape.sidebarVolumeGap;
 
@@ -132,6 +148,10 @@ ThemeData zephyrTheme(
     UiPreferences.minSidebarItemInset,
     UiPreferences.maxSidebarItemInset,
   );
+  final sidebarItemRadius = ui.sidebarItemCornerRadius.clamp(
+    UiPreferences.minCornerRadius,
+    UiPreferences.maxCornerRadius,
+  );
   final volumeGap = ui.sidebarVolumeGap.clamp(
     UiPreferences.minSidebarVolumeGap,
     UiPreferences.maxSidebarVolumeGap,
@@ -141,6 +161,7 @@ ThemeData zephyrTheme(
     barCornerRadius: barRadius,
     showBorders: ui.showBorders,
     sidebarItemInset: itemInset,
+    sidebarItemCornerRadius: sidebarItemRadius,
     sidebarVolumeGap: volumeGap,
   );
   final borderRadius = shape.borderRadius;

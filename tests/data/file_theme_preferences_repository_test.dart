@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/data/repositories/file_theme_preferences_repository.dart';
 import 'package:zephyr/data/services/theme_file_storage.dart';
+import 'package:zephyr/data/services/ui_preferences_platform_defaults.dart';
 import 'package:zephyr/domain/models/app_theme_mode.dart';
 import 'package:zephyr/domain/models/editor_background.dart';
 import 'package:zephyr/domain/models/theme_color_pack.dart';
@@ -62,6 +63,7 @@ void main() {
           chatBubbleCornerRadius: 18,
           showBorders: false,
           sidebarItemInset: 12,
+          sidebarItemCornerRadius: 8,
           sidebarVolumeGap: 4,
           immersiveStatusBar: true,
           hideStatusBarIcons: false,
@@ -122,6 +124,10 @@ void main() {
       );
       expect(actual.ui.showBorders, expected.ui.showBorders);
       expect(actual.ui.sidebarItemInset, expected.ui.sidebarItemInset);
+      expect(
+        actual.ui.sidebarItemCornerRadius,
+        expected.ui.sidebarItemCornerRadius,
+      );
       expect(actual.ui.sidebarVolumeGap, expected.ui.sidebarVolumeGap);
       expect(actual.ui.immersiveStatusBar, expected.ui.immersiveStatusBar);
       expect(actual.ui.hideStatusBarIcons, expected.ui.hideStatusBarIcons);
@@ -180,6 +186,10 @@ void main() {
     expect(
       appearance.ui.sidebarItemInset,
       UiPreferences.defaults.sidebarItemInset,
+    );
+    expect(
+      appearance.ui.sidebarItemCornerRadius,
+      defaultSidebarItemCornerRadiusForPlatform(),
     );
     expect(
       appearance.ui.sidebarVolumeGap,

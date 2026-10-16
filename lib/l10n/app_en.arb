@@ -319,6 +319,8 @@
   "showBordersSubtitle": "When off, buttons and cards have no outline. When on, volumes and the library bar show a border.",
   "sidebarItemInsetTitle": "Sidebar item inset",
   "sidebarItemInsetDescription": "Equal left/right padding for volumes and chapters.",
+  "sidebarItemCornerRadiusTitle": "Sidebar volume & chapter corners",
+  "sidebarItemCornerRadiusDescription": "Corner radius for volume headers and chapter rows in the library sidebar.",
   "sidebarVolumeGapTitle": "Sidebar volume spacing",
   "sidebarVolumeGapDescription": "Space between volumes. Chapters stay close, separated by a line.",
   "themePresetsSectionTitle": "Theme colors",

@@ -316,6 +316,8 @@
   "showBordersSubtitle": "关闭后按钮和卡片没有边框。开启后，卷和书库栏会显示边框",
   "sidebarItemInsetTitle": "侧边栏条目边距",
   "sidebarItemInsetDescription": "卷与章节左右边距（相等）",
+  "sidebarItemCornerRadiusTitle": "侧边栏卷与章节圆角",
+  "sidebarItemCornerRadiusDescription": "书库侧栏中卷标题与章节行的圆角",
   "sidebarVolumeGapTitle": "侧边栏内容上下间距",
   "sidebarVolumeGapDescription": "卷与卷之间的间距。章节之间只留一条分隔线",
   "themePresetsSectionTitle": "主题颜色",

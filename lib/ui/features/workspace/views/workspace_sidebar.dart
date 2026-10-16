@@ -672,9 +672,8 @@ class WorkspaceMobileBookBar extends StatelessWidget {
     final fg = aiActive
         ? theme.colorScheme.primary
         : theme.colorScheme.onSurface.withValues(alpha: 0.76);
-    final style = _mobileBarIconStyle(context).copyWith(
-      foregroundColor: WidgetStatePropertyAll(fg),
-    );
+    final style = _mobileBarIconStyle(context)
+        .copyWith(foregroundColor: WidgetStatePropertyAll(fg));
     return Center(
       child: IconButton(
         onPressed: onAiPressed,
@@ -2945,7 +2944,7 @@ class _VolumeRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final radius = context.zephyrBorderRadius;
+    final radius = context.zephyrSidebarItemBorderRadius;
     final listInset = context.zephyrSidebarItemInset;
     final volumeGap = context.zephyrSidebarVolumeGap;
     final compact = ZephyrBreakpoints.isCompact(
@@ -3085,7 +3084,7 @@ class _ChapterRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
-    final radius = context.zephyrBorderRadius;
+    final radius = context.zephyrSidebarItemBorderRadius;
     final showDetails =
         ZephyrScope.maybeOf(context)?.theme.ui.showChapterDetails ?? true;
     final compact = ZephyrBreakpoints.isCompact(
@@ -3164,10 +3163,8 @@ class _ChapterRow extends StatelessWidget {
                       padding: const EdgeInsets.only(right: 4),
                       child: Checkbox(
                         value: aiContext!.contains(chapter.id),
-                        onChanged: (_) => aiContext!.toggle(
-                          chapter,
-                          displayTitle: title,
-                        ),
+                        onChanged: (_) =>
+                            aiContext!.toggle(chapter, displayTitle: title),
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
                       ),
@@ -3296,7 +3293,7 @@ class _SidebarDragHandle<T extends Object> extends StatelessWidget {
       onDragEnd: onDragEnded == null ? null : (_) => onDragEnded!(),
       feedback: Material(
         elevation: 4,
-        borderRadius: context.zephyrBorderRadius,
+        borderRadius: context.zephyrSidebarItemBorderRadius,
         color: theme.colorScheme.surfaceContainerHigh,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

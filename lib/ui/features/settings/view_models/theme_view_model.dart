@@ -345,6 +345,14 @@ class ThemeViewModel extends ChangeNotifier {
     ),
   );
 
+  void updateSidebarItemCornerRadius(double value) => _updateUi(
+    _ui.copyWith(
+      sidebarItemCornerRadius: value
+          .clamp(UiPreferences.minCornerRadius, UiPreferences.maxCornerRadius)
+          .toDouble(),
+    ),
+  );
+
   void updateSidebarVolumeGap(double value) => _updateUi(
     _ui.copyWith(
       sidebarVolumeGap: value

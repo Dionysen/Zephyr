@@ -835,6 +835,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Equal left/right padding for volumes and chapters.';
 
   @override
+  String get sidebarItemCornerRadiusTitle => 'Sidebar volume & chapter corners';
+
+  @override
+  String get sidebarItemCornerRadiusDescription =>
+      'Corner radius for volume headers and chapter rows in the library sidebar.';
+
+  @override
   String get sidebarVolumeGapTitle => 'Sidebar volume spacing';
 
   @override

@@ -781,6 +781,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sidebarItemInsetDescription => '卷与章节左右边距（相等）';
 
   @override
+  String get sidebarItemCornerRadiusTitle => '侧边栏卷与章节圆角';
+
+  @override
+  String get sidebarItemCornerRadiusDescription => '书库侧栏中卷标题与章节行的圆角';
+
+  @override
   String get sidebarVolumeGapTitle => '侧边栏内容上下间距';
 
   @override

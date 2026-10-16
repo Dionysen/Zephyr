@@ -9,6 +9,7 @@ import '../../../core/zephyr_dialog.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_settings.dart';
 import '../../../core/zephyr_theme.dart';
+import '../../../../data/services/ui_preferences_platform_defaults.dart';
 import '../view_models/theme_view_model.dart';
 import 'editor_background_settings_page.dart';
 import 'editor_background_settings_view.dart';
@@ -21,9 +22,8 @@ Future<void> _openBackgroundPage(
 }) async {
   await viewModel.loadBackgroundImages();
   if (!context.mounted) return;
-  await Navigator.of(context).push(
-    EditorBackgroundSettingsPage.route(dark: dark),
-  );
+  await Navigator.of(context)
+      .push(EditorBackgroundSettingsPage.route(dark: dark));
 }
 
 class ThemeCatalog extends StatefulWidget {
@@ -62,7 +62,9 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
       context: context,
       builder: (context) => _ThemeNameDialog(
         title: l10n.saveThemeColorTitle,
-        initialName: l10n.themePackNameDefault(viewModel.nextDefaultThemeNumber()),
+        initialName: l10n.themePackNameDefault(
+          viewModel.nextDefaultThemeNumber(),
+        ),
       ),
     );
     if (name == null || !mounted) return;
@@ -160,11 +162,13 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
     ];
   }
 
-  Widget _expandedBlock(List<Widget> children) => _ExpandedSettingsBlock(
-    children: children,
-  );
+  Widget _expandedBlock(List<Widget> children) =>
+      _ExpandedSettingsBlock(children: children);
 
-  List<Widget> _customColorItems(AppLocalizations l10n, {required bool compact}) {
+  List<Widget> _customColorItems(
+    AppLocalizations l10n, {
+    required bool compact,
+  }) {
     final tokens = ThemeToken.values;
     return [
       for (var i = 0; i < tokens.length; i++)
@@ -239,14 +243,11 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
                   subtitle: currentThemeLabel,
                   showDivider: true,
                   trailing: Icon(
-                    _presetsExpanded
-                        ? Icons.expand_less
-                        : Icons.expand_more,
+                    _presetsExpanded ? Icons.expand_less : Icons.expand_more,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                  onTap: () => setState(
-                    () => _presetsExpanded = !_presetsExpanded,
-                  ),
+                  onTap: () =>
+                      setState(() => _presetsExpanded = !_presetsExpanded),
                 ),
                 if (_presetsExpanded)
                   _expandedBlock(
@@ -402,6 +403,19 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
                 ),
                 ZephyrSettingsAdaptiveNumber(
                   compact: true,
+                  icon: Icons.library_books_outlined,
+                  title: l10n.sidebarItemCornerRadiusTitle,
+                  description: l10n.sidebarItemCornerRadiusDescription,
+                  value: viewModel.ui.sidebarItemCornerRadius,
+                  min: UiPreferences.minCornerRadius,
+                  max: UiPreferences.maxCornerRadius,
+                  defaultValue: defaultSidebarItemCornerRadiusForPlatform(),
+                  suffix: 'px',
+                  divisions: 20,
+                  onChanged: viewModel.updateSidebarItemCornerRadius,
+                ),
+                ZephyrSettingsAdaptiveNumber(
+                  compact: true,
                   icon: Icons.space_bar,
                   title: l10n.sidebarVolumeGapTitle,
                   description: l10n.sidebarVolumeGapDescription,
@@ -486,9 +500,8 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
               _customColorsExpanded ? Icons.expand_less : Icons.expand_more,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-            onTap: () => setState(
-              () => _customColorsExpanded = !_customColorsExpanded,
-            ),
+            onTap: () =>
+                setState(() => _customColorsExpanded = !_customColorsExpanded),
           ),
           if (_customColorsExpanded)
             _expandedBlock(_customColorItems(l10n, compact: false)),
@@ -510,22 +523,16 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
             config: viewModel.ui.lightEditorBackground,
             isCurrent: !viewModel.isEffectivelyDark,
             showDivider: true,
-            onTap: () => _openBackgroundPage(
-              context,
-              viewModel: viewModel,
-              dark: false,
-            ),
+            onTap: () =>
+                _openBackgroundPage(context, viewModel: viewModel, dark: false),
           ),
           _EditorBackgroundTile(
             title: l10n.editorBackgroundDarkTitle,
             config: viewModel.ui.darkEditorBackground,
             isCurrent: viewModel.isEffectivelyDark,
             showDivider: true,
-            onTap: () => _openBackgroundPage(
-              context,
-              viewModel: viewModel,
-              dark: true,
-            ),
+            onTap: () =>
+                _openBackgroundPage(context, viewModel: viewModel, dark: true),
           ),
           const SizedBox(height: 8),
           FontFilePickerRow(
@@ -609,6 +616,19 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
             suffix: 'px',
             divisions: 24,
             onChanged: viewModel.updateSidebarItemInset,
+          ),
+          ZephyrSettingsAdaptiveNumber(
+            compact: false,
+            icon: Icons.library_books_outlined,
+            title: l10n.sidebarItemCornerRadiusTitle,
+            description: l10n.sidebarItemCornerRadiusDescription,
+            value: viewModel.ui.sidebarItemCornerRadius,
+            min: UiPreferences.minCornerRadius,
+            max: UiPreferences.maxCornerRadius,
+            defaultValue: defaultSidebarItemCornerRadiusForPlatform(),
+            suffix: 'px',
+            divisions: 20,
+            onChanged: viewModel.updateSidebarItemCornerRadius,
           ),
           ZephyrSettingsAdaptiveNumber(
             compact: false,
@@ -704,7 +724,9 @@ class _CustomColorActions extends StatelessWidget {
     ButtonStyle styleFor(Color background) => ButtonStyle(
       shape: WidgetStatePropertyAll(shape),
       minimumSize: const WidgetStatePropertyAll(Size(0, 44)),
-      padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 8)),
+      padding: const WidgetStatePropertyAll(
+        EdgeInsets.symmetric(horizontal: 8),
+      ),
       backgroundColor: WidgetStatePropertyAll(background),
       foregroundColor: WidgetStatePropertyAll(scheme.onSurface),
       visualDensity: VisualDensity.standard,
@@ -773,10 +795,7 @@ class _CustomColorActions extends StatelessWidget {
 }
 
 class _ThemeNameDialog extends StatefulWidget {
-  const _ThemeNameDialog({
-    required this.title,
-    required this.initialName,
-  });
+  const _ThemeNameDialog({required this.title, required this.initialName});
 
   final String title;
   final String initialName;
@@ -823,7 +842,9 @@ class _ThemeNameDialogState extends State<_ThemeNameDialog> {
           child: TextFormField(
             controller: _controller,
             autofocus: true,
-            decoration: InputDecoration(labelText: l10n.saveThemeColorNameLabel),
+            decoration: InputDecoration(
+              labelText: l10n.saveThemeColorNameLabel,
+            ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return l10n.validationNameRequired;
@@ -839,10 +860,7 @@ class _ThemeNameDialogState extends State<_ThemeNameDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: Text(l10n.actionCancel),
         ),
-        FilledButton(
-          onPressed: _submit,
-          child: Text(l10n.actionSave),
-        ),
+        FilledButton(onPressed: _submit, child: Text(l10n.actionSave)),
       ],
     );
   }

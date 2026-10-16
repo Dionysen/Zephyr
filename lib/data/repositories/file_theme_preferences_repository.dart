@@ -5,6 +5,7 @@ import '../../domain/models/theme_tokens.dart';
 import '../../domain/models/ui_preferences.dart';
 import '../../domain/repositories/theme_preferences_repository.dart';
 import '../services/theme_file_storage.dart';
+import '../services/ui_preferences_platform_defaults.dart';
 
 class FileThemePreferencesRepository implements ThemePreferencesRepository {
   FileThemePreferencesRepository(this._storage);
@@ -22,7 +23,9 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
         lightPackId: ThemeColorPack.builtInId(ThemePreset.light),
         darkPackId: ThemeColorPack.builtInId(ThemePreset.darkModern),
         customPacks: const [],
-        ui: UiPreferences.defaults,
+        ui: UiPreferences.defaults.copyWith(
+          sidebarItemCornerRadius: defaultSidebarItemCornerRadiusForPlatform(),
+        ),
       );
     }
 
@@ -253,6 +256,13 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
       'uiSidebarItemInset',
       UiPreferences.defaults.sidebarItemInset,
     );
+    final sidebarItemRadius = values.containsKey('uiSidebarItemCornerRadius')
+        ? _double(
+            values,
+            'uiSidebarItemCornerRadius',
+            defaultSidebarItemCornerRadiusForPlatform(),
+          )
+        : defaultSidebarItemCornerRadiusForPlatform();
     final volumeGap = _double(
       values,
       'uiSidebarVolumeGap',
@@ -292,6 +302,9 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
             UiPreferences.minSidebarItemInset,
             UiPreferences.maxSidebarItemInset,
           )
+          .toDouble(),
+      sidebarItemCornerRadius: sidebarItemRadius
+          .clamp(UiPreferences.minCornerRadius, UiPreferences.maxCornerRadius)
           .toDouble(),
       sidebarVolumeGap: volumeGap
           .clamp(
@@ -379,6 +392,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'uiChatBubbleCornerRadius': ui.chatBubbleCornerRadius,
     'uiShowBorders': ui.showBorders,
     'uiSidebarItemInset': ui.sidebarItemInset,
+    'uiSidebarItemCornerRadius': ui.sidebarItemCornerRadius,
     'uiSidebarVolumeGap': ui.sidebarVolumeGap,
     'uiImmersiveStatusBar': ui.immersiveStatusBar,
     'uiHideStatusBarIcons': ui.hideStatusBarIcons,
