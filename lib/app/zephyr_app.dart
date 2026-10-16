@@ -95,6 +95,9 @@ void runZephyr(
   final keyboardShortcuts = KeyboardShortcutsViewModel(
     FileKeyboardShortcutsRepository(KeyboardShortcutsFileStorage()),
   )..load();
+  final llmSettings = LlmSettingsViewModel(
+    repository: FileLlmSettingsRepository(),
+  )..load();
   final cloudSync = CloudSyncViewModel(
     library: library,
     reloadLocalSettings: () async {
@@ -103,10 +106,8 @@ void runZephyr(
       await quickToolbar.load();
       await keyboardShortcuts.load();
       await backup.load();
+      await llmSettings.load();
     },
-  )..load();
-  final llmSettings = LlmSettingsViewModel(
-    repository: FileLlmSettingsRepository(),
   )..load();
   final messengerKey = GlobalKey<ScaffoldMessengerState>();
   if (WindowChrome.isDesktop) {

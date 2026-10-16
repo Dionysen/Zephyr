@@ -55,6 +55,7 @@ class CloudSettingsBundle {
     'zephyr/backup_preferences.json',
     'zephyr/workspace-layout.json',
     'zephyr/window-frame.json',
+    'zephyr/llm_preferences.json',
   ];
 
   String get cloudFileName => platform.cloudFileName;

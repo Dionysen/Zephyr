@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 
 import '../../domain/llm/llm_model_list_parsers.dart';
 import '../../domain/llm/llm_provider_catalog.dart';
+import '../../domain/llm/llm_thinking_adapter.dart';
+import '../../domain/models/llm_chat.dart';
 import '../../domain/models/llm_settings.dart';
 
 class LlmGatewayException implements Exception {
@@ -45,6 +47,7 @@ class LlmGateway {
     required LlmConnection connection,
     required String modelId,
     required List<LlmChatMessage> messages,
+    required LlmCompletionOptions options,
   }) async {
     final key = connection.apiKey.trim();
     if (key.isEmpty) {
@@ -59,8 +62,15 @@ class LlmGateway {
         key,
         modelId,
         messages,
+        options,
       ),
-      LlmProviderKind.google => _chatGoogle(connection, key, modelId, messages),
+      LlmProviderKind.google => _chatGoogle(
+        connection,
+        key,
+        modelId,
+        messages,
+        options,
+      ),
       LlmProviderKind.openai ||
       LlmProviderKind.deepseek ||
       LlmProviderKind.zhipu ||
@@ -69,8 +79,46 @@ class LlmGateway {
         key,
         modelId,
         messages,
+        options,
       ),
     };
+  }
+
+  Stream<String> streamChat({
+    required LlmConnection connection,
+    required String modelId,
+    required List<LlmChatMessage> messages,
+    required LlmCompletionOptions options,
+  }) async* {
+    final key = connection.apiKey.trim();
+    if (key.isEmpty) {
+      throw LlmGatewayException('API key is required.');
+    }
+    if (modelId.isEmpty) {
+      throw LlmGatewayException('Model is required.');
+    }
+    switch (connection.provider) {
+      case LlmProviderKind.anthropic:
+      case LlmProviderKind.google:
+        yield await completeChat(
+          connection: connection,
+          modelId: modelId,
+          messages: messages,
+          options: options,
+        );
+        return;
+      case LlmProviderKind.openai:
+      case LlmProviderKind.deepseek:
+      case LlmProviderKind.zhipu:
+      case LlmProviderKind.openAiCompatible:
+        yield* _streamOpenAiCompatible(
+          connection,
+          key,
+          modelId,
+          messages,
+          options,
+        );
+    }
   }
 
   Future<List<LlmModelOption>> _listOpenAiCompatibleModels(
@@ -123,24 +171,58 @@ class LlmGateway {
     return parseGoogleModelList(json);
   }
 
+  Map<String, Object?> _openAiChatBody(
+    LlmConnection connection,
+    String modelId,
+    List<LlmChatMessage> messages,
+    LlmCompletionOptions options, {
+    required bool stream,
+  }) {
+    final body = <String, Object?>{
+      'model': modelId,
+      'stream': stream,
+      'max_tokens': options.maxOutputTokens,
+      'messages': [
+        for (final message in messages)
+          {'role': message.role.apiName, 'content': message.text},
+      ],
+    };
+    _applyOpenAiThinking(body, options);
+    return body;
+  }
+
+  void _applyOpenAiThinking(
+    Map<String, Object?> body,
+    LlmCompletionOptions options,
+  ) {
+    final thinking = LlmThinkingAdapter.forRequest(
+      provider: options.provider,
+      level: options.thinkingLevel,
+      modelId: options.modelId,
+    );
+    if (thinking.openAiReasoningEffort != null) {
+      body['reasoning_effort'] = thinking.openAiReasoningEffort;
+    }
+    if (thinking.openAiThinking != null) {
+      body['thinking'] = thinking.openAiThinking;
+    }
+  }
+
   Future<String> _chatOpenAiCompatible(
     LlmConnection connection,
     String key,
     String modelId,
     List<LlmChatMessage> messages,
+    LlmCompletionOptions options,
   ) async {
     final root = LlmProviderCatalog.resolveApiRoot(connection);
     if (root.isEmpty) {
       throw LlmGatewayException('Base URL is required.');
     }
     final uri = Uri.parse('$root/chat/completions');
-    final body = jsonEncode({
-      'model': modelId,
-      'messages': [
-        for (final message in messages)
-          {'role': message.role.apiName, 'content': message.text},
-      ],
-    });
+    final body = jsonEncode(
+      _openAiChatBody(connection, modelId, messages, options, stream: false),
+    );
     final response = await _client
         .post(uri, headers: _bearerHeaders(key), body: body)
         .timeout(_timeout);
@@ -160,11 +242,61 @@ class LlmGateway {
     throw LlmGatewayException('Empty response from model.');
   }
 
+  Stream<String> _streamOpenAiCompatible(
+    LlmConnection connection,
+    String key,
+    String modelId,
+    List<LlmChatMessage> messages,
+    LlmCompletionOptions options,
+  ) async* {
+    final root = LlmProviderCatalog.resolveApiRoot(connection);
+    if (root.isEmpty) {
+      throw LlmGatewayException('Base URL is required.');
+    }
+    final uri = Uri.parse('$root/chat/completions');
+    final request = http.Request('POST', uri);
+    request.headers.addAll(_bearerHeaders(key));
+    request.headers['accept'] = 'text/event-stream';
+    request.body = jsonEncode(
+      _openAiChatBody(connection, modelId, messages, options, stream: true),
+    );
+    final response = await _client.send(request).timeout(_timeout);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final body = await response.stream.bytesToString();
+      throw LlmGatewayException(
+        body.isEmpty ? 'HTTP ${response.statusCode}' : body,
+        statusCode: response.statusCode,
+      );
+    }
+    await for (final chunk in response.stream.transform(utf8.decoder)) {
+      for (final line in chunk.split('\n')) {
+        final trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+        final payload = trimmed.substring(5).trim();
+        if (payload == '[DONE]') return;
+        try {
+          final json = jsonDecode(payload) as Map<String, dynamic>;
+          final choices = json['choices'];
+          if (choices is! List || choices.isEmpty) continue;
+          final first = choices.first;
+          if (first is! Map) continue;
+          final delta = first['delta'];
+          if (delta is! Map) continue;
+          final content = delta['content'];
+          if (content is String && content.isNotEmpty) yield content;
+        } on Object {
+          continue;
+        }
+      }
+    }
+  }
+
   Future<String> _chatAnthropic(
     LlmConnection connection,
     String key,
     String modelId,
     List<LlmChatMessage> messages,
+    LlmCompletionOptions options,
   ) async {
     final root = LlmProviderCatalog.resolveApiRoot(connection);
     final uri = Uri.parse('$root/messages');
@@ -181,12 +313,21 @@ class LlmGateway {
           },
         )
         .toList(growable: false);
-    final body = jsonEncode({
+    final bodyMap = <String, Object?>{
       'model': modelId,
-      'max_tokens': 4096,
+      'max_tokens': options.maxOutputTokens,
       if (system.isNotEmpty) 'system': system,
       'messages': turns,
-    });
+    };
+    final thinking = LlmThinkingAdapter.forRequest(
+      provider: options.provider,
+      level: options.thinkingLevel,
+      modelId: options.modelId,
+    );
+    if (thinking.anthropicThinking != null) {
+      bodyMap['thinking'] = thinking.anthropicThinking;
+    }
+    final body = jsonEncode(bodyMap);
     final response = await _client
         .post(
           uri,
@@ -218,6 +359,7 @@ class LlmGateway {
     String key,
     String modelId,
     List<LlmChatMessage> messages,
+    LlmCompletionOptions options,
   ) async {
     final root = LlmProviderCatalog.resolveApiRoot(connection);
     final uri = Uri.parse('$root/models/$modelId:generateContent').replace(
@@ -236,6 +378,19 @@ class LlmGateway {
         .where((m) => m.role == LlmChatRole.system)
         .map((m) => m.text)
         .join('\n\n');
+    final thinking = LlmThinkingAdapter.forRequest(
+      provider: options.provider,
+      level: options.thinkingLevel,
+      modelId: options.modelId,
+    );
+    final generationConfig = <String, Object?>{
+      'maxOutputTokens': options.maxOutputTokens,
+    };
+    if (thinking.googleThinkingBudget != null) {
+      generationConfig['thinkingConfig'] = {
+        'thinkingBudget': thinking.googleThinkingBudget,
+      };
+    }
     final body = jsonEncode({
       if (system.isNotEmpty)
         'systemInstruction': {
@@ -244,6 +399,7 @@ class LlmGateway {
           ],
         },
       'contents': contents,
+      'generationConfig': generationConfig,
     });
     final response = await _client
         .post(
@@ -291,21 +447,4 @@ class LlmGateway {
       statusCode: response.statusCode,
     );
   }
-}
-
-enum LlmChatRole { system, user, assistant }
-
-extension on LlmChatRole {
-  String get apiName => switch (this) {
-    LlmChatRole.system => 'system',
-    LlmChatRole.user => 'user',
-    LlmChatRole.assistant => 'assistant',
-  };
-}
-
-class LlmChatMessage {
-  const LlmChatMessage({required this.role, required this.text});
-
-  final LlmChatRole role;
-  final String text;
 }

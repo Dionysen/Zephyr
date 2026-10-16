@@ -1305,7 +1305,91 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get llmSettingsIntro =>
-      'API keys stay in this device\'s secure storage. They are not stored in your library or cloud settings bundle.';
+      'API keys stay in secure storage on this device. Other options are saved to llm_preferences.json and included in local and cloud settings backups.';
+
+  @override
+  String get llmBehaviorSectionTitle => 'Chat behavior';
+
+  @override
+  String get llmStreamOutputTitle => 'Streaming output';
+
+  @override
+  String get llmStreamOutputSubtitle =>
+      'Stream tokens as they arrive (OpenAI-compatible APIs)';
+
+  @override
+  String get llmAllowThinkingTitle => 'Allow thinking';
+
+  @override
+  String get llmAllowThinkingSubtitle =>
+      'Send reasoning parameters on supported models';
+
+  @override
+  String get llmPresetPromptTitle => 'Preset system prompt';
+
+  @override
+  String get llmPresetPromptHint =>
+      'Prepended as a system message on every chat';
+
+  @override
+  String get llmMaxInputTokensTitle => 'Context limit (input)';
+
+  @override
+  String get llmMaxInputTokensSubtitle =>
+      'Trim history and context to this token budget';
+
+  @override
+  String get llmMaxOutputTokensTitle => 'Reply limit (output)';
+
+  @override
+  String get llmMaxOutputTokensSubtitle => 'max_tokens for each completion';
+
+  @override
+  String get llmThinkingLevelTitle => 'Thinking intensity';
+
+  @override
+  String get llmThinkingLevelSubtitle =>
+      'Mapped per model (reasoning effort, budgets, etc.)';
+
+  @override
+  String get llmDefaultThinkingLevelTitle => 'Default thinking intensity';
+
+  @override
+  String get llmDefaultThinkingLevelSubtitle =>
+      'Initial level for chat (adjust beside the composer)';
+
+  @override
+  String get llmThinkingDisabledInSettings =>
+      'Turn on “Allow thinking” in AI model settings first';
+
+  @override
+  String get llmThinkingOff => 'Off';
+
+  @override
+  String get llmThinkingMinimal => 'Minimal';
+
+  @override
+  String get llmThinkingLow => 'Low';
+
+  @override
+  String get llmThinkingMedium => 'Medium';
+
+  @override
+  String get llmThinkingHigh => 'High';
+
+  @override
+  String get llmThinkingAuto => 'Auto';
+
+  @override
+  String get aiChatSessionOptionsTitle => 'Model & thinking';
+
+  @override
+  String get aiChatSessionOptionsNeedTest =>
+      'Run a connection test in AI model settings first.';
+
+  @override
+  String get aiChatSessionModelSubtitle =>
+      'Override the default model from settings';
 
   @override
   String get llmProviderTitle => 'Provider';

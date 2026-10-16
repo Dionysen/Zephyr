@@ -2458,8 +2458,158 @@ abstract class AppLocalizations {
   /// No description provided for @llmSettingsIntro.
   ///
   /// In en, this message translates to:
-  /// **'API keys stay in this device\'s secure storage. They are not stored in your library or cloud settings bundle.'**
+  /// **'API keys stay in secure storage on this device. Other options are saved to llm_preferences.json and included in local and cloud settings backups.'**
   String get llmSettingsIntro;
+
+  /// No description provided for @llmBehaviorSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat behavior'**
+  String get llmBehaviorSectionTitle;
+
+  /// No description provided for @llmStreamOutputTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Streaming output'**
+  String get llmStreamOutputTitle;
+
+  /// No description provided for @llmStreamOutputSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stream tokens as they arrive (OpenAI-compatible APIs)'**
+  String get llmStreamOutputSubtitle;
+
+  /// No description provided for @llmAllowThinkingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow thinking'**
+  String get llmAllowThinkingTitle;
+
+  /// No description provided for @llmAllowThinkingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send reasoning parameters on supported models'**
+  String get llmAllowThinkingSubtitle;
+
+  /// No description provided for @llmPresetPromptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Preset system prompt'**
+  String get llmPresetPromptTitle;
+
+  /// No description provided for @llmPresetPromptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepended as a system message on every chat'**
+  String get llmPresetPromptHint;
+
+  /// No description provided for @llmMaxInputTokensTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Context limit (input)'**
+  String get llmMaxInputTokensTitle;
+
+  /// No description provided for @llmMaxInputTokensSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trim history and context to this token budget'**
+  String get llmMaxInputTokensSubtitle;
+
+  /// No description provided for @llmMaxOutputTokensTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply limit (output)'**
+  String get llmMaxOutputTokensTitle;
+
+  /// No description provided for @llmMaxOutputTokensSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'max_tokens for each completion'**
+  String get llmMaxOutputTokensSubtitle;
+
+  /// No description provided for @llmThinkingLevelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking intensity'**
+  String get llmThinkingLevelTitle;
+
+  /// No description provided for @llmThinkingLevelSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mapped per model (reasoning effort, budgets, etc.)'**
+  String get llmThinkingLevelSubtitle;
+
+  /// No description provided for @llmDefaultThinkingLevelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Default thinking intensity'**
+  String get llmDefaultThinkingLevelTitle;
+
+  /// No description provided for @llmDefaultThinkingLevelSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Initial level for chat (adjust beside the composer)'**
+  String get llmDefaultThinkingLevelSubtitle;
+
+  /// No description provided for @llmThinkingDisabledInSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on “Allow thinking” in AI model settings first'**
+  String get llmThinkingDisabledInSettings;
+
+  /// No description provided for @llmThinkingOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get llmThinkingOff;
+
+  /// No description provided for @llmThinkingMinimal.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimal'**
+  String get llmThinkingMinimal;
+
+  /// No description provided for @llmThinkingLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get llmThinkingLow;
+
+  /// No description provided for @llmThinkingMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get llmThinkingMedium;
+
+  /// No description provided for @llmThinkingHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get llmThinkingHigh;
+
+  /// No description provided for @llmThinkingAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get llmThinkingAuto;
+
+  /// No description provided for @aiChatSessionOptionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Model & thinking'**
+  String get aiChatSessionOptionsTitle;
+
+  /// No description provided for @aiChatSessionOptionsNeedTest.
+  ///
+  /// In en, this message translates to:
+  /// **'Run a connection test in AI model settings first.'**
+  String get aiChatSessionOptionsNeedTest;
+
+  /// No description provided for @aiChatSessionModelSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Override the default model from settings'**
+  String get aiChatSessionModelSubtitle;
 
   /// No description provided for @llmProviderTitle.
   ///

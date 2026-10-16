@@ -2,12 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../../data/services/llm_gateway.dart';
+import '../../../../domain/models/llm_chat.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_theme.dart';
 import '../models/workspace_ai_context_selection.dart';
+import 'workspace_ai_chat_options_sheet.dart';
 
 /// Demo AI chat surface that replaces the plain-text editor while active.
 class WorkspaceAiChatView extends StatefulWidget {
@@ -69,6 +70,15 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
       _inputController.clear();
     });
     _scrollToEnd();
+    var assistantIndex = -1;
+    if (llm.isConfigured && llm.preferences.streamOutput) {
+      setState(() {
+        _messages.add(
+          const _AiChatMessage(role: _AiChatRole.assistant, text: ''),
+        );
+        assistantIndex = _messages.length - 1;
+      });
+    }
     String reply;
     try {
       if (!llm.isConfigured) {
@@ -89,7 +99,21 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
               ),
           LlmChatMessage(role: LlmChatRole.user, text: text),
         ];
-        reply = await llm.completeChat(messages: turns);
+        reply = await llm.completeChat(
+          messages: turns,
+          onStreamDelta: assistantIndex >= 0
+              ? (partial) {
+                  if (!mounted) return;
+                  setState(() {
+                    _messages[assistantIndex] = _AiChatMessage(
+                      role: _AiChatRole.assistant,
+                      text: partial,
+                    );
+                  });
+                  _scrollToEnd();
+                }
+              : null,
+        );
       }
     } on Object catch (error) {
       reply = l10n.aiChatError(error.toString());
@@ -97,7 +121,14 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
     if (!mounted) return;
     setState(() {
       _sending = false;
-      _messages.add(_AiChatMessage(role: _AiChatRole.assistant, text: reply));
+      if (assistantIndex >= 0) {
+        _messages[assistantIndex] = _AiChatMessage(
+          role: _AiChatRole.assistant,
+          text: reply,
+        );
+      } else {
+        _messages.add(_AiChatMessage(role: _AiChatRole.assistant, text: reply));
+      }
     });
     _scrollToEnd();
   }
@@ -220,7 +251,17 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      onPressed: _sending
+                          ? null
+                          : () => unawaited(
+                              showWorkspaceAiChatOptionsSheet(context),
+                            ),
+                      tooltip: context.l10n.aiChatSessionOptionsTitle,
+                      icon: const Icon(Icons.tune_rounded),
+                    ),
+                    const SizedBox(width: 4),
                     IconButton.filled(
                       onPressed: _sending ? null : () => unawaited(_send()),
                       tooltip: context.l10n.aiChatSend,

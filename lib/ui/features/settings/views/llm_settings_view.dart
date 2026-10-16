@@ -7,6 +7,7 @@ import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_settings.dart';
 import '../../../core/zephyr_status_bar.dart';
 import '../../../core/zephyr_snackbar.dart';
+import '../models/llm_thinking_labels.dart';
 import '../view_models/llm_settings_view_model.dart';
 
 class LlmSettingsPage extends StatefulWidget {
@@ -23,6 +24,7 @@ class LlmSettingsPage extends StatefulWidget {
 class _LlmSettingsPageState extends State<LlmSettingsPage> {
   final _apiKeyController = TextEditingController();
   final _baseUrlController = TextEditingController();
+  final _presetController = TextEditingController();
   var _obscureKey = true;
 
   @override
@@ -30,6 +32,7 @@ class _LlmSettingsPageState extends State<LlmSettingsPage> {
     super.initState();
     _apiKeyController.addListener(_onApiKeyEdited);
     _baseUrlController.addListener(_onBaseUrlEdited);
+    _presetController.addListener(_onPresetEdited);
   }
 
   @override
@@ -40,6 +43,9 @@ class _LlmSettingsPageState extends State<LlmSettingsPage> {
     _baseUrlController
       ..removeListener(_onBaseUrlEdited)
       ..dispose();
+    _presetController
+      ..removeListener(_onPresetEdited)
+      ..dispose();
     super.dispose();
   }
 
@@ -49,6 +55,10 @@ class _LlmSettingsPageState extends State<LlmSettingsPage> {
 
   void _onBaseUrlEdited() {
     ZephyrScope.of(context).llmSettings.setCustomBaseUrl(_baseUrlController.text);
+  }
+
+  void _onPresetEdited() {
+    ZephyrScope.of(context).llmSettings.setPresetSystemPrompt(_presetController.text);
   }
 
   String _providerLabel(LlmProviderKind kind, AppLocalizations l10n) {
@@ -71,6 +81,9 @@ class _LlmSettingsPageState extends State<LlmSettingsPage> {
         }
         if (_baseUrlController.text != vm.preferences.customBaseUrl) {
           _baseUrlController.text = vm.preferences.customBaseUrl;
+        }
+        if (_presetController.text != vm.preferences.presetSystemPrompt) {
+          _presetController.text = vm.preferences.presetSystemPrompt;
         }
         final prefs = vm.preferences;
         final showCustomUrl =
@@ -193,6 +206,92 @@ class _LlmSettingsPageState extends State<LlmSettingsPage> {
                             onSelected: vm.selectModel,
                             showDivider: false,
                           ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      l10n.llmBehaviorSectionTitle,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    ZephyrSettingsSection(
+                      children: [
+                        ZephyrSettingsSwitchTile(
+                          icon: Icons.stream_outlined,
+                          title: l10n.llmStreamOutputTitle,
+                          subtitle: l10n.llmStreamOutputSubtitle,
+                          value: prefs.streamOutput,
+                          onChanged: vm.setStreamOutput,
+                        ),
+                        ZephyrSettingsSwitchTile(
+                          icon: Icons.psychology_outlined,
+                          title: l10n.llmAllowThinkingTitle,
+                          subtitle: l10n.llmAllowThinkingSubtitle,
+                          value: prefs.allowThinking,
+                          onChanged: vm.setAllowThinking,
+                        ),
+                        if (prefs.allowThinking)
+                          ZephyrSettingsChoiceTile<LlmThinkingLevel>(
+                            icon: Icons.psychology_alt_outlined,
+                            title: l10n.llmDefaultThinkingLevelTitle,
+                            subtitle: l10n.llmDefaultThinkingLevelSubtitle,
+                            selected: prefs.defaultThinkingLevel,
+                            valueLabel: llmThinkingLevelLabel(
+                              prefs.defaultThinkingLevel,
+                              l10n,
+                            ),
+                            choices: [
+                              for (final level in kLlmSelectableThinkingLevels)
+                                ZephyrSettingsChoice(
+                                  value: level,
+                                  label: llmThinkingLevelLabel(level, l10n),
+                                ),
+                            ],
+                            onSelected: (level) {
+                              vm.setDefaultThinkingLevel(level);
+                              vm.setChatThinkingLevel(level);
+                            },
+                          ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                          child: TextField(
+                            controller: _presetController,
+                            minLines: 2,
+                            maxLines: 6,
+                            decoration: InputDecoration(
+                              labelText: l10n.llmPresetPromptTitle,
+                              hintText: l10n.llmPresetPromptHint,
+                              alignLabelWithHint: true,
+                            ),
+                          ),
+                        ),
+                        ZephyrSettingsAdaptiveNumber(
+                          compact: true,
+                          icon: Icons.input_outlined,
+                          title: l10n.llmMaxInputTokensTitle,
+                          description: l10n.llmMaxInputTokensSubtitle,
+                          value: prefs.maxInputTokens.toDouble(),
+                          min: 4096,
+                          max: 2000000,
+                          defaultValue: kLlmDefaultMaxInputTokens.toDouble(),
+                          formatValue: (value) => '${value.round()}',
+                          onChanged: (value) =>
+                              vm.setMaxInputTokens(value.round()),
+                        ),
+                        ZephyrSettingsAdaptiveNumber(
+                          compact: true,
+                          icon: Icons.output_outlined,
+                          title: l10n.llmMaxOutputTokensTitle,
+                          description: l10n.llmMaxOutputTokensSubtitle,
+                          value: prefs.maxOutputTokens.toDouble(),
+                          min: 256,
+                          max: 2000000,
+                          defaultValue: kLlmDefaultMaxOutputTokens.toDouble(),
+                          formatValue: (value) => '${value.round()}',
+                          onChanged: (value) =>
+                              vm.setMaxOutputTokens(value.round()),
+                          showDivider: false,
+                        ),
                       ],
                     ),
                   ],

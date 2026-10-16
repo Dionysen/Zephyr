@@ -1237,7 +1237,83 @@ class AppLocalizationsZh extends AppLocalizations {
   String get llmSettingsSubtitle => '供应商、API Key 与模型';
 
   @override
-  String get llmSettingsIntro => 'API Key 仅保存在本设备的安全存储中，不会写入书库或云同步包。';
+  String get llmSettingsIntro =>
+      'API Key 仅保存在本设备安全存储中；其余选项写入 llm_preferences.json，并随本地设置包与云同步备份。';
+
+  @override
+  String get llmBehaviorSectionTitle => '对话行为';
+
+  @override
+  String get llmStreamOutputTitle => '流式输出';
+
+  @override
+  String get llmStreamOutputSubtitle => '逐字显示模型回复（OpenAI 兼容接口）';
+
+  @override
+  String get llmAllowThinkingTitle => '允许思考';
+
+  @override
+  String get llmAllowThinkingSubtitle => '为支持思考的模型发送推理参数';
+
+  @override
+  String get llmPresetPromptTitle => '预设提示词';
+
+  @override
+  String get llmPresetPromptHint => '作为 system 消息附加到每次对话';
+
+  @override
+  String get llmMaxInputTokensTitle => '上下文上限（输入）';
+
+  @override
+  String get llmMaxInputTokensSubtitle => '估算 token 后裁剪历史与上下文';
+
+  @override
+  String get llmMaxOutputTokensTitle => '回复上限（输出）';
+
+  @override
+  String get llmMaxOutputTokensSubtitle => '单次回复 max_tokens';
+
+  @override
+  String get llmThinkingLevelTitle => '思考程度';
+
+  @override
+  String get llmThinkingLevelSubtitle => '按模型映射为 reasoning / thinking 参数';
+
+  @override
+  String get llmDefaultThinkingLevelTitle => '默认思考程度';
+
+  @override
+  String get llmDefaultThinkingLevelSubtitle => '新对话的初始程度（可在输入栏旁再改）';
+
+  @override
+  String get llmThinkingDisabledInSettings => '请在 AI 模型设置中开启「允许思考」';
+
+  @override
+  String get llmThinkingOff => '关闭';
+
+  @override
+  String get llmThinkingMinimal => '极低';
+
+  @override
+  String get llmThinkingLow => '低';
+
+  @override
+  String get llmThinkingMedium => '中';
+
+  @override
+  String get llmThinkingHigh => '高';
+
+  @override
+  String get llmThinkingAuto => '自动';
+
+  @override
+  String get aiChatSessionOptionsTitle => '对话模型与思考';
+
+  @override
+  String get aiChatSessionOptionsNeedTest => '请先在 AI 模型设置中连接测试并获取模型列表。';
+
+  @override
+  String get aiChatSessionModelSubtitle => '可覆盖设置中的默认模型';
 
   @override
   String get llmProviderTitle => '模型供应商';
