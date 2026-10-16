@@ -3,11 +3,12 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../domain/models/cloud_sync.dart';
+import 'zephyr_secure_storage.dart';
 
 /// Persists WebDAV credentials in platform secure storage.
 class CloudAuthSecureStore {
   CloudAuthSecureStore({FlutterSecureStorage? storage})
-    : _storage = storage ?? const FlutterSecureStorage();
+    : _storage = storage ?? zephyrSecureStorage;
 
   static const _sessionKey = 'zephyr.cloud.webdav.session';
 
