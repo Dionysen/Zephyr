@@ -8,6 +8,7 @@ import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_settings.dart';
 import '../../../core/zephyr_snackbar.dart';
+import '../models/backup_merge_labels.dart';
 import '../view_models/backup_view_model.dart';
 import '../view_models/cloud_sync_view_model.dart';
 
@@ -492,13 +493,21 @@ Future<void> showCloudBackupRestoreFlow(
   );
   if (confirmed != true || !context.mounted) return;
 
-  await cloudSync.restoreCloudBackup(entry: entry, mode: mode);
+  final mergeStats = await cloudSync.restoreCloudBackup(
+    entry: entry,
+    mode: mode,
+  );
   if (!context.mounted) return;
   final error = cloudSync.error;
   ZephyrSnackBar.show(
     context,
     error == null
-        ? l10n.cloudSyncRestoreSuccess
+        ? (mode == RestoreMode.merge
+              ? backupMergeResultMessage(
+                  l10n,
+                  mergeStats ?? LibraryMergeStats.empty,
+                )
+              : l10n.cloudSyncRestoreSuccess)
         : cloudSync.errorMessage(l10n)!,
   );
 }

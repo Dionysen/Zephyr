@@ -185,22 +185,22 @@ class CloudSyncViewModel extends ChangeNotifier {
     return _cloudBackups;
   }
 
-  Future<void> restoreCloudBackup({
+  Future<LibraryMergeStats?> restoreCloudBackup({
     required CloudBackupEntry entry,
     required RestoreMode mode,
   }) async {
-    if (busy) return;
+    if (busy) return null;
     if (!cloudBackupEnabled || !isSignedIn) {
       _error = StateError('Cloud backup is not ready.');
       notifyListeners();
-      return;
+      return null;
     }
     _busyKind = CloudSyncBusyKind.restore;
     _error = null;
     notifyListeners();
     await Future<void>.delayed(Duration.zero);
     try {
-      await _service.restoreCloudBackup(
+      final mergeStats = await _service.restoreCloudBackup(
         library: library.repository,
         entry: entry,
         mode: mode,
@@ -209,8 +209,10 @@ class CloudSyncViewModel extends ChangeNotifier {
       await library.load();
       await _reloadLocalSettings?.call();
       _error = null;
+      return mergeStats;
     } on Object catch (error) {
       _error = error;
+      return null;
     } finally {
       _busyKind = CloudSyncBusyKind.none;
       notifyListeners();

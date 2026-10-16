@@ -620,6 +620,42 @@ abstract class AppLocalizations {
   /// **'Library restored from backup.'**
   String get backupRestoreSuccess;
 
+  /// No description provided for @backupMergeResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge complete'**
+  String get backupMergeResultTitle;
+
+  /// No description provided for @backupMergeResultSeparator.
+  ///
+  /// In en, this message translates to:
+  /// **', '**
+  String get backupMergeResultSeparator;
+
+  /// No description provided for @backupMergeResultNoChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge complete. No chapter changes.'**
+  String get backupMergeResultNoChanges;
+
+  /// No description provided for @backupMergeResultAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added {count}'**
+  String backupMergeResultAdded(int count);
+
+  /// No description provided for @backupMergeResultUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated {count}'**
+  String backupMergeResultUpdated(int count);
+
+  /// No description provided for @backupMergeResultRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted {count}'**
+  String backupMergeResultRemoved(int count);
+
   /// No description provided for @backupKindAuto.
   ///
   /// In en, this message translates to:

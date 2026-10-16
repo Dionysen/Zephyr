@@ -301,6 +301,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupRestoreSuccess => 'Library restored from backup.';
 
   @override
+  String get backupMergeResultTitle => 'Merge complete';
+
+  @override
+  String get backupMergeResultSeparator => ', ';
+
+  @override
+  String get backupMergeResultNoChanges =>
+      'Merge complete. No chapter changes.';
+
+  @override
+  String backupMergeResultAdded(int count) {
+    return 'Added $count';
+  }
+
+  @override
+  String backupMergeResultUpdated(int count) {
+    return 'Updated $count';
+  }
+
+  @override
+  String backupMergeResultRemoved(int count) {
+    return 'Deleted $count';
+  }
+
+  @override
   String get backupKindAuto => 'Auto';
 
   @override

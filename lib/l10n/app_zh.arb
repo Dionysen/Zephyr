@@ -126,6 +126,33 @@
   "backupRestoreConfirmOverwrite": "将用所选备份完整替换当前文库。恢复前会先创建一份安全备份。",
   "backupRestoreAction": "恢复",
   "backupRestoreSuccess": "已从备份恢复",
+  "backupMergeResultTitle": "合并完成",
+  "backupMergeResultSeparator": "，",
+  "backupMergeResultNoChanges": "合并完成，章节无变化",
+  "backupMergeResultAdded": "新增 {count} 篇",
+  "@backupMergeResultAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupMergeResultUpdated": "更新 {count} 篇",
+  "@backupMergeResultUpdated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupMergeResultRemoved": "删除 {count} 篇",
+  "@backupMergeResultRemoved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backupKindAuto": "自动",
   "backupKindManual": "手动",
   "backupFooter": "请不要和纯纯写作同时打开同一书库。备份可以在纯纯写作里打开。",

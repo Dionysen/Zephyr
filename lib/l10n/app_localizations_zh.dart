@@ -285,6 +285,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupRestoreSuccess => '已从备份恢复';
 
   @override
+  String get backupMergeResultTitle => '合并完成';
+
+  @override
+  String get backupMergeResultSeparator => '，';
+
+  @override
+  String get backupMergeResultNoChanges => '合并完成，章节无变化';
+
+  @override
+  String backupMergeResultAdded(int count) {
+    return '新增 $count 篇';
+  }
+
+  @override
+  String backupMergeResultUpdated(int count) {
+    return '更新 $count 篇';
+  }
+
+  @override
+  String backupMergeResultRemoved(int count) {
+    return '删除 $count 篇';
+  }
+
+  @override
   String get backupKindAuto => '自动';
 
   @override

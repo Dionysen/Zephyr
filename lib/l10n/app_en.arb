@@ -129,6 +129,33 @@
   "backupRestoreConfirmOverwrite": "Replace the current library with the selected backup. A safety backup is created first.",
   "backupRestoreAction": "Restore",
   "backupRestoreSuccess": "Library restored from backup.",
+  "backupMergeResultTitle": "Merge complete",
+  "backupMergeResultSeparator": ", ",
+  "backupMergeResultNoChanges": "Merge complete. No chapter changes.",
+  "backupMergeResultAdded": "Added {count}",
+  "@backupMergeResultAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupMergeResultUpdated": "Updated {count}",
+  "@backupMergeResultUpdated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupMergeResultRemoved": "Deleted {count}",
+  "@backupMergeResultRemoved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backupKindAuto": "Auto",
   "backupKindManual": "Manual",
   "backupFooter": "Don't open the same library in Pure Writer at the same time. Backup files can be opened in Pure Writer.",

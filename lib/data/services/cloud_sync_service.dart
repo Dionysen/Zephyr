@@ -200,7 +200,7 @@ class CloudSyncService {
     });
   }
 
-  Future<void> restoreCloudBackup({
+  Future<LibraryMergeStats> restoreCloudBackup({
     required WritingLibraryRepository library,
     required CloudBackupEntry entry,
     required RestoreMode mode,
@@ -228,7 +228,7 @@ class CloudSyncService {
         staging: staging,
         libraryFolderId: folderId,
       );
-      await library.restoreBackup(
+      final mergeStats = await library.restoreBackup(
         entry: BackupEntry(
           path: pwb.path,
           fileName: entry.fileName,
@@ -239,6 +239,7 @@ class CloudSyncService {
         mode: mode,
       );
       await _downloadAndApplySettings(client, session, folderId);
+      return mergeStats;
     } finally {
       client.close();
       if (await staging.exists()) {
