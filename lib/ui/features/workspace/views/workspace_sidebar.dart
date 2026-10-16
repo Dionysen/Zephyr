@@ -493,6 +493,7 @@ class _DrawerSidebarHeader extends StatelessWidget {
 /// Stable ids for compact editor “more” sheet tools (order is persisted).
 abstract final class WorkspaceMobileToolId {
   static const search = 'search';
+  static const typewriter = 'typewriter';
   static const themeMode = 'themeMode';
   static const switchTheme = 'switchTheme';
   static const backup = 'backup';
@@ -529,6 +530,7 @@ class WorkspaceMobileTool {
     this.icon,
     this.enabled = true,
     this.submenu,
+    this.checked,
   });
 
   final String id;
@@ -537,6 +539,10 @@ class WorkspaceMobileTool {
   final IconData? icon;
   final bool enabled;
   final List<WorkspaceOverflowSubmenuChoice>? submenu;
+
+  /// When set, the row is a toggle: desktop shows a check, mobile highlights
+  /// the tile.
+  final bool? checked;
 }
 
 /// Apply a saved id order; unknown ids are dropped, new tools append in
@@ -1002,6 +1008,7 @@ class WorkspaceOverflowToolsButton extends StatelessWidget {
             label: tool.label,
             icon: tool.icon,
             enabled: tool.enabled,
+            selected: tool.checked ?? false,
             onTap: tool.onTap,
           ),
       ],
@@ -1029,6 +1036,15 @@ class WorkspaceOverflowToolsButton extends StatelessWidget {
                 ),
             ],
             child: Text(tool.label),
+          )
+        else if (tool.checked != null)
+          ZephyrMenu.selectableItem(
+            context: context,
+            label: tool.label,
+            selected: tool.checked!,
+            leadingIcon: Icon(tool.icon ?? Icons.circle_outlined),
+            style: _itemStyle,
+            onPressed: !tool.enabled ? null : tool.onTap,
           )
         else
           MenuItemButton(
@@ -1074,6 +1090,7 @@ class WorkspaceOverflowToolsButton extends StatelessWidget {
         [
           ZephyrScope.maybeOf(context)?.theme,
           ZephyrScope.maybeOf(context)?.backup,
+          ZephyrScope.maybeOf(context)?.editorPreferences,
         ].whereType<Listenable>(),
       ),
       builder: (context, _) {

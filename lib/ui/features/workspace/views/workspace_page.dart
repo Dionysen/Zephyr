@@ -1857,12 +1857,21 @@ List<WorkspaceMobileTool> buildWorkspaceOverflowTools(
   final scope = ZephyrScope.of(context);
   final themeVm = scope.theme;
   final backup = scope.backup;
+  final editor = scope.editorPreferences;
+  final typewriter = editor.preferences.typewriterMode;
   return [
     WorkspaceMobileTool(
       id: WorkspaceMobileToolId.search,
       icon: Icons.search,
       label: l10n.tooltipSearchChapters,
       onTap: () => unawaited(showLibrarySearchSheet(context, model: model)),
+    ),
+    WorkspaceMobileTool(
+      id: WorkspaceMobileToolId.typewriter,
+      icon: Icons.vertical_align_center,
+      label: l10n.editorTypewriterModeTitle,
+      checked: typewriter,
+      onTap: () => editor.updateTypewriterMode(!typewriter),
     ),
     WorkspaceMobileTool(
       id: WorkspaceMobileToolId.themeMode,
