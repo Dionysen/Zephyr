@@ -187,6 +187,7 @@ abstract interface class WritingLibraryRepository {
     required AiChatMessageRole role,
     required String body,
     String thinking = '',
+    String modelBody = '',
   });
 
   Future<void> updateAiChatMessage({

@@ -24,7 +24,8 @@ void main() {
     await repository.appendAiChatMessage(
       sessionId: session.id,
       role: AiChatMessageRole.user,
-      body: 'Hello',
+      body: '「第一章」',
+      modelBody: '## 第一章\n\n正文',
     );
     await repository.appendAiChatMessage(
       sessionId: session.id,
@@ -38,7 +39,8 @@ void main() {
 
     final messages = await repository.listAiChatMessages(session.id);
     expect(messages, hasLength(2));
-    expect(messages.first.body, 'Hello');
+    expect(messages.first.body, '「第一章」');
+    expect(messages.first.promptBody, '## 第一章\n\n正文');
     expect(messages.last.body, 'Hi');
 
     await repository.archiveAiChatSession(session.id, archived: true);

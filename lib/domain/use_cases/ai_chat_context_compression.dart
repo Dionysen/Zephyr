@@ -13,7 +13,7 @@ bool aiChatShouldCompressHistory({
   final chars = contextSummary.length +
       messages.fold<int>(
         0,
-        (sum, m) => sum + m.body.length + m.thinking.length,
+        (sum, m) => sum + m.promptBody.length + m.thinking.length,
       );
   return chars > (budget * 0.82).round();
 }
@@ -28,7 +28,7 @@ String aiChatTranscriptForCompression(
   final lines = <String>[];
   for (final message in old) {
     final label = message.role == AiChatMessageRole.user ? 'User' : 'Assistant';
-    final body = message.body.trim();
+    final body = message.promptBody.trim();
     if (body.isEmpty) continue;
     lines.add('$label: $body');
   }

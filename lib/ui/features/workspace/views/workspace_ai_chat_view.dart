@@ -363,6 +363,7 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
             ? _AiChatRole.user
             : _AiChatRole.assistant,
         text: message.body,
+        modelText: message.modelBody,
         thinking: message.thinking,
       );
 
@@ -457,19 +458,27 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
     final prior = List<_AiChatMessage>.from(_messages);
     setState(() {
       _sending = true;
-      _messages.add(_AiChatMessage(role: _AiChatRole.user, text: displayText));
+      _messages.add(
+        _AiChatMessage(
+          role: _AiChatRole.user,
+          text: displayText,
+          modelText: llmUserText,
+        ),
+      );
       _composer.clear();
     });
     final userStored = await repo.appendAiChatMessage(
       sessionId: sessionId,
       role: AiChatMessageRole.user,
       body: displayText,
+      modelBody: llmUserText == displayText ? '' : llmUserText,
     );
     if (_messages.isNotEmpty) {
       _messages[_messages.length - 1] = _AiChatMessage(
         storageId: userStored.id,
         role: _AiChatRole.user,
         text: displayText,
+        modelText: llmUserText,
       );
     }
     final session = await repo.getAiChatSession(sessionId);
@@ -536,7 +545,7 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
                 role: message.role == _AiChatRole.assistant
                     ? LlmChatRole.assistant
                     : LlmChatRole.user,
-                text: message.text,
+                text: message.promptText,
               ),
           LlmChatMessage(role: LlmChatRole.user, text: llmUserText),
         ];
@@ -1141,6 +1150,7 @@ class _AiChatMessage {
     this.storageId,
     required this.role,
     required this.text,
+    this.modelText = '',
     this.thinking = '',
     this.thinkingInProgress = false,
   });
@@ -1148,10 +1158,19 @@ class _AiChatMessage {
   final String? storageId;
   final _AiChatRole role;
   final String text;
+
+  /// Chapter-expanded text for the model. Empty uses [text].
+  final String modelText;
   final String thinking;
   final bool thinkingInProgress;
 
   bool get hasThinking => thinking.trim().isNotEmpty;
+
+  String get promptText {
+    final expanded = modelText.trim();
+    if (expanded.isNotEmpty) return modelText;
+    return text;
+  }
 }
 
 class _AiChatBubble extends StatefulWidget {

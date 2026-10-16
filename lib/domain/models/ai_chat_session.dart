@@ -48,6 +48,7 @@ class AiChatStoredMessage {
     required this.role,
     required this.body,
     this.thinking = '',
+    this.modelBody = '',
     required this.sortOrder,
     required this.createdAt,
   });
@@ -57,6 +58,16 @@ class AiChatStoredMessage {
   final AiChatMessageRole role;
   final String body;
   final String thinking;
+
+  /// Full text sent to the model when [body] is only a display label
+  /// (for example a chapter capsule). Empty means [body] is the prompt text.
+  final String modelBody;
   final int sortOrder;
   final DateTime createdAt;
+
+  String get promptBody {
+    final expanded = modelBody.trim();
+    if (expanded.isNotEmpty) return modelBody;
+    return body;
+  }
 }

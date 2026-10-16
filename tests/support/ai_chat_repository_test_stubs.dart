@@ -53,12 +53,14 @@ mixin AiChatRepositoryMethods {
     required AiChatMessageRole role,
     required String body,
     String thinking = '',
+    String modelBody = '',
   }) async =>
       AiChatStoredMessage(
         id: 'stub-msg',
         sessionId: sessionId,
         role: role,
         body: body,
+        modelBody: modelBody,
         thinking: thinking,
         sortOrder: 0,
         createdAt: DateTime.fromMillisecondsSinceEpoch(0),

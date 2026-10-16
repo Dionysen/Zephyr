@@ -168,6 +168,7 @@ class ZephyrAiChatStore {
   }
 
   Future<List<AiChatStoredMessage>> listMessages(String sessionId) async {
+    await _ensureModelBodyColumn();
     final rows = await _db.query(
       'ZephyrAiMessage',
       where: 'session_id = ?',
@@ -182,8 +183,10 @@ class ZephyrAiChatStore {
     required AiChatMessageRole role,
     required String body,
     String thinking = '',
+    String modelBody = '',
   }) async {
     _store.ensureWritable();
+    await _ensureModelBodyColumn();
     final now = DateTime.now();
     final rows = await _db.rawQuery(
       'SELECT COALESCE(MAX(sort_order), -1) AS m FROM ZephyrAiMessage '
@@ -197,6 +200,7 @@ class ZephyrAiChatStore {
       role: role,
       body: body,
       thinking: thinking,
+      modelBody: modelBody,
       sortOrder: nextOrder,
       createdAt: now,
     );
@@ -435,6 +439,20 @@ class ZephyrAiChatStore {
     );
   }
 
+  var _modelBodyReady = false;
+
+  Future<void> _ensureModelBodyColumn() async {
+    if (_modelBodyReady) return;
+    final columns = await _db.rawQuery('PRAGMA table_info(ZephyrAiMessage)');
+    final has = columns.any((column) => column['name'] == 'model_body');
+    if (!has) {
+      await _db.execute(
+        "ALTER TABLE ZephyrAiMessage ADD COLUMN model_body TEXT NOT NULL DEFAULT ''",
+      );
+    }
+    _modelBodyReady = true;
+  }
+
   Future<bool> _hasTable(DatabaseExecutor database, String name) async =>
       (await database.rawQuery(
         "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1",
@@ -477,6 +495,7 @@ class ZephyrAiChatStore {
             : AiChatMessageRole.assistant,
         body: row['body']! as String,
         thinking: row['thinking'] as String? ?? '',
+        modelBody: row['model_body'] as String? ?? '',
         sortOrder: row['sort_order']! as int,
         createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at']! as int),
       );
@@ -486,6 +505,7 @@ class ZephyrAiChatStore {
     'session_id': message.sessionId,
     'role': message.role == AiChatMessageRole.user ? 'user' : 'assistant',
     'body': message.body,
+    'model_body': message.modelBody,
     'thinking': message.thinking,
     'sort_order': message.sortOrder,
     'created_at': message.createdAt.millisecondsSinceEpoch,

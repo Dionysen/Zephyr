@@ -1741,11 +1741,13 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     required AiChatMessageRole role,
     required String body,
     String thinking = '',
+    String modelBody = '',
   }) => _aiChat.appendMessage(
     sessionId: sessionId,
     role: role,
     body: body,
     thinking: thinking,
+    modelBody: modelBody,
   );
 
   @override

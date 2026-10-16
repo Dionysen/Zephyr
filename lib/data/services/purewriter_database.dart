@@ -197,6 +197,7 @@ class PureWriterDatabase {
       'session_id TEXT NOT NULL, '
       'role TEXT NOT NULL, '
       'body TEXT NOT NULL, '
+      'model_body TEXT NOT NULL DEFAULT \'\', '
       'thinking TEXT NOT NULL DEFAULT \'\', '
       'sort_order INTEGER NOT NULL, '
       'created_at INTEGER NOT NULL'
