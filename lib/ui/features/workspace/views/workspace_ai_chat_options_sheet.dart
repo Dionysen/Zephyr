@@ -105,9 +105,9 @@ class _WorkspaceAiChatOptionsSheet extends StatelessWidget {
                         subtitle: prefs.allowThinking
                             ? l10n.llmThinkingLevelSubtitle
                             : l10n.llmThinkingDisabledInSettings,
-                        selected: prefs.chatThinkingLevel,
+                        selected: prefs.resolvedChatThinkingLevel(),
                         valueLabel: llmThinkingLevelLabel(
-                          prefs.chatThinkingLevel,
+                          prefs.resolvedChatThinkingLevel(),
                           l10n,
                         ),
                         choices: [

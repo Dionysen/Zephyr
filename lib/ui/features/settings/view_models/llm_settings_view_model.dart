@@ -107,11 +107,11 @@ class LlmSettingsViewModel extends ChangeNotifier {
   }
 
   Future<void> setChatModelId(String modelId) async {
-    await _persist(
-      modelId.isEmpty
-          ? _preferences.copyWith(clearChatModel: true)
-          : _preferences.copyWith(chatModelId: modelId),
-    );
+    final next = modelId.isEmpty
+        ? _preferences.copyWith(clearChatModel: true)
+        : _preferences.copyWith(chatModelId: modelId);
+    final level = next.resolvedChatThinkingLevel();
+    await _persist(next.copyWith(chatThinkingLevel: level));
   }
 
   Future<void> setDefaultThinkingLevel(LlmThinkingLevel level) async {
@@ -119,7 +119,12 @@ class LlmSettingsViewModel extends ChangeNotifier {
   }
 
   Future<void> setChatThinkingLevel(LlmThinkingLevel level) async {
-    await _persist(_preferences.copyWith(chatThinkingLevel: level));
+    await _persist(
+      _preferences.withChatThinkingForModel(
+        _preferences.effectiveChatModelId,
+        level,
+      ),
+    );
   }
 
   Future<void> testConnection() async {

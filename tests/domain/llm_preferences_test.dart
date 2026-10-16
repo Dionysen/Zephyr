@@ -32,6 +32,37 @@ void main() {
     expect(restored.chatThinkingLevel, LlmThinkingLevel.medium);
   });
 
+  test('resolvedChatThinkingLevel uses per-model map', () {
+    const prefs = LlmPreferences(
+      allowThinking: true,
+      selectedModelId: 'model-a',
+      chatThinkingLevel: LlmThinkingLevel.auto,
+      chatThinkingLevelByModelId: {
+        'model-a': LlmThinkingLevel.high,
+        'model-b': LlmThinkingLevel.low,
+      },
+    );
+    expect(prefs.resolvedChatThinkingLevel('model-a'), LlmThinkingLevel.high);
+    expect(prefs.resolvedChatThinkingLevel('model-b'), LlmThinkingLevel.low);
+    expect(
+      prefs.resolvedChatThinkingLevel('model-c'),
+      LlmThinkingLevel.auto,
+    );
+  });
+
+  test('chatThinkingLevelByModelId round-trips in json', () {
+    const prefs = LlmPreferences(
+      chatThinkingLevelByModelId: {
+        'gpt-4': LlmThinkingLevel.medium,
+      },
+    );
+    final restored = LlmPreferences.fromJson(prefs.toJson());
+    expect(
+      restored.chatThinkingLevelByModelId['gpt-4'],
+      LlmThinkingLevel.medium,
+    );
+  });
+
   test('effectiveThinkingLevel respects allowThinking', () {
     const blocked = LlmPreferences(
       allowThinking: false,

@@ -39,6 +39,7 @@ class LlmPreferences {
     this.defaultThinkingLevel = LlmThinkingLevel.auto,
     this.chatModelId = '',
     this.chatThinkingLevel = LlmThinkingLevel.auto,
+    this.chatThinkingLevelByModelId = const {},
   });
 
   final LlmProviderKind provider;
@@ -56,6 +57,9 @@ class LlmPreferences {
   final String chatModelId;
   final LlmThinkingLevel chatThinkingLevel;
 
+  /// Per verified chat model id; used when switching models in the composer.
+  final Map<String, LlmThinkingLevel> chatThinkingLevelByModelId;
+
   static const defaults = LlmPreferences();
 
   bool get hasVerifiedModels => verifiedModelIds.isNotEmpty;
@@ -63,10 +67,34 @@ class LlmPreferences {
   String get effectiveChatModelId =>
       chatModelId.isNotEmpty ? chatModelId : selectedModelId;
 
-  /// Level used for the next chat request (composer overrides settings default).
-  LlmThinkingLevel effectiveThinkingLevel() {
+  /// Thinking level for [modelId], or the active chat model when omitted.
+  LlmThinkingLevel resolvedChatThinkingLevel([String? modelId]) {
     if (!allowThinking) return LlmThinkingLevel.off;
+    final id = modelId ?? effectiveChatModelId;
+    if (id.isNotEmpty) {
+      final mapped = chatThinkingLevelByModelId[id];
+      if (mapped != null) return mapped;
+    }
     return chatThinkingLevel;
+  }
+
+  /// Level used for the next chat request (composer overrides settings default).
+  LlmThinkingLevel effectiveThinkingLevel() => resolvedChatThinkingLevel();
+
+  LlmPreferences withChatThinkingForModel(
+    String modelId,
+    LlmThinkingLevel level,
+  ) {
+    if (modelId.isEmpty) {
+      return copyWith(chatThinkingLevel: level);
+    }
+    final map = Map<String, LlmThinkingLevel>.from(chatThinkingLevelByModelId);
+    map[modelId] = level;
+    final syncCurrent = modelId == effectiveChatModelId;
+    return copyWith(
+      chatThinkingLevelByModelId: map,
+      chatThinkingLevel: syncCurrent ? level : chatThinkingLevel,
+    );
   }
 
   LlmPreferences copyWith({
@@ -82,6 +110,7 @@ class LlmPreferences {
     LlmThinkingLevel? defaultThinkingLevel,
     String? chatModelId,
     LlmThinkingLevel? chatThinkingLevel,
+    Map<String, LlmThinkingLevel>? chatThinkingLevelByModelId,
     bool clearVerifiedModels = false,
     bool clearSelectedModel = false,
     bool clearChatModel = false,
@@ -103,6 +132,8 @@ class LlmPreferences {
         defaultThinkingLevel ?? this.defaultThinkingLevel,
     chatModelId: clearChatModel ? '' : (chatModelId ?? this.chatModelId),
     chatThinkingLevel: chatThinkingLevel ?? this.chatThinkingLevel,
+    chatThinkingLevelByModelId:
+        chatThinkingLevelByModelId ?? this.chatThinkingLevelByModelId,
   );
 
   Map<String, Object?> toJson() => {
@@ -118,6 +149,10 @@ class LlmPreferences {
     'defaultThinkingLevel': defaultThinkingLevel.name,
     'chatModelId': chatModelId,
     'chatThinkingLevel': chatThinkingLevel.name,
+    'chatThinkingLevelByModelId': {
+      for (final entry in chatThinkingLevelByModelId.entries)
+        entry.key: entry.value.name,
+    },
     // Legacy key for older builds.
     'chatThinkingMode': chatThinkingLevel.name,
   };
@@ -158,7 +193,23 @@ class LlmPreferences {
       defaultThinkingLevel: defaultLevel,
       chatModelId: map['chatModelId'] as String? ?? '',
       chatThinkingLevel: chatLevel,
+      chatThinkingLevelByModelId: _readThinkingLevelByModel(
+        map['chatThinkingLevelByModelId'],
+      ),
     );
+  }
+
+  static Map<String, LlmThinkingLevel> _readThinkingLevelByModel(
+    Object? raw,
+  ) {
+    if (raw is! Map) return const {};
+    final out = <String, LlmThinkingLevel>{};
+    for (final entry in raw.entries) {
+      final key = entry.key.toString();
+      if (key.isEmpty) continue;
+      out[key] = _parseThinkingLevel(entry.value?.toString());
+    }
+    return out;
   }
 
   static LlmThinkingLevel _parseThinkingLevel(

@@ -6,8 +6,7 @@ import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_settings.dart';
 import '../../settings/models/llm_thinking_labels.dart';
 
-/// Model picker, then thinking-level picker (both modal bottom sheets / dialogs).
-Future<void> showWorkspaceAiChatModelAndThinkingSheets(
+Future<void> showWorkspaceAiChatModelSheet(
   BuildContext context, {
   required FocusNode inputFocus,
 }) async {
@@ -41,23 +40,41 @@ Future<void> showWorkspaceAiChatModelAndThinkingSheets(
     } else {
       await vm.setChatModelId(chosenModel);
     }
-    if (!context.mounted) return;
+  } finally {
+    if (context.mounted) {
+      _restoreComposerIme(inputFocus);
+    }
+  }
+}
 
-    final afterModel = vm.preferences;
-    final thinkingLevels = afterModel.allowThinking
-        ? kLlmSelectableThinkingLevels
-        : const [LlmThinkingLevel.off];
+Future<void> showWorkspaceAiChatThinkingSheet(
+  BuildContext context, {
+  required FocusNode inputFocus,
+}) async {
+  final l10n = context.l10n;
+  final vm = ZephyrScope.of(context).llmSettings;
+  final prefs = vm.preferences;
+  final modelId = prefs.effectiveChatModelId;
+  if (modelId.isEmpty) {
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(content: Text(l10n.llmModelNotSelected)),
+    );
+    return;
+  }
 
-    final modelLabel = afterModel.effectiveChatModelId.isEmpty
-        ? chosenModel
-        : afterModel.effectiveChatModelId;
+  final thinkingLevels = prefs.allowThinking
+      ? kLlmSelectableThinkingLevels
+      : const [LlmThinkingLevel.off];
+  final selected = prefs.resolvedChatThinkingLevel(modelId);
 
+  _dismissComposerIme(inputFocus);
+  try {
     final chosenThinking =
         await showZephyrSettingsChoicePicker<LlmThinkingLevel>(
       context,
       title: l10n.llmThinkingLevelTitle,
-      subtitle: l10n.aiChatThinkingForModel(modelLabel),
-      selected: afterModel.chatThinkingLevel,
+      subtitle: l10n.aiChatThinkingForModel(modelId),
+      selected: selected,
       choices: [
         for (final level in thinkingLevels)
           ZephyrSettingsChoice(
@@ -67,7 +84,7 @@ Future<void> showWorkspaceAiChatModelAndThinkingSheets(
       ],
     );
     if (!context.mounted || chosenThinking == null) return;
-    if (afterModel.allowThinking || chosenThinking == LlmThinkingLevel.off) {
+    if (prefs.allowThinking || chosenThinking == LlmThinkingLevel.off) {
       await vm.setChatThinkingLevel(chosenThinking);
     }
   } finally {

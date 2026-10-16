@@ -15,6 +15,7 @@ import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_markdown_body.dart';
 import '../../../core/zephyr_scope.dart';
 import '../models/workspace_ai_context_selection.dart';
+import '../../settings/models/llm_thinking_labels.dart';
 import 'workspace_ai_chat_model_sheet.dart';
 import 'workspace_ai_chat_options_sheet.dart';
 import 'workspace_ai_sessions_sheet.dart';
@@ -707,6 +708,11 @@ class _AiChatComposer extends StatelessWidget {
                           inputFocus: focusNode,
                           onSurfaceVariant: scheme.onSurfaceVariant,
                         ),
+                        const SizedBox(width: 2),
+                        _AiChatComposerThinkingButton(
+                          inputFocus: focusNode,
+                          onSurfaceVariant: scheme.onSurfaceVariant,
+                        ),
                         const Spacer(),
                         IconButton(
                           onPressed: sending ? null : onOpenOptions,
@@ -783,7 +789,6 @@ class _AiChatComposerModelButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = context.l10n;
     final vm = ZephyrScope.of(context).llmSettings;
     return ListenableBuilder(
@@ -791,49 +796,118 @@ class _AiChatComposerModelButton extends StatelessWidget {
       builder: (context, _) {
         final prefs = vm.preferences;
         final modelId = prefs.effectiveChatModelId;
-        final label =
+        final modelLabel =
             modelId.isEmpty ? l10n.llmModelNotSelected : modelId;
-        return Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            onTap: () => showWorkspaceAiChatModelAndThinkingSheets(
-              context,
-              inputFocus: inputFocus,
-            ),
-            borderRadius: BorderRadius.circular(18),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.smart_toy_outlined,
-                    size: 16,
-                    color: onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 4),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 140),
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    Icons.expand_more_rounded,
-                    size: 18,
-                    color: onSurfaceVariant,
-                  ),
-                ],
-              ),
-            ),
+        return _AiChatComposerPickerButton(
+          icon: Icons.smart_toy_outlined,
+          label: modelLabel,
+          iconColor: onSurfaceVariant,
+          labelColor: onSurfaceVariant,
+          maxLabelWidth: 120,
+          onTap: () => showWorkspaceAiChatModelSheet(
+            context,
+            inputFocus: inputFocus,
           ),
         );
       },
+    );
+  }
+}
+
+class _AiChatComposerThinkingButton extends StatelessWidget {
+  const _AiChatComposerThinkingButton({
+    required this.inputFocus,
+    required this.onSurfaceVariant,
+  });
+
+  final FocusNode inputFocus;
+  final Color onSurfaceVariant;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final vm = ZephyrScope.of(context).llmSettings;
+    final previewTextColor = theme.textTheme.labelSmall?.color ??
+        theme.colorScheme.onSurfaceVariant;
+    return ListenableBuilder(
+      listenable: vm,
+      builder: (context, _) {
+        final prefs = vm.preferences;
+        final modelId = prefs.effectiveChatModelId;
+        final thinkingLabel = llmThinkingLevelLabel(
+          prefs.resolvedChatThinkingLevel(modelId),
+          l10n,
+        );
+        return _AiChatComposerPickerButton(
+          icon: Icons.psychology_outlined,
+          label: thinkingLabel,
+          iconColor: previewTextColor,
+          labelColor: previewTextColor,
+          maxLabelWidth: 72,
+          onTap: () => showWorkspaceAiChatThinkingSheet(
+            context,
+            inputFocus: inputFocus,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AiChatComposerPickerButton extends StatelessWidget {
+  const _AiChatComposerPickerButton({
+    required this.icon,
+    required this.label,
+    required this.iconColor,
+    required this.labelColor,
+    required this.maxLabelWidth,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color iconColor;
+  final Color labelColor;
+  final double maxLabelWidth;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final labelStyle = theme.textTheme.labelMedium?.copyWith(
+      color: labelColor,
+    );
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: iconColor),
+              const SizedBox(width: 4),
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxLabelWidth),
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: labelStyle,
+                ),
+              ),
+              Icon(
+                Icons.expand_more_rounded,
+                size: 18,
+                color: iconColor,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
