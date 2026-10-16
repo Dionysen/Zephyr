@@ -1331,7 +1331,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aiChatAiSettingsEntry => 'AI 设置';
 
   @override
-  String get aiChatSessionOptionsTitle => '对话模型与思考';
+  String get aiChatSessionOptionsTitle => '对话选项';
+
+  @override
+  String get aiChatSessionProviderTitle => '模型供应商';
+
+  @override
+  String get aiChatSessionProviderSubtitle => '选择已在 AI 设置中配置并测试通过的供应商';
 
   @override
   String get aiChatSessionOptionsNeedTest => '请先在 AI 模型设置中连接测试并获取模型列表。';
@@ -1391,7 +1397,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get llmProviderTitle => '模型供应商';
 
   @override
-  String get llmProviderSubtitle => '选择 API 服务商';
+  String get llmProviderSubtitle => '可分别配置各供应商，切换时保留其他已保存的配置';
 
   @override
   String get llmApiKeyTitle => 'API Key';

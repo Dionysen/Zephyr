@@ -2644,8 +2644,20 @@ abstract class AppLocalizations {
   /// No description provided for @aiChatSessionOptionsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Model & thinking'**
+  /// **'Chat options'**
   String get aiChatSessionOptionsTitle;
+
+  /// No description provided for @aiChatSessionProviderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get aiChatSessionProviderTitle;
+
+  /// No description provided for @aiChatSessionProviderSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a vendor you configured in AI settings'**
+  String get aiChatSessionProviderSubtitle;
 
   /// No description provided for @aiChatSessionOptionsNeedTest.
   ///
@@ -2752,7 +2764,7 @@ abstract class AppLocalizations {
   /// No description provided for @llmProviderSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Choose an API vendor'**
+  /// **'Configure each vendor; switch without losing other profiles'**
   String get llmProviderSubtitle;
 
   /// No description provided for @llmApiKeyTitle.

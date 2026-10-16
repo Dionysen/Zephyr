@@ -24,13 +24,61 @@ enum LlmProviderKind {
   openAiCompatible,
 }
 
+/// Per-vendor connection profile (models + optional base URL).
+class LlmProviderProfile {
+  const LlmProviderProfile({
+    this.customBaseUrl = '',
+    this.selectedModelId = '',
+    this.verifiedModelIds = const [],
+  });
+
+  final String customBaseUrl;
+  final String selectedModelId;
+  final List<String> verifiedModelIds;
+
+  bool get hasVerifiedModels => verifiedModelIds.isNotEmpty;
+
+  LlmProviderProfile copyWith({
+    String? customBaseUrl,
+    String? selectedModelId,
+    List<String>? verifiedModelIds,
+    bool clearVerifiedModels = false,
+    bool clearSelectedModel = false,
+  }) => LlmProviderProfile(
+    customBaseUrl: customBaseUrl ?? this.customBaseUrl,
+    selectedModelId: clearSelectedModel
+        ? ''
+        : (selectedModelId ?? this.selectedModelId),
+    verifiedModelIds: clearVerifiedModels
+        ? const []
+        : (verifiedModelIds ?? this.verifiedModelIds),
+  );
+
+  Map<String, Object?> toJson() => {
+    'customBaseUrl': customBaseUrl,
+    'selectedModelId': selectedModelId,
+    'verifiedModelIds': verifiedModelIds,
+  };
+
+  static LlmProviderProfile fromJson(Map<String, dynamic>? map) {
+    if (map == null) return const LlmProviderProfile();
+    final models = map['verifiedModelIds'];
+    return LlmProviderProfile(
+      customBaseUrl: map['customBaseUrl'] as String? ?? '',
+      selectedModelId: map['selectedModelId'] as String? ?? '',
+      verifiedModelIds: models is List
+          ? models.map((e) => e.toString()).toList(growable: false)
+          : const [],
+    );
+  }
+}
+
 /// Non-secret LLM configuration persisted under app support.
 class LlmPreferences {
   const LlmPreferences({
     this.provider = LlmProviderKind.deepseek,
-    this.customBaseUrl = '',
-    this.selectedModelId = '',
-    this.verifiedModelIds = const [],
+    this.providerProfiles = const {},
+    this.chatProvider,
     this.streamOutput = false,
     this.presetSystemPrompt = '',
     this.maxInputTokens = kLlmDefaultMaxInputTokens,
@@ -42,10 +90,14 @@ class LlmPreferences {
     this.chatThinkingLevelByModelId = const {},
   });
 
+  /// Provider shown in AI model settings (editing target).
   final LlmProviderKind provider;
-  final String customBaseUrl;
-  final String selectedModelId;
-  final List<String> verifiedModelIds;
+
+  /// Saved model lists and URLs per [LlmProviderKind].
+  final Map<LlmProviderKind, LlmProviderProfile> providerProfiles;
+
+  /// Assistant chat vendor; null uses [provider].
+  final LlmProviderKind? chatProvider;
   final bool streamOutput;
   final String presetSystemPrompt;
   final int maxInputTokens;
@@ -62,10 +114,25 @@ class LlmPreferences {
 
   static const defaults = LlmPreferences();
 
+  LlmProviderProfile profileFor(LlmProviderKind kind) =>
+      providerProfiles[kind] ?? const LlmProviderProfile();
+
+  String get customBaseUrl => profileFor(provider).customBaseUrl;
+
+  String get selectedModelId => profileFor(provider).selectedModelId;
+
+  List<String> get verifiedModelIds => profileFor(provider).verifiedModelIds;
+
   bool get hasVerifiedModels => verifiedModelIds.isNotEmpty;
 
-  String get effectiveChatModelId =>
-      chatModelId.isNotEmpty ? chatModelId : selectedModelId;
+  LlmProviderKind get effectiveChatProvider => chatProvider ?? provider;
+
+  LlmProviderProfile get chatProfile => profileFor(effectiveChatProvider);
+
+  String get effectiveChatModelId {
+    if (chatModelId.isNotEmpty) return chatModelId;
+    return chatProfile.selectedModelId;
+  }
 
   /// Thinking level for [modelId], or the active chat model when omitted.
   LlmThinkingLevel resolvedChatThinkingLevel([String? modelId]) {
@@ -97,8 +164,20 @@ class LlmPreferences {
     );
   }
 
+  LlmPreferences withProviderProfile(
+    LlmProviderKind kind,
+    LlmProviderProfile profile,
+  ) {
+    final map = Map<LlmProviderKind, LlmProviderProfile>.from(providerProfiles);
+    map[kind] = profile;
+    return copyWith(providerProfiles: map);
+  }
+
   LlmPreferences copyWith({
     LlmProviderKind? provider,
+    Map<LlmProviderKind, LlmProviderProfile>? providerProfiles,
+    LlmProviderKind? chatProvider,
+    bool clearChatProvider = false,
     String? customBaseUrl,
     String? selectedModelId,
     List<String>? verifiedModelIds,
@@ -114,33 +193,58 @@ class LlmPreferences {
     bool clearVerifiedModels = false,
     bool clearSelectedModel = false,
     bool clearChatModel = false,
-  }) => LlmPreferences(
-    provider: provider ?? this.provider,
-    customBaseUrl: customBaseUrl ?? this.customBaseUrl,
-    selectedModelId: clearSelectedModel
-        ? ''
-        : (selectedModelId ?? this.selectedModelId),
-    verifiedModelIds: clearVerifiedModels
-        ? const []
-        : (verifiedModelIds ?? this.verifiedModelIds),
-    streamOutput: streamOutput ?? this.streamOutput,
-    presetSystemPrompt: presetSystemPrompt ?? this.presetSystemPrompt,
-    maxInputTokens: maxInputTokens ?? this.maxInputTokens,
-    maxOutputTokens: maxOutputTokens ?? this.maxOutputTokens,
-    allowThinking: allowThinking ?? this.allowThinking,
-    defaultThinkingLevel:
-        defaultThinkingLevel ?? this.defaultThinkingLevel,
-    chatModelId: clearChatModel ? '' : (chatModelId ?? this.chatModelId),
-    chatThinkingLevel: chatThinkingLevel ?? this.chatThinkingLevel,
-    chatThinkingLevelByModelId:
-        chatThinkingLevelByModelId ?? this.chatThinkingLevelByModelId,
-  );
+  }) {
+    final editing = provider ?? this.provider;
+    var profiles = Map<LlmProviderKind, LlmProviderProfile>.from(
+      providerProfiles ?? this.providerProfiles,
+    );
+    if (customBaseUrl != null ||
+        selectedModelId != null ||
+        verifiedModelIds != null ||
+        clearVerifiedModels ||
+        clearSelectedModel) {
+      final current = profiles[editing] ?? const LlmProviderProfile();
+      profiles[editing] = current.copyWith(
+        customBaseUrl: customBaseUrl,
+        selectedModelId: selectedModelId,
+        verifiedModelIds: verifiedModelIds,
+        clearVerifiedModels: clearVerifiedModels,
+        clearSelectedModel: clearSelectedModel,
+      );
+    }
+    return LlmPreferences(
+      provider: editing,
+      providerProfiles: profiles,
+      chatProvider: clearChatProvider
+          ? null
+          : (chatProvider ?? this.chatProvider),
+      streamOutput: streamOutput ?? this.streamOutput,
+      presetSystemPrompt: presetSystemPrompt ?? this.presetSystemPrompt,
+      maxInputTokens: maxInputTokens ?? this.maxInputTokens,
+      maxOutputTokens: maxOutputTokens ?? this.maxOutputTokens,
+      allowThinking: allowThinking ?? this.allowThinking,
+      defaultThinkingLevel:
+          defaultThinkingLevel ?? this.defaultThinkingLevel,
+      chatModelId: clearChatModel ? '' : (chatModelId ?? this.chatModelId),
+      chatThinkingLevel: chatThinkingLevel ?? this.chatThinkingLevel,
+      chatThinkingLevelByModelId:
+          chatThinkingLevelByModelId ?? this.chatThinkingLevelByModelId,
+    );
+  }
 
-  Map<String, Object?> toJson() => {
+  Map<String, Object?> toJson() {
+    final active = profileFor(provider);
+    return {
     'provider': provider.name,
-    'customBaseUrl': customBaseUrl,
-    'selectedModelId': selectedModelId,
-    'verifiedModelIds': verifiedModelIds,
+    if (chatProvider != null) 'chatProvider': chatProvider!.name,
+    'providerProfiles': {
+      for (final entry in providerProfiles.entries)
+        entry.key.name: entry.value.toJson(),
+    },
+    // Legacy mirror for older builds.
+    'customBaseUrl': active.customBaseUrl,
+    'selectedModelId': active.selectedModelId,
+    'verifiedModelIds': active.verifiedModelIds,
     'streamOutput': streamOutput,
     'presetSystemPrompt': presetSystemPrompt,
     'maxInputTokens': maxInputTokens,
@@ -156,6 +260,7 @@ class LlmPreferences {
     // Legacy key for older builds.
     'chatThinkingMode': chatThinkingLevel.name,
   };
+  }
 
   static LlmPreferences fromJson(Map<String, dynamic>? map) {
     if (map == null) return defaults;
@@ -164,7 +269,38 @@ class LlmPreferences {
       (value) => value.name == providerName,
       orElse: () => LlmProviderKind.deepseek,
     );
-    final models = map['verifiedModelIds'];
+    final chatProviderName = map['chatProvider'] as String?;
+    final chatProvider = chatProviderName == null
+        ? null
+        : LlmProviderKind.values.firstWhere(
+            (value) => value.name == chatProviderName,
+            orElse: () => provider,
+          );
+    final profiles = <LlmProviderKind, LlmProviderProfile>{};
+    final rawProfiles = map['providerProfiles'];
+    if (rawProfiles is Map) {
+      for (final entry in rawProfiles.entries) {
+        final kind = LlmProviderKind.values.firstWhere(
+          (value) => value.name == entry.key.toString(),
+          orElse: () => LlmProviderKind.deepseek,
+        );
+        if (entry.value is Map) {
+          profiles[kind] = LlmProviderProfile.fromJson(
+            Map<String, dynamic>.from(entry.value as Map),
+          );
+        }
+      }
+    }
+    if (profiles.isEmpty) {
+      final models = map['verifiedModelIds'];
+      profiles[provider] = LlmProviderProfile(
+        customBaseUrl: map['customBaseUrl'] as String? ?? '',
+        selectedModelId: map['selectedModelId'] as String? ?? '',
+        verifiedModelIds: models is List
+            ? models.map((e) => e.toString()).toList(growable: false)
+            : const [],
+      );
+    }
     final chatLevel = _parseThinkingLevel(
       map['chatThinkingLevel'] as String? ?? map['chatThinkingMode'] as String?,
     );
@@ -174,11 +310,8 @@ class LlmPreferences {
     );
     return LlmPreferences(
       provider: provider,
-      customBaseUrl: map['customBaseUrl'] as String? ?? '',
-      selectedModelId: map['selectedModelId'] as String? ?? '',
-      verifiedModelIds: models is List
-          ? models.map((e) => e.toString()).toList(growable: false)
-          : const [],
+      providerProfiles: profiles,
+      chatProvider: chatProvider,
       streamOutput: map['streamOutput'] as bool? ?? false,
       presetSystemPrompt: map['presetSystemPrompt'] as String? ?? '',
       maxInputTokens: _readInt(

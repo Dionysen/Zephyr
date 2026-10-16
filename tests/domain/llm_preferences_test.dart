@@ -32,10 +32,51 @@ void main() {
     expect(restored.chatThinkingLevel, LlmThinkingLevel.medium);
   });
 
+  test('migrates legacy single-provider fields into profiles', () {
+    final restored = LlmPreferences.fromJson({
+      'provider': 'openai',
+      'customBaseUrl': 'https://example.com/v1',
+      'selectedModelId': 'gpt-4',
+      'verifiedModelIds': ['gpt-4', 'gpt-4o'],
+    });
+    final profile = restored.profileFor(LlmProviderKind.openai);
+    expect(profile.customBaseUrl, 'https://example.com/v1');
+    expect(profile.selectedModelId, 'gpt-4');
+    expect(profile.verifiedModelIds, ['gpt-4', 'gpt-4o']);
+  });
+
+  test('providerProfiles round-trip separately per vendor', () {
+    const prefs = LlmPreferences(
+      provider: LlmProviderKind.deepseek,
+      providerProfiles: {
+        LlmProviderKind.deepseek: LlmProviderProfile(
+          selectedModelId: 'deepseek-chat',
+          verifiedModelIds: ['deepseek-chat'],
+        ),
+        LlmProviderKind.openai: LlmProviderProfile(
+          selectedModelId: 'gpt-4o',
+          verifiedModelIds: ['gpt-4o'],
+        ),
+      },
+      chatProvider: LlmProviderKind.openai,
+    );
+    final restored = LlmPreferences.fromJson(prefs.toJson());
+    expect(restored.effectiveChatProvider, LlmProviderKind.openai);
+    expect(restored.effectiveChatModelId, 'gpt-4o');
+    expect(
+      restored.profileFor(LlmProviderKind.deepseek).selectedModelId,
+      'deepseek-chat',
+    );
+  });
+
   test('resolvedChatThinkingLevel uses per-model map', () {
     const prefs = LlmPreferences(
       allowThinking: true,
-      selectedModelId: 'model-a',
+      providerProfiles: {
+        LlmProviderKind.deepseek: LlmProviderProfile(
+          selectedModelId: 'model-a',
+        ),
+      },
       chatThinkingLevel: LlmThinkingLevel.auto,
       chatThinkingLevelByModelId: {
         'model-a': LlmThinkingLevel.high,

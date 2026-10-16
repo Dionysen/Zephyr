@@ -18,29 +18,52 @@ class LlmSettingsViewModel extends ChangeNotifier {
   final LlmGateway _gateway;
 
   LlmPreferences _preferences = LlmPreferences.defaults;
-  var _apiKey = '';
+  final Map<LlmProviderKind, String> _apiKeysByProvider = {};
   var _testing = false;
   var _chatting = false;
   Object? _error;
 
   LlmPreferences get preferences => _preferences;
-  String get apiKey => _apiKey;
+  String get apiKey => _apiKeysByProvider[_preferences.provider] ?? '';
   bool get testing => _testing;
   bool get chatting => _chatting;
   Object? get error => _error;
 
-  bool get isConfigured =>
-      _apiKey.trim().isNotEmpty && _preferences.effectiveChatModelId.isNotEmpty;
+  bool get isConfigured {
+    final kind = _preferences.effectiveChatProvider;
+    final profile = _preferences.profileFor(kind);
+    final key = (_apiKeysByProvider[kind] ?? '').trim();
+    return key.isNotEmpty && profile.selectedModelId.isNotEmpty;
+  }
 
-  LlmConnection get connection => LlmConnection(
-    provider: _preferences.provider,
-    apiKey: _apiKey,
-    customBaseUrl: _preferences.customBaseUrl,
-  );
+  LlmConnection get connection {
+    final kind = _preferences.effectiveChatProvider;
+    final profile = _preferences.profileFor(kind);
+    return LlmConnection(
+      provider: kind,
+      apiKey: _apiKeysByProvider[kind] ?? '',
+      customBaseUrl: profile.customBaseUrl,
+    );
+  }
+
+  /// Vendors with API key and a verified default model.
+  List<LlmProviderKind> get configuredProviders {
+    return LlmProviderKind.values.where((kind) {
+      final profile = _preferences.profileFor(kind);
+      final key = (_apiKeysByProvider[kind] ?? '').trim();
+      return key.isNotEmpty && profile.hasVerifiedModels;
+    }).toList(growable: false);
+  }
 
   Future<void> load() async {
     _preferences = await _repository.loadPreferences();
-    _apiKey = await _repository.loadApiKey(_preferences.provider) ?? '';
+    _apiKeysByProvider.clear();
+    for (final kind in LlmProviderKind.values) {
+      final key = await _repository.loadApiKey(kind);
+      if (key != null && key.isNotEmpty) {
+        _apiKeysByProvider[kind] = key;
+      }
+    }
     _error = null;
     notifyListeners();
   }
@@ -53,21 +76,25 @@ class LlmSettingsViewModel extends ChangeNotifier {
 
   Future<void> setProvider(LlmProviderKind provider) async {
     if (_preferences.provider == provider) return;
-    await _persist(
-      _preferences.copyWith(
-        provider: provider,
-        clearVerifiedModels: true,
-        clearSelectedModel: true,
-      ),
-    );
-    _apiKey = await _repository.loadApiKey(provider) ?? '';
+    await _persist(_preferences.copyWith(provider: provider));
     _error = null;
     notifyListeners();
   }
 
+  Future<void> setChatProvider(LlmProviderKind provider) async {
+    if (_preferences.effectiveChatProvider == provider) return;
+    await _persist(
+      _preferences.copyWith(
+        chatProvider: provider,
+        clearChatModel: true,
+      ),
+    );
+  }
+
   Future<void> setApiKey(String value) async {
-    _apiKey = value;
-    await _repository.saveApiKey(_preferences.provider, value);
+    final kind = _preferences.provider;
+    _apiKeysByProvider[kind] = value;
+    await _repository.saveApiKey(kind, value);
     _error = null;
     notifyListeners();
   }
@@ -133,7 +160,7 @@ class LlmSettingsViewModel extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final models = await _gateway.listModels(connection);
+      final models = await _gateway.listModels(connectionForEditing());
       if (models.isEmpty) {
         throw LlmGatewayException('No models returned.');
       }
@@ -163,6 +190,16 @@ class LlmSettingsViewModel extends ChangeNotifier {
     }
   }
 
+  LlmConnection connectionForEditing() {
+    final kind = _preferences.provider;
+    final profile = _preferences.profileFor(kind);
+    return LlmConnection(
+      provider: kind,
+      apiKey: _apiKeysByProvider[kind] ?? '',
+      customBaseUrl: profile.customBaseUrl,
+    );
+  }
+
   List<LlmChatMessage> _prepareMessages(List<LlmChatMessage> messages) {
     final preset = _preferences.presetSystemPrompt.trim();
     final systemParts = <String>[];
@@ -188,7 +225,7 @@ class LlmSettingsViewModel extends ChangeNotifier {
 
   LlmCompletionOptions _completionOptions() => LlmCompletionOptions(
     maxOutputTokens: _preferences.maxOutputTokens,
-    provider: _preferences.provider,
+    provider: _preferences.effectiveChatProvider,
     modelId: _preferences.effectiveChatModelId,
     thinkingLevel: _preferences.effectiveThinkingLevel(),
   );

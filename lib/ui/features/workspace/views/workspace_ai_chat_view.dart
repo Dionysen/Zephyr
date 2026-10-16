@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import '../../../../domain/models/ai_chat_session.dart'
     show AiChatMessageRole, AiChatStoredMessage, kAiChatNewConversation;
 import '../../../../domain/models/llm_chat.dart';
+import '../../../../domain/llm/llm_provider_catalog.dart';
 import '../../../../domain/models/llm_settings.dart';
 import '../../../../domain/repositories/writing_library_repository.dart';
 import '../../../../domain/use_cases/ai_chat_context_compression.dart';
@@ -21,8 +22,6 @@ import '../models/ai_stream_reveal.dart';
 import '../models/workspace_ai_composer_document.dart';
 import '../models/workspace_ai_context_selection.dart';
 import 'workspace_ai_chat_composer_field.dart';
-import '../../settings/models/llm_thinking_labels.dart';
-import 'workspace_ai_chat_model_sheet.dart';
 import 'workspace_ai_chat_options_sheet.dart';
 import 'workspace_ai_sessions_sheet.dart';
 
@@ -722,6 +721,41 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
     }
   }
 
+  Widget _messageBubble({
+    required int index,
+    required double bubbleRadius,
+    required bool hideAvatar,
+  }) {
+    if (index == _liveAssistantMessageIndex) {
+      return ValueListenableBuilder<_StreamAssistantFrame?>(
+        valueListenable: _liveAssistant,
+        builder: (context, frame, _) {
+          final base = _messages[index];
+          final message = frame == null
+              ? base
+              : _AiChatMessage(
+                  role: _AiChatRole.assistant,
+                  text: frame.text,
+                  thinking: frame.thinking,
+                  thinkingInProgress: frame.thinkingInProgress,
+                );
+          return _AiChatBubble(
+            message: message,
+            radius: bubbleRadius,
+            hideAvatar: hideAvatar,
+            markdownLiveStream: frame != null,
+          );
+        },
+      );
+    }
+    return _AiChatBubble(
+      key: ValueKey('chat-msg-$index'),
+      message: _messages[index],
+      radius: bubbleRadius,
+      hideAvatar: hideAvatar,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -754,7 +788,7 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
                       onNotification: _handleListScrollNotification,
                       child: ScrollConfiguration(
                         behavior: const _AiChatListScrollBehavior(),
-                        child: ListView.builder(
+                        child: SingleChildScrollView(
                           controller: _scrollController,
                           physics: const AlwaysScrollableScrollPhysics(
                             parent: ClampingScrollPhysics(),
@@ -765,41 +799,21 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
                             top: listTopPadding,
                             bottom: listBottomPadding,
                           ),
-                          itemCount: _messages.length,
-                          itemBuilder: (context, index) {
-                            if (index == _liveAssistantMessageIndex) {
-                              return ValueListenableBuilder<
-                                _StreamAssistantFrame?
-                              >(
-                                valueListenable: _liveAssistant,
-                                builder: (context, frame, _) {
-                                  final base = _messages[index];
-                                  final message = frame == null
-                                      ? base
-                                      : _AiChatMessage(
-                                          role: _AiChatRole.assistant,
-                                          text: frame.text,
-                                          thinking: frame.thinking,
-                                          thinkingInProgress:
-                                              frame.thinkingInProgress,
-                                        );
-                                  return _AiChatBubble(
-                                    message: message,
-                                    radius: bubbleRadius,
-                                    hideAvatar: hideAvatar,
-                                    markdownLiveStream: frame != null,
-                                  );
-                                },
-                              );
-                            }
-                            final message = _messages[index];
-                            return _AiChatBubble(
-                              key: ValueKey('chat-msg-$index'),
-                              message: message,
-                              radius: bubbleRadius,
-                              hideAvatar: hideAvatar,
-                            );
-                          },
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              for (
+                                var index = 0;
+                                index < _messages.length;
+                                index++
+                              )
+                                _messageBubble(
+                                  index: index,
+                                  bubbleRadius: bubbleRadius,
+                                  hideAvatar: hideAvatar,
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -983,14 +997,10 @@ class _AiChatComposer extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          _AiChatComposerModelButton(
+                          _AiChatComposerProviderButton(
                             inputFocus: composer.activeFocusNode,
                             onSurfaceVariant: scheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 2),
-                          _AiChatComposerThinkingButton(
-                            inputFocus: composer.activeFocusNode,
-                            onSurfaceVariant: scheme.onSurfaceVariant,
+                            onOpenOptions: onOpenOptions,
                           ),
                           const Spacer(),
                           IconButton(
@@ -1060,14 +1070,16 @@ class _AiChatComposer extends StatelessWidget {
   }
 }
 
-class _AiChatComposerModelButton extends StatelessWidget {
-  const _AiChatComposerModelButton({
+class _AiChatComposerProviderButton extends StatelessWidget {
+  const _AiChatComposerProviderButton({
     required this.inputFocus,
     required this.onSurfaceVariant,
+    required this.onOpenOptions,
   });
 
   final FocusNode inputFocus;
   final Color onSurfaceVariant;
+  final VoidCallback onOpenOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -1077,55 +1089,20 @@ class _AiChatComposerModelButton extends StatelessWidget {
       listenable: vm,
       builder: (context, _) {
         final prefs = vm.preferences;
-        final modelId = prefs.effectiveChatModelId;
-        final modelLabel = modelId.isEmpty ? l10n.llmModelNotSelected : modelId;
+        final kind = prefs.effectiveChatProvider;
+        final zh = l10n.localeName.startsWith('zh');
+        final label = vm.configuredProviders.isEmpty
+            ? l10n.llmModelNotSelected
+            : (zh
+                  ? LlmProviderCatalog.labelZh(kind)
+                  : LlmProviderCatalog.labelEn(kind));
         return _AiChatComposerPickerButton(
-          icon: Icons.smart_toy_outlined,
-          label: modelLabel,
+          icon: Icons.hub_outlined,
+          label: label,
           iconColor: onSurfaceVariant,
           labelColor: onSurfaceVariant,
           maxLabelWidth: 120,
-          onTap: () =>
-              showWorkspaceAiChatModelSheet(context, inputFocus: inputFocus),
-        );
-      },
-    );
-  }
-}
-
-class _AiChatComposerThinkingButton extends StatelessWidget {
-  const _AiChatComposerThinkingButton({
-    required this.inputFocus,
-    required this.onSurfaceVariant,
-  });
-
-  final FocusNode inputFocus;
-  final Color onSurfaceVariant;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = context.l10n;
-    final vm = ZephyrScope.of(context).llmSettings;
-    final previewTextColor =
-        theme.textTheme.labelSmall?.color ?? theme.colorScheme.onSurfaceVariant;
-    return ListenableBuilder(
-      listenable: vm,
-      builder: (context, _) {
-        final prefs = vm.preferences;
-        final modelId = prefs.effectiveChatModelId;
-        final thinkingLabel = llmThinkingLevelLabel(
-          prefs.resolvedChatThinkingLevel(modelId),
-          l10n,
-        );
-        return _AiChatComposerPickerButton(
-          icon: Icons.psychology_outlined,
-          label: thinkingLabel,
-          iconColor: previewTextColor,
-          labelColor: previewTextColor,
-          maxLabelWidth: 72,
-          onTap: () =>
-              showWorkspaceAiChatThinkingSheet(context, inputFocus: inputFocus),
+          onTap: onOpenOptions,
         );
       },
     );

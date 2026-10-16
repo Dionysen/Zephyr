@@ -1408,7 +1408,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiChatAiSettingsEntry => 'AI settings';
 
   @override
-  String get aiChatSessionOptionsTitle => 'Model & thinking';
+  String get aiChatSessionOptionsTitle => 'Chat options';
+
+  @override
+  String get aiChatSessionProviderTitle => 'Provider';
+
+  @override
+  String get aiChatSessionProviderSubtitle =>
+      'Use a vendor you configured in AI settings';
 
   @override
   String get aiChatSessionOptionsNeedTest =>
@@ -1472,7 +1479,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get llmProviderTitle => 'Provider';
 
   @override
-  String get llmProviderSubtitle => 'Choose an API vendor';
+  String get llmProviderSubtitle =>
+      'Configure each vendor; switch without losing other profiles';
 
   @override
   String get llmApiKeyTitle => 'API key';
