@@ -1,6 +1,6 @@
 /// Default per-request token ceilings (user-editable in settings).
 const int kLlmDefaultMaxInputTokens = 125000;
-const int kLlmDefaultMaxOutputTokens = 125000;
+const int kLlmDefaultMaxOutputTokens = 4096;
 
 /// Unified thinking intensity (mapped per vendor in [LlmThinkingAdapter]).
 enum LlmThinkingLevel {
