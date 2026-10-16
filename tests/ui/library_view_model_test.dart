@@ -377,6 +377,23 @@ void main() {
     expect(model.sidebarScrollOffset, 42);
   });
 
+  test('persists the compact companion book and chapter separately', () async {
+    final layout = FakeLayoutRepository(
+      const WorkspaceLayout(sidebarWidth: 334),
+    );
+    final model = LibraryViewModel(
+      FakeLibraryRepository(),
+      layoutRepository: layout,
+    );
+    await model.load();
+
+    model.setMobileCompanionSelection(bookId: 'book-b', articleId: 'article-b');
+    await model.flushPending();
+
+    expect(layout.layout.mobileCompanionBookId, 'book-b');
+    expect(layout.layout.mobileCompanionArticleId, 'article-b');
+  });
+
   test('createVolume adds a volume to the selected book', () async {
     final repository = FakeLibraryRepository();
     final model = LibraryViewModel(repository);

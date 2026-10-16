@@ -65,6 +65,8 @@ class WorkspaceLayout {
     this.libraries = const [],
     this.selectedBookId,
     this.selectedArticleId,
+    this.mobileCompanionBookId,
+    this.mobileCompanionArticleId,
     this.expandedVolumesByBook = const {},
     this.sidebarScrollOffsetByBook = const {},
     this.chapterSortByBook = const {},
@@ -94,6 +96,13 @@ class WorkspaceLayout {
 
   final String? selectedBookId;
   final String? selectedArticleId;
+
+  /// The second book/editor remembered by the compact two-page workspace.
+  ///
+  /// Desktop retains its single-editor layout; these values are only consumed
+  /// when the compact workspace is active.
+  final String? mobileCompanionBookId;
+  final String? mobileCompanionArticleId;
 
   /// Book id → expanded volume ids. Missing key means “default: all expanded”.
   /// Empty list means all volumes for that book are collapsed.
@@ -129,6 +138,8 @@ class WorkspaceLayout {
     List<LibraryRegistryEntry>? libraries,
     String? selectedBookId,
     String? selectedArticleId,
+    String? mobileCompanionBookId,
+    String? mobileCompanionArticleId,
     Map<String, List<String>>? expandedVolumesByBook,
     Map<String, double>? sidebarScrollOffsetByBook,
     Map<String, String>? chapterSortByBook,
@@ -137,6 +148,8 @@ class WorkspaceLayout {
     bool clearActiveLibraryId = false,
     bool clearSelectedBookId = false,
     bool clearSelectedArticleId = false,
+    bool clearMobileCompanionBookId = false,
+    bool clearMobileCompanionArticleId = false,
   }) => WorkspaceLayout(
     sidebarWidth: sidebarWidth ?? this.sidebarWidth,
     lastLibraryRoot: clearLastLibraryRoot
@@ -155,8 +168,13 @@ class WorkspaceLayout {
     selectedArticleId: clearSelectedArticleId
         ? null
         : selectedArticleId ?? this.selectedArticleId,
-    expandedVolumesByBook:
-        expandedVolumesByBook ?? this.expandedVolumesByBook,
+    mobileCompanionBookId: clearMobileCompanionBookId
+        ? null
+        : mobileCompanionBookId ?? this.mobileCompanionBookId,
+    mobileCompanionArticleId: clearMobileCompanionArticleId
+        ? null
+        : mobileCompanionArticleId ?? this.mobileCompanionArticleId,
+    expandedVolumesByBook: expandedVolumesByBook ?? this.expandedVolumesByBook,
     sidebarScrollOffsetByBook:
         sidebarScrollOffsetByBook ?? this.sidebarScrollOffsetByBook,
     chapterSortByBook: chapterSortByBook ?? this.chapterSortByBook,

@@ -23,6 +23,8 @@ class FileWorkspaceLayoutRepository implements WorkspaceLayoutRepository {
     final bookmark = values['lastLibraryBookmark'];
     final selectedBookId = values['selectedBookId'];
     final selectedArticleId = values['selectedArticleId'];
+    final mobileCompanionBookId = values['mobileCompanionBookId'];
+    final mobileCompanionArticleId = values['mobileCompanionArticleId'];
     final lastLibraryRoot = lastRoot is String && lastRoot.isNotEmpty
         ? lastRoot
         : null;
@@ -93,6 +95,15 @@ class FileWorkspaceLayoutRepository implements WorkspaceLayoutRepository {
           selectedArticleId is String && selectedArticleId.isNotEmpty
           ? selectedArticleId
           : null,
+      mobileCompanionBookId:
+          mobileCompanionBookId is String && mobileCompanionBookId.isNotEmpty
+          ? mobileCompanionBookId
+          : null,
+      mobileCompanionArticleId:
+          mobileCompanionArticleId is String &&
+              mobileCompanionArticleId.isNotEmpty
+          ? mobileCompanionArticleId
+          : null,
       expandedVolumesByBook: _stringListMap(values['expandedVolumesByBook']),
       sidebarScrollOffsetByBook: _doubleMap(
         values['sidebarScrollOffsetByBook'],
@@ -110,13 +121,14 @@ class FileWorkspaceLayoutRepository implements WorkspaceLayoutRepository {
     'activeLibraryId': layout.activeLibraryId,
     'libraries': [
       if (layout.activeLibrary case final entry?)
-        entry.copyWith(
-          displayName: path.basename(entry.rootPath),
-          rank: 0,
-        ).toJson(),
+        entry
+            .copyWith(displayName: path.basename(entry.rootPath), rank: 0)
+            .toJson(),
     ],
     'selectedBookId': layout.selectedBookId,
     'selectedArticleId': layout.selectedArticleId,
+    'mobileCompanionBookId': layout.mobileCompanionBookId,
+    'mobileCompanionArticleId': layout.mobileCompanionArticleId,
     'expandedVolumesByBook': layout.expandedVolumesByBook,
     'sidebarScrollOffsetByBook': layout.sidebarScrollOffsetByBook,
     'chapterSortByBook': layout.chapterSortByBook,

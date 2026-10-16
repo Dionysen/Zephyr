@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add a mobile-only two-book workspace: the left bookshelf, two independently
+  edited books, and the right bookshelf form one continuous horizontal surface;
+  each editor retains its own chapter, caret, and scroll position.
+
 - Add editable single-quote punctuation to the quick input toolbar, pair ceiling brackets and single quotes with caret exit on Enter, and enable horizontal Material stretch feedback for the toolbar.
 
 - Add editable Chinese punctuation presets to the quick input toolbar, with short labels for long dashes and ellipses.

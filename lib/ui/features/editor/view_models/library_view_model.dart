@@ -81,6 +81,8 @@ class LibraryViewModel extends ChangeNotifier {
   List<LibraryRegistryEntry> _libraries = const [];
   String? _selectedBookId;
   String? _selectedArticleId;
+  String? _mobileCompanionBookId;
+  String? _mobileCompanionArticleId;
   final Map<String, Set<String>> _expandedVolumesByBook = {};
   final Map<String, double> _sidebarScrollOffsetByBook = {};
   final Map<String, ChapterSortMode> _chapterSortByBook = {};
@@ -137,6 +139,39 @@ class LibraryViewModel extends ChangeNotifier {
       _volumesForSelectedBook.every((volume) => isVolumeExpanded(volume.id));
   WritingFolder? get selectedBook =>
       _library?.folders.where((book) => book.id == _selectedBookId).firstOrNull;
+
+  /// Compact workspace's independently selected right-hand book/editor.
+  String? get mobileCompanionBookId => _mobileCompanionBookId;
+  String? get mobileCompanionArticleId => _mobileCompanionArticleId;
+
+  /// Registered by the compact two-editor host so app-level flush and backup
+  /// paths include edits made in the companion editor.
+  Future<void> Function()? flushMobileCompanion;
+
+  /// Clears the companion session's dirty flag after a shared backup.
+  VoidCallback? markMobileCompanionBackupCompleted;
+
+  /// Persists the compact companion selection alongside the primary editor.
+  void setMobileCompanionSelection({
+    required String? bookId,
+    required String? articleId,
+  }) {
+    if (_mobileCompanionBookId == bookId &&
+        _mobileCompanionArticleId == articleId) {
+      return;
+    }
+    _mobileCompanionBookId = bookId;
+    _mobileCompanionArticleId = articleId;
+    _scheduleLayoutSave();
+  }
+
+  /// Makes writes from the compact companion participate in the application's
+  /// normal leave/backup dirty gate.
+  void markContentDirtyFromCompanion() {
+    if (_contentDirtySinceBackup) return;
+    _contentDirtySinceBackup = true;
+    notifyListeners();
+  }
 
   /// The selected directory, or empty while using the temporary library.
   List<LibraryRegistryEntry> get libraries => _libraries;
@@ -1010,6 +1045,12 @@ class LibraryViewModel extends ChangeNotifier {
     if (_pendingLayoutSave != null) {
       await _flushLayout();
     }
+    // Keep the legacy single-editor path synchronous after its own flush; the
+    // root back handler intentionally starts its exit work unawaited.
+    final companionFlush = flushMobileCompanion;
+    if (companionFlush != null) {
+      await companionFlush();
+    }
   }
 
   Future<void> _flushLayout() async {
@@ -1117,6 +1158,7 @@ class LibraryViewModel extends ChangeNotifier {
 
   void markBackupCompleted() {
     _contentDirtySinceBackup = false;
+    markMobileCompanionBackupCompleted?.call();
   }
 
   Future<List<ArticleHistory>> listHistory(String articleId) =>
@@ -1259,6 +1301,8 @@ class LibraryViewModel extends ChangeNotifier {
       // Disk may still be null/stale when selection was only restored in memory.
       _selectedBookId ??= layout.selectedBookId;
       _selectedArticleId ??= layout.selectedArticleId;
+      _mobileCompanionBookId ??= layout.mobileCompanionBookId;
+      _mobileCompanionArticleId ??= layout.mobileCompanionArticleId;
       // Dual-column is toggled in-session; don't clobber before disk save lands.
       if (!_booksSheetDualColumnHydrated) {
         _booksSheetDualColumn = layout.booksSheetDualColumn;
@@ -1306,6 +1350,8 @@ class LibraryViewModel extends ChangeNotifier {
           libraries: _libraries,
           selectedBookId: _selectedBookId,
           selectedArticleId: _selectedArticleId,
+          mobileCompanionBookId: _mobileCompanionBookId,
+          mobileCompanionArticleId: _mobileCompanionArticleId,
           expandedVolumesByBook: {
             for (final entry in _expandedVolumesByBook.entries)
               entry.key: entry.value.toList(growable: false),

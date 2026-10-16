@@ -7,15 +7,11 @@ import '../../../../domain/use_cases/article_text_search.dart';
 import '../../../core/zephyr_bottom_sheet.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
+import '../../../core/zephyr_dual_editor_pager.dart';
 import '../../../core/zephyr_theme.dart';
 import '../../editor/view_models/library_view_model.dart';
 
-enum LibrarySearchScope {
-  currentArticle,
-  currentVolume,
-  currentBook,
-  allBooks,
-}
+enum LibrarySearchScope { currentArticle, currentVolume, currentBook, allBooks }
 
 Future<void> showLibrarySearchSheet(
   BuildContext context, {
@@ -23,6 +19,7 @@ Future<void> showLibrarySearchSheet(
 }) async {
   FocusManager.instance.primaryFocus?.unfocus();
   // Close mobile drawer chrome only; keep the desktop docked sidebar open.
+  ZephyrDualEditorPager.maybeOf(context)?.closeDrawers();
   ZephyrSwipeDrawer.maybeOf(context)?.close();
   final scaffold = Scaffold.maybeOf(context);
   if (scaffold != null && scaffold.isDrawerOpen) {
@@ -38,10 +35,8 @@ Future<void> showLibrarySearchSheet(
       initialChildSize: 1,
       minChildSize: 0.45,
       maxChildSize: 1,
-      builder: (context, scrollController) => _LibrarySearchSheet(
-        model: model,
-        scrollController: scrollController,
-      ),
+      builder: (context, scrollController) =>
+          _LibrarySearchSheet(model: model, scrollController: scrollController),
     ),
   );
 }
@@ -144,9 +139,7 @@ class _LibrarySearchSheetState extends State<_LibrarySearchSheet> {
           : sortSearchMatchesByManuscriptOrder(
               matches,
               manuscriptSearchOrderFromLibrary(
-                folders: [
-                  for (final book in library.folders) (id: book.id),
-                ],
+                folders: [for (final book in library.folders) (id: book.id)],
                 categories: [
                   for (final volume in library.categories)
                     (id: volume.id, folderId: volume.folderId),
@@ -215,7 +208,8 @@ class _LibrarySearchSheetState extends State<_LibrarySearchSheet> {
 
   String _matchPathTitle(ArticleSearchMatch match, AppLocalizations l10n) {
     final library = widget.model.library;
-    final bookName = library?.folders
+    final bookName =
+        library?.folders
             .where((book) => book.id == match.folderId)
             .map((book) => book.name)
             .firstOrNull ??
@@ -223,10 +217,10 @@ class _LibrarySearchSheetState extends State<_LibrarySearchSheet> {
     final volumeName = match.categoryId == null
         ? l10n.unfiledVolume
         : library?.categories
-                .where((volume) => volume.id == match.categoryId)
-                .map((volume) => volume.name)
-                .firstOrNull ??
-            l10n.unfiledVolume;
+                  .where((volume) => volume.id == match.categoryId)
+                  .map((volume) => volume.name)
+                  .firstOrNull ??
+              l10n.unfiledVolume;
     final chapterName = match.title.isEmpty ? l10n.untitled : match.title;
     return '$bookName · $volumeName · $chapterName';
   }
@@ -342,9 +336,7 @@ class _LibrarySearchSheetState extends State<_LibrarySearchSheet> {
             const LinearProgressIndicator(minHeight: 2)
           else
             const SizedBox(height: 2),
-          Expanded(
-            child: _buildResults(theme, l10n),
-          ),
+          Expanded(child: _buildResults(theme, l10n)),
         ],
       ),
     );
@@ -429,17 +421,19 @@ class _HighlightedSnippet extends StatelessWidget {
     final start = highlightStart.clamp(0, text.length);
     final end = highlightEnd.clamp(0, text.length);
     if (start >= end) {
-      return Text(text, maxLines: 2, overflow: TextOverflow.ellipsis, style: style);
+      return Text(
+        text,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: style,
+      );
     }
     return Text.rich(
       TextSpan(
         style: style,
         children: [
           if (start > 0) TextSpan(text: text.substring(0, start)),
-          TextSpan(
-            text: text.substring(start, end),
-            style: highlightStyle,
-          ),
+          TextSpan(text: text.substring(start, end), style: highlightStyle),
           if (end < text.length) TextSpan(text: text.substring(end)),
         ],
       ),

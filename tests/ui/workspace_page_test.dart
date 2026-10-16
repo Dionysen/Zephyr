@@ -418,7 +418,7 @@ void main() {
     },
   );
 
-  testWidgets('compact layout uses a drawer instead of a second workspace', (
+  testWidgets('compact layout keeps two editors behind mirrored book drawers', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(400, 800);
@@ -429,16 +429,16 @@ void main() {
     await tester.pumpWidget(_app());
     await tester.pumpAndSettle();
 
-    expect(find.byTooltip('Open library'), findsOneWidget);
+    expect(find.byTooltip('Open library'), findsNWidgets(2));
     expect(find.byTooltip('Hide sidebar'), findsNothing);
     expect(find.byTooltip('Collapse all').hitTestable(), findsNothing);
 
-    await tester.tap(find.byTooltip('Open library'));
+    await tester.tap(find.byTooltip('Open library').first);
     await tester.pumpAndSettle();
     expect(find.text('Book A'), findsWidgets);
-    expect(find.byTooltip('Collapse all'), findsOneWidget);
-    expect(find.byTooltip('Add'), findsOneWidget);
-    expect(find.byTooltip('Search'), findsOneWidget);
+    expect(find.byTooltip('Collapse all').hitTestable(), findsOneWidget);
+    expect(find.byTooltip('Add').hitTestable(), findsOneWidget);
+    expect(find.byTooltip('Search').hitTestable(), findsOneWidget);
   });
 
   testWidgets('volume context menu opens delete dialog with two choices', (
@@ -561,7 +561,7 @@ void main() {
     await tester.pumpAndSettle();
     final l10n = _l10n(tester);
 
-    await tester.tap(find.byTooltip(l10n.tooltipSettings));
+    await tester.tap(find.byTooltip(l10n.tooltipSettings).first);
     await tester.pumpAndSettle();
 
     expect(find.byType(WorkspaceSettingsPanel).hitTestable(), findsOneWidget);
@@ -674,9 +674,9 @@ void main() {
     await tester.pumpAndSettle();
     final l10n = _l10n(tester);
 
-    await tester.tap(find.byTooltip(l10n.tooltipOpenLibrary));
+    await tester.tap(find.byTooltip(l10n.tooltipOpenLibrary).hitTestable());
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip(l10n.tooltipSettings));
+    await tester.tap(find.byTooltip(l10n.tooltipSettings).first);
     await tester.pumpAndSettle();
 
     expect(find.byType(SettingsPage), findsOneWidget);
@@ -756,12 +756,20 @@ void main() {
     await tester.pumpWidget(_app());
     await tester.pumpAndSettle();
 
-    final bookBar = find.byType(WorkspaceMobileBookBar);
-    expect(find.byTooltip('More'), findsOneWidget);
+    final bookBar = find.byType(WorkspaceMobileBookBar).hitTestable();
+    expect(find.byTooltip('More').hitTestable(), findsOneWidget);
     expect(
       find.descendant(of: bookBar, matching: find.text('Book A')),
       findsOneWidget,
     );
+
+    await tester.tap(find.byTooltip('More').hitTestable());
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Long-press'), findsOneWidget);
+    expect(find.text('Search'), findsWidgets);
+    expect(find.text('Settings'), findsWidgets);
+    await tester.tapAt(const Offset(8, 80));
+    await tester.pumpAndSettle();
 
     await tester.tap(
       find.descendant(of: bookBar, matching: find.text('Book A')),
@@ -772,16 +780,7 @@ void main() {
     await tester.tap(find.text('Book B').last);
     await tester.pumpAndSettle();
     expect(find.text('Books'), findsNothing);
-    expect(
-      find.descendant(of: bookBar, matching: find.text('Book B')),
-      findsOneWidget,
-    );
-
-    await tester.tap(find.byTooltip('More'));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Long-press'), findsOneWidget);
-    expect(find.text('Search'), findsWidgets);
-    expect(find.text('Settings'), findsWidgets);
+    expect(find.text('Book B'), findsWidgets);
   });
 }
 

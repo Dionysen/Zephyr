@@ -13,6 +13,7 @@ import '../../../../data/services/mobile_background_backup.dart';
 import '../../../../domain/models/app_theme_mode.dart';
 import '../../../../domain/models/keyboard_shortcuts.dart';
 import '../../../../domain/models/library_backup.dart';
+import '../../../../domain/models/purewriter_models.dart';
 import '../../../../domain/models/theme_color_pack.dart';
 import '../../../../domain/models/theme_tokens.dart';
 import '../../../../domain/models/workspace_layout.dart';
@@ -21,11 +22,11 @@ import '../../../core/breakpoints.dart';
 import '../../../core/editor_background_layer.dart';
 import '../../../core/window_chrome.dart';
 import '../../../core/zephyr_l10n.dart';
+import '../../../core/zephyr_dual_editor_pager.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_settings.dart';
 import '../../../core/zephyr_snackbar.dart';
 import '../../../core/zephyr_status_bar.dart';
-import '../../../core/zephyr_swipe_drawer.dart';
 import '../../../core/zephyr_theme.dart';
 import '../../editor/quick_toolbar/quick_toolbar_host.dart';
 import '../../editor/quick_toolbar/workspace_editor_bridge.dart';
@@ -293,8 +294,7 @@ class _WorkspacePageState extends State<WorkspacePage>
             canPop: WindowChrome.isDesktop,
             onPopInvokedWithResult: (didPop, _) {
               if (didPop) return;
-              if (scope.quickToolbar.handleAuxiliaryPanelBack?.call() ==
-                  true) {
+              if (scope.quickToolbar.handleAuxiliaryPanelBack?.call() == true) {
                 return;
               }
               unawaited(_onRootBack());
@@ -386,37 +386,17 @@ class _WorkspacePageState extends State<WorkspacePage>
                                         ),
                                       ),
                                     Expanded(
-                                      child: ZephyrSwipeDrawer(
+                                      child: _MobileTwoEditorWorkspace(
+                                        model: model,
+                                        preferences: scope.editorPreferences,
                                         drawerWidth: drawerWidth,
-                                        drawer: Material(
-                                          color: sidebarColor,
-                                          child: ZephyrTopSafeArea(
-                                            // Always paint sidebar under the status band
-                                            // when immersive; reserve space for controls.
-                                            top: immersive,
-                                            bottom: false,
-                                            left: false,
-                                            right: false,
-                                            child: WorkspaceSidebar(
-                                              model: model,
-                                              mode: SidebarMode.drawer,
-                                              openLibrary: _openLibrary,
-                                              openSettings: _openSettings,
-                                            ),
-                                          ),
-                                        ),
-                                        body: WorkspaceMobileBodyHost(
-                                          model: model,
-                                          child: _MobileEditorChrome(
-                                            model: model,
-                                            preferences:
-                                                scope.editorPreferences,
-                                            invadeStatusBar: invadeStatusBand,
-                                            transparentTopBar:
-                                                bleedEditorBackground,
-                                            openSettings: _openSettings,
-                                          ),
-                                        ),
+                                        sidebarColor: sidebarColor,
+                                        sidebarTopInset: immersive,
+                                        invadeStatusBar: invadeStatusBand,
+                                        transparentTopBar:
+                                            bleedEditorBackground,
+                                        openLibrary: _openLibrary,
+                                        openSettings: _openSettings,
                                       ),
                                     ),
                                   ],
@@ -732,6 +712,405 @@ class _WorkspacePageState extends State<WorkspacePage>
   }
 }
 
+/// Compact workspace with two independent book/editor sessions.
+///
+/// The primary session remains the application-wide library owner. A second
+/// view model shares its repository but owns its own book, chapter, caret and
+/// scroll state. Its writes are registered with the primary session so the
+/// existing flush, backup, and cloud-dirty guarantees still cover both pages.
+class _MobileTwoEditorWorkspace extends StatefulWidget {
+  const _MobileTwoEditorWorkspace({
+    required this.model,
+    required this.preferences,
+    required this.drawerWidth,
+    required this.sidebarColor,
+    required this.sidebarTopInset,
+    required this.invadeStatusBar,
+    required this.transparentTopBar,
+    required this.openLibrary,
+    required this.openSettings,
+  });
+
+  final LibraryViewModel model;
+  final EditorPreferencesViewModel preferences;
+  final double drawerWidth;
+  final Color sidebarColor;
+  final bool sidebarTopInset;
+  final bool invadeStatusBar;
+  final bool transparentTopBar;
+  final Future<void> Function() openLibrary;
+  final VoidCallback openSettings;
+
+  @override
+  State<_MobileTwoEditorWorkspace> createState() =>
+      _MobileTwoEditorWorkspaceState();
+}
+
+class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
+    with TickerProviderStateMixin {
+  static const _barInset = 8.0;
+  static const _barSideInset = 12.0;
+  static const _barGapBelow = 6.0;
+  static const _barHideSlop = 36.0;
+  static const _barMotion = Cubic(0.2, 0.0, 0.0, 1.0);
+
+  late final LibraryViewModel _companion;
+  final _primaryBridge = WorkspaceEditorBridge();
+  final _companionBridge = WorkspaceEditorBridge();
+  late final AnimationController _topBarHide;
+  var _activeEditor = 0;
+  var _topBarScrollSlop = 0.0;
+  var _companionReady = false;
+  var _ensuringDistinctBooks = false;
+  var _refreshingCompanionSnapshot = false;
+  String _primaryStructure = '';
+  String _companionStructure = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _topBarHide = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 280),
+    );
+    _companion = LibraryViewModel(
+      widget.model.repository,
+      needsLibrarySetup: widget.model.needsLibrarySetup,
+    );
+    _companion.onLocalContentPersisted = () async {
+      widget.model.markContentDirtyFromCompanion();
+      await widget.model.onLocalContentPersisted?.call();
+    };
+    widget.model.addListener(_onPrimaryChanged);
+    _companion.addListener(_onCompanionChanged);
+    unawaited(_initializeCompanion());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final toolbar = ZephyrScope.of(context).quickToolbar;
+    void dismissToolsPanel() {
+      if (!toolbar.toolsDrawerOpen &&
+          !toolbar.formatDrawerOpen &&
+          !toolbar.holdingPanelForIme) {
+        return;
+      }
+      toolbar.closeToolsDrawer();
+      toolbar.closeFormatDrawer();
+    }
+
+    _primaryBridge.onDismissToolsPanel = dismissToolsPanel;
+    _companionBridge.onDismissToolsPanel = dismissToolsPanel;
+  }
+
+  @override
+  void dispose() {
+    widget.model
+      ..removeListener(_onPrimaryChanged)
+      ..flushMobileCompanion = null
+      ..markMobileCompanionBackupCompleted = null;
+    _companion.removeListener(_onCompanionChanged);
+    _primaryBridge.dispose();
+    _companionBridge.dispose();
+    _topBarHide.dispose();
+    _companion.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initializeCompanion() async {
+    await _companion.load();
+    if (!mounted) return;
+    await _restoreCompanionSelection();
+    if (!mounted) return;
+    _primaryStructure = _structureOf(widget.model);
+    _companionStructure = _structureOf(_companion);
+    widget.model
+      ..flushMobileCompanion = _companion.flushPending
+      ..markMobileCompanionBackupCompleted = _companion.markBackupCompleted;
+    _companionReady = true;
+    _persistCompanionSelection();
+    setState(() {});
+  }
+
+  Future<void> _restoreCompanionSelection() async {
+    final library = widget.model.library;
+    if (library == null) return;
+    final primaryBookId = widget.model.selectedBook?.id;
+    final storedBookId = widget.model.mobileCompanionBookId;
+    final storedArticleId = widget.model.mobileCompanionArticleId;
+    final storedBookExists = library.folders.any(
+      (book) => book.id == storedBookId && !book.isTrash,
+    );
+    final preferredBookId = storedBookExists && storedBookId != primaryBookId
+        ? storedBookId
+        : _nextWritableBookId(after: primaryBookId);
+    if (preferredBookId != null) {
+      await _companion.selectBook(preferredBookId);
+    }
+    final storedArticleExists = library.articles.any(
+      (article) =>
+          article.id == storedArticleId &&
+          article.folderId == _companion.selectedBook?.id,
+    );
+    if (storedArticleExists) {
+      await _companion.selectArticle(storedArticleId!);
+    }
+  }
+
+  String? _nextWritableBookId({required String? after}) {
+    final List<WritingFolder> books =
+        widget.model.library?.folders
+            .where((book) => !book.isTrash)
+            .toList(growable: false) ??
+        const [];
+    if (books.isEmpty) return null;
+    final currentIndex = books.indexWhere((book) => book.id == after);
+    if (currentIndex >= 0 && books.length > 1) {
+      return books[(currentIndex + 1) % books.length].id;
+    }
+    return books.first.id;
+  }
+
+  String _structureOf(LibraryViewModel model) {
+    final library = model.library;
+    if (library == null) return '';
+    return [
+      for (final book in library.folders) book.id,
+      for (final volume in library.categories) volume.id,
+      for (final article in library.articles) article.id,
+    ].join('|');
+  }
+
+  void _onPrimaryChanged() {
+    final structure = _structureOf(widget.model);
+    if (structure != _primaryStructure) {
+      _primaryStructure = structure;
+      if (_companionReady) unawaited(_refreshCompanionSnapshot());
+    }
+    if (_companionReady) unawaited(_ensureDistinctBooks());
+  }
+
+  void _onCompanionChanged() {
+    if (_companion.contentDirtySinceBackup) {
+      widget.model.markContentDirtyFromCompanion();
+    }
+    if (_companionReady) {
+      _persistCompanionSelection();
+      final structure = _structureOf(_companion);
+      if (structure != _companionStructure) {
+        _companionStructure = structure;
+        unawaited(widget.model.load());
+      }
+    }
+  }
+
+  Future<void> _refreshCompanionSnapshot() async {
+    if (_refreshingCompanionSnapshot) return;
+    _refreshingCompanionSnapshot = true;
+    try {
+      await _companion.load();
+      if (mounted) await _ensureDistinctBooks();
+    } finally {
+      _refreshingCompanionSnapshot = false;
+    }
+  }
+
+  Future<void> _ensureDistinctBooks() async {
+    if (_ensuringDistinctBooks || !mounted) return;
+    final primaryBookId = widget.model.selectedBook?.id;
+    if (primaryBookId == null || _companion.selectedBook?.id != primaryBookId) {
+      return;
+    }
+    final nextBookId = _nextWritableBookId(after: primaryBookId);
+    if (nextBookId == null || nextBookId == primaryBookId) return;
+    _ensuringDistinctBooks = true;
+    try {
+      await _companion.selectBook(nextBookId);
+    } finally {
+      _ensuringDistinctBooks = false;
+    }
+  }
+
+  void _persistCompanionSelection() {
+    widget.model.setMobileCompanionSelection(
+      bookId: _companion.selectedBook?.id,
+      articleId: _companion.article?.id,
+    );
+  }
+
+  void _setActiveEditor(int index) {
+    if (_activeEditor == index) return;
+    final toolbar = ZephyrScope.of(context).quickToolbar;
+    toolbar.closeToolsDrawer();
+    toolbar.closeFormatDrawer();
+    setState(() => _activeEditor = index);
+  }
+
+  bool _onWorkspaceScroll(ScrollNotification notification) {
+    if (!ZephyrScope.of(context).theme.ui.scrollToHideMobileTopBar) {
+      if (_topBarHide.value > 0) _topBarHide.value = 0;
+      return false;
+    }
+    if (notification.metrics.axis != Axis.vertical) return false;
+    if (notification is ScrollUpdateNotification) {
+      final delta = notification.scrollDelta;
+      if (delta == null || delta == 0) return false;
+      if (notification.metrics.pixels <= 0) {
+        _topBarScrollSlop = 0;
+        _showTopBar();
+        return false;
+      }
+      final direction = delta > 0 ? 1 : -1;
+      if (_topBarScrollSlop != 0 && _topBarScrollSlop.sign != direction) {
+        _topBarScrollSlop = 0;
+      }
+      _topBarScrollSlop += delta;
+      if (_topBarScrollSlop.abs() >= _barHideSlop) {
+        direction > 0 ? _hideTopBar() : _showTopBar();
+      }
+    } else if (notification is ScrollEndNotification) {
+      _topBarScrollSlop = 0;
+      if (notification.metrics.pixels <= 0) _showTopBar();
+    }
+    return false;
+  }
+
+  void _showTopBar() {
+    _topBarScrollSlop = 0;
+    if (_topBarHide.value > 0) _topBarHide.animateTo(0, curve: _barMotion);
+  }
+
+  void _hideTopBar() {
+    _topBarScrollSlop = 0;
+    if (_topBarHide.value < 1) _topBarHide.animateTo(1, curve: _barMotion);
+  }
+
+  Widget _fixedTopBar(BuildContext pagerContext, LibraryViewModel model) {
+    final statusTop = widget.invadeStatusBar ? zephyrTopInset(context) : 0.0;
+    final travel = _barInset + WorkspaceMobileBookBar.height + _barGapBelow;
+    return Positioned(
+      top: statusTop + _barInset,
+      left: _barSideInset,
+      right: _barSideInset,
+      child: AnimatedBuilder(
+        animation: _topBarHide,
+        builder: (context, child) {
+          final hidden = _topBarHide.value;
+          return IgnorePointer(
+            ignoring: hidden > 0.85,
+            child: Opacity(
+              opacity: (1 - hidden).clamp(0.0, 1.0),
+              child: Transform.translate(
+                offset: Offset(0, -travel * hidden),
+                child: child,
+              ),
+            ),
+          );
+        },
+        child: WorkspaceMobileBookBar(
+          model: model,
+          onOpenMenu: () {
+            final pager = ZephyrDualEditorPager.of(pagerContext);
+            _activeEditor == 0
+                ? pager.openStartDrawer()
+                : pager.openEndDrawer();
+          },
+          reverse: _activeEditor == 1,
+          transparentBackground: widget.transparentTopBar,
+          toolsBuilder: (barContext) => buildWorkspaceOverflowTools(
+            barContext,
+            model: model,
+            openSettings: widget.openSettings,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _drawerFor(LibraryViewModel model) => ListenableBuilder(
+    listenable: model,
+    builder: (context, _) => Material(
+      color: widget.sidebarColor,
+      child: ZephyrTopSafeArea(
+        top: widget.sidebarTopInset,
+        bottom: false,
+        left: false,
+        right: false,
+        child: model.library == null
+            ? const Center(child: CircularProgressIndicator())
+            : WorkspaceSidebar(
+                model: model,
+                mode: SidebarMode.drawer,
+                openLibrary: widget.openLibrary,
+                openSettings: widget.openSettings,
+              ),
+      ),
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = ZephyrScope.of(context);
+    final activeBridge = _activeEditor == 0 ? _primaryBridge : _companionBridge;
+    final activeModel = _activeEditor == 0 ? widget.model : _companion;
+    return NotificationListener<ScrollNotification>(
+      onNotification: _onWorkspaceScroll,
+      child: QuickToolbarHost(
+        toolbar: scope.quickToolbar,
+        bridge: activeBridge,
+        library: activeModel,
+        foreground: Theme.of(context).colorScheme.onSurface,
+        editorPreferences: widget.preferences,
+        bodyFontFamily: widget.preferences.preferences.fontFamily,
+        hidden: scope.theme.ui.hideQuickToolbar,
+        child: ZephyrDualEditorPager(
+          drawerWidth: widget.drawerWidth,
+          onActiveEditorChanged: _setActiveEditor,
+          fixedOverlay: Builder(
+            builder: (pagerContext) => _fixedTopBar(pagerContext, activeModel),
+          ),
+          startDrawer: _drawerFor(widget.model),
+          primaryEditor: Builder(
+            builder: (editorContext) => WorkspaceMobileBodyHost(
+              model: widget.model,
+              child: _MobileEditorChrome(
+                model: widget.model,
+                preferences: widget.preferences,
+                bridge: _primaryBridge,
+                onOpenMenu: () =>
+                    ZephyrDualEditorPager.of(editorContext).openStartDrawer(),
+                showBookBar: false,
+                invadeStatusBar: widget.invadeStatusBar,
+                transparentTopBar: widget.transparentTopBar,
+                openSettings: widget.openSettings,
+              ),
+            ),
+          ),
+          companionEditor: ListenableBuilder(
+            listenable: _companion,
+            builder: (context, _) => Builder(
+              builder: (editorContext) => _MobileEditorChrome(
+                model: _companion,
+                preferences: widget.preferences,
+                bridge: _companionBridge,
+                onOpenMenu: () =>
+                    ZephyrDualEditorPager.of(editorContext).openEndDrawer(),
+                reverse: true,
+                showBookBar: false,
+                invadeStatusBar: widget.invadeStatusBar,
+                transparentTopBar: widget.transparentTopBar,
+                openSettings: widget.openSettings,
+              ),
+            ),
+          ),
+          endDrawer: _drawerFor(_companion),
+        ),
+      ),
+    );
+  }
+}
+
 /// Compact editor + floating book bar that slides away while reading down
 /// and returns when scrolling back up.
 class _MobileEditorChrome extends StatefulWidget {
@@ -739,6 +1118,10 @@ class _MobileEditorChrome extends StatefulWidget {
     required this.model,
     required this.preferences,
     required this.openSettings,
+    required this.bridge,
+    required this.onOpenMenu,
+    this.reverse = false,
+    this.showBookBar = true,
     this.invadeStatusBar = false,
     this.transparentTopBar = false,
   });
@@ -746,6 +1129,10 @@ class _MobileEditorChrome extends StatefulWidget {
   final LibraryViewModel model;
   final EditorPreferencesViewModel preferences;
   final VoidCallback openSettings;
+  final WorkspaceEditorBridge bridge;
+  final VoidCallback onOpenMenu;
+  final bool reverse;
+  final bool showBookBar;
 
   /// When true, the editor extends under the status band so scrolled text can
   /// enter it naturally. Top-bar show/hide never changes scroll padding.
@@ -771,7 +1158,6 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
   static const _motion = Cubic(0.2, 0.0, 0.0, 1.0);
 
   late final AnimationController _hide;
-  final _editorBridge = WorkspaceEditorBridge();
 
   /// Accumulated delta before triggering a show/hide jump.
   var _slop = 0.0;
@@ -794,24 +1180,8 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final toolbar = ZephyrScope.of(context).quickToolbar;
-    _editorBridge.onDismissToolsPanel = () {
-      if (!toolbar.toolsDrawerOpen &&
-          !toolbar.formatDrawerOpen &&
-          !toolbar.holdingPanelForIme) {
-        return;
-      }
-      toolbar.closeToolsDrawer();
-      toolbar.closeFormatDrawer();
-    };
-  }
-
-  @override
   void dispose() {
     _hide.dispose();
-    _editorBridge.dispose();
     super.dispose();
   }
 
@@ -934,10 +1304,8 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
     final barBottom = statusTop + _barInset + WorkspaceMobileBookBar.height;
     final theme = Theme.of(context);
     final surface = theme.colorScheme.surface;
-    final foreground = theme.colorScheme.onSurface;
     final wordCount = widget.model.article?.wordCount;
     final scope = ZephyrScope.of(context);
-    final quickToolbar = scope.quickToolbar;
     final themeVm = scope.theme;
     return NotificationListener<ScrollNotification>(
       onNotification: _onScroll,
@@ -970,21 +1338,13 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                       : null,
                   child: ListenableBuilder(
                     listenable: Listenable.merge([widget.preferences, themeVm]),
-                    builder: (context, _) => QuickToolbarHost(
-                      toolbar: quickToolbar,
-                      bridge: _editorBridge,
-                      foreground: foreground,
-                      editorPreferences: widget.preferences,
-                      bodyFontFamily: widget.preferences.preferences.fontFamily,
-                      hidden: themeVm.ui.hideQuickToolbar,
-                      child: WorkspaceEditor(
-                        model: widget.model,
-                        preferences: widget.preferences,
-                        contentTopInset: contentTop,
-                        showWordCount: false,
-                        bridge: _editorBridge,
-                        showBackground: !widget.transparentTopBar,
-                      ),
+                    builder: (context, _) => WorkspaceEditor(
+                      model: widget.model,
+                      preferences: widget.preferences,
+                      contentTopInset: contentTop,
+                      showWordCount: false,
+                      bridge: widget.bridge,
+                      showBackground: !widget.transparentTopBar,
                     ),
                   ),
                 ),
@@ -1001,24 +1361,26 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                     child: ColoredBox(color: surface),
                   ),
                 ),
-              Positioned(
-                top: statusTop + _barInset,
-                left: _barSideInset,
-                right: _barSideInset,
-                child: _chromeFade(
-                  travel: contentTop,
-                  child: WorkspaceMobileBookBar(
-                    model: widget.model,
-                    onOpenMenu: () => ZephyrSwipeDrawer.of(context).open(),
-                    transparentBackground: widget.transparentTopBar,
-                    toolsBuilder: (barContext) => buildWorkspaceOverflowTools(
-                      barContext,
+              if (widget.showBookBar)
+                Positioned(
+                  top: statusTop + _barInset,
+                  left: _barSideInset,
+                  right: _barSideInset,
+                  child: _chromeFade(
+                    travel: contentTop,
+                    child: WorkspaceMobileBookBar(
                       model: widget.model,
-                      openSettings: widget.openSettings,
+                      onOpenMenu: widget.onOpenMenu,
+                      reverse: widget.reverse,
+                      transparentBackground: widget.transparentTopBar,
+                      toolsBuilder: (barContext) => buildWorkspaceOverflowTools(
+                        barContext,
+                        model: widget.model,
+                        openSettings: widget.openSettings,
+                      ),
                     ),
                   ),
                 ),
-              ),
               if (wordCount != null)
                 Positioned(
                   // Below the book bar, top-right of the reading area.
@@ -1026,10 +1388,10 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                   right: 8,
                   child: _wordCountFade(
                     child: ListenableBuilder(
-                      listenable: _editorBridge,
+                      listenable: widget.bridge,
                       builder: (context, _) {
-                        final controller = _editorBridge.controller;
-                        final focusNode = _editorBridge.focusNode;
+                        final controller = widget.bridge.controller;
+                        final focusNode = widget.bridge.focusNode;
                         if (controller == null || focusNode == null) {
                           return EditorOverlayCapsule(
                             compact: true,

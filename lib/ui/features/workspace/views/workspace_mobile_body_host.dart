@@ -5,6 +5,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
+import '../../../core/zephyr_dual_editor_pager.dart';
 import '../../editor/view_models/library_view_model.dart';
 import 'workspace_sidebar.dart';
 
@@ -20,7 +21,8 @@ class WorkspaceMobileBodyHost extends StatefulWidget {
   final Widget child;
 
   @override
-  State<WorkspaceMobileBodyHost> createState() => _WorkspaceMobileBodyHostState();
+  State<WorkspaceMobileBodyHost> createState() =>
+      _WorkspaceMobileBodyHostState();
 }
 
 class _WorkspaceMobileBodyHostState extends State<WorkspaceMobileBodyHost> {
@@ -62,7 +64,7 @@ class _WorkspaceMobileBodyHostState extends State<WorkspaceMobileBodyHost> {
     if (!ui.openSidebarAfterBookSwitch) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ZephyrSwipeDrawer.of(context).open();
+      _openStartDrawer();
     });
   }
 
@@ -76,13 +78,22 @@ class _WorkspaceMobileBodyHostState extends State<WorkspaceMobileBodyHost> {
       await showWorkspaceMobileBookSheet(context, model: widget.model);
       if (!mounted) return;
       if (ui.openSidebarOnStartup) {
-        ZephyrSwipeDrawer.of(context).open();
+        _openStartDrawer();
       }
       return;
     }
     if (ui.openSidebarOnStartup) {
-      ZephyrSwipeDrawer.of(context).open();
+      _openStartDrawer();
     }
+  }
+
+  void _openStartDrawer() {
+    final dual = ZephyrDualEditorPager.maybeOf(context);
+    if (dual != null) {
+      dual.openStartDrawer();
+      return;
+    }
+    ZephyrSwipeDrawer.of(context).open();
   }
 
   void _syncWakelock(bool enabled) {

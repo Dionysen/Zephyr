@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -20,6 +21,7 @@ import '../../../core/zephyr_resize_handle.dart';
 import '../../../core/zephyr_snackbar.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
+import '../../../core/zephyr_dual_editor_pager.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_menu.dart';
 import '../../../core/zephyr_theme.dart';
@@ -274,9 +276,7 @@ class _ChapterSortMenuButton extends StatelessWidget {
         context: context,
         label: label,
         selected: mode == value,
-        onPressed: !bookOk
-            ? null
-            : () => model.setChapterSortMode(value),
+        onPressed: !bookOk ? null : () => model.setChapterSortMode(value),
       );
     }
 
@@ -558,6 +558,7 @@ class WorkspaceMobileBookBar extends StatelessWidget {
     this.tools = const [],
     this.toolsBuilder,
     this.transparentBackground = false,
+    this.reverse = false,
   });
 
   /// Compact floating bar; icon buttons sit at 40 inside a 48-tall shell.
@@ -577,6 +578,9 @@ class WorkspaceMobileBookBar extends StatelessWidget {
   /// When true, the bar fill is clear so the editor background shows through;
   /// the floating shadow is unchanged.
   final bool transparentBackground;
+
+  /// Mirrors the compact chrome for the right-hand editor page.
+  final bool reverse;
 
   @override
   Widget build(BuildContext context) {
@@ -599,67 +603,10 @@ class WorkspaceMobileBookBar extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Center(
-                child: IconButton(
-                  style: _mobileBarIconStyle(context),
-                  onPressed: onOpenMenu,
-                  icon: const Icon(Icons.menu, size: _iconSize),
-                  tooltip: l10n.tooltipOpenLibrary,
-                ),
-              ),
-              Expanded(
-                child: Material(
-                  type: MaterialType.transparency,
-                  shape: const _BookButtonBorder(),
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    customBorder: const _BookButtonBorder(),
-                    onTap: () => _showBookSheet(context, library: library),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          if (isTrash) ...[
-                            Icon(
-                              Icons.delete_outline,
-                              size: _iconSize,
-                              color: theme.colorScheme.error,
-                            ),
-                            const SizedBox(width: 6),
-                          ],
-                          Expanded(
-                            child: Text(
-                              bookName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.left,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                color: isTrash
-                                    ? theme.colorScheme.error
-                                    : theme.colorScheme.onSurface,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Center(
-                child: CloudBackupQuickButton(
-                  iconSize: _iconSize,
-                  style: _mobileBarIconStyle(context),
-                ),
-              ),
-              Center(
-                child: WorkspaceOverflowToolsButton(
-                  tools: tools,
-                  toolsBuilder: toolsBuilder,
-                  style: _mobileBarIconStyle(context),
-                  iconSize: _iconSize,
-                ),
-              ),
+              _endpoint(context, l10n, opensLibrary: !reverse),
+              _bookButton(context, theme, library, bookName, book?.id, isTrash),
+              _backupButton(context),
+              _endpoint(context, l10n, opensLibrary: reverse),
             ],
           ),
         ),
@@ -681,11 +628,251 @@ class WorkspaceMobileBookBar extends StatelessWidget {
     );
   }
 
+  Widget _endpoint(
+    BuildContext context,
+    AppLocalizations l10n, {
+    required bool opensLibrary,
+  }) => _MobileBookBarEndpoint(
+    opensLibrary: opensLibrary,
+    onOpenLibrary: onOpenMenu,
+    tools: tools,
+    toolsBuilder: toolsBuilder,
+    style: _mobileBarIconStyle(context),
+    iconSize: _iconSize,
+    libraryTooltip: l10n.tooltipOpenLibrary,
+    moreTooltip: l10n.tooltipMore,
+  );
+
+  Widget _backupButton(BuildContext context) => Center(
+    child: CloudBackupQuickButton(
+      iconSize: _iconSize,
+      style: _mobileBarIconStyle(context),
+    ),
+  );
+
+  Widget _bookButton(
+    BuildContext context,
+    ThemeData theme,
+    WritingLibrary library,
+    String bookName,
+    String? bookId,
+    bool isTrash,
+  ) => Expanded(
+    child: Material(
+      type: MaterialType.transparency,
+      shape: const _BookButtonBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        customBorder: const _BookButtonBorder(),
+        onTap: () => _showBookSheet(context, library: library),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            textDirection: TextDirection.ltr,
+            children: [
+              if (isTrash) ...[
+                Icon(
+                  Icons.delete_outline,
+                  size: _iconSize,
+                  color: theme.colorScheme.error,
+                ),
+                const SizedBox(width: 6),
+              ],
+              Expanded(
+                child: _AnimatedBookTitle(
+                  titleId: bookId ?? bookName,
+                  name: bookName,
+                  movesDown: reverse,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: isTrash
+                        ? theme.colorScheme.error
+                        : theme.colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+
   Future<void> _showBookSheet(
     BuildContext context, {
     required WritingLibrary library,
   }) async {
     await showWorkspaceMobileBookSheet(context, model: model);
+  }
+}
+
+/// Keeps both endpoint positions stable while their roles exchange.
+class _MobileBookBarEndpoint extends StatelessWidget {
+  const _MobileBookBarEndpoint({
+    required this.opensLibrary,
+    required this.onOpenLibrary,
+    required this.tools,
+    required this.toolsBuilder,
+    required this.style,
+    required this.iconSize,
+    required this.libraryTooltip,
+    required this.moreTooltip,
+  });
+
+  final bool opensLibrary;
+  final VoidCallback onOpenLibrary;
+  final List<WorkspaceMobileTool> tools;
+  final List<WorkspaceMobileTool> Function(BuildContext context)? toolsBuilder;
+  final ButtonStyle style;
+  final double iconSize;
+  final String libraryTooltip;
+  final String moreTooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    if (opensLibrary) {
+      return Center(
+        child: IconButton(
+          style: style,
+          onPressed: onOpenLibrary,
+          icon: _MoreMenuMorphIcon(menu: true, size: iconSize),
+          tooltip: libraryTooltip,
+        ),
+      );
+    }
+    return Builder(
+      builder: (buttonContext) {
+        final items = resolveWorkspaceOverflowTools(
+          buttonContext,
+          tools: tools,
+          toolsBuilder: toolsBuilder,
+        );
+        return Center(
+          child: IconButton(
+            style: style,
+            onPressed: items.isEmpty
+                ? null
+                : () => unawaited(
+                    WorkspaceOverflowToolsButton.openMobileDrawer(
+                      buttonContext,
+                      tools: tools,
+                      toolsBuilder: toolsBuilder,
+                    ),
+                  ),
+            icon: _MoreMenuMorphIcon(menu: false, size: iconSize),
+            tooltip: moreTooltip,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MoreMenuMorphIcon extends StatelessWidget {
+  const _MoreMenuMorphIcon({required this.menu, required this.size});
+
+  final bool menu;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
+    tween: Tween(end: menu ? 1 : 0),
+    duration: const Duration(milliseconds: 260),
+    curve: Curves.easeInOutCubic,
+    builder: (context, progress, _) => CustomPaint(
+      size: Size.square(size),
+      painter: _MoreMenuMorphPainter(
+        progress: progress,
+        color: IconTheme.of(context).color ?? Theme.of(context).hintColor,
+      ),
+    ),
+  );
+}
+
+class _MoreMenuMorphPainter extends CustomPainter {
+  const _MoreMenuMorphPainter({required this.progress, required this.color});
+
+  final double progress;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+    final centerX = size.width / 2;
+    final halfWidth = lerpDouble(size.width * .1, size.width * .42, progress)!;
+    final height = lerpDouble(size.width * .2, size.width * .1, progress)!;
+    final radius = Radius.circular(height / 2);
+    for (final fraction in [.25, .5, .75]) {
+      final centerY = size.height * fraction;
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: Offset(centerX, centerY),
+            width: halfWidth * 2,
+            height: height,
+          ),
+          radius,
+        ),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_MoreMenuMorphPainter oldDelegate) =>
+      oldDelegate.progress != progress || oldDelegate.color != color;
+}
+
+class _AnimatedBookTitle extends StatelessWidget {
+  const _AnimatedBookTitle({
+    required this.titleId,
+    required this.name,
+    required this.movesDown,
+    required this.style,
+  });
+
+  final String titleId;
+  final String name;
+  final bool movesDown;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    final titleKey = ValueKey(titleId);
+    final incomingOffset = Offset(0, movesDown ? 1 : -1);
+    final outgoingOffset = Offset(0, -incomingOffset.dy);
+    return ClipRect(
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 280),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        layoutBuilder: (currentChild, previousChildren) => Stack(
+          alignment: Alignment.centerLeft,
+          children: [
+            ...previousChildren,
+            ...[currentChild].whereType<Widget>(),
+          ],
+        ),
+        transitionBuilder: (child, animation) {
+          final isIncoming = child.key == titleKey;
+          final position = isIncoming
+              ? animation.drive(Tween(begin: incomingOffset, end: Offset.zero))
+              : ReverseAnimation(animation)
+                    .drive(Tween(begin: Offset.zero, end: outgoingOffset));
+          return SlideTransition(position: position, child: child);
+        },
+        child: SizedBox(
+          key: titleKey,
+          width: double.infinity,
+          child: Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.left,
+            style: style,
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -722,10 +909,10 @@ List<WorkspaceMobileTool> resolveWorkspaceOverflowTools(
 }) {
   final built = toolsBuilder?.call(context) ?? const <WorkspaceMobileTool>[];
   final theme = ZephyrScope.maybeOf(context)?.theme;
-  return orderWorkspaceMobileTools(
-    [...tools, ...built],
-    theme?.ui.mobileToolsOrder ?? const [],
-  );
+  return orderWorkspaceMobileTools([
+    ...tools,
+    ...built,
+  ], theme?.ui.mobileToolsOrder ?? const []);
 }
 
 /// More button that opens overflow tools.
@@ -752,7 +939,12 @@ class WorkspaceOverflowToolsButton extends StatelessWidget {
   final ButtonStyle? style;
   final double? iconSize;
 
-  Future<void> _openMobileDrawer(BuildContext buttonContext) async {
+  static Future<void> openMobileDrawer(
+    BuildContext buttonContext, {
+    required List<WorkspaceMobileTool> tools,
+    required List<WorkspaceMobileTool> Function(BuildContext context)?
+    toolsBuilder,
+  }) async {
     final items = resolveWorkspaceOverflowTools(
       buttonContext,
       tools: tools,
@@ -827,7 +1019,13 @@ class WorkspaceOverflowToolsButton extends StatelessWidget {
             style: style,
             onPressed: items.isEmpty
                 ? null
-                : () => unawaited(_openMobileDrawer(buttonContext)),
+                : () => unawaited(
+                    openMobileDrawer(
+                      buttonContext,
+                      tools: tools,
+                      toolsBuilder: toolsBuilder,
+                    ),
+                  ),
             icon: Icon(Icons.more_vert, size: iconSize),
             tooltip: l10n.tooltipMore,
           );
@@ -836,10 +1034,12 @@ class WorkspaceOverflowToolsButton extends StatelessWidget {
     }
 
     return ListenableBuilder(
-      listenable: Listenable.merge([
-        ZephyrScope.maybeOf(context)?.theme,
-        ZephyrScope.maybeOf(context)?.backup,
-      ].whereType<Listenable>()),
+      listenable: Listenable.merge(
+        [
+          ZephyrScope.maybeOf(context)?.theme,
+          ZephyrScope.maybeOf(context)?.backup,
+        ].whereType<Listenable>(),
+      ),
       builder: (context, _) {
         final items = resolveWorkspaceOverflowTools(
           context,
@@ -863,7 +1063,8 @@ class WorkspaceOverflowToolsButton extends StatelessWidget {
                       } else {
                         FocusManager.instance.primaryFocus?.unfocus();
                         final box = context.findRenderObject() as RenderBox?;
-                        final size = box?.size ??
+                        final size =
+                            box?.size ??
                             const Size(
                               ZephyrControls.buttonSize,
                               ZephyrControls.buttonSize,
@@ -1559,7 +1760,7 @@ class WorkspaceHeader extends StatelessWidget {
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: dimDocumentTitle
                                   ? PlainTextEditorRenderObject
-                                      .dimmedParagraphOpacity
+                                        .dimmedParagraphOpacity
                                   : 1,
                             ),
                           ),
@@ -2853,6 +3054,11 @@ class _ChapterRow extends StatelessWidget {
           borderRadius: radius,
           onTap: () {
             model.selectArticle(chapter.id);
+            final dualDrawer = ZephyrDualEditorPager.drawerMaybeOf(context);
+            if (dualDrawer != null) {
+              dualDrawer.close();
+              return;
+            }
             final swipe = ZephyrSwipeDrawer.maybeOf(context);
             if (swipe != null) {
               swipe.close();

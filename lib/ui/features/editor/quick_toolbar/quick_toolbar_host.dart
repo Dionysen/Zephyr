@@ -8,6 +8,7 @@ import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
 import '../../workspace/views/library_search_sheet.dart';
 import '../view_models/editor_preferences_view_model.dart';
+import '../view_models/library_view_model.dart';
 import '../view_models/quick_toolbar_view_model.dart';
 import 'quick_toolbar_bar.dart';
 import 'quick_toolbar_drawer.dart';
@@ -25,6 +26,7 @@ class QuickToolbarHost extends StatefulWidget {
     required this.foreground,
     required this.editorPreferences,
     required this.child,
+    this.library,
     this.bodyFontFamily,
     this.hidden = false,
   });
@@ -34,6 +36,11 @@ class QuickToolbarHost extends StatefulWidget {
   final Color foreground;
   final EditorPreferencesViewModel editorPreferences;
   final Widget child;
+
+  /// Editor session used by contextual actions such as library search.
+  /// Defaults to the application-primary session for existing single-editor
+  /// hosts; the compact two-page workspace supplies its active session.
+  final LibraryViewModel? library;
 
   /// Article body font for phrase chips on the bar.
   final String? bodyFontFamily;
@@ -154,7 +161,10 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
     }
   }
 
-  void _syncAuxiliaryGateSettle(double keyboard, QuickToolbarViewModel toolbar) {
+  void _syncAuxiliaryGateSettle(
+    double keyboard,
+    QuickToolbarViewModel toolbar,
+  ) {
     if (_toolsGate.isBusy) {
       if (toolbar.toolsDrawerOpen) {
         if (keyboard < 8) _toolsGate.markSettled();
@@ -191,8 +201,7 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!context.mounted) return;
-          if (widget.hidden &&
-              (auxiliaryOpen || toolbar.holdingPanelForIme)) {
+          if (widget.hidden && (auxiliaryOpen || toolbar.holdingPanelForIme)) {
             final wasTools = toolbar.toolsDrawerOpen;
             final wasFormat = toolbar.formatDrawerOpen;
             toolbar.closeToolsDrawer();
@@ -336,7 +345,7 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
         unawaited(
           showLibrarySearchSheet(
             context,
-            model: ZephyrScope.of(context).library,
+            model: widget.library ?? ZephyrScope.of(context).library,
           ),
         );
       case QuickToolKind.timestamp:

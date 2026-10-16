@@ -39,6 +39,8 @@ void main() {
         ],
         selectedBookId: 'book-1',
         selectedArticleId: 'article-9',
+        mobileCompanionBookId: 'book-2',
+        mobileCompanionArticleId: 'article-10',
         expandedVolumesByBook: {
           'book-1': ['vol-a', 'vol-b'],
           'book-2': <String>[],
@@ -60,6 +62,8 @@ void main() {
     expect(actual.libraries.single.rootPath, '/lib/a');
     expect(actual.selectedBookId, 'book-1');
     expect(actual.selectedArticleId, 'article-9');
+    expect(actual.mobileCompanionBookId, 'book-2');
+    expect(actual.mobileCompanionArticleId, 'article-10');
     expect(actual.expandedVolumesByBook, {
       'book-1': ['vol-a', 'vol-b'],
       'book-2': <String>[],
