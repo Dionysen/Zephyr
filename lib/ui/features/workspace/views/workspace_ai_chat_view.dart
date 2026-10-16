@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../domain/models/ai_chat_session.dart' show AiChatMessageRole, AiChatStoredMessage, AiChatSession, kAiChatNewConversation;
 import '../../../../domain/models/llm_chat.dart';
 import '../../../../domain/models/llm_settings.dart';
+import '../../../../domain/repositories/writing_library_repository.dart';
+import '../../../../domain/use_cases/ai_chat_context_compression.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../../core/zephyr_chat_bubble_shape.dart';
 import '../../../core/zephyr_l10n.dart';
@@ -14,6 +17,7 @@ import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_theme.dart';
 import '../models/workspace_ai_context_selection.dart';
 import 'workspace_ai_chat_options_sheet.dart';
+import 'workspace_ai_sessions_sheet.dart';
 
 /// Demo AI chat surface that replaces the plain-text editor while active.
 class WorkspaceAiChatView extends StatefulWidget {
@@ -49,6 +53,10 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
   final _liveAssistant = ValueNotifier<_StreamAssistantFrame?>(null);
   var _liveAssistantMessageIndex = -1;
   var _sending = false;
+  String? _sessionId;
+  String? _boundArticleId;
+  var _loadingSession = false;
+  String _contextSummary = '';
 
   /// Finger is on the list and dragging (hold-scroll); blocks stream pin jumps.
   var _userInteractingWithScroll = false;
@@ -86,16 +94,164 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_messages.isEmpty) {
-      _messages.add(
-        _AiChatMessage(
-          role: _AiChatRole.assistant,
-          text: context.l10n.aiChatWelcome,
-        ),
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_bindArticle(_currentArticleId()));
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant WorkspaceAiChatView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final articleId = _currentArticleId();
+    if (articleId != _boundArticleId) {
+      unawaited(_bindArticle(articleId));
+    }
+  }
+
+  String? _currentArticleId() => widget.libraryModel?.article?.id;
+
+  WritingLibraryRepository? _repository() => widget.libraryModel?.repository;
+
+  Future<void> _bindArticle(String? articleId) async {
+    if (articleId == _boundArticleId && !_loadingSession) return;
+    _boundArticleId = articleId;
+    final repo = _repository();
+    if (articleId == null || repo == null) {
+      if (!mounted) return;
+      setState(() {
+        _sessionId = null;
+        _contextSummary = '';
+        _messages.clear();
+        _seedWelcomeIfEmpty();
+      });
+      return;
+    }
+    setState(() => _loadingSession = true);
+    try {
+      final session = await repo.loadActiveAiChatSession(articleId);
+      final stored = session == null
+          ? <AiChatStoredMessage>[]
+          : await repo.listAiChatMessages(session.id);
+      if (!mounted || _boundArticleId != articleId) return;
+      setState(() {
+        _sessionId = session?.id;
+        _contextSummary = session?.contextSummary ?? '';
+        _loadingSession = false;
+        _messages
+          ..clear()
+          ..addAll(stored.map(_messageFromStored));
+        _seedWelcomeIfEmpty();
+      });
+    } on Object {
+      if (!mounted) return;
+      setState(() => _loadingSession = false);
+    }
+  }
+
+  Future<void> openSessionsSheet() async {
+    final articleId = _currentArticleId();
+    final repo = _repository();
+    if (articleId == null || repo == null) return;
+    final selected = await showWorkspaceAiSessionsSheet(
+      context,
+      repository: repo,
+      articleId: articleId,
+      activeSessionId: _sessionId,
+    );
+    if (selected == null || !mounted) return;
+    if (selected == kAiChatNewConversation) {
+      await repo.beginNewAiChatConversation(articleId);
+    } else {
+      await repo.setActiveAiChatSession(
+        articleId: articleId,
+        sessionId: selected,
       );
     }
+    _boundArticleId = null;
+    await _bindArticle(articleId);
+  }
+
+  Future<String?> _ensurePersistedSessionId() async {
+    if (_sessionId != null) return _sessionId;
+    final articleId = _currentArticleId();
+    final repo = _repository();
+    if (articleId == null || repo == null) return null;
+    final session = await repo.createAiChatSession(articleId: articleId);
+    await repo.setActiveAiChatSession(
+      articleId: articleId,
+      sessionId: session.id,
+    );
+    _sessionId = session.id;
+    _contextSummary = session.contextSummary;
+    return session.id;
+  }
+
+  void _seedWelcomeIfEmpty() {
+    if (_messages.isNotEmpty) return;
+    _messages.add(
+      _AiChatMessage(
+        role: _AiChatRole.assistant,
+        text: context.l10n.aiChatWelcome,
+      ),
+    );
+  }
+
+  _AiChatMessage _messageFromStored(AiChatStoredMessage message) =>
+      _AiChatMessage(
+        storageId: message.id,
+        role: message.role == AiChatMessageRole.user
+            ? _AiChatRole.user
+            : _AiChatRole.assistant,
+        text: message.body,
+        thinking: message.thinking,
+      );
+
+  Future<void> _maybeCompressHistory() async {
+    final repo = _repository();
+    final sessionId = _sessionId;
+    final llm = ZephyrScope.of(context).llmSettings;
+    if (repo == null || sessionId == null || !llm.isConfigured) return;
+    final stored = await repo.listAiChatMessages(sessionId);
+    final session = await repo.getAiChatSession(sessionId);
+    if (session == null) return;
+    if (!aiChatShouldCompressHistory(
+      messages: stored,
+      maxInputTokens: llm.preferences.maxInputTokens,
+      contextSummary: session.contextSummary,
+    )) {
+      return;
+    }
+    final transcript = aiChatTranscriptForCompression(stored);
+    if (transcript.isEmpty) return;
+    final addition = await llm.summarizeForContextCompression(transcript);
+    if (addition.isEmpty) return;
+    final merged = mergeAiChatContextSummaries(
+      existing: session.contextSummary,
+      addition: addition,
+    );
+    final keepFrom = stored.length > 8 ? stored[stored.length - 8].sortOrder : 0;
+    await repo.updateAiChatSessionSummary(
+      sessionId: sessionId,
+      contextSummary: merged,
+    );
+    await repo.pruneAiChatMessagesBefore(
+      sessionId: sessionId,
+      keepFromSortOrder: keepFrom,
+    );
+    _contextSummary = merged;
+    if (!mounted) return;
+    setState(() {
+      _messages
+        ..clear()
+        ..addAll(
+          stored
+              .where((m) => m.sortOrder >= keepFrom)
+              .map(_messageFromStored),
+        );
+      _seedWelcomeIfEmpty();
+    });
   }
 
   @override
@@ -109,25 +265,55 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
 
   Future<void> _send() async {
     final text = _inputController.text.trim();
-    if (text.isEmpty || _sending) return;
+    if (text.isEmpty || _sending || _loadingSession) return;
     final l10n = context.l10n;
     final llm = ZephyrScope.of(context).llmSettings;
+    final repo = _repository();
+    if (repo == null) return;
+    final sessionId = await _ensurePersistedSessionId();
+    if (sessionId == null) return;
+    await _maybeCompressHistory();
     final prior = List<_AiChatMessage>.from(_messages);
     setState(() {
       _sending = true;
       _messages.add(_AiChatMessage(role: _AiChatRole.user, text: text));
       _inputController.clear();
     });
+    final userStored = await repo.appendAiChatMessage(
+      sessionId: sessionId,
+      role: AiChatMessageRole.user,
+      body: text,
+    );
+    if (_messages.isNotEmpty) {
+      _messages[_messages.length - 1] = _AiChatMessage(
+        storageId: userStored.id,
+        role: _AiChatRole.user,
+        text: text,
+      );
+    }
+    final session = await repo.getAiChatSession(sessionId);
+    if (session != null && session.title.length <= 5) {
+      final title = text.length > 36 ? '${text.substring(0, 36)}…' : text;
+      await repo.renameAiChatSession(sessionId: sessionId, title: title);
+    }
     _scrollToEnd(animate: true, force: true);
     var assistantIndex = -1;
+    String? assistantStorageId;
     final expectsThinking =
         llm.isConfigured &&
         llm.preferences.allowThinking &&
         llm.preferences.effectiveThinkingLevel() != LlmThinkingLevel.off;
     if (llm.isConfigured && (llm.preferences.streamOutput || expectsThinking)) {
+      final placeholder = await repo.appendAiChatMessage(
+        sessionId: sessionId,
+        role: AiChatMessageRole.assistant,
+        body: '',
+      );
+      assistantStorageId = placeholder.id;
       setState(() {
         _messages.add(
           _AiChatMessage(
+            storageId: assistantStorageId,
             role: _AiChatRole.assistant,
             text: '',
             thinkingInProgress: expectsThinking,
@@ -150,7 +336,13 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
         replyText = l10n.aiChatNotConfigured;
       } else {
         final system = await _buildContextSystemPrompt();
+        final summary = _contextSummary.trim();
         final turns = <LlmChatMessage>[
+          if (summary.isNotEmpty)
+            LlmChatMessage(
+              role: LlmChatRole.system,
+              text: '${l10n.aiChatCompressedContextHeader}\n\n$summary',
+            ),
           if (system.isNotEmpty)
             LlmChatMessage(role: LlmChatRole.system, text: system),
           for (final message in prior)
@@ -186,21 +378,39 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
     if (!mounted) return;
     _liveAssistantMessageIndex = -1;
     _liveAssistant.value = null;
+    final thinking = replyResult?.thinking ?? '';
+    if (assistantStorageId != null) {
+      await repo.updateAiChatMessage(
+        messageId: assistantStorageId,
+        body: replyText,
+        thinking: thinking,
+      );
+    } else if (replyText.isNotEmpty) {
+      final stored = await repo.appendAiChatMessage(
+        sessionId: sessionId,
+        role: AiChatMessageRole.assistant,
+        body: replyText,
+        thinking: thinking,
+      );
+      assistantStorageId = stored.id;
+    }
     setState(() {
       _sending = false;
       if (assistantIndex >= 0) {
         _messages[assistantIndex] = _AiChatMessage(
+          storageId: assistantStorageId,
           role: _AiChatRole.assistant,
           text: replyText,
-          thinking: replyResult?.thinking ?? '',
+          thinking: thinking,
           thinkingInProgress: false,
         );
       } else {
         _messages.add(
           _AiChatMessage(
+            storageId: assistantStorageId,
             role: _AiChatRole.assistant,
             text: replyText,
-            thinking: replyResult?.thinking ?? '',
+            thinking: thinking,
           ),
         );
       }
@@ -294,7 +504,9 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
               if (!immersiveChrome)
                 SizedBox(height: widget.contentTopInset),
               Expanded(
-                child: NotificationListener<ScrollNotification>(
+                child: _loadingSession
+                    ? const Center(child: CircularProgressIndicator())
+                    : NotificationListener<ScrollNotification>(
                   onNotification: _handleListScrollNotification,
                   child: ListView.builder(
                     controller: _scrollController,
@@ -414,9 +626,12 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
                             IconButton(
                               onPressed: _sending
                                   ? null
-                                  : () => unawaited(
-                                      showWorkspaceAiChatOptionsSheet(context),
-                                    ),
+                          : () => unawaited(
+                              showWorkspaceAiChatOptionsSheet(
+                                context,
+                                onManageSessions: openSessionsSheet,
+                              ),
+                            ),
                               tooltip: context.l10n.aiChatSessionOptionsTitle,
                               icon: const Icon(Icons.tune_rounded),
                             ),
@@ -467,12 +682,14 @@ class _StreamAssistantFrame {
 
 class _AiChatMessage {
   const _AiChatMessage({
+    this.storageId,
     required this.role,
     required this.text,
     this.thinking = '',
     this.thinkingInProgress = false,
   });
 
+  final String? storageId;
   final _AiChatRole role;
   final String text;
   final String thinking;

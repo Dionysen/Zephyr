@@ -575,6 +575,33 @@
   "aiChatSessionOptionsTitle": "Model & thinking",
   "aiChatSessionOptionsNeedTest": "Run a connection test in AI model settings first.",
   "aiChatSessionModelSubtitle": "Override the default model from settings",
+  "aiChatSessionsTitle": "Conversations",
+  "aiChatSessionsSubtitle": "Switch, archive, or delete saved chats for this chapter",
+  "aiChatNewSession": "New chat",
+  "aiChatShowArchivedSessions": "Show archived",
+  "aiChatNoSessions": "No saved conversations yet.",
+  "aiChatSessionUpdated": "Updated {time}",
+  "@aiChatSessionUpdated": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatOpenSession": "Open",
+  "aiChatArchiveSession": "Archive",
+  "aiChatUnarchiveSession": "Restore from archive",
+  "aiChatDeleteSession": "Delete",
+  "aiChatDeleteSessionTitle": "Delete conversation?",
+  "aiChatDeleteSessionBody": "Delete “{title}” and all messages in it? This cannot be undone.",
+  "@aiChatDeleteSessionBody": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatCompressedContextHeader": "Earlier conversation summary (compressed for context):",
   "llmProviderTitle": "Provider",
   "llmProviderSubtitle": "Choose an API vendor",
   "llmApiKeyTitle": "API key",

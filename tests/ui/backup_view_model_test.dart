@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/domain/models/library_backup.dart';
 import 'package:zephyr/domain/repositories/backup_preferences_repository.dart';
 import 'package:zephyr/domain/repositories/writing_library_repository.dart';
+
+import '../support/ai_chat_repository_test_stubs.dart';
 import 'package:zephyr/ui/features/editor/view_models/library_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/backup_view_model.dart';
 
@@ -160,7 +162,9 @@ class _BackupPreferencesRepository implements BackupPreferencesRepository {
   }
 }
 
-class _BackupRepository implements WritingLibraryRepository {
+class _BackupRepository
+    with AiChatRepositoryMethods
+    implements WritingLibraryRepository {
   static final entry = BackupEntry(
     path: '/backups/one.pwb',
     fileName: 'one.pwb',

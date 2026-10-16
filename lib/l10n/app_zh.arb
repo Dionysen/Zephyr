@@ -523,6 +523,33 @@
   "aiChatSessionOptionsTitle": "对话模型与思考",
   "aiChatSessionOptionsNeedTest": "请先在 AI 模型设置中连接测试并获取模型列表。",
   "aiChatSessionModelSubtitle": "可覆盖设置中的默认模型",
+  "aiChatSessionsTitle": "对话列表",
+  "aiChatSessionsSubtitle": "切换、归档或删除本章已保存的对话",
+  "aiChatNewSession": "新对话",
+  "aiChatShowArchivedSessions": "显示已归档",
+  "aiChatNoSessions": "还没有保存的对话。",
+  "aiChatSessionUpdated": "更新于 {time}",
+  "@aiChatSessionUpdated": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatOpenSession": "打开",
+  "aiChatArchiveSession": "归档",
+  "aiChatUnarchiveSession": "取消归档",
+  "aiChatDeleteSession": "删除",
+  "aiChatDeleteSessionTitle": "删除对话？",
+  "aiChatDeleteSessionBody": "将删除「{title}」及其全部消息，且无法恢复。",
+  "@aiChatDeleteSessionBody": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatCompressedContextHeader": "较早对话摘要（已压缩以节省上下文）：",
   "llmProviderTitle": "模型供应商",
   "llmProviderSubtitle": "选择 API 服务商",
   "llmApiKeyTitle": "API Key",

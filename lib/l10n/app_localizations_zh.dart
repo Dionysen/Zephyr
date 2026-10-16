@@ -1322,6 +1322,49 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aiChatSessionModelSubtitle => '可覆盖设置中的默认模型';
 
   @override
+  String get aiChatSessionsTitle => '对话列表';
+
+  @override
+  String get aiChatSessionsSubtitle => '切换、归档或删除本章已保存的对话';
+
+  @override
+  String get aiChatNewSession => '新对话';
+
+  @override
+  String get aiChatShowArchivedSessions => '显示已归档';
+
+  @override
+  String get aiChatNoSessions => '还没有保存的对话。';
+
+  @override
+  String aiChatSessionUpdated(String time) {
+    return '更新于 $time';
+  }
+
+  @override
+  String get aiChatOpenSession => '打开';
+
+  @override
+  String get aiChatArchiveSession => '归档';
+
+  @override
+  String get aiChatUnarchiveSession => '取消归档';
+
+  @override
+  String get aiChatDeleteSession => '删除';
+
+  @override
+  String get aiChatDeleteSessionTitle => '删除对话？';
+
+  @override
+  String aiChatDeleteSessionBody(String title) {
+    return '将删除「$title」及其全部消息，且无法恢复。';
+  }
+
+  @override
+  String get aiChatCompressedContextHeader => '较早对话摘要（已压缩以节省上下文）：';
+
+  @override
   String get llmProviderTitle => '模型供应商';
 
   @override

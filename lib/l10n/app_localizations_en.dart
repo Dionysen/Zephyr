@@ -1399,6 +1399,51 @@ class AppLocalizationsEn extends AppLocalizations {
       'Override the default model from settings';
 
   @override
+  String get aiChatSessionsTitle => 'Conversations';
+
+  @override
+  String get aiChatSessionsSubtitle =>
+      'Switch, archive, or delete saved chats for this chapter';
+
+  @override
+  String get aiChatNewSession => 'New chat';
+
+  @override
+  String get aiChatShowArchivedSessions => 'Show archived';
+
+  @override
+  String get aiChatNoSessions => 'No saved conversations yet.';
+
+  @override
+  String aiChatSessionUpdated(String time) {
+    return 'Updated $time';
+  }
+
+  @override
+  String get aiChatOpenSession => 'Open';
+
+  @override
+  String get aiChatArchiveSession => 'Archive';
+
+  @override
+  String get aiChatUnarchiveSession => 'Restore from archive';
+
+  @override
+  String get aiChatDeleteSession => 'Delete';
+
+  @override
+  String get aiChatDeleteSessionTitle => 'Delete conversation?';
+
+  @override
+  String aiChatDeleteSessionBody(String title) {
+    return 'Delete “$title” and all messages in it? This cannot be undone.';
+  }
+
+  @override
+  String get aiChatCompressedContextHeader =>
+      'Earlier conversation summary (compressed for context):';
+
+  @override
   String get llmProviderTitle => 'Provider';
 
   @override

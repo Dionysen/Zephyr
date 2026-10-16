@@ -1,3 +1,4 @@
+import '../models/ai_chat_session.dart';
 import '../models/library_backup.dart';
 import '../models/purewriter_models.dart';
 import '../models/quick_toolbar_config.dart';
@@ -144,4 +145,63 @@ abstract interface class WritingLibraryRepository {
 
   /// Persists toolbar layout into ZephyrMeta (included in `.pwb` backups).
   Future<void> writeQuickToolbarConfig(QuickToolbarConfig config);
+
+  // --- AI chat sessions (Zephyr-only tables in Room.db) ---
+
+  Future<List<AiChatSession>> listAiChatSessions(
+    String articleId, {
+    bool includeArchived = false,
+  });
+
+  /// Last active session for this chapter when it has at least one stored message.
+  Future<AiChatSession?> loadActiveAiChatSession(String articleId);
+
+  /// Clears the active session pointer; does not create a DB session until send.
+  Future<void> beginNewAiChatConversation(String articleId);
+
+  Future<AiChatSession?> getAiChatSession(String sessionId);
+
+  Future<AiChatSession> createAiChatSession({
+    required String articleId,
+    String? title,
+  });
+
+  Future<void> setActiveAiChatSession({
+    required String articleId,
+    required String sessionId,
+  });
+
+  Future<void> renameAiChatSession({
+    required String sessionId,
+    required String title,
+  });
+
+  Future<void> archiveAiChatSession(String sessionId, {required bool archived});
+
+  Future<void> deleteAiChatSession(String sessionId);
+
+  Future<List<AiChatStoredMessage>> listAiChatMessages(String sessionId);
+
+  Future<AiChatStoredMessage> appendAiChatMessage({
+    required String sessionId,
+    required AiChatMessageRole role,
+    required String body,
+    String thinking = '',
+  });
+
+  Future<void> updateAiChatMessage({
+    required String messageId,
+    required String body,
+    String thinking = '',
+  });
+
+  Future<void> updateAiChatSessionSummary({
+    required String sessionId,
+    required String contextSummary,
+  });
+
+  Future<void> pruneAiChatMessagesBefore({
+    required String sessionId,
+    required int keepFromSortOrder,
+  });
 }

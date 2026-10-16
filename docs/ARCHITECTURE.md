@@ -36,7 +36,7 @@ flowchart LR
 
 WebDAV 历史备份列表只接受当前账号 `Zephyr/Backups/` 的直接子文件，并将服务端返回的 href 规范化为该文件的本端地址；删除旧备份和下载恢复时仍按当前账号与直接子路径校验，不访问嵌套目录或其他账号。
 
-设置通过独立仓储保存到应用支持目录，并经 `CloudSettingsBundle` 按平台上传（不含 WebDAV 凭据与 `cloud_sync_preferences`）。LLM 供应商与非敏感选项写入 `zephyr/llm_preferences.json`（含在 `CloudSettingsBundle` 云/本地设置备份中）；各供应商 API Key 仅存 `flutter_secure_storage`，不进入云设置包。`LlmGateway` 负责列出模型与对话请求（OpenAI 兼容、Anthropic、Google Gemini）。视图只持有 ViewModel 与临时交互状态；可单测的规则留在 domain 或独立包。跨功能复用的 Flutter 组件应先判断是否依赖 Zephyr 品牌：无依赖则进入 `flutter_primitives`，依赖主题令牌则留在 `lib/ui/core`。
+设置通过独立仓储保存到应用支持目录，并经 `CloudSettingsBundle` 按平台上传（不含 WebDAV 凭据与 `cloud_sync_preferences`）。LLM 供应商与非敏感选项写入 `zephyr/llm_preferences.json`（含在 `CloudSettingsBundle` 云/本地设置备份中）；各供应商 API Key 仅存 `flutter_secure_storage`，不进入云设置包。`LlmGateway` 负责列出模型与对话请求（OpenAI 兼容、Anthropic、Google Gemini）。每章 AI 对话保存在书库 `Room.db` 的 Zephyr 表 `ZephyrAiSession` / `ZephyrAiMessage`（随 `.pwb` 备份与合并恢复）；长会话在发送前可自动摘要旧轮次写入 `context_summary`。视图只持有 ViewModel 与临时交互状态；可单测的规则留在 domain 或独立包。跨功能复用的 Flutter 组件应先判断是否依赖 Zephyr 品牌：无依赖则进入 `flutter_primitives`，依赖主题令牌则留在 `lib/ui/core`。
 
 列表式面板统一经 `showZephyrModalSheet`（`lib/ui/core/zephyr_bottom_sheet.dart`）弹出：移动端仍为底部抽屉，桌面端为居中模态对话框；勿直接调用 `showModalBottomSheet`。
 

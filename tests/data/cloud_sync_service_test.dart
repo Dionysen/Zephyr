@@ -13,6 +13,8 @@ import 'package:zephyr/domain/models/library_backup.dart';
 import 'package:zephyr/domain/models/quick_toolbar_config.dart';
 import 'package:zephyr/domain/repositories/writing_library_repository.dart';
 
+import '../support/ai_chat_repository_test_stubs.dart';
+
 void main() {
   late _MemoryAuthStore auth;
   late _MemoryCloudPreferences preferences;
@@ -646,7 +648,9 @@ class _MemoryCloudPreferences extends CloudSyncPreferencesStorage {
   }
 }
 
-class _CloudLibraryRepository implements WritingLibraryRepository {
+class _CloudLibraryRepository
+    with AiChatRepositoryMethods
+    implements WritingLibraryRepository {
   _CloudLibraryRepository(this.directory);
 
   final Directory directory;

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../../../data/services/llm_gateway.dart';
 import '../../../../domain/llm/llm_message_budget.dart';
 import '../../../../domain/models/llm_chat.dart';
+import '../../../../domain/use_cases/ai_chat_context_compression.dart';
 import '../../../../domain/models/llm_settings.dart';
 import '../../../../domain/repositories/llm_settings_repository.dart';
 
@@ -236,5 +237,20 @@ class LlmSettingsViewModel extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  /// Summarizes older turns for long-session context compression.
+  Future<String> summarizeForContextCompression(String transcript) async {
+    if (!isConfigured || transcript.trim().isEmpty) return '';
+    final prepared = _prepareMessages(
+      aiChatCompressionSummaryRequest(transcript),
+    );
+    final result = await _gateway.completeChat(
+      connection: connection,
+      modelId: _preferences.effectiveChatModelId,
+      messages: prepared,
+      options: _completionOptions(),
+    );
+    return result.text.trim();
   }
 }

@@ -9,6 +9,8 @@ import 'package:zephyr/domain/models/quick_toolbar_config.dart';
 import 'package:zephyr/domain/models/workspace_layout.dart';
 import 'package:zephyr/domain/repositories/workspace_layout_repository.dart';
 import 'package:zephyr/domain/repositories/writing_library_repository.dart';
+
+import '../support/ai_chat_repository_test_stubs.dart';
 import 'package:zephyr/domain/use_cases/article_preview_summary.dart';
 import 'package:zephyr/ui/features/editor/view_models/library_view_model.dart';
 
@@ -622,7 +624,9 @@ void main() {
   });
 }
 
-class FakeLibraryRepository implements WritingLibraryRepository {
+class FakeLibraryRepository
+    with AiChatRepositoryMethods
+    implements WritingLibraryRepository {
   WritingArticle saved = WritingArticle(
     id: 'article',
     title: 'Article',

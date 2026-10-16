@@ -56,6 +56,8 @@ void main() {
         'UserMessage',
         'ZephyrDraft',
         'ZephyrMeta',
+        'ZephyrAiSession',
+        'ZephyrAiMessage',
         'Setting',
       ]),
     );

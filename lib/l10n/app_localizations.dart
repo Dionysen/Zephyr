@@ -2623,6 +2623,84 @@ abstract class AppLocalizations {
   /// **'Override the default model from settings'**
   String get aiChatSessionModelSubtitle;
 
+  /// No description provided for @aiChatSessionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations'**
+  String get aiChatSessionsTitle;
+
+  /// No description provided for @aiChatSessionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch, archive, or delete saved chats for this chapter'**
+  String get aiChatSessionsSubtitle;
+
+  /// No description provided for @aiChatNewSession.
+  ///
+  /// In en, this message translates to:
+  /// **'New chat'**
+  String get aiChatNewSession;
+
+  /// No description provided for @aiChatShowArchivedSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'Show archived'**
+  String get aiChatShowArchivedSessions;
+
+  /// No description provided for @aiChatNoSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved conversations yet.'**
+  String get aiChatNoSessions;
+
+  /// No description provided for @aiChatSessionUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated {time}'**
+  String aiChatSessionUpdated(String time);
+
+  /// No description provided for @aiChatOpenSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get aiChatOpenSession;
+
+  /// No description provided for @aiChatArchiveSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get aiChatArchiveSession;
+
+  /// No description provided for @aiChatUnarchiveSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore from archive'**
+  String get aiChatUnarchiveSession;
+
+  /// No description provided for @aiChatDeleteSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get aiChatDeleteSession;
+
+  /// No description provided for @aiChatDeleteSessionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete conversation?'**
+  String get aiChatDeleteSessionTitle;
+
+  /// No description provided for @aiChatDeleteSessionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete “{title}” and all messages in it? This cannot be undone.'**
+  String aiChatDeleteSessionBody(String title);
+
+  /// No description provided for @aiChatCompressedContextHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier conversation summary (compressed for context):'**
+  String get aiChatCompressedContextHeader;
+
   /// No description provided for @llmProviderTitle.
   ///
   /// In en, this message translates to:

@@ -7,15 +7,22 @@ import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_settings.dart';
 
-Future<void> showWorkspaceAiChatOptionsSheet(BuildContext context) {
+Future<void> showWorkspaceAiChatOptionsSheet(
+  BuildContext context, {
+  VoidCallback? onManageSessions,
+}) {
   return showZephyrModalSheet<void>(
     context: context,
-    builder: (context) => const _WorkspaceAiChatOptionsSheet(),
+    builder: (context) => _WorkspaceAiChatOptionsSheet(
+      onManageSessions: onManageSessions,
+    ),
   );
 }
 
 class _WorkspaceAiChatOptionsSheet extends StatelessWidget {
-  const _WorkspaceAiChatOptionsSheet();
+  const _WorkspaceAiChatOptionsSheet({this.onManageSessions});
+
+  final VoidCallback? onManageSessions;
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +46,22 @@ class _WorkspaceAiChatOptionsSheet extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 12),
+                if (onManageSessions != null)
+                  ZephyrSettingsSection(
+                    children: [
+                      ZephyrSettingsListTile(
+                        icon: Icons.forum_outlined,
+                        title: l10n.aiChatSessionsTitle,
+                        subtitle: l10n.aiChatSessionsSubtitle,
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          onManageSessions!();
+                        },
+                        showDivider: false,
+                      ),
+                    ],
+                  ),
+                if (onManageSessions != null) const SizedBox(height: 12),
                 if (models.isEmpty)
                   Text(
                     l10n.aiChatSessionOptionsNeedTest,

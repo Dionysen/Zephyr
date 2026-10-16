@@ -5,6 +5,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../domain/models/ai_chat_session.dart';
 import '../../domain/models/library_backup.dart';
 import '../../domain/models/purewriter_models.dart';
 import '../../domain/models/quick_toolbar_config.dart';
@@ -13,12 +14,15 @@ import '../../domain/repositories/writing_library_repository.dart';
 import '../../domain/use_cases/article_preview_summary.dart';
 import '../services/device_label.dart';
 import '../services/purewriter_database.dart';
+import 'zephyr_ai_chat_store.dart';
 
 class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   PureWriterWritingLibraryRepository(this._store, {Uuid? uuid})
-    : _uuid = uuid ?? Uuid();
+    : _uuid = uuid ?? Uuid(),
+      _aiChat = ZephyrAiChatStore(_store, uuid: uuid);
   final PureWriterDatabase _store;
   final Uuid _uuid;
+  final ZephyrAiChatStore _aiChat;
 
   @override
   LibraryLocation? get location => _store.location;
@@ -1464,6 +1468,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
       );
       await _mergeHistory(backupDb);
       await _mergeZephyrDrafts(backupDb);
+      await _aiChat.mergeFromBackupDatabase(backupDb);
       return articleStats;
     } finally {
       await backupDb?.close();
@@ -1673,4 +1678,108 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   ) async =>
       (await database.rawQuery('PRAGMA table_info($table)'))
           .any((row) => row['name'] == column);
+
+  @override
+  Future<List<AiChatSession>> listAiChatSessions(
+    String articleId, {
+    bool includeArchived = false,
+  }) => _aiChat.listSessions(articleId, includeArchived: includeArchived);
+
+  @override
+  Future<AiChatSession?> loadActiveAiChatSession(String articleId) =>
+      _aiChat.loadActivePersistedSession(articleId);
+
+  @override
+  Future<void> beginNewAiChatConversation(String articleId) =>
+      _aiChat.beginNewConversation(articleId);
+
+  @override
+  Future<AiChatSession?> getAiChatSession(String sessionId) =>
+      _aiChat.getSession(sessionId);
+
+  @override
+  Future<AiChatSession> createAiChatSession({
+    required String articleId,
+    String? title,
+  }) => _aiChat.createSession(articleId: articleId, title: title);
+
+  @override
+  Future<void> setActiveAiChatSession({
+    required String articleId,
+    required String sessionId,
+  }) => _aiChat.setActiveSessionId(articleId, sessionId);
+
+  @override
+  Future<void> renameAiChatSession({
+    required String sessionId,
+    required String title,
+  }) async {
+    final session = await _aiChat.getSession(sessionId);
+    if (session == null) return;
+    await _aiChat.updateSession(
+      session.copyWith(title: title.trim(), updatedAt: DateTime.now()),
+    );
+  }
+
+  @override
+  Future<void> archiveAiChatSession(
+    String sessionId, {
+    required bool archived,
+  }) => _aiChat.setArchived(sessionId, archived);
+
+  @override
+  Future<void> deleteAiChatSession(String sessionId) =>
+      _aiChat.deleteSession(sessionId);
+
+  @override
+  Future<List<AiChatStoredMessage>> listAiChatMessages(String sessionId) =>
+      _aiChat.listMessages(sessionId);
+
+  @override
+  Future<AiChatStoredMessage> appendAiChatMessage({
+    required String sessionId,
+    required AiChatMessageRole role,
+    required String body,
+    String thinking = '',
+  }) => _aiChat.appendMessage(
+    sessionId: sessionId,
+    role: role,
+    body: body,
+    thinking: thinking,
+  );
+
+  @override
+  Future<void> updateAiChatMessage({
+    required String messageId,
+    required String body,
+    String thinking = '',
+  }) => _aiChat.updateMessageBody(
+    messageId: messageId,
+    body: body,
+    thinking: thinking,
+  );
+
+  @override
+  Future<void> updateAiChatSessionSummary({
+    required String sessionId,
+    required String contextSummary,
+  }) async {
+    final session = await _aiChat.getSession(sessionId);
+    if (session == null) return;
+    await _aiChat.updateSession(
+      session.copyWith(
+        contextSummary: contextSummary,
+        updatedAt: DateTime.now(),
+      ),
+    );
+  }
+
+  @override
+  Future<void> pruneAiChatMessagesBefore({
+    required String sessionId,
+    required int keepFromSortOrder,
+  }) => _aiChat.deleteMessagesBeforeSortOrder(
+    sessionId: sessionId,
+    keepFromSortOrder: keepFromSortOrder,
+  );
 }

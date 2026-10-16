@@ -176,6 +176,36 @@ class PureWriterDatabase {
       'value TEXT NOT NULL'
       ')',
     );
+    await db.execute(
+      'CREATE TABLE IF NOT EXISTS ZephyrAiSession ('
+      'id TEXT NOT NULL PRIMARY KEY, '
+      'article_id TEXT NOT NULL, '
+      'title TEXT NOT NULL, '
+      'archived INTEGER NOT NULL DEFAULT 0, '
+      'context_summary TEXT NOT NULL DEFAULT \'\', '
+      'created_at INTEGER NOT NULL, '
+      'updated_at INTEGER NOT NULL'
+      ')',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_zephyr_ai_session_article '
+      'ON ZephyrAiSession (article_id, archived, updated_at DESC)',
+    );
+    await db.execute(
+      'CREATE TABLE IF NOT EXISTS ZephyrAiMessage ('
+      'id TEXT NOT NULL PRIMARY KEY, '
+      'session_id TEXT NOT NULL, '
+      'role TEXT NOT NULL, '
+      'body TEXT NOT NULL, '
+      'thinking TEXT NOT NULL DEFAULT \'\', '
+      'sort_order INTEGER NOT NULL, '
+      'created_at INTEGER NOT NULL'
+      ')',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_zephyr_ai_message_session '
+      'ON ZephyrAiMessage (session_id, sort_order)',
+    );
   }
 
   void ensureWritable() {
