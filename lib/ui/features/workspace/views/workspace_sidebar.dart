@@ -728,18 +728,8 @@ class _MobileBookBarEndpoint extends StatelessWidget {
   final String moreTooltip;
 
   @override
-  Widget build(BuildContext context) {
-    if (opensLibrary) {
-      return Center(
-        child: IconButton(
-          style: style,
-          onPressed: onOpenLibrary,
-          icon: _MoreMenuMorphIcon(menu: true, size: iconSize),
-          tooltip: libraryTooltip,
-        ),
-      );
-    }
-    return Builder(
+  Widget build(BuildContext context) => Center(
+    child: Builder(
       builder: (buttonContext) {
         final items = resolveWorkspaceOverflowTools(
           buttonContext,
@@ -749,7 +739,9 @@ class _MobileBookBarEndpoint extends StatelessWidget {
         return Center(
           child: IconButton(
             style: style,
-            onPressed: items.isEmpty
+            onPressed: opensLibrary
+                ? onOpenLibrary
+                : items.isEmpty
                 ? null
                 : () => unawaited(
                     WorkspaceOverflowToolsButton.openMobileDrawer(
@@ -758,13 +750,13 @@ class _MobileBookBarEndpoint extends StatelessWidget {
                       toolsBuilder: toolsBuilder,
                     ),
                   ),
-            icon: _MoreMenuMorphIcon(menu: false, size: iconSize),
-            tooltip: moreTooltip,
+            icon: _MoreMenuMorphIcon(menu: opensLibrary, size: iconSize),
+            tooltip: opensLibrary ? libraryTooltip : moreTooltip,
           ),
         );
       },
-    );
-  }
+    ),
+  );
 }
 
 class _MoreMenuMorphIcon extends StatelessWidget {
@@ -776,7 +768,7 @@ class _MoreMenuMorphIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) => TweenAnimationBuilder<double>(
     tween: Tween(end: menu ? 1 : 0),
-    duration: const Duration(milliseconds: 420),
+    duration: const Duration(milliseconds: 280),
     curve: Curves.easeInOutCubic,
     builder: (context, progress, _) => CustomPaint(
       size: Size.square(size),
@@ -842,7 +834,7 @@ class _AnimatedBookTitle extends StatelessWidget {
     final outgoingOffset = Offset(0, -incomingOffset.dy);
     return ClipRect(
       child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 420),
+        duration: const Duration(milliseconds: 280),
         switchInCurve: Curves.easeInOutCubic,
         switchOutCurve: Curves.easeInOutCubic,
         layoutBuilder: (currentChild, previousChildren) => Stack(
