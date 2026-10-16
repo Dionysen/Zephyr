@@ -43,7 +43,7 @@ class LlmGateway {
     };
   }
 
-  Future<String> completeChat({
+  Future<LlmChatResult> completeChat({
     required LlmConnection connection,
     required String modelId,
     required List<LlmChatMessage> messages,
@@ -84,7 +84,7 @@ class LlmGateway {
     };
   }
 
-  Stream<String> streamChat({
+  Stream<LlmStreamPart> streamChat({
     required LlmConnection connection,
     required String modelId,
     required List<LlmChatMessage> messages,
@@ -100,12 +100,24 @@ class LlmGateway {
     switch (connection.provider) {
       case LlmProviderKind.anthropic:
       case LlmProviderKind.google:
-        yield await completeChat(
+        final result = await completeChat(
           connection: connection,
           modelId: modelId,
           messages: messages,
           options: options,
         );
+        if (result.thinking.isNotEmpty) {
+          yield LlmStreamPart(
+            kind: LlmStreamPartKind.thinking,
+            delta: result.thinking,
+          );
+        }
+        if (result.text.isNotEmpty) {
+          yield LlmStreamPart(
+            kind: LlmStreamPartKind.answer,
+            delta: result.text,
+          );
+        }
         return;
       case LlmProviderKind.openai:
       case LlmProviderKind.deepseek:
@@ -208,7 +220,36 @@ class LlmGateway {
     }
   }
 
-  Future<String> _chatOpenAiCompatible(
+  LlmChatResult _parseOpenAiMessage(Map<dynamic, dynamic> message) {
+    final thinkingRaw =
+        message['reasoning_content'] ?? message['reasoning'] ?? '';
+    final thinking = thinkingRaw is String ? thinkingRaw : '';
+    final content = message['content'];
+    final text = content is String ? content : '';
+    return LlmChatResult(text: text.trim(), thinking: thinking.trim());
+  }
+
+  LlmChatResult _parseAnthropicContent(List<dynamic> blocks) {
+    final thinking = StringBuffer();
+    final text = StringBuffer();
+    for (final block in blocks) {
+      if (block is! Map) continue;
+      final type = block['type'];
+      if (type == 'thinking') {
+        final raw = block['thinking'] ?? block['text'];
+        if (raw is String && raw.isNotEmpty) thinking.write(raw);
+      } else if (type == 'text') {
+        final raw = block['text'];
+        if (raw is String && raw.isNotEmpty) text.write(raw);
+      }
+    }
+    return LlmChatResult(
+      text: text.toString().trim(),
+      thinking: thinking.toString().trim(),
+    );
+  }
+
+  Future<LlmChatResult> _chatOpenAiCompatible(
     LlmConnection connection,
     String key,
     String modelId,
@@ -234,15 +275,17 @@ class LlmGateway {
       if (first is Map) {
         final message = first['message'];
         if (message is Map) {
-          final content = message['content'];
-          if (content is String) return content.trim();
+          final parsed = _parseOpenAiMessage(message);
+          if (parsed.text.isNotEmpty || parsed.thinking.isNotEmpty) {
+            return parsed;
+          }
         }
       }
     }
     throw LlmGatewayException('Empty response from model.');
   }
 
-  Stream<String> _streamOpenAiCompatible(
+  Stream<LlmStreamPart> _streamOpenAiCompatible(
     LlmConnection connection,
     String key,
     String modelId,
@@ -282,8 +325,21 @@ class LlmGateway {
           if (first is! Map) continue;
           final delta = first['delta'];
           if (delta is! Map) continue;
+          final reasoning =
+              delta['reasoning_content'] ?? delta['reasoning'];
+          if (reasoning is String && reasoning.isNotEmpty) {
+            yield LlmStreamPart(
+              kind: LlmStreamPartKind.thinking,
+              delta: reasoning,
+            );
+          }
           final content = delta['content'];
-          if (content is String && content.isNotEmpty) yield content;
+          if (content is String && content.isNotEmpty) {
+            yield LlmStreamPart(
+              kind: LlmStreamPartKind.answer,
+              delta: content,
+            );
+          }
         } on Object {
           continue;
         }
@@ -291,7 +347,7 @@ class LlmGateway {
     }
   }
 
-  Future<String> _chatAnthropic(
+  Future<LlmChatResult> _chatAnthropic(
     LlmConnection connection,
     String key,
     String modelId,
@@ -344,17 +400,15 @@ class LlmGateway {
     final json = jsonDecode(response.body) as Map<String, dynamic>;
     final content = json['content'];
     if (content is List) {
-      for (final block in content) {
-        if (block is Map && block['type'] == 'text') {
-          final text = block['text'];
-          if (text is String && text.isNotEmpty) return text.trim();
-        }
+      final parsed = _parseAnthropicContent(content);
+      if (parsed.text.isNotEmpty || parsed.thinking.isNotEmpty) {
+        return parsed;
       }
     }
     throw LlmGatewayException('Empty response from model.');
   }
 
-  Future<String> _chatGoogle(
+  Future<LlmChatResult> _chatGoogle(
     LlmConnection connection,
     String key,
     String modelId,
@@ -418,11 +472,25 @@ class LlmGateway {
         if (content is Map) {
           final parts = content['parts'];
           if (parts is List) {
+            final thinking = StringBuffer();
+            final answer = StringBuffer();
             for (final part in parts) {
-              if (part is Map) {
-                final text = part['text'];
-                if (text is String && text.isNotEmpty) return text.trim();
+              if (part is! Map) continue;
+              final thought = part['thought'];
+              if (thought is String && thought.isNotEmpty) {
+                thinking.write(thought);
               }
+              final text = part['text'];
+              if (text is String && text.isNotEmpty) {
+                answer.write(text);
+              }
+            }
+            final result = LlmChatResult(
+              text: answer.toString().trim(),
+              thinking: thinking.toString().trim(),
+            );
+            if (result.text.isNotEmpty || result.thinking.isNotEmpty) {
+              return result;
             }
           }
         }

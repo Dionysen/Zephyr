@@ -1354,6 +1354,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aiChatNotConfigured => '请先在设置中配置 API Key 并完成连接测试。';
 
   @override
+  String get aiChatThinkingInProgress => '思考中…';
+
+  @override
+  String get aiChatThinkingProcess => '思考过程';
+
+  @override
   String aiChatError(String error) {
     return '请求失败：$error';
   }

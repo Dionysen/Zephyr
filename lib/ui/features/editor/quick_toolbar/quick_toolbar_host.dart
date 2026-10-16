@@ -246,7 +246,7 @@ class _QuickToolbarHostState extends State<QuickToolbarHost> {
         });
 
         return PopScope(
-          canPop: !auxiliaryOpen,
+          canPop: false,
           onPopInvokedWithResult: (didPop, _) {
             if (didPop) return;
             if (toolsOpen) {

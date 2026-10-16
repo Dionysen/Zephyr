@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../../domain/models/llm_chat.dart';
+import '../../../../domain/models/llm_settings.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_scope.dart';
@@ -71,18 +72,27 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
     });
     _scrollToEnd();
     var assistantIndex = -1;
-    if (llm.isConfigured && llm.preferences.streamOutput) {
+    final expectsThinking = llm.isConfigured &&
+        llm.preferences.allowThinking &&
+        llm.preferences.effectiveThinkingLevel() != LlmThinkingLevel.off;
+    if (llm.isConfigured &&
+        (llm.preferences.streamOutput || expectsThinking)) {
       setState(() {
         _messages.add(
-          const _AiChatMessage(role: _AiChatRole.assistant, text: ''),
+          _AiChatMessage(
+            role: _AiChatRole.assistant,
+            text: '',
+            thinkingInProgress: expectsThinking,
+          ),
         );
         assistantIndex = _messages.length - 1;
       });
     }
-    String reply;
+    LlmChatResult? replyResult;
+    String replyText;
     try {
       if (!llm.isConfigured) {
-        reply = l10n.aiChatNotConfigured;
+        replyText = l10n.aiChatNotConfigured;
       } else {
         final system = await _buildContextSystemPrompt();
         final turns = <LlmChatMessage>[
@@ -99,24 +109,27 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
               ),
           LlmChatMessage(role: LlmChatRole.user, text: text),
         ];
-        reply = await llm.completeChat(
+        replyResult = await llm.completeChat(
           messages: turns,
-          onStreamDelta: assistantIndex >= 0
+          onPartial: assistantIndex >= 0
               ? (partial) {
                   if (!mounted) return;
                   setState(() {
                     _messages[assistantIndex] = _AiChatMessage(
                       role: _AiChatRole.assistant,
-                      text: partial,
+                      text: partial.text,
+                      thinking: partial.thinking,
+                      thinkingInProgress: partial.thinkingInProgress,
                     );
                   });
                   _scrollToEnd();
                 }
               : null,
         );
+        replyText = replyResult.text;
       }
     } on Object catch (error) {
-      reply = l10n.aiChatError(error.toString());
+      replyText = l10n.aiChatError(error.toString());
     }
     if (!mounted) return;
     setState(() {
@@ -124,10 +137,18 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
       if (assistantIndex >= 0) {
         _messages[assistantIndex] = _AiChatMessage(
           role: _AiChatRole.assistant,
-          text: reply,
+          text: replyText,
+          thinking: replyResult?.thinking ?? '',
+          thinkingInProgress: false,
         );
       } else {
-        _messages.add(_AiChatMessage(role: _AiChatRole.assistant, text: reply));
+        _messages.add(
+          _AiChatMessage(
+            role: _AiChatRole.assistant,
+            text: replyText,
+            thinking: replyResult?.thinking ?? '',
+          ),
+        );
       }
     });
     _scrollToEnd();
@@ -289,29 +310,57 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
 enum _AiChatRole { user, assistant }
 
 class _AiChatMessage {
-  const _AiChatMessage({required this.role, required this.text});
+  const _AiChatMessage({
+    required this.role,
+    required this.text,
+    this.thinking = '',
+    this.thinkingInProgress = false,
+  });
 
   final _AiChatRole role;
   final String text;
+  final String thinking;
+  final bool thinkingInProgress;
+
+  bool get hasThinking => thinking.trim().isNotEmpty;
 }
 
-class _AiChatBubble extends StatelessWidget {
+class _AiChatBubble extends StatefulWidget {
   const _AiChatBubble({required this.message, required this.radius});
 
   final _AiChatMessage message;
   final double radius;
 
   @override
+  State<_AiChatBubble> createState() => _AiChatBubbleState();
+}
+
+class _AiChatBubbleState extends State<_AiChatBubble> {
+  var _thinkingExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final message = widget.message;
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final isUser = message.role == _AiChatRole.user;
-    final bubbleRadius = BorderRadius.circular(radius.clamp(8, 20));
+    final bubbleRadius = BorderRadius.circular(widget.radius.clamp(8, 20));
     final bg = isUser
         ? theme.colorScheme.primaryContainer
         : theme.colorScheme.surfaceContainerHigh;
     final fg = isUser
         ? theme.colorScheme.onPrimaryContainer
         : theme.colorScheme.onSurface;
+    final showThinkingUi = !isUser &&
+        (message.thinkingInProgress || message.hasThinking);
+    final thinkingLabel = message.thinkingInProgress
+        ? l10n.aiChatThinkingInProgress
+        : l10n.aiChatThinkingProcess;
+    final bodyText = message.text.isNotEmpty
+        ? message.text
+        : (message.thinkingInProgress && !message.hasThinking
+            ? ''
+            : message.text);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -340,12 +389,75 @@ class _AiChatBubble extends StatelessWidget {
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                child: Text(
-                  message.text,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: fg,
-                    height: 1.45,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (showThinkingUi) ...[
+                      InkWell(
+                        onTap: () => setState(
+                          () => _thinkingExpanded = !_thinkingExpanded,
+                        ),
+                        borderRadius: BorderRadius.circular(6),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (message.thinkingInProgress)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: fg.withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                ),
+                              Text(
+                                thinkingLabel,
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: fg.withValues(alpha: 0.85),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                _thinkingExpanded
+                                    ? Icons.expand_less
+                                    : Icons.expand_more,
+                                size: 20,
+                                color: fg.withValues(alpha: 0.7),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (_thinkingExpanded && message.hasThinking) ...[
+                        const SizedBox(height: 8),
+                        SelectableText(
+                          message.thinking,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: fg.withValues(alpha: 0.75),
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ] else if (message.thinkingInProgress &&
+                          message.hasThinking &&
+                          !_thinkingExpanded) ...[
+                        const SizedBox(height: 4),
+                      ],
+                    ],
+                    if (bodyText.isNotEmpty)
+                      SelectableText(
+                        bodyText,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: fg,
+                          height: 1.45,
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),

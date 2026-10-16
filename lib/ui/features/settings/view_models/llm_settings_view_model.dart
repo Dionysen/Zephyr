@@ -187,9 +187,9 @@ class LlmSettingsViewModel extends ChangeNotifier {
     thinkingLevel: _preferences.effectiveThinkingLevel(),
   );
 
-  Future<String> completeChat({
+  Future<LlmChatResult> completeChat({
     required List<LlmChatMessage> messages,
-    void Function(String partial)? onStreamDelta,
+    void Function(LlmChatResult partial)? onPartial,
   }) async {
     if (_chatting) {
       throw StateError('Chat request already in progress.');
@@ -205,24 +205,25 @@ class LlmSettingsViewModel extends ChangeNotifier {
       final modelId = _preferences.effectiveChatModelId;
       final options = _completionOptions();
       if (_preferences.streamOutput) {
-        final buffer = StringBuffer();
-        await for (final chunk in _gateway.streamChat(
+        var result = const LlmChatResult();
+        await for (final part in _gateway.streamChat(
           connection: connection,
           modelId: modelId,
           messages: prepared,
           options: options,
         )) {
-          buffer.write(chunk);
-          onStreamDelta?.call(buffer.toString());
+          result = result.applyPart(part);
+          onPartial?.call(result);
         }
-        return buffer.toString();
+        return result.copyWith(thinkingInProgress: false);
       }
-      return await _gateway.completeChat(
+      final result = await _gateway.completeChat(
         connection: connection,
         modelId: modelId,
         messages: prepared,
         options: options,
       );
+      return result.copyWith(thinkingInProgress: false);
     } on Object catch (error) {
       _error = error;
       rethrow;

@@ -2683,6 +2683,18 @@ abstract class AppLocalizations {
   /// **'Set up your API key and run a connection test in Settings first.'**
   String get aiChatNotConfigured;
 
+  /// No description provided for @aiChatThinkingInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking…'**
+  String get aiChatThinkingInProgress;
+
+  /// No description provided for @aiChatThinkingProcess.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking process'**
+  String get aiChatThinkingProcess;
+
   /// No description provided for @aiChatError.
   ///
   /// In en, this message translates to:

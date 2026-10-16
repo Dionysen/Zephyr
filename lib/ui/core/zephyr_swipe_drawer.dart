@@ -308,9 +308,10 @@ class _ZephyrSwipeDrawerState extends State<ZephyrSwipeDrawer>
     return _ZephyrSwipeDrawerScope(
       controller: _controller,
       child: PopScope(
-        canPop: !_isOpen,
+        canPop: false,
         onPopInvokedWithResult: (didPop, _) {
-          if (!didPop && _isOpen) close();
+          if (didPop) return;
+          if (_isOpen) close();
         },
         child: Stack(
           fit: StackFit.expand,

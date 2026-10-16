@@ -432,7 +432,7 @@ void main() {
     await tester.pumpWidget(_app());
     await tester.pumpAndSettle();
 
-    expect(find.byTooltip('Open library'), findsNWidgets(2));
+    expect(find.byTooltip('Open library'), findsOneWidget);
     expect(find.byTooltip('Hide sidebar'), findsNothing);
     expect(find.byTooltip('Collapse all').hitTestable(), findsNothing);
 
@@ -800,7 +800,7 @@ Widget _app({
     needsLibrarySetup: needsLibrarySetup,
   );
   final fonts = FontLibrary(_FontRepository());
-  final theme = ThemeViewModel(_ThemeRepository(), fontLibrary: fonts);
+  final theme = ThemeViewModel(_ThemeRepository(), fontLibrary: fonts)..load();
   final editorPreferences = EditorPreferencesViewModel(
     _PreferencesRepository(),
     fonts,
@@ -1214,7 +1214,7 @@ class _ThemeRepository implements ThemePreferencesRepository {
     lightPackId: ThemeColorPack.builtInId(ThemePreset.light),
     darkPackId: ThemeColorPack.builtInId(ThemePreset.darkModern),
     customPacks: const [],
-    ui: UiPreferences.defaults,
+    ui: UiPreferences.defaults.copyWith(doubleBackToExit: false),
   );
 
   @override

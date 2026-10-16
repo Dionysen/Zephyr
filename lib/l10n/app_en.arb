@@ -592,6 +592,8 @@
   "llmModelSubtitle": "Available after a successful test",
   "llmModelNotSelected": "Not selected",
   "aiChatNotConfigured": "Set up your API key and run a connection test in Settings first.",
+  "aiChatThinkingInProgress": "Thinking…",
+  "aiChatThinkingProcess": "Thinking process",
   "aiChatError": "Request failed: {error}",
   "@aiChatError": {
     "placeholders": {

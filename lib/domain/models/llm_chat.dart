@@ -17,6 +17,53 @@ class LlmChatMessage {
   final String text;
 }
 
+/// Assistant reply with optional chain-of-thought text from the model.
+class LlmChatResult {
+  const LlmChatResult({
+    this.text = '',
+    this.thinking = '',
+    this.thinkingInProgress = false,
+  });
+
+  final String text;
+  final String thinking;
+  final bool thinkingInProgress;
+
+  bool get hasThinking => thinking.trim().isNotEmpty;
+
+  LlmChatResult copyWith({
+    String? text,
+    String? thinking,
+    bool? thinkingInProgress,
+  }) => LlmChatResult(
+    text: text ?? this.text,
+    thinking: thinking ?? this.thinking,
+    thinkingInProgress: thinkingInProgress ?? this.thinkingInProgress,
+  );
+
+  LlmChatResult applyPart(LlmStreamPart part) {
+    return switch (part.kind) {
+      LlmStreamPartKind.thinking => copyWith(
+        thinking: thinking + part.delta,
+        thinkingInProgress: true,
+      ),
+      LlmStreamPartKind.answer => copyWith(
+        text: text + part.delta,
+        thinkingInProgress: false,
+      ),
+    };
+  }
+}
+
+enum LlmStreamPartKind { thinking, answer }
+
+class LlmStreamPart {
+  const LlmStreamPart({required this.kind, required this.delta});
+
+  final LlmStreamPartKind kind;
+  final String delta;
+}
+
 /// Per-request generation flags (non-persistent).
 class LlmCompletionOptions {
   const LlmCompletionOptions({

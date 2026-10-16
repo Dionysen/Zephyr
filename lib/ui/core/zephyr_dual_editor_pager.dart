@@ -354,9 +354,10 @@ class _ZephyrDualEditorPagerState extends State<ZephyrDualEditorPager>
         return _DualEditorPagerScope(
           controller: _controller,
           child: PopScope(
-            canPop: !_drawerVisible,
+            canPop: false,
             onPopInvokedWithResult: (didPop, _) {
-              if (!didPop && _drawerVisible) _closeDrawers();
+              if (didPop) return;
+              if (_drawerVisible) _closeDrawers();
             },
             child:
                 NotificationListener<

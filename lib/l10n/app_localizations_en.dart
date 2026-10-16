@@ -1431,6 +1431,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Set up your API key and run a connection test in Settings first.';
 
   @override
+  String get aiChatThinkingInProgress => 'Thinking…';
+
+  @override
+  String get aiChatThinkingProcess => 'Thinking process';
+
+  @override
   String aiChatError(String error) {
     return 'Request failed: $error';
   }

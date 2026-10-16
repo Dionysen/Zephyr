@@ -540,6 +540,8 @@
   "llmModelSubtitle": "连接测试后可选",
   "llmModelNotSelected": "未选择",
   "aiChatNotConfigured": "请先在设置中配置 API Key 并完成连接测试。",
+  "aiChatThinkingInProgress": "思考中…",
+  "aiChatThinkingProcess": "思考过程",
   "aiChatError": "请求失败：{error}",
   "@aiChatError": {
     "placeholders": {
