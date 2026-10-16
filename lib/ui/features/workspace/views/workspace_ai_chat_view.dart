@@ -7,6 +7,7 @@ import '../../../../domain/models/llm_chat.dart';
 import '../../../../domain/models/llm_settings.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../../core/zephyr_l10n.dart';
+import '../../../core/zephyr_markdown_body.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_theme.dart';
 import '../models/workspace_ai_context_selection.dart';
@@ -37,6 +38,8 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
   final _inputController = TextEditingController();
   final _inputFocus = FocusNode();
   final _messages = <_AiChatMessage>[];
+  final _liveAssistant = ValueNotifier<_StreamAssistantFrame?>(null);
+  var _liveAssistantMessageIndex = -1;
   var _sending = false;
 
   /// Finger is on the list and dragging (hold-scroll); blocks stream pin jumps.
@@ -89,6 +92,7 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
 
   @override
   void dispose() {
+    _liveAssistant.dispose();
     _scrollController.dispose();
     _inputController.dispose();
     _inputFocus.dispose();
@@ -122,6 +126,12 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
           ),
         );
         assistantIndex = _messages.length - 1;
+        _liveAssistantMessageIndex = assistantIndex;
+        _liveAssistant.value = _StreamAssistantFrame(
+          text: '',
+          thinking: '',
+          thinkingInProgress: expectsThinking,
+        );
       });
       _scrollToEnd(animate: false, force: true);
     }
@@ -151,14 +161,11 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
           onPartial: assistantIndex >= 0
               ? (partial) {
                   if (!mounted) return;
-                  setState(() {
-                    _messages[assistantIndex] = _AiChatMessage(
-                      role: _AiChatRole.assistant,
-                      text: partial.text,
-                      thinking: partial.thinking,
-                      thinkingInProgress: partial.thinkingInProgress,
-                    );
-                  });
+                  _liveAssistant.value = _StreamAssistantFrame(
+                    text: partial.text,
+                    thinking: partial.thinking,
+                    thinkingInProgress: partial.thinkingInProgress,
+                  );
                   _scrollToEndIfPinned();
                 }
               : null,
@@ -169,6 +176,8 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
       replyText = l10n.aiChatError(error.toString());
     }
     if (!mounted) return;
+    _liveAssistantMessageIndex = -1;
+    _liveAssistant.value = null;
     setState(() {
       _sending = false;
       if (assistantIndex >= 0) {
@@ -274,8 +283,33 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
                 padding: widget.contentPadding.copyWith(top: 12, bottom: 12),
                 itemCount: _messages.length,
                 itemBuilder: (context, index) {
+                  if (index == _liveAssistantMessageIndex) {
+                    return ValueListenableBuilder<_StreamAssistantFrame?>(
+                      valueListenable: _liveAssistant,
+                      builder: (context, frame, _) {
+                        final base = _messages[index];
+                        final message = frame == null
+                            ? base
+                            : _AiChatMessage(
+                                role: _AiChatRole.assistant,
+                                text: frame.text,
+                                thinking: frame.thinking,
+                                thinkingInProgress: frame.thinkingInProgress,
+                              );
+                        return _AiChatBubble(
+                          message: message,
+                          radius: radius,
+                          markdownLiveStream: frame != null,
+                        );
+                      },
+                    );
+                  }
                   final message = _messages[index];
-                  return _AiChatBubble(message: message, radius: radius);
+                  return _AiChatBubble(
+                    key: ValueKey('chat-msg-$index'),
+                    message: message,
+                    radius: radius,
+                  );
                 },
               ),
             ),
@@ -384,6 +418,18 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
 
 enum _AiChatRole { user, assistant }
 
+class _StreamAssistantFrame {
+  const _StreamAssistantFrame({
+    required this.text,
+    required this.thinking,
+    required this.thinkingInProgress,
+  });
+
+  final String text;
+  final String thinking;
+  final bool thinkingInProgress;
+}
+
 class _AiChatMessage {
   const _AiChatMessage({
     required this.role,
@@ -401,10 +447,16 @@ class _AiChatMessage {
 }
 
 class _AiChatBubble extends StatefulWidget {
-  const _AiChatBubble({required this.message, required this.radius});
+  const _AiChatBubble({
+    super.key,
+    required this.message,
+    required this.radius,
+    this.markdownLiveStream = false,
+  });
 
   final _AiChatMessage message;
   final double radius;
+  final bool markdownLiveStream;
 
   @override
   State<_AiChatBubble> createState() => _AiChatBubbleState();
@@ -457,7 +509,8 @@ class _AiChatBubbleState extends State<_AiChatBubble> {
             const SizedBox(width: 8),
           ],
           Flexible(
-            child: DecoratedBox(
+            child: RepaintBoundary(
+              child: DecoratedBox(
               decoration: BoxDecoration(
                 color: bg,
                 borderRadius: bubbleRadius,
@@ -510,12 +563,15 @@ class _AiChatBubbleState extends State<_AiChatBubble> {
                       ),
                       if (_thinkingExpanded && message.hasThinking) ...[
                         const SizedBox(height: 8),
-                        SelectableText(
-                          message.thinking,
-                          style: theme.textTheme.bodySmall?.copyWith(
+                        ZephyrMarkdownBody(
+                          data: message.thinking,
+                          foreground: fg.withValues(alpha: 0.75),
+                          baseStyle: theme.textTheme.bodySmall?.copyWith(
                             color: fg.withValues(alpha: 0.75),
                             height: 1.4,
                           ),
+                          dense: true,
+                          liveStream: widget.markdownLiveStream,
                         ),
                         const SizedBox(height: 8),
                       ] else if (message.thinkingInProgress &&
@@ -525,16 +581,27 @@ class _AiChatBubbleState extends State<_AiChatBubble> {
                       ],
                     ],
                     if (bodyText.isNotEmpty)
-                      SelectableText(
-                        bodyText,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: fg,
-                          height: 1.45,
-                        ),
-                      ),
+                      isUser
+                          ? SelectableText(
+                              bodyText,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: fg,
+                                height: 1.45,
+                              ),
+                            )
+                          : ZephyrMarkdownBody(
+                              data: bodyText,
+                              foreground: fg,
+                              baseStyle: theme.textTheme.bodyMedium?.copyWith(
+                                color: fg,
+                                height: 1.45,
+                              ),
+                              liveStream: widget.markdownLiveStream,
+                            ),
                   ],
                 ),
               ),
+            ),
             ),
           ),
           if (isUser) const SizedBox(width: 4),
