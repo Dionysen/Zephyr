@@ -13,7 +13,7 @@ class ZephyrMarkdownBody extends StatefulWidget {
     required this.foreground,
     this.baseStyle,
     this.dense = false,
-    this.selectable = false,
+    this.selectable = true,
     /// Throttle re-parses while [data] changes rapidly (e.g. LLM streaming).
     this.liveStream = false,
   });
@@ -170,9 +170,9 @@ class _ZephyrMarkdownBodyState extends State<ZephyrMarkdownBody> {
     final sheet = _styleSheet;
     if (sheet == null) return const SizedBox.shrink();
 
-    return MarkdownBody(
+    final markdown = MarkdownBody(
       data: _renderedData,
-      selectable: widget.selectable,
+      selectable: false,
       shrinkWrap: true,
       fitContent: true,
       extensionSet: ZephyrMarkdownBody._extensionSet,
@@ -183,6 +183,34 @@ class _ZephyrMarkdownBodyState extends State<ZephyrMarkdownBody> {
         if (uri == null) return;
         unawaited(launchUrl(uri, mode: LaunchMode.externalApplication));
       },
+    );
+
+    if (!widget.selectable) return markdown;
+
+    final theme = Theme.of(context);
+    final base =
+        widget.baseStyle ??
+        (widget.dense
+                ? theme.textTheme.bodySmall
+                : theme.textTheme.bodyMedium)!
+            .copyWith(
+              color: widget.foreground,
+              height: widget.dense ? 1.4 : 1.45,
+            );
+
+    // One [SelectableText] holds the full source so drag / Ctrl+A spans the
+    // whole bubble; rendered markdown is painted on top for display only.
+    return SelectionArea(
+      child: Stack(
+        alignment: Alignment.topLeft,
+        children: [
+          SelectableText(
+            _renderedData,
+            style: base.copyWith(color: Colors.transparent),
+          ),
+          IgnorePointer(child: markdown),
+        ],
+      ),
     );
   }
 }

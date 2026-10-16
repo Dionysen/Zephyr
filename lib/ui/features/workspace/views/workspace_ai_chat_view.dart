@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 
 import '../../../../domain/models/llm_chat.dart';
 import '../../../../domain/models/llm_settings.dart';
@@ -465,6 +466,25 @@ class _AiChatBubble extends StatefulWidget {
 class _AiChatBubbleState extends State<_AiChatBubble> {
   var _thinkingExpanded = false;
 
+  String _assistantMarkdownBundle(_AiChatMessage message) {
+    final parts = <String>[];
+    if (_thinkingExpanded && message.hasThinking) {
+      parts.add(message.thinking);
+    }
+    if (message.text.trim().isNotEmpty) {
+      parts.add(message.text);
+    }
+    return parts.join('\n\n');
+  }
+
+  Future<void> _copyBubbleText(_AiChatMessage message) async {
+    final text = message.role == _AiChatRole.user
+        ? message.text
+        : _assistantMarkdownBundle(message);
+    if (text.trim().isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: text));
+  }
+
   @override
   Widget build(BuildContext context) {
     final message = widget.message;
@@ -488,6 +508,8 @@ class _AiChatBubbleState extends State<_AiChatBubble> {
         : (message.thinkingInProgress && !message.hasThinking
             ? ''
             : message.text);
+    final assistantMarkdown =
+        !isUser ? _assistantMarkdownBundle(message) : '';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -510,98 +532,92 @@ class _AiChatBubbleState extends State<_AiChatBubble> {
           ],
           Flexible(
             child: RepaintBoundary(
-              child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: bg,
-                borderRadius: bubbleRadius,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (showThinkingUi) ...[
-                      InkWell(
-                        onTap: () => setState(
-                          () => _thinkingExpanded = !_thinkingExpanded,
-                        ),
-                        borderRadius: BorderRadius.circular(6),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 2),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (message.thinkingInProgress)
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: SizedBox(
-                                    width: 14,
-                                    height: 14,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: fg.withValues(alpha: 0.7),
+              child: GestureDetector(
+                onLongPress: () => unawaited(_copyBubbleText(message)),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: bg,
+                    borderRadius: bubbleRadius,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (showThinkingUi) ...[
+                          InkWell(
+                            onTap: () => setState(
+                              () => _thinkingExpanded = !_thinkingExpanded,
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 2),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (message.thinkingInProgress)
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: fg.withValues(alpha: 0.7),
+                                        ),
+                                      ),
+                                    ),
+                                  Text(
+                                    thinkingLabel,
+                                    style: theme.textTheme.labelLarge?.copyWith(
+                                      color: fg.withValues(alpha: 0.85),
                                     ),
                                   ),
-                                ),
-                              Text(
-                                thinkingLabel,
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                  color: fg.withValues(alpha: 0.85),
-                                ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    _thinkingExpanded
+                                        ? Icons.expand_less
+                                        : Icons.expand_more,
+                                    size: 20,
+                                    color: fg.withValues(alpha: 0.7),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 4),
-                              Icon(
-                                _thinkingExpanded
-                                    ? Icons.expand_less
-                                    : Icons.expand_more,
-                                size: 20,
-                                color: fg.withValues(alpha: 0.7),
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
-                      ),
-                      if (_thinkingExpanded && message.hasThinking) ...[
-                        const SizedBox(height: 8),
-                        ZephyrMarkdownBody(
-                          data: message.thinking,
-                          foreground: fg.withValues(alpha: 0.75),
-                          baseStyle: theme.textTheme.bodySmall?.copyWith(
-                            color: fg.withValues(alpha: 0.75),
-                            height: 1.4,
-                          ),
-                          dense: true,
-                          liveStream: widget.markdownLiveStream,
-                        ),
-                        const SizedBox(height: 8),
-                      ] else if (message.thinkingInProgress &&
-                          message.hasThinking &&
-                          !_thinkingExpanded) ...[
-                        const SizedBox(height: 4),
-                      ],
-                    ],
-                    if (bodyText.isNotEmpty)
-                      isUser
-                          ? SelectableText(
+                          if (message.thinkingInProgress &&
+                              message.hasThinking &&
+                              !_thinkingExpanded)
+                            const SizedBox(height: 4),
+                        ],
+                        if (isUser && bodyText.isNotEmpty)
+                          SelectionArea(
+                            child: SelectableText(
                               bodyText,
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: fg,
                                 height: 1.45,
                               ),
-                            )
-                          : ZephyrMarkdownBody(
-                              data: bodyText,
-                              foreground: fg,
-                              baseStyle: theme.textTheme.bodyMedium?.copyWith(
-                                color: fg,
-                                height: 1.45,
-                              ),
-                              liveStream: widget.markdownLiveStream,
                             ),
-                  ],
+                          )
+                        else if (assistantMarkdown.isNotEmpty)
+                          ZephyrMarkdownBody(
+                            data: assistantMarkdown,
+                            foreground: fg,
+                            baseStyle: theme.textTheme.bodyMedium?.copyWith(
+                              color: fg,
+                              height: 1.45,
+                            ),
+                            liveStream: widget.markdownLiveStream,
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
             ),
           ),
           if (isUser) const SizedBox(width: 4),
