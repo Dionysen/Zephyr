@@ -1250,6 +1250,7 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
             onOpenMenu: () =>
                 ZephyrDualEditorPager.of(editorContext).openStartDrawer(),
             showBookBar: false,
+            sharedTopBarHide: _topBarHide,
             aiChatOpen: aiEnabled && _primaryAiChatOpen,
             aiContextSelection: _primaryAiContext,
             invadeStatusBar: widget.invadeStatusBar,
@@ -1269,6 +1270,7 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
                 ZephyrDualEditorPager.of(editorContext).openEndDrawer(),
             reverse: true,
             showBookBar: false,
+            sharedTopBarHide: _topBarHide,
             aiChatOpen: aiEnabled && _companionAiChatOpen,
             aiContextSelection: _companionAiContext,
             invadeStatusBar: widget.invadeStatusBar,
@@ -1316,6 +1318,7 @@ class _MobileEditorChrome extends StatefulWidget {
     this.showBookBar = true,
     this.aiChatOpen = false,
     this.aiContextSelection,
+    this.sharedTopBarHide,
     this.invadeStatusBar = false,
     this.transparentTopBar = false,
   });
@@ -1329,6 +1332,9 @@ class _MobileEditorChrome extends StatefulWidget {
   final bool showBookBar;
   final bool aiChatOpen;
   final WorkspaceAiContextSelection? aiContextSelection;
+
+  /// Floating book bar driven by [_MobileTwoEditorWorkspaceState._topBarHide].
+  final Animation<double>? sharedTopBarHide;
 
   /// When true, the editor extends under the status band so scrolled text can
   /// enter it naturally. Top-bar show/hide never changes scroll padding.
@@ -1406,6 +1412,8 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
   }
 
   bool _onScroll(ScrollNotification notification) {
+    // AI chat scroll only drives the shared floating bar (workspace listener).
+    if (widget.aiChatOpen) return false;
     if (!ZephyrScope.of(context).theme.ui.scrollToHideMobileTopBar) {
       if (!_isVisible) {
         _showBar(immediate: true);
@@ -1504,18 +1512,17 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
     final wordCount = widget.model.article?.wordCount;
     final scope = ZephyrScope.of(context);
     final themeVm = scope.theme;
+    final chromeHide = widget.aiChatOpen && widget.sharedTopBarHide != null
+        ? widget.sharedTopBarHide!
+        : _hide;
     return NotificationListener<ScrollNotification>(
       onNotification: _onScroll,
       child: AnimatedBuilder(
-        animation: _hide,
+        animation: chromeHide,
         builder: (context, _) {
-          // Editor: stable top inset while the bar animates. AI chat: shrink the
-          // book-bar band when it hides; always include [statusTop] so the first
-          // bubble sits below the floating bar at scroll offset zero.
-          final barReserve = _barTravel * (1.0 - _hide.value);
-          final contentTop = widget.aiChatOpen
-              ? statusTop + barReserve
-              : statusTop + _barTravel;
+          // Stable top inset while the bar animates (editor and AI chat).
+          final contentTop = statusTop + _barTravel;
+          final hideT = chromeHide.value;
           final aiBleedsChrome =
               widget.transparentTopBar || widget.invadeStatusBar;
           final paintBleedBackground = widget.transparentTopBar ||
@@ -1523,7 +1530,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
           // Match the opaque-band fade: while the bar is visible, hide text
           // above its bottom edge; as it hides, release the clip.
           final textClipTop = paintBleedBackground
-              ? barBottom * (1.0 - _hide.value)
+              ? barBottom * (1.0 - hideT)
               : 0.0;
           return Stack(
             children: [
