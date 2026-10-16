@@ -70,6 +70,7 @@ void main() {
     expect(leftRect.right, greaterThan(0));
     expect(rightRect.left, lessThan(400));
     expect(topBarRect, topBarStart);
+    expect(activeEditors, isEmpty);
 
     await drag.up();
     await tester.pumpAndSettle();

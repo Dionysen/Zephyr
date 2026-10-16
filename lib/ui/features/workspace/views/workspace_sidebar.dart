@@ -776,7 +776,7 @@ class _MoreMenuMorphIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) => TweenAnimationBuilder<double>(
     tween: Tween(end: menu ? 1 : 0),
-    duration: const Duration(milliseconds: 260),
+    duration: const Duration(milliseconds: 420),
     curve: Curves.easeInOutCubic,
     builder: (context, progress, _) => CustomPaint(
       size: Size.square(size),
@@ -842,9 +842,9 @@ class _AnimatedBookTitle extends StatelessWidget {
     final outgoingOffset = Offset(0, -incomingOffset.dy);
     return ClipRect(
       child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 280),
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
+        duration: const Duration(milliseconds: 420),
+        switchInCurve: Curves.easeInOutCubic,
+        switchOutCurve: Curves.easeInOutCubic,
         layoutBuilder: (currentChild, previousChildren) => Stack(
           alignment: Alignment.centerLeft,
           children: [

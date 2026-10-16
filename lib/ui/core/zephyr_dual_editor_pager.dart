@@ -91,6 +91,10 @@ class _DualDrawerScope extends InheritedWidget {
 class _ZephyrDualEditorPagerState extends State<ZephyrDualEditorPager>
     with TickerProviderStateMixin {
   static const _settleDuration = Duration(milliseconds: 240);
+
+  /// Full-page duration. Remaining distance determines the settle duration;
+  /// the decelerating curve then eases the page into its final resting point.
+  static const _fullPageSettleDuration = Duration(milliseconds: 300);
   static const _minFlingVelocity = 180.0;
 
   late final AnimationController _page;
@@ -137,45 +141,56 @@ class _ZephyrDualEditorPagerState extends State<ZephyrDualEditorPager>
   }
 
   void _onAnimationTick() {
-    final nextActive = _page.value >= 0.5 ? 1 : 0;
-    if (nextActive != _activeEditor) {
-      _activeEditor = nextActive;
-      widget.onActiveEditorChanged?.call(nextActive);
-    }
     _controller._emit();
     setState(() {});
+  }
+
+  void _setActiveEditor(int editor) {
+    if (_activeEditor == editor) return;
+    _activeEditor = editor;
+    widget.onActiveEditorChanged?.call(editor);
+    _controller._emit();
+  }
+
+  void _settlePage(int editor, {VoidCallback? onSettled}) {
+    final target = editor.toDouble();
+    _page
+        .animateTo(
+          target,
+          duration: _pageSettleDurationTo(target),
+          curve: Curves.decelerate,
+        )
+        .whenComplete(() {
+          if (!mounted || (_page.value - target).abs() > 0.001) return;
+          _setActiveEditor(editor);
+          onSettled?.call();
+        });
   }
 
   void _openStartDrawer() {
     FocusManager.instance.primaryFocus?.unfocus();
     _endDrawer.animateTo(0, duration: _settleDuration);
-    _page
-        .animateTo(0, duration: _settleDuration, curve: Curves.easeOutCubic)
-        .whenComplete(() {
-          if (mounted) {
-            _startDrawer.animateTo(
-              1,
-              duration: _settleDuration,
-              curve: Curves.easeOutCubic,
-            );
-          }
-        });
+    _settlePage(
+      0,
+      onSettled: () => _startDrawer.animateTo(
+        1,
+        duration: _settleDuration,
+        curve: Curves.easeOutCubic,
+      ),
+    );
   }
 
   void _openEndDrawer() {
     FocusManager.instance.primaryFocus?.unfocus();
     _startDrawer.animateTo(0, duration: _settleDuration);
-    _page
-        .animateTo(1, duration: _settleDuration, curve: Curves.easeOutCubic)
-        .whenComplete(() {
-          if (mounted) {
-            _endDrawer.animateTo(
-              1,
-              duration: _settleDuration,
-              curve: Curves.easeOutCubic,
-            );
-          }
-        });
+    _settlePage(
+      1,
+      onSettled: () => _endDrawer.animateTo(
+        1,
+        duration: _settleDuration,
+        curve: Curves.easeOutCubic,
+      ),
+    );
   }
 
   void _closeDrawers() {
@@ -283,11 +298,14 @@ class _ZephyrDualEditorPagerState extends State<ZephyrDualEditorPager>
     final openCompanion =
         velocity < -_minFlingVelocity ||
         (velocity.abs() < _minFlingVelocity && _page.value >= 0.5);
-    _page.animateTo(
-      openCompanion ? 1 : 0,
-      duration: _settleDuration,
-      curve: Curves.easeOutCubic,
-    );
+    _settlePage(openCompanion ? 1 : 0);
+  }
+
+  Duration _pageSettleDurationTo(double destination) {
+    final remaining = (destination - _page.value).abs();
+    final milliseconds = (_fullPageSettleDuration.inMilliseconds * remaining)
+        .round();
+    return Duration(milliseconds: milliseconds == 0 ? 1 : milliseconds);
   }
 
   /// Mirrors the compact drawer's low-threshold behavior for both sides.

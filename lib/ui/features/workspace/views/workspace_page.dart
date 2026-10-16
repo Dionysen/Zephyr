@@ -757,8 +757,8 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
   late final LibraryViewModel _companion;
   final _primaryBridge = WorkspaceEditorBridge();
   final _companionBridge = WorkspaceEditorBridge();
+  final _activeEditor = ValueNotifier<int>(0);
   late final AnimationController _topBarHide;
-  var _activeEditor = 0;
   var _topBarScrollSlop = 0.0;
   var _companionReady = false;
   var _ensuringDistinctBooks = false;
@@ -813,6 +813,7 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
     _companion.removeListener(_onCompanionChanged);
     _primaryBridge.dispose();
     _companionBridge.dispose();
+    _activeEditor.dispose();
     _topBarHide.dispose();
     _companion.dispose();
     super.dispose();
@@ -940,11 +941,11 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
   }
 
   void _setActiveEditor(int index) {
-    if (_activeEditor == index) return;
+    if (_activeEditor.value == index) return;
     final toolbar = ZephyrScope.of(context).quickToolbar;
     toolbar.closeToolsDrawer();
     toolbar.closeFormatDrawer();
-    setState(() => _activeEditor = index);
+    _activeEditor.value = index;
   }
 
   bool _onWorkspaceScroll(ScrollNotification notification) {
@@ -986,7 +987,7 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
     if (_topBarHide.value < 1) _topBarHide.animateTo(1, curve: _barMotion);
   }
 
-  Widget _fixedTopBar(BuildContext pagerContext, LibraryViewModel model) {
+  Widget _fixedTopBar(BuildContext pagerContext) {
     final statusTop = widget.invadeStatusBar ? zephyrTopInset(context) : 0.0;
     final travel = _barInset + WorkspaceMobileBookBar.height + _barGapBelow;
     return Positioned(
@@ -1008,21 +1009,27 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
             ),
           );
         },
-        child: WorkspaceMobileBookBar(
-          model: model,
-          onOpenMenu: () {
-            final pager = ZephyrDualEditorPager.of(pagerContext);
-            _activeEditor == 0
-                ? pager.openStartDrawer()
-                : pager.openEndDrawer();
+        child: ValueListenableBuilder<int>(
+          valueListenable: _activeEditor,
+          builder: (context, activeEditor, _) {
+            final model = activeEditor == 0 ? widget.model : _companion;
+            return WorkspaceMobileBookBar(
+              model: model,
+              onOpenMenu: () {
+                final pager = ZephyrDualEditorPager.of(pagerContext);
+                activeEditor == 0
+                    ? pager.openStartDrawer()
+                    : pager.openEndDrawer();
+              },
+              reverse: activeEditor == 1,
+              transparentBackground: widget.transparentTopBar,
+              toolsBuilder: (barContext) => buildWorkspaceOverflowTools(
+                barContext,
+                model: model,
+                openSettings: widget.openSettings,
+              ),
+            );
           },
-          reverse: _activeEditor == 1,
-          transparentBackground: widget.transparentTopBar,
-          toolsBuilder: (barContext) => buildWorkspaceOverflowTools(
-            barContext,
-            model: model,
-            openSettings: widget.openSettings,
-          ),
         ),
       ),
     );
@@ -1052,59 +1059,62 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
   @override
   Widget build(BuildContext context) {
     final scope = ZephyrScope.of(context);
-    final activeBridge = _activeEditor == 0 ? _primaryBridge : _companionBridge;
-    final activeModel = _activeEditor == 0 ? widget.model : _companion;
+    final pager = ZephyrDualEditorPager(
+      drawerWidth: widget.drawerWidth,
+      onActiveEditorChanged: _setActiveEditor,
+      fixedOverlay: Builder(
+        builder: (pagerContext) => _fixedTopBar(pagerContext),
+      ),
+      startDrawer: _drawerFor(widget.model),
+      primaryEditor: Builder(
+        builder: (editorContext) => WorkspaceMobileBodyHost(
+          model: widget.model,
+          child: _MobileEditorChrome(
+            model: widget.model,
+            preferences: widget.preferences,
+            bridge: _primaryBridge,
+            onOpenMenu: () =>
+                ZephyrDualEditorPager.of(editorContext).openStartDrawer(),
+            showBookBar: false,
+            invadeStatusBar: widget.invadeStatusBar,
+            transparentTopBar: widget.transparentTopBar,
+            openSettings: widget.openSettings,
+          ),
+        ),
+      ),
+      companionEditor: ListenableBuilder(
+        listenable: _companion,
+        builder: (context, _) => Builder(
+          builder: (editorContext) => _MobileEditorChrome(
+            model: _companion,
+            preferences: widget.preferences,
+            bridge: _companionBridge,
+            onOpenMenu: () =>
+                ZephyrDualEditorPager.of(editorContext).openEndDrawer(),
+            reverse: true,
+            showBookBar: false,
+            invadeStatusBar: widget.invadeStatusBar,
+            transparentTopBar: widget.transparentTopBar,
+            openSettings: widget.openSettings,
+          ),
+        ),
+      ),
+      endDrawer: _drawerFor(_companion),
+    );
     return NotificationListener<ScrollNotification>(
       onNotification: _onWorkspaceScroll,
-      child: QuickToolbarHost(
-        toolbar: scope.quickToolbar,
-        bridge: activeBridge,
-        library: activeModel,
-        foreground: Theme.of(context).colorScheme.onSurface,
-        editorPreferences: widget.preferences,
-        bodyFontFamily: widget.preferences.preferences.fontFamily,
-        hidden: scope.theme.ui.hideQuickToolbar,
-        child: ZephyrDualEditorPager(
-          drawerWidth: widget.drawerWidth,
-          onActiveEditorChanged: _setActiveEditor,
-          fixedOverlay: Builder(
-            builder: (pagerContext) => _fixedTopBar(pagerContext, activeModel),
-          ),
-          startDrawer: _drawerFor(widget.model),
-          primaryEditor: Builder(
-            builder: (editorContext) => WorkspaceMobileBodyHost(
-              model: widget.model,
-              child: _MobileEditorChrome(
-                model: widget.model,
-                preferences: widget.preferences,
-                bridge: _primaryBridge,
-                onOpenMenu: () =>
-                    ZephyrDualEditorPager.of(editorContext).openStartDrawer(),
-                showBookBar: false,
-                invadeStatusBar: widget.invadeStatusBar,
-                transparentTopBar: widget.transparentTopBar,
-                openSettings: widget.openSettings,
-              ),
-            ),
-          ),
-          companionEditor: ListenableBuilder(
-            listenable: _companion,
-            builder: (context, _) => Builder(
-              builder: (editorContext) => _MobileEditorChrome(
-                model: _companion,
-                preferences: widget.preferences,
-                bridge: _companionBridge,
-                onOpenMenu: () =>
-                    ZephyrDualEditorPager.of(editorContext).openEndDrawer(),
-                reverse: true,
-                showBookBar: false,
-                invadeStatusBar: widget.invadeStatusBar,
-                transparentTopBar: widget.transparentTopBar,
-                openSettings: widget.openSettings,
-              ),
-            ),
-          ),
-          endDrawer: _drawerFor(_companion),
+      child: ValueListenableBuilder<int>(
+        valueListenable: _activeEditor,
+        child: pager,
+        builder: (context, activeEditor, pager) => QuickToolbarHost(
+          toolbar: scope.quickToolbar,
+          bridge: activeEditor == 0 ? _primaryBridge : _companionBridge,
+          library: activeEditor == 0 ? widget.model : _companion,
+          foreground: Theme.of(context).colorScheme.onSurface,
+          editorPreferences: widget.preferences,
+          bodyFontFamily: widget.preferences.preferences.fontFamily,
+          hidden: scope.theme.ui.hideQuickToolbar,
+          child: pager!,
         ),
       ),
     );
