@@ -1168,6 +1168,7 @@ class _AiChatBubbleState extends State<_AiChatBubble> {
                             ZephyrMarkdownBody(
                               data: message.thinking,
                               foreground: thinkingFg,
+                              selectable: false,
                               baseStyle: theme.textTheme.bodyMedium?.copyWith(
                                 color: thinkingFg,
                                 height: 1.45,
@@ -1182,6 +1183,7 @@ class _AiChatBubbleState extends State<_AiChatBubble> {
                             ZephyrMarkdownBody(
                               data: assistantReplyMarkdown,
                               foreground: fg,
+                              selectable: false,
                               baseStyle: theme.textTheme.bodyMedium?.copyWith(
                                 color: fg,
                                 height: 1.45,

@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/zephyr_scrollbar_style.dart';
+
 /// Editor scrollbar with a fixed-size major-arc circular thumb.
 ///
 /// Scroll mapping matches a normal vertical scrollbar (thumb position ↔
@@ -145,14 +147,9 @@ class _ZephyrEditorScrollbarState extends State<ZephyrEditorScrollbar>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    // Barely lighter than the editor surface — one color, no active state.
-    final surface = theme.colorScheme.surface;
-    final color = Color.alphaBlend(
-      Colors.white.withValues(alpha: 0.08),
-      surface,
-    );
-    final arrow = theme.colorScheme.onSurface.withValues(alpha: 0.40);
+    final scheme = Theme.of(context).colorScheme;
+    final color = ZephyrScrollbarStyle.editorThumbColor(scheme);
+    final arrow = ZephyrScrollbarStyle.editorThumbArrowColor(scheme);
 
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {

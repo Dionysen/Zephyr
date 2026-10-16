@@ -1,9 +1,193 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:url_launcher/url_launcher.dart';
+
+import 'zephyr_scrollbar_style.dart';
+
+class _HorizontalCodeBlockScroll extends StatefulWidget {
+  const _HorizontalCodeBlockScroll({
+    required this.contentPadding,
+    required this.child,
+  });
+
+  /// Insets for code text (not the horizontal scrollbar track).
+  final EdgeInsetsGeometry contentPadding;
+  final Widget child;
+
+  @override
+  State<_HorizontalCodeBlockScroll> createState() =>
+      _HorizontalCodeBlockScrollState();
+}
+
+/// Bottom-aligned horizontal thumb (Material [Scrollbar] leaves a visible gap).
+class _CodeBlockHorizontalThumb extends StatelessWidget {
+  const _CodeBlockHorizontalThumb({
+    required this.controller,
+    required this.color,
+    required this.thickness,
+  });
+
+  final ScrollController controller;
+  final Color color;
+  final double thickness;
+
+  static const _minThumbLength = 24.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        if (!controller.hasClients) {
+          return SizedBox(height: thickness);
+        }
+        final position = controller.positions.first;
+        if (!position.hasContentDimensions) {
+          return SizedBox(height: thickness);
+        }
+        final viewport = position.viewportDimension;
+        if (position.maxScrollExtent <= 0.5 || !viewport.isFinite) {
+          return SizedBox(height: thickness);
+        }
+
+        final total = position.maxScrollExtent + viewport;
+        final thumbWidth = math.max(
+          _minThumbLength,
+          viewport * viewport / total,
+        );
+        final track = viewport - thumbWidth;
+        final thumbLeft = track <= 0
+            ? 0.0
+            : (position.pixels / position.maxScrollExtent).clamp(0.0, 1.0) *
+                track;
+
+        return SizedBox(
+          height: thickness,
+          width: double.infinity,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                left: thumbLeft,
+                width: thumbWidth,
+                bottom: 0,
+                height: thickness,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(thickness),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _HorizontalCodeBlockScrollState extends State<_HorizontalCodeBlockScroll> {
+  late final ScrollController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final thumbColor = ZephyrScrollbarStyle.editorThumbColor(scheme);
+    final thumb = ZephyrScrollbarStyle.horizontalThumbThickness;
+    final contentPad = widget.contentPadding.resolve(Directionality.of(context));
+    final textPad = EdgeInsets.fromLTRB(
+      contentPad.left,
+      contentPad.top,
+      contentPad.right,
+      thumb,
+    );
+
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) =>
+          notification.metrics.axis == Axis.horizontal,
+      child: SizedBox(
+        width: double.infinity,
+        child: Stack(
+          clipBehavior: Clip.hardEdge,
+          children: [
+            Padding(
+              padding: textPad,
+              child: SingleChildScrollView(
+                controller: _controller,
+                scrollDirection: Axis.horizontal,
+                child: widget.child,
+              ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: thumb,
+              child: _CodeBlockHorizontalThumb(
+                controller: _controller,
+                color: thumbColor,
+                thickness: thumb,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Fenced code blocks: horizontal scroll inside vertical parents (e.g. chat list).
+class _ZephyrPreBlockBuilder extends MarkdownElementBuilder {
+  _ZephyrPreBlockBuilder({
+    required this.styleSheet,
+    required this.selectable,
+  });
+
+  final MarkdownStyleSheet styleSheet;
+  final bool selectable;
+
+  @override
+  Widget? visitText(md.Text text, TextStyle? preferredStyle) {
+    final code = text.text.replaceAll(RegExp(r'\n$'), '');
+    if (code.isEmpty) return const SizedBox.shrink();
+
+    final style = styleSheet.code ?? preferredStyle;
+    final body = selectable
+        ? SelectableText(code, style: style)
+        : Text(code, style: style, softWrap: false);
+
+    final sheetPad =
+        styleSheet.codeblockPadding ?? const EdgeInsets.all(10);
+    final contentPadding = EdgeInsets.fromLTRB(
+      sheetPad.left,
+      sheetPad.top,
+      sheetPad.right,
+      0,
+    );
+
+    return _HorizontalCodeBlockScroll(
+      contentPadding: contentPadding,
+      child: body,
+    );
+  }
+}
 
 /// GitHub-flavored Markdown for in-app surfaces (no raw HTML blocks).
 class ZephyrMarkdownBody extends StatefulWidget {
@@ -170,46 +354,30 @@ class _ZephyrMarkdownBodyState extends State<ZephyrMarkdownBody> {
     final sheet = _styleSheet;
     if (sheet == null) return const SizedBox.shrink();
 
-    final markdown = MarkdownBody(
-      data: _renderedData,
-      selectable: false,
-      shrinkWrap: true,
-      fitContent: true,
-      extensionSet: ZephyrMarkdownBody._extensionSet,
-      styleSheet: sheet,
-      onTapLink: (text, href, title) {
-        if (href == null) return;
-        final uri = Uri.tryParse(href);
-        if (uri == null) return;
-        unawaited(launchUrl(uri, mode: LaunchMode.externalApplication));
-      },
-    );
-
-    if (!widget.selectable) return markdown;
-
-    final theme = Theme.of(context);
-    final base =
-        widget.baseStyle ??
-        (widget.dense
-                ? theme.textTheme.bodySmall
-                : theme.textTheme.bodyMedium)!
-            .copyWith(
-              color: widget.foreground,
-              height: widget.dense ? 1.4 : 1.45,
-            );
-
-    // One [SelectableText] holds the full source so drag / Ctrl+A spans the
-    // whole bubble; rendered markdown is painted on top for display only.
-    return SelectionArea(
-      child: Stack(
-        alignment: Alignment.topLeft,
-        children: [
-          SelectableText(
-            _renderedData,
-            style: base.copyWith(color: Colors.transparent),
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      widthFactor: 1,
+      child: MarkdownBody(
+        data: _renderedData,
+        selectable: widget.selectable,
+        shrinkWrap: true,
+        // Stretch to the bubble width so fenced code blocks get a bounded
+        // viewport and can scroll horizontally instead of overflowing.
+        fitContent: false,
+        extensionSet: ZephyrMarkdownBody._extensionSet,
+        styleSheet: sheet,
+        builders: {
+          'pre': _ZephyrPreBlockBuilder(
+            styleSheet: sheet,
+            selectable: widget.selectable,
           ),
-          IgnorePointer(child: markdown),
-        ],
+        },
+        onTapLink: (text, href, title) {
+          if (href == null) return;
+          final uri = Uri.tryParse(href);
+          if (uri == null) return;
+          unawaited(launchUrl(uri, mode: LaunchMode.externalApplication));
+        },
       ),
     );
   }
