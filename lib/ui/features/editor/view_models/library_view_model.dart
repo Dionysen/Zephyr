@@ -66,6 +66,17 @@ class LibraryViewModel extends ChangeNotifier {
   WritingArticle? _dirtyArticle;
   String? _dirtyTitleArticleId;
   String? _dirtyTitle;
+
+  /// Scroll offsets kept while the editor widget is replaced by the AI panel.
+  final Map<String, double> _editorScrollOffsets = {};
+
+  double? editorScrollOffset(String articleId) =>
+      _editorScrollOffsets[articleId];
+
+  void rememberEditorScrollOffset(String articleId, double offset) {
+    _editorScrollOffsets[articleId] = offset;
+  }
+
   Object? _saveError;
   List<ArticleDraft> _recoverableDrafts = const [];
   var _contentDirtySinceBackup = false;

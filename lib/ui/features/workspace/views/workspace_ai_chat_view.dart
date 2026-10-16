@@ -128,6 +128,10 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
   var _restoringScroll = false;
   var _scrollRestoreEpoch = 0;
 
+  /// List stays invisible while a remembered offset is applied, so the
+  /// lazy list's frame-by-frame jump is never painted.
+  var _holdListUntilScrollRestored = false;
+
   static const _followSlop = 72.0;
 
   void _setDrawerDragBlockedForList(bool blocked) {
@@ -220,6 +224,7 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
       setState(() {
         _sessionId = null;
         _contextSummary = '';
+        _holdListUntilScrollRestored = false;
         _messages.clear();
         _seedWelcomeIfEmpty();
       });
@@ -236,21 +241,28 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
         sessionId: session?.id,
       );
       if (!mounted || _boundArticleId != articleId) return;
+      final pendingOffset = scrollOffset != null && scrollOffset > 0
+          ? scrollOffset
+          : null;
       setState(() {
         _sessionId = session?.id;
         _contextSummary = session?.contextSummary ?? '';
         _loadingSession = false;
+        _holdListUntilScrollRestored = pendingOffset != null;
         _messages
           ..clear()
           ..addAll(stored.map(_messageFromStored));
         _seedWelcomeIfEmpty();
       });
-      if (scrollOffset != null && scrollOffset > 0) {
-        _restoreScrollOffset(scrollOffset);
+      if (pendingOffset != null) {
+        _restoreScrollOffset(pendingOffset);
       }
     } on Object {
       if (!mounted) return;
-      setState(() => _loadingSession = false);
+      setState(() {
+        _loadingSession = false;
+        _holdListUntilScrollRestored = false;
+      });
     }
   }
 
@@ -276,33 +288,46 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
     );
   }
 
+  void _revealMessageList() {
+    if (!_holdListUntilScrollRestored || !mounted) return;
+    setState(() => _holdListUntilScrollRestored = false);
+  }
+
   void _restoreScrollOffset(double offset) {
     _restoringScroll = true;
     final epoch = ++_scrollRestoreEpoch;
     var attempts = 0;
+    double? previousMax;
+    void finish() {
+      if (!mounted || epoch != _scrollRestoreEpoch) return;
+      _restoringScroll = false;
+      _revealMessageList();
+    }
+
     void attempt() {
-      if (!mounted || epoch != _scrollRestoreEpoch) {
-        _restoringScroll = false;
-        return;
-      }
+      if (!mounted || epoch != _scrollRestoreEpoch) return;
       if (!_scrollController.hasClients) {
-        if (attempts++ < 12) {
+        if (attempts++ < 24) {
           WidgetsBinding.instance.addPostFrameCallback((_) => attempt());
         } else {
-          _restoringScroll = false;
+          finish();
         }
         return;
       }
       final position = _scrollController.position;
-      final target = offset.clamp(0.0, position.maxScrollExtent);
-      if (position.pixels != target) {
+      final max = position.maxScrollExtent;
+      final target = offset.clamp(0.0, max);
+      if ((position.pixels - target).abs() > 0.5) {
         position.jumpTo(target);
       }
-      if (position.maxScrollExtent + 1 < offset && attempts++ < 12) {
+      final settled = previousMax != null && (max - previousMax!).abs() < 0.5;
+      previousMax = max;
+      final stillShort = max + 1 < offset;
+      if ((!settled || stillShort) && attempts++ < 24) {
         WidgetsBinding.instance.addPostFrameCallback((_) => attempt());
         return;
       }
-      _restoringScroll = false;
+      finish();
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) => attempt());
@@ -694,52 +719,60 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
         final listBottomPadding = _composerOverlayHeight + 8;
         final messageList = _loadingSession
             ? const Center(child: CircularProgressIndicator())
-            : NotificationListener<ScrollNotification>(
-                onNotification: _handleListScrollNotification,
-                child: ScrollConfiguration(
-                  behavior: const _AiChatListScrollBehavior(),
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    physics: const AlwaysScrollableScrollPhysics(
-                      parent: ClampingScrollPhysics(),
-                    ),
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: widget.contentPadding.copyWith(
-                      top: listTopPadding,
-                      bottom: listBottomPadding,
-                    ),
-                    itemCount: _messages.length,
-                    itemBuilder: (context, index) {
-                      if (index == _liveAssistantMessageIndex) {
-                        return ValueListenableBuilder<_StreamAssistantFrame?>(
-                          valueListenable: _liveAssistant,
-                          builder: (context, frame, _) {
-                            final base = _messages[index];
-                            final message = frame == null
-                                ? base
-                                : _AiChatMessage(
-                                    role: _AiChatRole.assistant,
-                                    text: frame.text,
-                                    thinking: frame.thinking,
-                                    thinkingInProgress:
-                                        frame.thinkingInProgress,
-                                  );
-                            return _AiChatBubble(
-                              message: message,
-                              radius: bubbleRadius,
-                              markdownLiveStream: frame != null,
+            : Opacity(
+                opacity: _holdListUntilScrollRestored ? 0 : 1,
+                child: IgnorePointer(
+                  ignoring: _holdListUntilScrollRestored,
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: _handleListScrollNotification,
+                    child: ScrollConfiguration(
+                      behavior: const _AiChatListScrollBehavior(),
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: ClampingScrollPhysics(),
+                        ),
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        padding: widget.contentPadding.copyWith(
+                          top: listTopPadding,
+                          bottom: listBottomPadding,
+                        ),
+                        itemCount: _messages.length,
+                        itemBuilder: (context, index) {
+                          if (index == _liveAssistantMessageIndex) {
+                            return ValueListenableBuilder<
+                              _StreamAssistantFrame?
+                            >(
+                              valueListenable: _liveAssistant,
+                              builder: (context, frame, _) {
+                                final base = _messages[index];
+                                final message = frame == null
+                                    ? base
+                                    : _AiChatMessage(
+                                        role: _AiChatRole.assistant,
+                                        text: frame.text,
+                                        thinking: frame.thinking,
+                                        thinkingInProgress:
+                                            frame.thinkingInProgress,
+                                      );
+                                return _AiChatBubble(
+                                  message: message,
+                                  radius: bubbleRadius,
+                                  markdownLiveStream: frame != null,
+                                );
+                              },
                             );
-                          },
-                        );
-                      }
-                      final message = _messages[index];
-                      return _AiChatBubble(
-                        key: ValueKey('chat-msg-$index'),
-                        message: message,
-                        radius: bubbleRadius,
-                      );
-                    },
+                          }
+                          final message = _messages[index];
+                          return _AiChatBubble(
+                            key: ValueKey('chat-msg-$index'),
+                            message: message,
+                            radius: bubbleRadius,
+                          );
+                        },
+                      ),
+                    ),
                   ),
                 ),
               );

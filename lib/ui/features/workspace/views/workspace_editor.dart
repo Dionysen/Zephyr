@@ -360,8 +360,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     if (session.containsSelection(selection)) return;
     // Right after insert, Chinese IMEs often yank the caret onto the opener;
     // snap back for a brief window, then treat any leave as a real exit.
-    final snapping =
-        DateTime.now().millisecondsSinceEpoch <= _pairSnapUntilMs;
+    final snapping = DateTime.now().millisecondsSinceEpoch <= _pairSnapUntilMs;
     if (snapping &&
         selection.isCollapsed &&
         selection.extentOffset >= session.openIndex &&
@@ -451,9 +450,9 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   }
 
   List<TextSpanDecoration> _editorDecorations(BuildContext context) => [
-        ..._pairDecorations(context),
-        ..._searchDecorations(context),
-      ];
+    ..._pairDecorations(context),
+    ..._searchDecorations(context),
+  ];
 
   List<TextSpanDecoration> _searchDecorations(BuildContext context) {
     final start = _searchHighlightStart;
@@ -514,18 +513,39 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     if (id == null) return;
     _carets[id] = _controller.selection;
     if (_scrollController.hasClients) {
-      _scrolls[id] = _scrollController.offset;
+      final offset = _scrollController.offset;
+      _scrolls[id] = offset;
+      widget.model.rememberEditorScrollOffset(id, offset);
     }
   }
 
   void _restoreScroll(String articleId) {
-    if (!_scrollController.hasClients) return;
-    final saved = _scrolls[articleId] ?? 0.0;
-    final max = _scrollController.position.maxScrollExtent;
-    _ignoreScrollForJump = true;
-    _scrollController.jumpTo(saved.clamp(0.0, max));
-    _ignoreScrollForJump = false;
-    _lastJumpScroll = _scrollController.offset;
+    final saved =
+        _scrolls[articleId] ?? widget.model.editorScrollOffset(articleId);
+    if (saved == null || saved <= 0) return;
+    var attempts = 0;
+    void attempt() {
+      if (!mounted || _articleId != articleId) return;
+      if (!_scrollController.hasClients) {
+        if (attempts++ < 8) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => attempt());
+        }
+        return;
+      }
+      final max = _scrollController.position.maxScrollExtent;
+      if (max + 1 < saved && attempts++ < 8) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => attempt());
+        return;
+      }
+      _ignoreScrollForJump = true;
+      _scrollController.jumpTo(saved.clamp(0.0, max));
+      _ignoreScrollForJump = false;
+      _lastJumpScroll = _scrollController.offset;
+      _syncJumpToEndVisibility(ignoreCaret: true);
+      _updateDocumentTitleObscured();
+    }
+
+    attempt();
   }
 
   bool _isScrollAtEnd() {
@@ -577,6 +597,12 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   }
 
   void _onScrollChrome() {
+    final id = _articleId;
+    if (id != null && !_ignoreScrollForJump && _scrollController.hasClients) {
+      final offset = _scrollController.offset;
+      _scrolls[id] = offset;
+      widget.model.rememberEditorScrollOffset(id, offset);
+    }
     _onScrollForJumpChip();
     _updateDocumentTitleObscured();
   }
@@ -673,8 +699,7 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
 
   void _onSelectionChanged(TextSelection selection) {
     _maybeExitPairSessionForSelection(selection);
-    if (_showJumpToEnd &&
-        !_shouldOfferJumpToEnd(selection: selection)) {
+    if (_showJumpToEnd && !_shouldOfferJumpToEnd(selection: selection)) {
       _dismissJumpToEnd();
     }
   }
@@ -765,8 +790,6 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
         }
         _restoreScroll(article.id);
         if (!_scrollController.hasClients) return;
-        _lastJumpScroll = _scrollController.offset;
-        _syncJumpToEndVisibility(ignoreCaret: true);
         _updateDocumentTitleObscured();
       });
     } else {
@@ -862,18 +885,14 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
       paragraphSpacing: prefs.paragraphSpacing,
       marginLeft: prefs.marginLeft,
       marginRight: prefs.marginRight,
-      centeredContentWidth:
-          WindowChrome.isDesktop ? prefs.editorWidth : null,
+      centeredContentWidth: WindowChrome.isDesktop ? prefs.editorWidth : null,
       firstLineIndent: prefs.firstLineIndent,
       paddingTop: 12,
       paddingBottom: 48,
     );
   }
 
-  EditorMargins _resolveMargins(
-    EditorPreferences prefs,
-    double viewportWidth,
-  ) {
+  EditorMargins _resolveMargins(EditorPreferences prefs, double viewportWidth) {
     final minContent = math.max(120.0, prefs.fontSize * 8);
     if (WindowChrome.isDesktop) {
       return EditorMargins.resolveCentered(
@@ -893,12 +912,9 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   Widget _titleHeader(BuildContext context, EditorPreferences prefs) {
     final theme = Theme.of(context);
     final top = 20 + widget.contentTopInset;
-    final dimTitle =
-        prefs.typewriterMode && !_titleFocusNode.hasFocus;
+    final dimTitle = prefs.typewriterMode && !_titleFocusNode.hasFocus;
     final titleColor = theme.colorScheme.onSurface.withValues(
-      alpha: dimTitle
-          ? PlainTextEditorRenderObject.dimmedParagraphOpacity
-          : 1,
+      alpha: dimTitle ? PlainTextEditorRenderObject.dimmedParagraphOpacity : 1,
     );
 
     return KeyedSubtree(
@@ -1275,11 +1291,7 @@ class EditorOverlayCapsule extends StatelessWidget {
       elevation: 0,
       child: onTap == null
           ? body
-          : InkWell(
-              onTap: onTap,
-              customBorder: shape,
-              child: body,
-            ),
+          : InkWell(onTap: onTap, customBorder: shape, child: body),
     );
     return DecoratedBox(
       decoration: BoxDecoration(

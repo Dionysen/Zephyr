@@ -840,6 +840,7 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
   final _activeEditor = ValueNotifier<int>(0);
   late final AnimationController _topBarHide;
   var _topBarScrollSlop = 0.0;
+  var _topBarUserScroll = false;
   var _companionReady = false;
   var _ensuringDistinctBooks = false;
   var _refreshingCompanionSnapshot = false;
@@ -1104,7 +1105,12 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
       return false;
     }
     if (notification.metrics.axis != Axis.vertical) return false;
+    if (notification is ScrollStartNotification) {
+      _topBarUserScroll = notification.dragDetails != null;
+      return false;
+    }
     if (notification is ScrollUpdateNotification) {
+      if (!_topBarUserScroll) return false;
       final delta = notification.scrollDelta;
       if (delta == null || delta == 0) return false;
       if (notification.metrics.pixels <= 0) {
@@ -1128,6 +1134,7 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
         }
       }
     } else if (notification is ScrollEndNotification) {
+      _topBarUserScroll = false;
       _topBarScrollSlop = 0;
       if (notification.metrics.pixels <= 0) _showTopBar();
     }
@@ -1206,21 +1213,25 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
     listenable: model,
     builder: (context, _) => Material(
       color: widget.sidebarColor,
-      child: ZephyrTopSafeArea(
-        top: widget.sidebarTopInset,
-        bottom: false,
-        left: false,
-        right: false,
-        child: model.library == null
-            ? const Center(child: CircularProgressIndicator())
-            : WorkspaceSidebar(
-                model: model,
-                mode: SidebarMode.drawer,
-                openLibrary: widget.openLibrary,
-                openSettings: widget.openSettings,
-                aiContextEnabled: aiContextEnabled,
-                aiContext: aiContext,
-              ),
+      child: NotificationListener<ScrollNotification>(
+        // Library drawer scroll must not drive the editor floating top bar.
+        onNotification: (_) => true,
+        child: ZephyrTopSafeArea(
+          top: widget.sidebarTopInset,
+          bottom: false,
+          left: false,
+          right: false,
+          child: model.library == null
+              ? const Center(child: CircularProgressIndicator())
+              : WorkspaceSidebar(
+                  model: model,
+                  mode: SidebarMode.drawer,
+                  openLibrary: widget.openLibrary,
+                  openSettings: widget.openSettings,
+                  aiContextEnabled: aiContextEnabled,
+                  aiContext: aiContext,
+                ),
+        ),
       ),
     ),
   );
@@ -1363,6 +1374,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
 
   /// Accumulated delta before triggering a show/hide jump.
   var _slop = 0.0;
+  var _barUserScroll = false;
   String? _articleId;
 
   double get _barTravel =>
@@ -1423,7 +1435,12 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
     if (notification.metrics.axis != Axis.vertical) {
       return false;
     }
+    if (notification is ScrollStartNotification) {
+      _barUserScroll = notification.dragDetails != null;
+      return false;
+    }
     if (notification is ScrollUpdateNotification) {
+      if (!_barUserScroll) return false;
       final delta = notification.scrollDelta;
       if (delta == null || delta == 0) {
         return false;
@@ -1455,6 +1472,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
         _showBar();
       }
     } else if (notification is ScrollEndNotification) {
+      _barUserScroll = false;
       _resetGate();
       if (notification.metrics.pixels <= 0) {
         _showBar();
