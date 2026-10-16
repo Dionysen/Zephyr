@@ -56,7 +56,7 @@ class LlmGateway {
     if (modelId.isEmpty) {
       throw LlmGatewayException('Model is required.');
     }
-    return switch (connection.provider) {
+    final result = await switch (connection.provider) {
       LlmProviderKind.anthropic => _chatAnthropic(
         connection,
         key,
@@ -82,6 +82,7 @@ class LlmGateway {
         options,
       ),
     };
+    return _present(result, options);
   }
 
   Stream<LlmStreamPart> streamChat({
@@ -176,7 +177,8 @@ class LlmGateway {
     String key,
   ) async {
     final root = LlmProviderCatalog.resolveApiRoot(connection);
-    final uri = Uri.parse('$root/models').replace(queryParameters: {'key': key});
+    final uri = Uri.parse('$root/models')
+        .replace(queryParameters: {'key': key});
     final response = await _client.get(uri).timeout(_timeout);
     _ensureSuccess(response);
     final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -203,6 +205,18 @@ class LlmGateway {
     return body;
   }
 
+  static final _thinkBlock = RegExp(
+    r'<think>[\s\S]*?</think>',
+    caseSensitive: false,
+  );
+
+  LlmChatResult _present(LlmChatResult result, LlmCompletionOptions options) {
+    if (options.thinkingLevel != LlmThinkingLevel.off) return result;
+    final text = result.text.replaceAll(_thinkBlock, '').trim();
+    if (text == result.text && result.thinking.isEmpty) return result;
+    return LlmChatResult(text: text);
+  }
+
   void _applyOpenAiThinking(
     Map<String, Object?> body,
     LlmCompletionOptions options,
@@ -217,6 +231,9 @@ class LlmGateway {
     }
     if (thinking.openAiThinking != null) {
       body['thinking'] = thinking.openAiThinking;
+    }
+    if (thinking.enableThinking != null) {
+      body['enable_thinking'] = thinking.enableThinking;
     }
   }
 
@@ -325,9 +342,9 @@ class LlmGateway {
           if (first is! Map) continue;
           final delta = first['delta'];
           if (delta is! Map) continue;
-          final reasoning =
-              delta['reasoning_content'] ?? delta['reasoning'];
-          if (reasoning is String && reasoning.isNotEmpty) {
+          final hideThinking = options.thinkingLevel == LlmThinkingLevel.off;
+          final reasoning = delta['reasoning_content'] ?? delta['reasoning'];
+          if (!hideThinking && reasoning is String && reasoning.isNotEmpty) {
             yield LlmStreamPart(
               kind: LlmStreamPartKind.thinking,
               delta: reasoning,
@@ -335,10 +352,7 @@ class LlmGateway {
           }
           final content = delta['content'];
           if (content is String && content.isNotEmpty) {
-            yield LlmStreamPart(
-              kind: LlmStreamPartKind.answer,
-              delta: content,
-            );
+            yield LlmStreamPart(kind: LlmStreamPartKind.answer, delta: content);
           }
         } on Object {
           continue;
@@ -416,9 +430,8 @@ class LlmGateway {
     LlmCompletionOptions options,
   ) async {
     final root = LlmProviderCatalog.resolveApiRoot(connection);
-    final uri = Uri.parse('$root/models/$modelId:generateContent').replace(
-      queryParameters: {'key': key},
-    );
+    final uri = Uri.parse('$root/models/$modelId:generateContent')
+        .replace(queryParameters: {'key': key});
     final contents = <Map<String, Object?>>[];
     for (final message in messages.where((m) => m.role != LlmChatRole.system)) {
       contents.add({
@@ -443,6 +456,7 @@ class LlmGateway {
     if (thinking.googleThinkingBudget != null) {
       generationConfig['thinkingConfig'] = {
         'thinkingBudget': thinking.googleThinkingBudget,
+        'includeThoughts': thinking.googleThinkingBudget != 0,
       };
     }
     final body = jsonEncode({
@@ -456,11 +470,7 @@ class LlmGateway {
       'generationConfig': generationConfig,
     });
     final response = await _client
-        .post(
-          uri,
-          headers: {'content-type': 'application/json'},
-          body: body,
-        )
+        .post(uri, headers: {'content-type': 'application/json'}, body: body)
         .timeout(_timeout);
     _ensureSuccess(response);
     final json = jsonDecode(response.body) as Map<String, dynamic>;

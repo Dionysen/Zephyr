@@ -30,12 +30,41 @@ void main() {
     expect(params.anthropicThinking?['budget_tokens'], 4096);
   });
 
-  test('off produces no thinking params', () {
-    final params = LlmThinkingAdapter.forRequest(
+  test('off disables vendor thinking instead of omitting it', () {
+    final gemini = LlmThinkingAdapter.forRequest(
       provider: LlmProviderKind.google,
       level: LlmThinkingLevel.off,
       modelId: 'gemini-2.5-flash',
     );
-    expect(params.isActive, isFalse);
+    expect(gemini.googleThinkingBudget, 0);
+
+    final deepseek = LlmThinkingAdapter.forRequest(
+      provider: LlmProviderKind.deepseek,
+      level: LlmThinkingLevel.off,
+      modelId: 'deepseek-chat',
+    );
+    expect(deepseek.openAiThinking, {'type': 'disabled'});
+
+    final compatible = LlmThinkingAdapter.forRequest(
+      provider: LlmProviderKind.openAiCompatible,
+      level: LlmThinkingLevel.off,
+      modelId: 'qwen3',
+    );
+    expect(compatible.openAiThinking, {'type': 'disabled'});
+    expect(compatible.enableThinking, isFalse);
+
+    final oSeries = LlmThinkingAdapter.forRequest(
+      provider: LlmProviderKind.openai,
+      level: LlmThinkingLevel.off,
+      modelId: 'o3-mini',
+    );
+    expect(oSeries.openAiReasoningEffort, 'low');
+
+    final gpt5 = LlmThinkingAdapter.forRequest(
+      provider: LlmProviderKind.openai,
+      level: LlmThinkingLevel.off,
+      modelId: 'gpt-5',
+    );
+    expect(gpt5.openAiReasoningEffort, 'none');
   });
 }

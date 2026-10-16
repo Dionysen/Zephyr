@@ -5,25 +5,30 @@ class LlmThinkingRequest {
   const LlmThinkingRequest({
     this.openAiReasoningEffort,
     this.openAiThinking,
+    this.enableThinking,
     this.anthropicThinking,
     this.googleThinkingBudget,
   });
 
-  /// OpenAI o-series / Responses-style: `low` | `medium` | `high`.
+  /// OpenAI o-series / Responses-style: `none` | `low` | `medium` | `high`.
   final String? openAiReasoningEffort;
 
-  /// DeepSeek / some OpenAI-compatible: `{ "type": "enabled" }`.
+  /// DeepSeek / Zhipu / compatible: `{ "type": "enabled" | "disabled" }`.
   final Map<String, Object?>? openAiThinking;
+
+  /// Qwen-style `enable_thinking`. `false` asks the server not to think.
+  final bool? enableThinking;
 
   /// Anthropic extended thinking block.
   final Map<String, Object?>? anthropicThinking;
 
-  /// Gemini `thinkingConfig.thinkingBudget` (tokens).
+  /// Gemini `thinkingConfig.thinkingBudget` (tokens). `0` disables thinking.
   final int? googleThinkingBudget;
 
   bool get isActive =>
       openAiReasoningEffort != null ||
       openAiThinking != null ||
+      enableThinking != null ||
       anthropicThinking != null ||
       googleThinkingBudget != null;
 }
@@ -36,7 +41,7 @@ abstract final class LlmThinkingAdapter {
     required String modelId,
   }) {
     if (level == LlmThinkingLevel.off) {
-      return const LlmThinkingRequest();
+      return _disabled(provider: provider, modelId: modelId);
     }
     if (level == LlmThinkingLevel.auto) {
       return _autoFor(provider: provider, modelId: modelId);
@@ -55,6 +60,40 @@ abstract final class LlmThinkingAdapter {
     };
   }
 
+  static LlmThinkingRequest _disabled({
+    required LlmProviderKind provider,
+    required String modelId,
+  }) {
+    return switch (provider) {
+      LlmProviderKind.anthropic => const LlmThinkingRequest(
+        anthropicThinking: {'type': 'disabled'},
+      ),
+      LlmProviderKind.google => const LlmThinkingRequest(
+        googleThinkingBudget: 0,
+      ),
+      LlmProviderKind.openai => _openAiDisabled(modelId),
+      LlmProviderKind.deepseek || LlmProviderKind.zhipu =>
+        const LlmThinkingRequest(openAiThinking: {'type': 'disabled'}),
+      LlmProviderKind.openAiCompatible => const LlmThinkingRequest(
+        openAiThinking: {'type': 'disabled'},
+        enableThinking: false,
+      ),
+    };
+  }
+
+  /// o-series cannot turn reasoning off; `low` is the smallest effort they accept.
+  /// GPT-5 accepts `none`. Other OpenAI chat models do not think unless asked.
+  static LlmThinkingRequest _openAiDisabled(String modelId) {
+    if (!_prefersReasoningEffort(modelId)) {
+      return const LlmThinkingRequest();
+    }
+    final id = modelId.toLowerCase();
+    if (id.contains('gpt-5')) {
+      return const LlmThinkingRequest(openAiReasoningEffort: 'none');
+    }
+    return const LlmThinkingRequest(openAiReasoningEffort: 'low');
+  }
+
   static LlmThinkingRequest _autoFor({
     required LlmProviderKind provider,
     required String modelId,
@@ -69,9 +108,7 @@ abstract final class LlmThinkingAdapter {
       return _google(LlmThinkingLevel.medium);
     }
     if (_prefersThinkingBlock(modelId, provider)) {
-      return const LlmThinkingRequest(
-        openAiThinking: {'type': 'enabled'},
-      );
+      return const LlmThinkingRequest(openAiThinking: {'type': 'enabled'});
     }
     return const LlmThinkingRequest();
   }
@@ -82,14 +119,10 @@ abstract final class LlmThinkingAdapter {
     LlmProviderKind provider,
   ) {
     if (_prefersReasoningEffort(modelId)) {
-      return LlmThinkingRequest(
-        openAiReasoningEffort: _effortName(level),
-      );
+      return LlmThinkingRequest(openAiReasoningEffort: _effortName(level));
     }
     if (_prefersThinkingBlock(modelId, provider)) {
-      return const LlmThinkingRequest(
-        openAiThinking: {'type': 'enabled'},
-      );
+      return const LlmThinkingRequest(openAiThinking: {'type': 'enabled'});
     }
     // Generic OpenAI-compatible: try reasoning_effort when level is not low.
     if (level == LlmThinkingLevel.minimal) {
@@ -108,10 +141,7 @@ abstract final class LlmThinkingAdapter {
     };
     if (budget <= 0) return const LlmThinkingRequest();
     return LlmThinkingRequest(
-      anthropicThinking: {
-        'type': 'enabled',
-        'budget_tokens': budget,
-      },
+      anthropicThinking: {'type': 'enabled', 'budget_tokens': budget},
     );
   }
 
@@ -147,6 +177,8 @@ abstract final class LlmThinkingAdapter {
     if (provider == LlmProviderKind.deepseek) return true;
     if (provider == LlmProviderKind.zhipu) return true;
     final id = modelId.toLowerCase();
-    return id.contains('reasoner') || id.contains('thinking') || id.contains('r1');
+    return id.contains('reasoner') ||
+        id.contains('thinking') ||
+        id.contains('r1');
   }
 }
