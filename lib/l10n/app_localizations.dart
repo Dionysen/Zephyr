@@ -1208,6 +1208,18 @@ abstract class AppLocalizations {
   /// **'Press back again to exit'**
   String get pressBackAgainToExit;
 
+  /// No description provided for @aiFeaturesEnabledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI assistant'**
+  String get aiFeaturesEnabledTitle;
+
+  /// No description provided for @aiFeaturesEnabledSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When off, the AI button is hidden in the workspace and any open assistant returns to the book.'**
+  String get aiFeaturesEnabledSubtitle;
+
   /// No description provided for @hideQuickToolbarTitle.
   ///
   /// In en, this message translates to:

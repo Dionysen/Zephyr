@@ -389,6 +389,9 @@ class ThemeViewModel extends ChangeNotifier {
   void updateEditorBackgroundEnabled(bool value) =>
       _updateUi(_ui.copyWith(editorBackgroundEnabled: value));
 
+  void updateAiFeaturesEnabled(bool value) =>
+      _updateUi(_ui.copyWith(aiFeaturesEnabled: value));
+
   void updateLocalePreference(AppLocalePreference value) =>
       _updateUi(_ui.copyWith(localePreference: value));
 

@@ -234,6 +234,8 @@
   "openSidebarOnStartupTitle": "Open chapter list on launch",
   "openSidebarOnStartupSubtitle": "Expand the library drawer when the workspace opens.",
   "pressBackAgainToExit": "Press back again to exit",
+  "aiFeaturesEnabledTitle": "AI assistant",
+  "aiFeaturesEnabledSubtitle": "When off, the AI button is hidden in the workspace and any open assistant returns to the book.",
   "hideQuickToolbarTitle": "Hide quick input bar",
   "hideQuickToolbarSubtitle": "When on, the accessory toolbar above the keyboard is hidden.",
   "showChapterDetailsTitle": "Show chapter details",

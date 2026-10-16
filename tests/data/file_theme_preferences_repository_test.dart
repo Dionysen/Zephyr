@@ -74,6 +74,7 @@ void main() {
           openBookListOnStartup: true,
           openSidebarOnStartup: true,
           editorBackgroundEnabled: false,
+          aiFeaturesEnabled: false,
           localePreference: AppLocalePreference.system,
           mobileToolsOrder: ['settings', 'search'],
           cloudBackupMenuOrder: ['auto', 'backup', 'restore'],
@@ -129,6 +130,7 @@ void main() {
         actual.ui.editorBackgroundEnabled,
         expected.ui.editorBackgroundEnabled,
       );
+      expect(actual.ui.aiFeaturesEnabled, expected.ui.aiFeaturesEnabled);
       expect(actual.ui.localePreference, expected.ui.localePreference);
       expect(actual.ui.mobileToolsOrder, expected.ui.mobileToolsOrder);
       expect(

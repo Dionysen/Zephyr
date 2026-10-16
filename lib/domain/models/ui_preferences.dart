@@ -43,6 +43,7 @@ class UiPreferences {
     required this.openBookListOnStartup,
     required this.openSidebarOnStartup,
     required this.editorBackgroundEnabled,
+    required this.aiFeaturesEnabled,
     required this.localePreference,
     this.mobileToolsOrder = const [],
     this.cloudBackupMenuOrder = const [],
@@ -73,6 +74,7 @@ class UiPreferences {
     openBookListOnStartup: false,
     openSidebarOnStartup: false,
     editorBackgroundEnabled: true,
+    aiFeaturesEnabled: true,
     localePreference: AppLocalePreference.system,
     mobileToolsOrder: [],
     cloudBackupMenuOrder: [],
@@ -152,6 +154,9 @@ class UiPreferences {
   /// light/dark configs are kept but not painted.
   final bool editorBackgroundEnabled;
 
+  /// When false, workspace AI chrome and sidebar context picks are hidden.
+  final bool aiFeaturesEnabled;
+
   /// App UI language: system, Simplified Chinese, or English.
   final AppLocalePreference localePreference;
 
@@ -207,6 +212,7 @@ class UiPreferences {
     bool? openBookListOnStartup,
     bool? openSidebarOnStartup,
     bool? editorBackgroundEnabled,
+    bool? aiFeaturesEnabled,
     AppLocalePreference? localePreference,
     List<String>? mobileToolsOrder,
     List<String>? cloudBackupMenuOrder,
@@ -241,6 +247,7 @@ class UiPreferences {
         openSidebarOnStartup ?? this.openSidebarOnStartup,
     editorBackgroundEnabled:
         editorBackgroundEnabled ?? this.editorBackgroundEnabled,
+    aiFeaturesEnabled: aiFeaturesEnabled ?? this.aiFeaturesEnabled,
     localePreference: localePreference ?? this.localePreference,
     mobileToolsOrder: mobileToolsOrder ?? this.mobileToolsOrder,
     cloudBackupMenuOrder: cloudBackupMenuOrder ?? this.cloudBackupMenuOrder,

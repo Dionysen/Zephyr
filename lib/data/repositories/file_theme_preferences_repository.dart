@@ -349,6 +349,11 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
         'uiEditorBackgroundEnabled',
         UiPreferences.defaults.editorBackgroundEnabled,
       ),
+      aiFeaturesEnabled: _bool(
+        values,
+        'uiAiFeaturesEnabled',
+        UiPreferences.defaults.aiFeaturesEnabled,
+      ),
       localePreference: AppLocalePreference.fromStorage(
         values['uiLocale'] as String?,
       ),
@@ -380,6 +385,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'uiOpenBookListOnStartup': ui.openBookListOnStartup,
     'uiOpenSidebarOnStartup': ui.openSidebarOnStartup,
     'uiEditorBackgroundEnabled': ui.editorBackgroundEnabled,
+    'uiAiFeaturesEnabled': ui.aiFeaturesEnabled,
     'uiLocale': ui.localePreference.storageValue,
     'uiMobileToolsOrder': ui.mobileToolsOrder,
     'uiCloudBackupMenuOrder': ui.cloudBackupMenuOrder,

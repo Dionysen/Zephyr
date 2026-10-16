@@ -69,12 +69,14 @@ class _LlmSettingsPageState extends State<LlmSettingsPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final vm = ZephyrScope.of(context).llmSettings;
+    final scope = ZephyrScope.of(context);
+    final vm = scope.llmSettings;
+    final themeVm = scope.theme;
     final surface = Theme.of(context).colorScheme.surface;
     final barColor = ZephyrSettingsAppBar.backgroundColor(context);
 
     return ListenableBuilder(
-      listenable: vm,
+      listenable: Listenable.merge([vm, themeVm]),
       builder: (context, _) {
         if (_apiKeyController.text != vm.apiKey) {
           _apiKeyController.text = vm.apiKey;
@@ -118,6 +120,13 @@ class _LlmSettingsPageState extends State<LlmSettingsPage> {
                     const SizedBox(height: 16),
                     ZephyrSettingsSection(
                       children: [
+                        ZephyrSettingsSwitchTile(
+                          icon: Icons.auto_awesome_outlined,
+                          title: l10n.aiFeaturesEnabledTitle,
+                          subtitle: l10n.aiFeaturesEnabledSubtitle,
+                          value: themeVm.ui.aiFeaturesEnabled,
+                          onChanged: themeVm.updateAiFeaturesEnabled,
+                        ),
                         ZephyrSettingsChoiceTile<LlmProviderKind>(
                           icon: Icons.hub_outlined,
                           title: l10n.llmProviderTitle,

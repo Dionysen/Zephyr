@@ -66,6 +66,8 @@ class _WorkspacePageState extends State<WorkspacePage>
   var _desktopAiChatOpen = false;
   final _desktopAiContext = WorkspaceAiContextSelection();
   String? _desktopBookId;
+  ThemeViewModel? _themeVm;
+  bool? _lastAiFeaturesEnabled;
 
   /// Avoid enqueueing leave backup twice across leave-hint → paused → detached.
   var _leaveBackupScheduled = false;
@@ -90,6 +92,7 @@ class _WorkspacePageState extends State<WorkspacePage>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _attachThemeAiListener();
     _library = ZephyrScope.of(context).library;
     if (_started) {
       return;
@@ -100,6 +103,25 @@ class _WorkspacePageState extends State<WorkspacePage>
       ..addListener(_onDesktopBookChanged);
     _desktopBookId = _library!.selectedBook?.id;
     unawaited(_bootstrapLibrary());
+  }
+
+  void _attachThemeAiListener() {
+    final theme = ZephyrScope.of(context).theme;
+    if (_themeVm == theme) return;
+    _themeVm?.removeListener(_onThemeAiPreferenceChanged);
+    _themeVm = theme;
+    _lastAiFeaturesEnabled = theme.ui.aiFeaturesEnabled;
+    _themeVm!.addListener(_onThemeAiPreferenceChanged);
+  }
+
+  void _onThemeAiPreferenceChanged() {
+    if (!mounted || _themeVm == null) return;
+    final enabled = _themeVm!.ui.aiFeaturesEnabled;
+    if (_lastAiFeaturesEnabled == enabled) return;
+    _lastAiFeaturesEnabled = enabled;
+    setState(() {
+      if (!enabled) _desktopAiChatOpen = false;
+    });
   }
 
   void _onDesktopBookChanged() {
@@ -298,6 +320,7 @@ class _WorkspacePageState extends State<WorkspacePage>
         ..removeListener(_onDesktopBookChanged);
       unawaited(library.flushPending().catchError((Object _) {}));
     }
+    _themeVm?.removeListener(_onThemeAiPreferenceChanged);
     _desktopAiContext.dispose();
     super.dispose();
   }
@@ -435,8 +458,11 @@ class _WorkspacePageState extends State<WorkspacePage>
                     // under the resize grip so expanding the sidebar does not leave a
                     // solid strip beside the photo.
                     final bleedEditorBackground = editorBackground.hasImage;
+                    final aiFeaturesEnabled = scope.theme.ui.aiFeaturesEnabled;
+                    final desktopAiChatVisible =
+                        aiFeaturesEnabled && _desktopAiChatOpen;
                     final desktopAiImmersiveBleed =
-                        immersiveStatusBar && _desktopAiChatOpen;
+                        immersiveStatusBar && desktopAiChatVisible;
                     final desktopColumnBleed =
                         bleedEditorBackground || desktopAiImmersiveBleed;
                     final workspace = Row(
@@ -460,7 +486,7 @@ class _WorkspacePageState extends State<WorkspacePage>
                                 mode: SidebarMode.docked,
                                 openLibrary: _openLibrary,
                                 openSettings: _openSettings,
-                                aiContextEnabled: _desktopAiChatOpen,
+                                aiContextEnabled: desktopAiChatVisible,
                                 aiContext: _desktopAiContext,
                               ),
                             ),
@@ -497,11 +523,13 @@ class _WorkspacePageState extends State<WorkspacePage>
                                         .editorPreferences
                                         .preferences
                                         .typewriterMode,
-                                    transparent: _desktopAiChatOpen
+                                    transparent: desktopAiChatVisible
                                         ? desktopColumnBleed
                                         : bleedEditorBackground,
-                                    aiActive: _desktopAiChatOpen,
-                                    onAiPressed: _toggleDesktopAiChat,
+                                    aiActive: desktopAiChatVisible,
+                                    onAiPressed: aiFeaturesEnabled
+                                        ? _toggleDesktopAiChat
+                                        : null,
                                     toolsBuilder: (headerContext) =>
                                         buildWorkspaceOverflowTools(
                                           headerContext,
@@ -522,7 +550,7 @@ class _WorkspacePageState extends State<WorkspacePage>
                                             ),
                                           ),
                                         Expanded(
-                                          child: _desktopAiChatOpen
+                                          child: desktopAiChatVisible
                                               ? WorkspaceAiChatView(
                                                   bleedEditorBackground:
                                                       desktopColumnBleed,
@@ -742,6 +770,7 @@ class _WorkspacePageState extends State<WorkspacePage>
   }
 
   void _toggleDesktopAiChat() {
+    if (!ZephyrScope.of(context).theme.ui.aiFeaturesEnabled) return;
     FocusManager.instance.primaryFocus?.unfocus();
     setState(() => _desktopAiChatOpen = !_desktopAiChatOpen);
   }
@@ -822,6 +851,8 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
   final _companionAiContext = WorkspaceAiContextSelection();
   String? _primaryBookId;
   String? _companionBookId;
+  ThemeViewModel? _themeVm;
+  bool? _lastAiFeaturesEnabled;
 
   @override
   void initState() {
@@ -849,6 +880,7 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _attachThemeAiListener();
     final toolbar = ZephyrScope.of(context).quickToolbar;
     void dismissToolsPanel() {
       if (!toolbar.toolsDrawerOpen &&
@@ -862,6 +894,28 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
 
     _primaryBridge.onDismissToolsPanel = dismissToolsPanel;
     _companionBridge.onDismissToolsPanel = dismissToolsPanel;
+  }
+
+  void _attachThemeAiListener() {
+    final theme = ZephyrScope.of(context).theme;
+    if (_themeVm == theme) return;
+    _themeVm?.removeListener(_onThemeAiPreferenceChanged);
+    _themeVm = theme;
+    _lastAiFeaturesEnabled = theme.ui.aiFeaturesEnabled;
+    _themeVm!.addListener(_onThemeAiPreferenceChanged);
+  }
+
+  void _onThemeAiPreferenceChanged() {
+    if (!mounted || _themeVm == null) return;
+    final enabled = _themeVm!.ui.aiFeaturesEnabled;
+    if (_lastAiFeaturesEnabled == enabled) return;
+    _lastAiFeaturesEnabled = enabled;
+    setState(() {
+      if (!enabled) {
+        _primaryAiChatOpen = false;
+        _companionAiChatOpen = false;
+      }
+    });
   }
 
   void _onPrimaryBookChanged() {
@@ -894,6 +948,7 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
     _companionBridge.dispose();
     _activeEditor.dispose();
     _topBarHide.dispose();
+    _themeVm?.removeListener(_onThemeAiPreferenceChanged);
     _companion.dispose();
     super.dispose();
   }
@@ -1032,6 +1087,7 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
       editorIndex == 0 ? _primaryAiChatOpen : _companionAiChatOpen;
 
   void _toggleAiChatFor(int editorIndex) {
+    if (!ZephyrScope.of(context).theme.ui.aiFeaturesEnabled) return;
     FocusManager.instance.primaryFocus?.unfocus();
     setState(() {
       if (editorIndex == 0) {
@@ -1114,6 +1170,8 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
           valueListenable: _activeEditor,
           builder: (context, activeEditor, _) {
             final model = activeEditor == 0 ? widget.model : _companion;
+            final aiEnabled =
+                ZephyrScope.of(context).theme.ui.aiFeaturesEnabled;
             return WorkspaceMobileBookBar(
               model: model,
               onOpenMenu: () {
@@ -1124,8 +1182,10 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
               },
               reverse: activeEditor == 1,
               transparentBackground: widget.transparentTopBar,
-              aiActive: _aiChatOpenFor(activeEditor),
-              onAiPressed: () => _toggleAiChatFor(activeEditor),
+              aiActive: aiEnabled && _aiChatOpenFor(activeEditor),
+              onAiPressed: aiEnabled
+                  ? () => _toggleAiChatFor(activeEditor)
+                  : null,
               toolsBuilder: (barContext) => buildWorkspaceOverflowTools(
                 barContext,
                 model: model,
@@ -1168,6 +1228,7 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
   @override
   Widget build(BuildContext context) {
     final scope = ZephyrScope.of(context);
+    final aiEnabled = scope.theme.ui.aiFeaturesEnabled;
     final pager = ZephyrDualEditorPager(
       drawerWidth: widget.drawerWidth,
       onActiveEditorChanged: _setActiveEditor,
@@ -1176,7 +1237,7 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
       ),
       startDrawer: _drawerFor(
         widget.model,
-        aiContextEnabled: _primaryAiChatOpen,
+        aiContextEnabled: aiEnabled && _primaryAiChatOpen,
         aiContext: _primaryAiContext,
       ),
       primaryEditor: Builder(
@@ -1189,7 +1250,7 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
             onOpenMenu: () =>
                 ZephyrDualEditorPager.of(editorContext).openStartDrawer(),
             showBookBar: false,
-            aiChatOpen: _primaryAiChatOpen,
+            aiChatOpen: aiEnabled && _primaryAiChatOpen,
             aiContextSelection: _primaryAiContext,
             invadeStatusBar: widget.invadeStatusBar,
             transparentTopBar: widget.transparentTopBar,
@@ -1208,7 +1269,7 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
                 ZephyrDualEditorPager.of(editorContext).openEndDrawer(),
             reverse: true,
             showBookBar: false,
-            aiChatOpen: _companionAiChatOpen,
+            aiChatOpen: aiEnabled && _companionAiChatOpen,
             aiContextSelection: _companionAiContext,
             invadeStatusBar: widget.invadeStatusBar,
             transparentTopBar: widget.transparentTopBar,
@@ -1218,7 +1279,7 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
       ),
       endDrawer: _drawerFor(
         _companion,
-        aiContextEnabled: _companionAiChatOpen,
+        aiContextEnabled: aiEnabled && _companionAiChatOpen,
         aiContext: _companionAiContext,
       ),
     );

@@ -227,6 +227,16 @@ void main() {
     expect(model.lightTokens, ThemeTokens.presets[ThemePreset.light]);
   });
 
+  test('ai features default on and updates independently', () {
+    final model = ThemeViewModel(_ThemeRepository());
+
+    expect(model.ui.aiFeaturesEnabled, isTrue);
+    model.updateAiFeaturesEnabled(false);
+    expect(model.ui.aiFeaturesEnabled, isFalse);
+    model.updateAiFeaturesEnabled(true);
+    expect(model.ui.aiFeaturesEnabled, isTrue);
+  });
+
   test('show chapter details defaults on and updates independently', () {
     final model = ThemeViewModel(_ThemeRepository());
 

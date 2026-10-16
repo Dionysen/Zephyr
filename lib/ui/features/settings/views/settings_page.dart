@@ -197,6 +197,16 @@ class CompactSettingsList extends StatelessWidget {
         ZephyrSettingsSection(
           children: [
             ListenableBuilder(
+              listenable: scope.theme,
+              builder: (context, _) => ZephyrSettingsSwitchTile(
+                icon: Icons.auto_awesome_outlined,
+                title: l10n.aiFeaturesEnabledTitle,
+                subtitle: l10n.aiFeaturesEnabledSubtitle,
+                value: scope.theme.ui.aiFeaturesEnabled,
+                onChanged: scope.theme.updateAiFeaturesEnabled,
+              ),
+            ),
+            ListenableBuilder(
               listenable: scope.llmSettings,
               builder: (context, _) {
                 final llm = scope.llmSettings;

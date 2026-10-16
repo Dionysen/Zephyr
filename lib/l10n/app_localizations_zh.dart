@@ -582,6 +582,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pressBackAgainToExit => '再按一次返回键退出';
 
   @override
+  String get aiFeaturesEnabledTitle => 'AI 助手';
+
+  @override
+  String get aiFeaturesEnabledSubtitle => '关闭后，工作区顶栏不再显示 AI 按钮，已打开的助手会回到书籍界面。';
+
+  @override
   String get hideQuickToolbarTitle => '隐藏快捷输入栏';
 
   @override

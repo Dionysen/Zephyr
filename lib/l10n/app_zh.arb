@@ -231,6 +231,8 @@
   "openSidebarOnStartupTitle": "启动时打开文章列表",
   "openSidebarOnStartupSubtitle": "进入工作区后自动展开侧栏章节列表。",
   "pressBackAgainToExit": "再按一次返回键退出",
+  "aiFeaturesEnabledTitle": "AI 助手",
+  "aiFeaturesEnabledSubtitle": "关闭后，工作区顶栏不再显示 AI 按钮，已打开的助手会回到书籍界面。",
   "hideQuickToolbarTitle": "隐藏快捷输入栏",
   "hideQuickToolbarSubtitle": "开启后，键盘上方不再显示快捷工具栏",
   "showChapterDetailsTitle": "显示章节详细信息",

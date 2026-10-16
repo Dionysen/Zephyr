@@ -611,6 +611,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pressBackAgainToExit => 'Press back again to exit';
 
   @override
+  String get aiFeaturesEnabledTitle => 'AI assistant';
+
+  @override
+  String get aiFeaturesEnabledSubtitle =>
+      'When off, the AI button is hidden in the workspace and any open assistant returns to the book.';
+
+  @override
   String get hideQuickToolbarTitle => 'Hide quick input bar';
 
   @override
