@@ -189,6 +189,41 @@ class _ZephyrPreBlockBuilder extends MarkdownElementBuilder {
   }
 }
 
+/// CommonMark will not open `**` / `*` when they sit directly against CJK or
+/// curly quote punctuation (e.g. `这是**「重要」**的内容`). Invisible separators
+/// restore emphasis without changing visible text.
+String prepareZephyrMarkdownForParse(String markdown) {
+  const zwsp = '\u200b';
+  const openQuote = r'「『"\u201c\u2018';
+  const closeQuote = r'」』"\u201d\u2019';
+
+  var out = markdown.replaceAllMapped(
+    RegExp('(\\*\\*|__)(?=[$openQuote])'),
+    (match) => '${match[1]}$zwsp',
+  );
+  out = out.replaceAllMapped(
+    RegExp('(?<=[$closeQuote])(\\*\\*|__)'),
+    (match) => '$zwsp${match[1]}',
+  );
+  out = out.replaceAllMapped(
+    RegExp('(?<!\\*)\\*(?!\\*)(?=[$openQuote])'),
+    (_) => '*$zwsp',
+  );
+  out = out.replaceAllMapped(
+    RegExp('(?<=[$closeQuote])(?<!\\*)\\*(?!\\*)'),
+    (_) => '${zwsp}*',
+  );
+  out = out.replaceAllMapped(
+    RegExp('(?<!_)_(?!_)(?=[$openQuote])'),
+    (_) => '_$zwsp',
+  );
+  out = out.replaceAllMapped(
+    RegExp('(?<=[$closeQuote])(?<!_)_(?!_)'),
+    (_) => '${zwsp}_',
+  );
+  return out;
+}
+
 /// GitHub-flavored Markdown for in-app surfaces (no raw HTML blocks).
 class ZephyrMarkdownBody extends StatefulWidget {
   const ZephyrMarkdownBody({
@@ -225,7 +260,7 @@ class _ZephyrMarkdownBodyState extends State<ZephyrMarkdownBody> {
   @override
   void initState() {
     super.initState();
-    _renderedData = widget.data;
+    _renderedData = prepareZephyrMarkdownForParse(widget.data);
   }
 
   @override
@@ -248,13 +283,17 @@ class _ZephyrMarkdownBodyState extends State<ZephyrMarkdownBody> {
     }
     if (!widget.liveStream) {
       _streamTimer?.cancel();
-      setState(() => _renderedData = widget.data);
+      setState(
+        () => _renderedData = prepareZephyrMarkdownForParse(widget.data),
+      );
       return;
     }
     _streamTimer?.cancel();
     _streamTimer = Timer(_streamThrottle, () {
       if (!mounted) return;
-      setState(() => _renderedData = widget.data);
+      setState(
+        () => _renderedData = prepareZephyrMarkdownForParse(widget.data),
+      );
     });
   }
 
@@ -335,6 +374,8 @@ class _ZephyrMarkdownBodyState extends State<ZephyrMarkdownBody> {
           ),
         ),
       ),
+      strong: base.copyWith(fontWeight: FontWeight.w700),
+      em: base.copyWith(fontStyle: FontStyle.italic),
       a: base.copyWith(
         color: theme.colorScheme.primary,
         decoration: TextDecoration.underline,
