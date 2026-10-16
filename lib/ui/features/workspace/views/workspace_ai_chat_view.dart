@@ -77,6 +77,10 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
   /// Bottom reserve for the floating composer (measured each layout).
   var _composerOverlayHeight = 112.0;
 
+  Timer? _scrollSaveDebounce;
+  var _restoringScroll = false;
+  var _scrollRestoreEpoch = 0;
+
   static const _followSlop = 72.0;
 
   void _setDrawerDragBlockedForList(bool blocked) {
@@ -127,6 +131,7 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
       _scrollToEnd(force: true);
     };
     widget.contextSelection?.attachComposer(_composer);
+    _scrollController.addListener(_onListScrollOffsetChanged);
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_bindArticle(_currentArticleId()));
@@ -159,6 +164,7 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
 
   Future<void> _bindArticle(String? articleId) async {
     if (articleId == _boundArticleId && !_loadingSession) return;
+    await _persistScrollOffset();
     _boundArticleId = articleId;
     final repo = _repository();
     if (articleId == null || repo == null) {
@@ -177,6 +183,10 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
       final stored = session == null
           ? <AiChatStoredMessage>[]
           : await repo.listAiChatMessages(session.id);
+      final scrollOffset = await repo.loadAiChatScrollOffset(
+        articleId: articleId,
+        sessionId: session?.id,
+      );
       if (!mounted || _boundArticleId != articleId) return;
       setState(() {
         _sessionId = session?.id;
@@ -187,10 +197,67 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
           ..addAll(stored.map(_messageFromStored));
         _seedWelcomeIfEmpty();
       });
+      if (scrollOffset != null && scrollOffset > 0) {
+        _restoreScrollOffset(scrollOffset);
+      }
     } on Object {
       if (!mounted) return;
       setState(() => _loadingSession = false);
     }
+  }
+
+  void _onListScrollOffsetChanged() {
+    if (_restoringScroll || !_scrollController.hasClients) return;
+    _scrollSaveDebounce?.cancel();
+    _scrollSaveDebounce = Timer(const Duration(milliseconds: 280), () {
+      unawaited(_persistScrollOffset());
+    });
+  }
+
+  Future<void> _persistScrollOffset() async {
+    final articleId = _boundArticleId;
+    final repo = _repository();
+    if (articleId == null || repo == null || !_scrollController.hasClients) {
+      return;
+    }
+    final pixels = _scrollController.offset;
+    await repo.saveAiChatScrollOffset(
+      articleId: articleId,
+      sessionId: _sessionId,
+      offset: pixels,
+    );
+  }
+
+  void _restoreScrollOffset(double offset) {
+    _restoringScroll = true;
+    final epoch = ++_scrollRestoreEpoch;
+    var attempts = 0;
+    void attempt() {
+      if (!mounted || epoch != _scrollRestoreEpoch) {
+        _restoringScroll = false;
+        return;
+      }
+      if (!_scrollController.hasClients) {
+        if (attempts++ < 12) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => attempt());
+        } else {
+          _restoringScroll = false;
+        }
+        return;
+      }
+      final position = _scrollController.position;
+      final target = offset.clamp(0.0, position.maxScrollExtent);
+      if (position.pixels != target) {
+        position.jumpTo(target);
+      }
+      if (position.maxScrollExtent + 1 < offset && attempts++ < 12) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => attempt());
+        return;
+      }
+      _restoringScroll = false;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => attempt());
   }
 
   Future<void> openSessionsSheet() async {
@@ -299,7 +366,10 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
 
   @override
   void dispose() {
+    _scrollSaveDebounce?.cancel();
+    unawaited(_persistScrollOffset());
     WidgetsBinding.instance.removeObserver(this);
+    _scrollController.removeListener(_onListScrollOffsetChanged);
     widget.contextSelection?.detachComposer(_composer);
     if (_drawerDragBlockedForList && context.mounted) {
       ZephyrDrawerDragBlockNotification(blocked: false).dispatch(context);

@@ -79,4 +79,16 @@ mixin AiChatRepositoryMethods {
     required String sessionId,
     required int keepFromSortOrder,
   }) async {}
+
+  Future<double?> loadAiChatScrollOffset({
+    required String articleId,
+    String? sessionId,
+  }) async =>
+      null;
+
+  Future<void> saveAiChatScrollOffset({
+    required String articleId,
+    String? sessionId,
+    required double offset,
+  }) async {}
 }

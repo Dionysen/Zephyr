@@ -1782,4 +1782,21 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     sessionId: sessionId,
     keepFromSortOrder: keepFromSortOrder,
   );
+
+  @override
+  Future<double?> loadAiChatScrollOffset({
+    required String articleId,
+    String? sessionId,
+  }) => _aiChat.readScrollOffset(articleId: articleId, sessionId: sessionId);
+
+  @override
+  Future<void> saveAiChatScrollOffset({
+    required String articleId,
+    String? sessionId,
+    required double offset,
+  }) => _aiChat.writeScrollOffset(
+    articleId: articleId,
+    sessionId: sessionId,
+    offset: offset,
+  );
 }

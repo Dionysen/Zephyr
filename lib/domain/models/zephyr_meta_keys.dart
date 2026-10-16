@@ -8,4 +8,7 @@ abstract final class ZephyrMetaKeys {
 
   /// Last opened AI session per article (`articleId` → session id).
   static const aiChatActiveSession = 'ai_chat_active_session';
+
+  /// AI chat list scroll offsets (`sessionId` or `article:<id>` → pixels).
+  static const aiChatScrollOffsets = 'ai_chat_scroll_offsets';
 }

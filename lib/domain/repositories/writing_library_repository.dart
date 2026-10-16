@@ -204,4 +204,16 @@ abstract interface class WritingLibraryRepository {
     required String sessionId,
     required int keepFromSortOrder,
   });
+
+  /// Restores list scroll for a chapter session ([sessionId] when set).
+  Future<double?> loadAiChatScrollOffset({
+    required String articleId,
+    String? sessionId,
+  });
+
+  Future<void> saveAiChatScrollOffset({
+    required String articleId,
+    String? sessionId,
+    required double offset,
+  });
 }

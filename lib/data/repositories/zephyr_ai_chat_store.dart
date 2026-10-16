@@ -103,9 +103,50 @@ class ZephyrAiChatStore {
     );
   }
 
+  static String scrollOffsetKey({
+    required String articleId,
+    String? sessionId,
+  }) => sessionId ?? 'article:$articleId';
+
+  Future<double?> readScrollOffset({
+    required String articleId,
+    String? sessionId,
+  }) async {
+    final map = await _readScrollMap();
+    final key = scrollOffsetKey(articleId: articleId, sessionId: sessionId);
+    final value = map[key];
+    if (value == null) return null;
+    return value;
+  }
+
+  Future<void> writeScrollOffset({
+    required String articleId,
+    String? sessionId,
+    required double offset,
+  }) async {
+    _store.ensureWritable();
+    final map = await _readScrollMap();
+    final key = scrollOffsetKey(articleId: articleId, sessionId: sessionId);
+    if (offset <= 0) {
+      map.remove(key);
+    } else {
+      map[key] = offset;
+    }
+    await _writeScrollMap(map);
+  }
+
+  Future<void> clearScrollOffset(String key) async {
+    _store.ensureWritable();
+    final map = await _readScrollMap();
+    if (!map.containsKey(key)) return;
+    map.remove(key);
+    await _writeScrollMap(map);
+  }
+
   Future<void> deleteSession(String sessionId) async {
     _store.ensureWritable();
     final session = await getSession(sessionId);
+    await clearScrollOffset(sessionId);
     await _db.transaction((txn) async {
       await txn.delete(
         'ZephyrAiMessage',
@@ -318,6 +359,19 @@ class ZephyrAiChatStore {
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
       }
+      final remoteScroll = await backupDb.query(
+        'ZephyrMeta',
+        where: 'key = ?',
+        whereArgs: [ZephyrMetaKeys.aiChatScrollOffsets],
+        limit: 1,
+      );
+      if (remoteScroll.isNotEmpty) {
+        await txn.insert(
+          'ZephyrMeta',
+          remoteScroll.first,
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
     });
   }
 
@@ -344,6 +398,37 @@ class ZephyrAiChatStore {
       'ZephyrMeta',
       {
         'key': ZephyrMetaKeys.aiChatActiveSession,
+        'value': jsonEncode(map),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<Map<String, double>> _readScrollMap() async {
+    final rows = await _db.query(
+      'ZephyrMeta',
+      where: 'key = ?',
+      whereArgs: [ZephyrMetaKeys.aiChatScrollOffsets],
+      limit: 1,
+    );
+    if (rows.isEmpty) return {};
+    final raw = rows.first['value'] as String?;
+    if (raw == null || raw.isEmpty) return {};
+    try {
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      return decoded.map(
+        (key, value) => MapEntry(key, (value as num).toDouble()),
+      );
+    } on Object {
+      return {};
+    }
+  }
+
+  Future<void> _writeScrollMap(Map<String, double> map) async {
+    await _db.insert(
+      'ZephyrMeta',
+      {
+        'key': ZephyrMetaKeys.aiChatScrollOffsets,
         'value': jsonEncode(map),
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
