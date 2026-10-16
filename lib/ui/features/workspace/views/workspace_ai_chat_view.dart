@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../domain/models/ai_chat_session.dart' show AiChatMessageRole, AiChatStoredMessage, kAiChatNewConversation;
+import '../../../../domain/models/ai_chat_session.dart'
+    show AiChatMessageRole, AiChatStoredMessage, kAiChatNewConversation;
 import '../../../../domain/models/llm_chat.dart';
 import '../../../../domain/models/llm_settings.dart';
 import '../../../../domain/repositories/writing_library_repository.dart';
@@ -72,6 +73,9 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
   var _scrollPinEpoch = 0;
 
   var _drawerDragBlockedForList = false;
+
+  /// Bottom reserve for the floating composer (measured each layout).
+  var _composerOverlayHeight = 112.0;
 
   static const _followSlop = 72.0;
 
@@ -270,7 +274,9 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
       existing: session.contextSummary,
       addition: addition,
     );
-    final keepFrom = stored.length > 8 ? stored[stored.length - 8].sortOrder : 0;
+    final keepFrom = stored.length > 8
+        ? stored[stored.length - 8].sortOrder
+        : 0;
     await repo.updateAiChatSessionSummary(
       sessionId: sessionId,
       contextSummary: merged,
@@ -285,9 +291,7 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
       _messages
         ..clear()
         ..addAll(
-          stored
-              .where((m) => m.sortOrder >= keepFrom)
-              .map(_messageFromStored),
+          stored.where((m) => m.sortOrder >= keepFrom).map(_messageFromStored),
         );
       _seedWelcomeIfEmpty();
     });
@@ -531,22 +535,14 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
         final listTopPadding = immersiveChrome
             ? widget.contentTopInset + 12
             : 12.0;
-        return ColoredBox(
-          color: immersiveChrome
-              ? Colors.transparent
-              : theme.colorScheme.surface,
-          child: Column(
-            children: [
-              if (!immersiveChrome)
-                SizedBox(height: widget.contentTopInset),
-              Expanded(
-                child: _loadingSession
-                    ? const Center(child: CircularProgressIndicator())
-                    : NotificationListener<ScrollNotification>(
-                  onNotification: _handleListScrollNotification,
-                  child: ScrollConfiguration(
-                    behavior: const _AiChatListScrollBehavior(),
-                    child: ListView.builder(
+        final listBottomPadding = _composerOverlayHeight + 8;
+        final messageList = _loadingSession
+            ? const Center(child: CircularProgressIndicator())
+            : NotificationListener<ScrollNotification>(
+                onNotification: _handleListScrollNotification,
+                child: ScrollConfiguration(
+                  behavior: const _AiChatListScrollBehavior(),
+                  child: ListView.builder(
                     controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(
                       parent: ClampingScrollPhysics(),
@@ -555,7 +551,7 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
                         ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: widget.contentPadding.copyWith(
                       top: listTopPadding,
-                      bottom: 12,
+                      bottom: listBottomPadding,
                     ),
                     itemCount: _messages.length,
                     itemBuilder: (context, index) {
@@ -589,18 +585,43 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
                       );
                     },
                   ),
-                  ),
                 ),
+              );
+
+        return ColoredBox(
+          color: immersiveChrome
+              ? Colors.transparent
+              : theme.colorScheme.surface,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Column(
+                children: [
+                  if (!immersiveChrome)
+                    SizedBox(height: widget.contentTopInset),
+                  Expanded(child: messageList),
+                ],
               ),
-              _AiChatComposer(
-                composer: _composer,
-                bottomInset: bottomInset,
-                sending: _sending,
-                onSend: () => unawaited(_send()),
-                onOpenOptions: () => unawaited(
-                  showWorkspaceAiChatOptionsSheet(
-                    context,
-                    onManageSessions: openSessionsSheet,
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _AiChatComposerSizeReporter(
+                  onHeightChanged: (height) {
+                    if (height == _composerOverlayHeight) return;
+                    setState(() => _composerOverlayHeight = height);
+                  },
+                  child: _AiChatComposer(
+                    composer: _composer,
+                    bottomInset: bottomInset,
+                    sending: _sending,
+                    onSend: () => unawaited(_send()),
+                    onOpenOptions: () => unawaited(
+                      showWorkspaceAiChatOptionsSheet(
+                        context,
+                        onManageSessions: openSessionsSheet,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -608,6 +629,53 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
           ),
         );
       },
+    );
+  }
+}
+
+/// Reports the floating composer height so the message list can scroll beneath it.
+class _AiChatComposerSizeReporter extends StatefulWidget {
+  const _AiChatComposerSizeReporter({
+    required this.onHeightChanged,
+    required this.child,
+  });
+
+  final ValueChanged<double> onHeightChanged;
+  final Widget child;
+
+  @override
+  State<_AiChatComposerSizeReporter> createState() =>
+      _AiChatComposerSizeReporterState();
+}
+
+class _AiChatComposerSizeReporterState
+    extends State<_AiChatComposerSizeReporter> {
+  double? _lastHeight;
+
+  void _reportSize() {
+    if (!mounted) return;
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    final height = box.size.height;
+    if (height == _lastHeight) return;
+    _lastHeight = height;
+    widget.onHeightChanged(height);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _reportSize());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return NotificationListener<SizeChangedLayoutNotification>(
+      onNotification: (_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _reportSize());
+        return false;
+      },
+      child: SizeChangedLayoutNotifier(child: widget.child),
     );
   }
 }
@@ -688,74 +756,74 @@ class _AiChatComposer extends StatelessWidget {
                         hintStyle: hintStyle,
                       ),
                     ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        _AiChatComposerModelButton(
-                          inputFocus: composer.activeFocusNode,
-                          onSurfaceVariant: scheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 2),
-                        _AiChatComposerThinkingButton(
-                          inputFocus: composer.activeFocusNode,
-                          onSurfaceVariant: scheme.onSurfaceVariant,
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          onPressed: sending ? null : onOpenOptions,
-                          tooltip: l10n.aiChatSessionOptionsTitle,
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            foregroundColor: scheme.onSurfaceVariant,
-                            visualDensity: VisualDensity.compact,
-                            splashFactory: NoSplash.splashFactory,
-                            highlightColor: Colors.transparent,
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          _AiChatComposerModelButton(
+                            inputFocus: composer.activeFocusNode,
+                            onSurfaceVariant: scheme.onSurfaceVariant,
                           ),
-                          icon: const Icon(Icons.tune_rounded, size: 22),
-                          padding: const EdgeInsets.all(6),
-                          constraints: const BoxConstraints(
-                            minWidth: 32,
-                            minHeight: 32,
+                          const SizedBox(width: 2),
+                          _AiChatComposerThinkingButton(
+                            inputFocus: composer.activeFocusNode,
+                            onSurfaceVariant: scheme.onSurfaceVariant,
                           ),
-                        ),
-                        Tooltip(
-                          message: l10n.aiChatSend,
-                          child: Material(
-                            color: sending
-                                ? scheme.primary.withValues(alpha: 0.45)
-                                : scheme.primary,
-                            shape: const CircleBorder(),
-                            clipBehavior: Clip.antiAlias,
-                            child: InkWell(
-                              onTap: sending ? null : onSend,
-                              child: SizedBox(
-                                width: 34,
-                                height: 34,
-                                child: Center(
-                                  child: sending
-                                      ? SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
+                          const Spacer(),
+                          IconButton(
+                            onPressed: sending ? null : onOpenOptions,
+                            tooltip: l10n.aiChatSessionOptionsTitle,
+                            style: IconButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              foregroundColor: scheme.onSurfaceVariant,
+                              visualDensity: VisualDensity.compact,
+                              splashFactory: NoSplash.splashFactory,
+                              highlightColor: Colors.transparent,
+                            ),
+                            icon: const Icon(Icons.tune_rounded, size: 22),
+                            padding: const EdgeInsets.all(6),
+                            constraints: const BoxConstraints(
+                              minWidth: 32,
+                              minHeight: 32,
+                            ),
+                          ),
+                          Tooltip(
+                            message: l10n.aiChatSend,
+                            child: Material(
+                              color: sending
+                                  ? scheme.primary.withValues(alpha: 0.45)
+                                  : scheme.primary,
+                              shape: const CircleBorder(),
+                              clipBehavior: Clip.antiAlias,
+                              child: InkWell(
+                                onTap: sending ? null : onSend,
+                                child: SizedBox(
+                                  width: 34,
+                                  height: 34,
+                                  child: Center(
+                                    child: sending
+                                        ? SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: scheme.onPrimary,
+                                            ),
+                                          )
+                                        : Icon(
+                                            Icons.send_rounded,
+                                            size: 18,
                                             color: scheme.onPrimary,
                                           ),
-                                        )
-                                      : Icon(
-                                          Icons.send_rounded,
-                                          size: 18,
-                                          color: scheme.onPrimary,
-                                        ),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
                   ],
                 ),
               ),
@@ -785,18 +853,15 @@ class _AiChatComposerModelButton extends StatelessWidget {
       builder: (context, _) {
         final prefs = vm.preferences;
         final modelId = prefs.effectiveChatModelId;
-        final modelLabel =
-            modelId.isEmpty ? l10n.llmModelNotSelected : modelId;
+        final modelLabel = modelId.isEmpty ? l10n.llmModelNotSelected : modelId;
         return _AiChatComposerPickerButton(
           icon: Icons.smart_toy_outlined,
           label: modelLabel,
           iconColor: onSurfaceVariant,
           labelColor: onSurfaceVariant,
           maxLabelWidth: 120,
-          onTap: () => showWorkspaceAiChatModelSheet(
-            context,
-            inputFocus: inputFocus,
-          ),
+          onTap: () =>
+              showWorkspaceAiChatModelSheet(context, inputFocus: inputFocus),
         );
       },
     );
@@ -817,8 +882,8 @@ class _AiChatComposerThinkingButton extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = context.l10n;
     final vm = ZephyrScope.of(context).llmSettings;
-    final previewTextColor = theme.textTheme.labelSmall?.color ??
-        theme.colorScheme.onSurfaceVariant;
+    final previewTextColor =
+        theme.textTheme.labelSmall?.color ?? theme.colorScheme.onSurfaceVariant;
     return ListenableBuilder(
       listenable: vm,
       builder: (context, _) {
@@ -834,10 +899,8 @@ class _AiChatComposerThinkingButton extends StatelessWidget {
           iconColor: previewTextColor,
           labelColor: previewTextColor,
           maxLabelWidth: 72,
-          onTap: () => showWorkspaceAiChatThinkingSheet(
-            context,
-            inputFocus: inputFocus,
-          ),
+          onTap: () =>
+              showWorkspaceAiChatThinkingSheet(context, inputFocus: inputFocus),
         );
       },
     );
@@ -864,9 +927,7 @@ class _AiChatComposerPickerButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final labelStyle = theme.textTheme.labelMedium?.copyWith(
-      color: labelColor,
-    );
+    final labelStyle = theme.textTheme.labelMedium?.copyWith(color: labelColor);
     return Material(
       type: MaterialType.transparency,
       child: InkWell(
@@ -888,11 +949,7 @@ class _AiChatComposerPickerButton extends StatelessWidget {
                   style: labelStyle,
                 ),
               ),
-              Icon(
-                Icons.expand_more_rounded,
-                size: 18,
-                color: iconColor,
-              ),
+              Icon(Icons.expand_more_rounded, size: 18, color: iconColor),
             ],
           ),
         ),
@@ -1000,8 +1057,8 @@ class _AiChatBubbleState extends State<_AiChatBubble> {
     final fg = isUser
         ? theme.colorScheme.onPrimaryContainer
         : theme.colorScheme.onSurface;
-    final thinkingFg = theme.textTheme.labelSmall?.color ??
-        theme.colorScheme.onSurfaceVariant;
+    final thinkingFg =
+        theme.textTheme.labelSmall?.color ?? theme.colorScheme.onSurfaceVariant;
     final showThinkingUi =
         !isUser && (message.thinkingInProgress || message.hasThinking);
     final thinkingLabel = message.thinkingInProgress
@@ -1012,8 +1069,9 @@ class _AiChatBubbleState extends State<_AiChatBubble> {
         : (message.thinkingInProgress && !message.hasThinking
               ? ''
               : message.text);
-    final assistantReplyMarkdown =
-        !isUser && message.text.trim().isNotEmpty ? message.text : '';
+    final assistantReplyMarkdown = !isUser && message.text.trim().isNotEmpty
+        ? message.text
+        : '';
     final showThinkingBody =
         !isUser && _thinkingExpanded && message.hasThinking;
 
@@ -1121,7 +1179,8 @@ class _AiChatBubbleState extends State<_AiChatBubble> {
                                 color: thinkingFg,
                                 height: 1.45,
                               ),
-                              liveStream: widget.markdownLiveStream &&
+                              liveStream:
+                                  widget.markdownLiveStream &&
                                   message.thinkingInProgress,
                             ),
                           if (showThinkingBody &&
@@ -1136,7 +1195,8 @@ class _AiChatBubbleState extends State<_AiChatBubble> {
                                 color: fg,
                                 height: 1.45,
                               ),
-                              liveStream: widget.markdownLiveStream &&
+                              liveStream:
+                                  widget.markdownLiveStream &&
                                   !message.thinkingInProgress,
                             ),
                         ],
