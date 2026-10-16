@@ -172,6 +172,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudSyncRestoreEmpty => 'No cloud backups found.';
 
   @override
+  String get cloudSyncLatestSnapshotTitle => 'Latest cloud backup';
+
+  @override
+  String get cloudSyncLatestSnapshotSubtitle => 'Current snapshot on Nutstore';
+
+  @override
   String get cloudSyncRestoreSuccess => 'Library restored from cloud backup.';
 
   @override

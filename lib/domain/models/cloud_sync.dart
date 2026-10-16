@@ -157,19 +157,24 @@ class CloudSyncManifest {
   }
 }
 
-/// One `.pwb` file listed under the library's cloud Backups folder.
+/// One restorable `.pwb` on WebDAV — either the latest snapshot or a history
+/// file under `Zephyr/Backups/`.
 class CloudBackupEntry {
   const CloudBackupEntry({
     required this.fileId,
     required this.fileName,
     required this.modified,
     required this.sizeBytes,
+    this.isLatestSnapshot = false,
   });
 
   final String fileId;
   final String fileName;
   final DateTime modified;
   final int sizeBytes;
+
+  /// [fileName] is `library.pwb` under the Zephyr folder (not `Backups/`).
+  final bool isLatestSnapshot;
 }
 
 /// Result of [CloudSyncService.pullIfNewer].

@@ -164,6 +164,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncRestoreEmpty => '云盘中尚未找到备份';
 
   @override
+  String get cloudSyncLatestSnapshotTitle => '最新云备份';
+
+  @override
+  String get cloudSyncLatestSnapshotSubtitle => '坚果云上的当前快照';
+
+  @override
   String get cloudSyncRestoreSuccess => '已从云备份恢复';
 
   @override

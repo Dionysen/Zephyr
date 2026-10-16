@@ -152,8 +152,9 @@ class CloudSyncService {
       );
       await _preferencesStorage.save(_preferences);
       await _pruneCloudBackups(client, active, folderId);
+      final namedUri = client.namedBackupUri(folderId, entry.fileName);
       return CloudBackupEntry(
-        fileId: '',
+        fileId: namedUri.toString(),
         fileName: entry.fileName,
         modified: entry.modified,
         sizeBytes: entry.sizeBytes,
@@ -177,10 +178,25 @@ class CloudSyncService {
         library: library,
         allowClaimEmpty: true,
       );
-      return client.listNamedBackups(
+      final manifest = await client.downloadManifest(
+        session: session,
+        parentFileId: folderId,
+      );
+      final named = await client.listNamedBackups(
         session: session,
         libraryFolderId: folderId,
       );
+      if (manifest == null) return named;
+      final snapshot = await client.describeLatestSnapshot(
+        session: session,
+        libraryFolderId: folderId,
+        manifest: manifest,
+      );
+      if (snapshot == null) return named;
+      final history = named
+          .where((entry) => !entry.isLatestSnapshot)
+          .toList(growable: false);
+      return [snapshot, ...history];
     });
   }
 
@@ -210,6 +226,7 @@ class CloudSyncService {
         session: session,
         entry: entry,
         staging: staging,
+        libraryFolderId: folderId,
       );
       await library.restoreBackup(
         entry: BackupEntry(

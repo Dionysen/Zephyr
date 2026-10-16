@@ -230,10 +230,8 @@ Future<void> showNutstoreCredentialsDialog(
   final result = await showDialog<_NutstoreCredentialsResult>(
     context: context,
     barrierDismissible: false,
-    builder: (context) => _NutstoreCredentialsDialog(
-      cloudSync: cloudSync,
-      editing: editing,
-    ),
+    builder: (context) =>
+        _NutstoreCredentialsDialog(cloudSync: cloudSync, editing: editing),
   );
   if (!context.mounted ||
       result == null ||
@@ -269,7 +267,8 @@ class _NutstoreCredentialsDialog extends StatefulWidget {
       _NutstoreCredentialsDialogState();
 }
 
-class _NutstoreCredentialsDialogState extends State<_NutstoreCredentialsDialog> {
+class _NutstoreCredentialsDialogState
+    extends State<_NutstoreCredentialsDialog> {
   late final TextEditingController _urlController;
   late final TextEditingController _accountController;
   late final TextEditingController _passwordController;
@@ -404,9 +403,9 @@ class _NutstoreCredentialsDialogState extends State<_NutstoreCredentialsDialog> 
         TextButton(
           onPressed: _submitting
               ? null
-              : () => Navigator.of(context).pop(
-                    _NutstoreCredentialsResult.cancelled,
-                  ),
+              : () =>
+                    Navigator.of(context)
+                        .pop(_NutstoreCredentialsResult.cancelled),
           child: Text(l10n.actionCancel),
         ),
         FilledButton(
@@ -680,17 +679,23 @@ class _CloudBackupListSheet extends StatelessWidget {
                       itemBuilder: (context, index) {
                         final entry = backups[index];
                         return ListTile(
-                          leading: const Icon(
-                            Icons.cloud_outlined,
+                          leading: Icon(
+                            entry.isLatestSnapshot
+                                ? Icons.cloud_done_outlined
+                                : Icons.cloud_outlined,
                             size: ZephyrBottomSheet.rowIconSize,
                           ),
                           title: Text(
-                            entry.fileName,
+                            entry.isLatestSnapshot
+                                ? l10n.cloudSyncLatestSnapshotTitle
+                                : entry.fileName,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                           subtitle: Text(
-                            format.format(entry.modified.toLocal()),
+                            entry.isLatestSnapshot
+                                ? '${l10n.cloudSyncLatestSnapshotSubtitle} · ${format.format(entry.modified.toLocal())}'
+                                : format.format(entry.modified.toLocal()),
                           ),
                           onTap: () => Navigator.pop(context, entry),
                         );

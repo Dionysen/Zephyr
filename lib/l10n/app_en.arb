@@ -64,6 +64,8 @@
   "cloudSyncRestoreTitle": "Restore from cloud",
   "cloudSyncRestoreSubtitle": "Pick a backup from Nutstore — overwrite or merge",
   "cloudSyncRestoreEmpty": "No cloud backups found.",
+  "cloudSyncLatestSnapshotTitle": "Latest cloud backup",
+  "cloudSyncLatestSnapshotSubtitle": "Current snapshot on Nutstore",
   "cloudSyncRestoreSuccess": "Library restored from cloud backup.",
   "cloudSyncFailed": "Cloud sync failed: {error}",
   "cloudSyncAnotherLibrary": "This Zephyr cloud folder belongs to another library. Choose the original local directory or another WebDAV account; cloud sync has stopped.",

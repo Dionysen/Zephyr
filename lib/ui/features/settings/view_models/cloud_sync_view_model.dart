@@ -156,6 +156,7 @@ class CloudSyncViewModel extends ChangeNotifier {
         flushPending: library.flushPending,
       );
       library.markBackupCompleted();
+      await refreshCloudBackups();
       _error = null;
     } on Object catch (error) {
       _error = error;

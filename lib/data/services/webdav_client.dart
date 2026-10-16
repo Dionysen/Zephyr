@@ -303,7 +303,7 @@ class WebDavClient {
           uri.host != folder.host ||
           uri.port != folder.port ||
           uri.userInfo.isNotEmpty ||
-          uri.path != canonical.path) {
+          !_sameResourcePath(uri, canonical)) {
         continue;
       }
       if (!name.toLowerCase().endsWith('.pwb')) continue;
@@ -333,10 +333,41 @@ class WebDavClient {
       fileId.host == expected.host &&
       fileId.port == expected.port &&
       fileId.userInfo.isEmpty &&
-      fileId.path == expected.path;
+      _sameResourcePath(fileId, expected);
+
+  bool _sameResourcePath(Uri uri, Uri canonical) {
+    if (uri.path == canonical.path) return true;
+    return Uri.decodeFull(uri.path) == Uri.decodeFull(canonical.path);
+  }
+
+  Uri librarySnapshotUri(String libraryFolderId) =>
+      _child(Uri.parse(libraryFolderId), 'library.pwb');
+
+  Uri namedBackupUri(String libraryFolderId, String fileName) =>
+      _child(_folder(Uri.parse(libraryFolderId), 'Backups'), fileName);
 
   Uri _namedBackupUri(CloudSyncSession session, String fileName) =>
-      _child(_folder(_folder(_root(session), 'Zephyr'), 'Backups'), fileName);
+      namedBackupUri(_folder(_root(session), 'Zephyr').toString(), fileName);
+
+  /// Latest uploaded snapshot (`library.pwb` + manifest), when present.
+  Future<CloudBackupEntry?> describeLatestSnapshot({
+    required CloudSyncSession session,
+    required String libraryFolderId,
+    required CloudSyncManifest manifest,
+  }) async {
+    final uri = librarySnapshotUri(libraryFolderId);
+    final response = await _request(session, 'HEAD', uri);
+    if (response.statusCode == 404) return null;
+    _expect(response, {200});
+    final size = int.tryParse(response.headers['content-length'] ?? '') ?? 0;
+    return CloudBackupEntry(
+      fileId: uri.toString(),
+      fileName: 'library.pwb',
+      modified: manifest.updatedAt,
+      sizeBytes: size,
+      isLatestSnapshot: true,
+    );
+  }
 
   /// Deletes a history file only when it belongs directly to this account's
   /// `Zephyr/Backups` folder. The latest `library.pwb` is never targeted.
@@ -365,6 +396,7 @@ class WebDavClient {
     required CloudSyncSession session,
     required CloudBackupEntry entry,
     required Directory staging,
+    String? libraryFolderId,
   }) async {
     if (entry.fileName.isEmpty ||
         entry.fileName == '.' ||
@@ -373,7 +405,19 @@ class WebDavClient {
         entry.fileName.contains('\\')) {
       throw const FormatException('Backup is outside this WebDAV account.');
     }
-    final expected = _namedBackupUri(session, entry.fileName);
+    final Uri expected;
+    if (entry.isLatestSnapshot || entry.fileName == 'library.pwb') {
+      if (libraryFolderId == null || libraryFolderId.isEmpty) {
+        throw const FormatException('Backup is outside this WebDAV account.');
+      }
+      expected = librarySnapshotUri(libraryFolderId);
+    } else {
+      if (libraryFolderId == null || libraryFolderId.isEmpty) {
+        expected = _namedBackupUri(session, entry.fileName);
+      } else {
+        expected = namedBackupUri(libraryFolderId, entry.fileName);
+      }
+    }
     if (!_sameBackupResource(Uri.parse(entry.fileId), expected)) {
       throw const FormatException('Backup is outside this WebDAV account.');
     }

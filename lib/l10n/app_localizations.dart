@@ -398,6 +398,18 @@ abstract class AppLocalizations {
   /// **'No cloud backups found.'**
   String get cloudSyncRestoreEmpty;
 
+  /// No description provided for @cloudSyncLatestSnapshotTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest cloud backup'**
+  String get cloudSyncLatestSnapshotTitle;
+
+  /// No description provided for @cloudSyncLatestSnapshotSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Current snapshot on Nutstore'**
+  String get cloudSyncLatestSnapshotSubtitle;
+
   /// No description provided for @cloudSyncRestoreSuccess.
   ///
   /// In en, this message translates to:

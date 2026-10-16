@@ -216,28 +216,31 @@ void main() {
     expect(client.uploadOrder, ['snapshot', 'backup', 'settings']);
   });
 
-  test('pendingCloudBackup is set and cleared only after upload succeeds', () async {
-    auth.session = _session();
-    preferences.value = const CloudSyncPreferences(pendingCloudBackup: false);
-    final directory = await Directory.systemTemp.createTemp(
-      'zephyr-cloud-pending-',
-    );
-    addTearDown(() => directory.delete(recursive: true));
-    final library = _CloudLibraryRepository(directory);
-    final entry = await library.createBackup(kind: BackupKind.automatic);
-    final client = _WorkflowClient();
-    final service = serviceWith(() => client);
-    await service.load();
+  test(
+    'pendingCloudBackup is set and cleared only after upload succeeds',
+    () async {
+      auth.session = _session();
+      preferences.value = const CloudSyncPreferences(pendingCloudBackup: false);
+      final directory = await Directory.systemTemp.createTemp(
+        'zephyr-cloud-pending-',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      final library = _CloudLibraryRepository(directory);
+      final entry = await library.createBackup(kind: BackupKind.automatic);
+      final client = _WorkflowClient();
+      final service = serviceWith(() => client);
+      await service.load();
 
-    await service.markPendingCloudBackup();
-    expect(service.pendingCloudBackup, isTrue);
-    expect(preferences.value.pendingCloudBackup, isTrue);
+      await service.markPendingCloudBackup();
+      expect(service.pendingCloudBackup, isTrue);
+      expect(preferences.value.pendingCloudBackup, isTrue);
 
-    await service.uploadLocalBackup(library: library, entry: entry);
+      await service.uploadLocalBackup(library: library, entry: entry);
 
-    expect(service.pendingCloudBackup, isFalse);
-    expect(preferences.value.pendingCloudBackup, isFalse);
-  });
+      expect(service.pendingCloudBackup, isFalse);
+      expect(preferences.value.pendingCloudBackup, isFalse);
+    },
+  );
 
   test('failed upload keeps pendingCloudBackup set', () async {
     auth.session = _session();
@@ -283,6 +286,40 @@ void main() {
       service.pullIfNewer(library: library, flushPending: () async {}),
       throwsStateError,
     );
+  });
+
+  test('listCloudBackups puts the latest snapshot first', () async {
+    auth.session = _session();
+    final directory = await Directory.systemTemp.createTemp(
+      'zephyr-cloud-list-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final library = _CloudLibraryRepository(directory);
+    final client = _WorkflowClient()
+      ..remoteManifest = CloudSyncManifest(
+        libraryId: 'library-id',
+        updatedAt: DateTime.utc(2026, 9, 2, 12),
+        deviceName: 'phone',
+        appVersion: '0.1.0',
+      )
+      ..remoteSnapshotAvailable = true
+      ..backups.add(
+        CloudBackupEntry(
+          fileId: 'folder/Backups/Zephyr-old.pwb',
+          fileName: 'Zephyr-old.pwb',
+          modified: DateTime.utc(2026, 9, 1),
+          sizeBytes: 3,
+        ),
+      );
+    final service = serviceWith(() => client);
+    await service.load();
+
+    final listed = await service.listCloudBackups(library: library);
+
+    expect(listed, hasLength(2));
+    expect(listed.first.isLatestSnapshot, isTrue);
+    expect(listed.first.fileName, 'library.pwb');
+    expect(listed.last.fileName, 'Zephyr-old.pwb');
   });
 
   test('manual cloud backup flushes edits and uploads both copies', () async {
@@ -442,42 +479,45 @@ void main() {
     expect(client.closed, isTrue);
   });
 
-  test('listing and restoring reject a different cloud library with content', () async {
-    auth.session = _session();
-    final directory = await Directory.systemTemp.createTemp('zephyr-cloud-');
-    addTearDown(() => directory.delete(recursive: true));
-    final library = _CloudLibraryRepository(directory)..hasArticles = true;
-    final client = _WorkflowClient()
-      ..remoteManifest = CloudSyncManifest(
-        libraryId: 'another-library',
-        updatedAt: DateTime.utc(2026, 9, 1),
-        deviceName: 'other',
-        appVersion: '0.1.0',
-      );
-    final service = serviceWith(() => client);
-    await service.load();
+  test(
+    'listing and restoring reject a different cloud library with content',
+    () async {
+      auth.session = _session();
+      final directory = await Directory.systemTemp.createTemp('zephyr-cloud-');
+      addTearDown(() => directory.delete(recursive: true));
+      final library = _CloudLibraryRepository(directory)..hasArticles = true;
+      final client = _WorkflowClient()
+        ..remoteManifest = CloudSyncManifest(
+          libraryId: 'another-library',
+          updatedAt: DateTime.utc(2026, 9, 1),
+          deviceName: 'other',
+          appVersion: '0.1.0',
+        );
+      final service = serviceWith(() => client);
+      await service.load();
 
-    await expectLater(
-      service.listCloudBackups(library: library),
-      throwsA(isA<CloudLibraryConflictException>()),
-    );
-    await expectLater(
-      service.restoreCloudBackup(
-        library: library,
-        entry: CloudBackupEntry(
-          fileId: 'https://dav.jianguoyun.com/dav/Zephyr/Backups/one.pwb',
-          fileName: 'one.pwb',
-          modified: DateTime.utc(2026, 9, 1),
-          sizeBytes: 3,
+      await expectLater(
+        service.listCloudBackups(library: library),
+        throwsA(isA<CloudLibraryConflictException>()),
+      );
+      await expectLater(
+        service.restoreCloudBackup(
+          library: library,
+          entry: CloudBackupEntry(
+            fileId: 'https://dav.jianguoyun.com/dav/Zephyr/Backups/one.pwb',
+            fileName: 'one.pwb',
+            modified: DateTime.utc(2026, 9, 1),
+            sizeBytes: 3,
+          ),
+          mode: RestoreMode.overwrite,
+          flushPending: () async {},
         ),
-        mode: RestoreMode.overwrite,
-        flushPending: () async {},
-      ),
-      throwsA(isA<CloudLibraryConflictException>()),
-    );
-    expect(library.restoredMode, isNull);
-    expect(library.cloudLibraryId, 'library-id');
-  });
+        throwsA(isA<CloudLibraryConflictException>()),
+      );
+      expect(library.restoredMode, isNull);
+      expect(library.cloudLibraryId, 'library-id');
+    },
+  );
 
   test('empty library claims remote id then lists and restores', () async {
     auth.session = _session();
@@ -711,7 +751,8 @@ class _CloudLibraryRepository
 
 class _MemorySettingsBundle extends CloudSettingsBundle {
   @override
-  Future<List<int>> exportBytes() async => utf8.encode('{"schema":1,"files":{}}');
+  Future<List<int>> exportBytes() async =>
+      utf8.encode('{"schema":1,"files":{}}');
 
   @override
   Future<int> importBytes(List<int> bytes) async => 0;
@@ -736,6 +777,7 @@ class _WorkflowClient extends WebDavClient {
   bool closed = false;
   bool untrackedContent = false;
   CloudSyncManifest? remoteManifest;
+  var remoteSnapshotAvailable = false;
   final backups = <CloudBackupEntry>[];
   final deleted = <CloudBackupEntry>[];
 
@@ -821,6 +863,22 @@ class _WorkflowClient extends WebDavClient {
   }) async => remoteManifest;
 
   @override
+  Future<CloudBackupEntry?> describeLatestSnapshot({
+    required CloudSyncSession session,
+    required String libraryFolderId,
+    required CloudSyncManifest manifest,
+  }) async {
+    if (!remoteSnapshotAvailable) return null;
+    return CloudBackupEntry(
+      fileId: '$libraryFolderId/library.pwb',
+      fileName: 'library.pwb',
+      modified: manifest.updatedAt,
+      sizeBytes: 42,
+      isLatestSnapshot: true,
+    );
+  }
+
+  @override
   Future<File?> downloadLibraryPwb({
     required CloudSyncSession session,
     required String parentFileId,
@@ -836,6 +894,7 @@ class _WorkflowClient extends WebDavClient {
     required CloudSyncSession session,
     required CloudBackupEntry entry,
     required Directory staging,
+    String? libraryFolderId,
   }) async {
     final file = File('${staging.path}/${entry.fileName}');
     await file.writeAsString('remote');

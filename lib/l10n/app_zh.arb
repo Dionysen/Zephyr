@@ -64,6 +64,8 @@
   "cloudSyncRestoreTitle": "云备份恢复",
   "cloudSyncRestoreSubtitle": "从坚果云选择备份，可覆盖或合并",
   "cloudSyncRestoreEmpty": "云盘中尚未找到备份",
+  "cloudSyncLatestSnapshotTitle": "最新云备份",
+  "cloudSyncLatestSnapshotSubtitle": "坚果云上的当前快照",
   "cloudSyncRestoreSuccess": "已从云备份恢复",
   "cloudSyncFailed": "云同步失败：{error}",
   "cloudSyncAnotherLibrary": "云端 Zephyr 目录属于另一文库。请选择原本地目录或其他 WebDAV 账号；云同步已停止。",
