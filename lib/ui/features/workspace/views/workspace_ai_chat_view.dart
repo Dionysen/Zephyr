@@ -16,6 +16,7 @@ import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_markdown_body.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_swipe_drawer.dart';
+import '../models/ai_stream_reveal.dart';
 import '../models/workspace_ai_composer_document.dart';
 import '../models/workspace_ai_context_selection.dart';
 import 'workspace_ai_chat_composer_field.dart';
@@ -26,6 +27,53 @@ import 'workspace_ai_sessions_sheet.dart';
 
 /// Keeps [TextField] IME active when tapping other controls in the composer.
 final Object _aiChatComposerTapGroup = Object();
+
+/// Keeps the latest bubble pinned while its height changes, in the same layout
+/// pass, so the bottom does not grow and then jump on the next frame.
+class _AiChatTailScrollController extends ScrollController {
+  bool Function() followTail = () => false;
+
+  @override
+  ScrollPosition createScrollPosition(
+    ScrollPhysics physics,
+    ScrollContext context,
+    ScrollPosition? oldPosition,
+  ) {
+    return _AiChatTailScrollPosition(
+      physics: physics,
+      context: context,
+      oldPosition: oldPosition,
+      followTail: () => followTail(),
+    );
+  }
+}
+
+class _AiChatTailScrollPosition extends ScrollPositionWithSingleContext {
+  _AiChatTailScrollPosition({
+    required super.physics,
+    required super.context,
+    super.oldPosition,
+    required this.followTail,
+  });
+
+  final bool Function() followTail;
+
+  @override
+  bool correctForNewDimensions(
+    ScrollMetrics oldPosition,
+    ScrollMetrics newPosition,
+  ) {
+    final distanceFromEnd = oldPosition.maxScrollExtent - oldPosition.pixels;
+    final stick = followTail() && distanceFromEnd <= 1;
+    if (!stick) {
+      return super.correctForNewDimensions(oldPosition, newPosition);
+    }
+    final target = newPosition.maxScrollExtent;
+    if ((target - pixels).abs() <= 0.5) return true;
+    correctPixels(target);
+    return false;
+  }
+}
 
 /// Demo AI chat surface that replaces the plain-text editor while active.
 class WorkspaceAiChatView extends StatefulWidget {
@@ -55,7 +103,7 @@ class WorkspaceAiChatView extends StatefulWidget {
 
 class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
     with WidgetsBindingObserver {
-  final _scrollController = ScrollController();
+  final _scrollController = _AiChatTailScrollController();
   late final WorkspaceAiComposerController _composer;
   final _messages = <_AiChatMessage>[];
   final _liveAssistant = ValueNotifier<_StreamAssistantFrame?>(null);
@@ -66,11 +114,8 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
   var _loadingSession = false;
   String _contextSummary = '';
 
-  /// Finger is on the list and dragging (hold-scroll); blocks stream pin jumps.
+  /// Finger is on the list and dragging (hold-scroll); blocks tail anchoring.
   var _userInteractingWithScroll = false;
-
-  /// Invalidates queued [addPostFrameCallback] pin scrolls when the user drags.
-  var _scrollPinEpoch = 0;
 
   var _drawerDragBlockedForList = false;
 
@@ -78,6 +123,8 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
   var _composerOverlayHeight = 112.0;
 
   Timer? _scrollSaveDebounce;
+  final _streamReveal = AiStreamReveal();
+  Timer? _revealTimer;
   var _restoringScroll = false;
   var _scrollRestoreEpoch = 0;
 
@@ -95,7 +142,6 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
     if (notification is ScrollStartNotification &&
         notification.dragDetails != null) {
       _userInteractingWithScroll = true;
-      _scrollPinEpoch++;
       _setDrawerDragBlockedForList(true);
     } else if (notification is UserScrollNotification) {
       _userInteractingWithScroll =
@@ -126,6 +172,8 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
   void initState() {
     super.initState();
     _composer = WorkspaceAiComposerController();
+    _scrollController.followTail = () =>
+        !_restoringScroll && !_userInteractingWithScroll;
     _composer.onTextFocusChanged = () {
       if (!mounted) return;
       _scrollToEnd(force: true);
@@ -366,6 +414,8 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
 
   @override
   void dispose() {
+    _revealTimer?.cancel();
+    _streamReveal.reset();
     _scrollSaveDebounce?.cancel();
     unawaited(_persistScrollOffset());
     WidgetsBinding.instance.removeObserver(this);
@@ -454,6 +504,10 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
         );
         assistantIndex = _messages.length - 1;
         _liveAssistantMessageIndex = assistantIndex;
+        _revealTimer?.cancel();
+        _revealTimer = null;
+        _streamReveal.reset();
+        _streamReveal.thinkingInProgress = expectsThinking;
         _liveAssistant.value = _StreamAssistantFrame(
           text: '',
           thinking: '',
@@ -491,21 +545,36 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
           onPartial: assistantIndex >= 0
               ? (partial) {
                   if (!mounted) return;
-                  _liveAssistant.value = _StreamAssistantFrame(
+                  _streamReveal.thinkingInProgress = partial.thinkingInProgress;
+                  _streamReveal.setTargets(
                     text: partial.text,
                     thinking: partial.thinking,
-                    thinkingInProgress: partial.thinkingInProgress,
                   );
-                  _scrollToEndIfPinned();
+                  _pumpStreamReveal();
                 }
               : null,
         );
         replyText = replyResult.text;
+        if (assistantIndex >= 0) {
+          _streamReveal.thinkingInProgress = false;
+          _streamReveal.setTargets(
+            text: replyResult.text,
+            thinking: replyResult.thinking,
+          );
+          _pumpStreamReveal();
+          await _streamReveal.whenCaughtUp().timeout(
+            const Duration(seconds: 20),
+            onTimeout: _streamReveal.snap,
+          );
+        }
       }
     } on Object catch (error) {
       replyText = l10n.aiChatError(error.toString());
+      _streamReveal.snap();
     }
     if (!mounted) return;
+    _revealTimer?.cancel();
+    _revealTimer = null;
     _liveAssistantMessageIndex = -1;
     _liveAssistant.value = null;
     final thinking = replyResult?.thinking ?? '';
@@ -545,20 +614,28 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
         );
       }
     });
-    _scrollToEndIfPinned();
   }
 
-  /// During streaming: scroll only while the user is already at the list bottom.
-  void _scrollToEndIfPinned() {
-    final epoch = _scrollPinEpoch;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || epoch != _scrollPinEpoch) return;
-      _scrollToEndNow(animate: false);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || epoch != _scrollPinEpoch) return;
-        _scrollToEndNow(animate: false);
-      });
-    });
+  void _publishStreamReveal() {
+    _liveAssistant.value = _StreamAssistantFrame(
+      text: _streamReveal.visibleText,
+      thinking: _streamReveal.visibleThinking,
+      thinkingInProgress:
+          _streamReveal.thinkingInProgress || !_streamReveal.thinkingCaughtUp,
+    );
+  }
+
+  void _pumpStreamReveal() {
+    if (_revealTimer != null) return;
+    void tick() {
+      _revealTimer = null;
+      if (!mounted) return;
+      if (_streamReveal.advance()) _publishStreamReveal();
+      if (_streamReveal.isCaughtUp) return;
+      _revealTimer = Timer(_streamReveal.nextDelay(), tick);
+    }
+
+    tick();
   }
 
   void _scrollToEnd({bool animate = false, bool force = false}) {
@@ -1241,34 +1318,46 @@ class _AiChatBubbleState extends State<_AiChatBubble> {
                           )
                         else ...[
                           if (showThinkingBody)
-                            ZephyrMarkdownBody(
-                              data: message.thinking,
-                              foreground: thinkingFg,
-                              selectable: false,
-                              baseStyle: theme.textTheme.bodyMedium?.copyWith(
-                                color: thinkingFg,
-                                height: 1.45,
-                              ),
-                              liveStream:
-                                  widget.markdownLiveStream &&
-                                  message.thinkingInProgress,
-                            ),
+                            widget.markdownLiveStream &&
+                                    message.thinkingInProgress
+                                ? ZephyrStreamingMarkdownBody(
+                                    data: message.thinking,
+                                    foreground: thinkingFg,
+                                    baseStyle: theme.textTheme.bodyMedium
+                                        ?.copyWith(
+                                          color: thinkingFg,
+                                          height: 1.45,
+                                        ),
+                                  )
+                                : ZephyrMarkdownBody(
+                                    data: message.thinking,
+                                    foreground: thinkingFg,
+                                    selectable: false,
+                                    baseStyle: theme.textTheme.bodyMedium
+                                        ?.copyWith(
+                                          color: thinkingFg,
+                                          height: 1.45,
+                                        ),
+                                  ),
                           if (showThinkingBody &&
                               assistantReplyMarkdown.isNotEmpty)
                             const SizedBox(height: 8),
                           if (assistantReplyMarkdown.isNotEmpty)
-                            ZephyrMarkdownBody(
-                              data: assistantReplyMarkdown,
-                              foreground: fg,
-                              selectable: false,
-                              baseStyle: theme.textTheme.bodyMedium?.copyWith(
-                                color: fg,
-                                height: 1.45,
-                              ),
-                              liveStream:
-                                  widget.markdownLiveStream &&
-                                  !message.thinkingInProgress,
-                            ),
+                            widget.markdownLiveStream &&
+                                    !message.thinkingInProgress
+                                ? ZephyrStreamingMarkdownBody(
+                                    data: assistantReplyMarkdown,
+                                    foreground: fg,
+                                    baseStyle: theme.textTheme.bodyMedium
+                                        ?.copyWith(color: fg, height: 1.45),
+                                  )
+                                : ZephyrMarkdownBody(
+                                    data: assistantReplyMarkdown,
+                                    foreground: fg,
+                                    selectable: false,
+                                    baseStyle: theme.textTheme.bodyMedium
+                                        ?.copyWith(color: fg, height: 1.45),
+                                  ),
                         ],
                       ],
                     ),

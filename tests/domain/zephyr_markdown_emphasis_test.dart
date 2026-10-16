@@ -21,6 +21,12 @@ void main() {
     expect(strong.single.textContent, contains('重要'));
   });
 
+  test('streaming split keeps the open line out of committed markdown', () {
+    expect(splitStreamingMarkdown('第一行\n第二'), (committed: '第一行', tail: '第二'));
+    expect(splitStreamingMarkdown('只有一行'), (committed: '', tail: '只有一行'));
+    expect(splitStreamingMarkdown('段落\n'), (committed: '段落', tail: ''));
+  });
+
   test('standalone bold quoted sentence still parses', () {
     final prepared = prepareZephyrMarkdownForParse('**「你好」**');
     final doc = md.Document(extensionSet: md.ExtensionSet.gitHubFlavored);

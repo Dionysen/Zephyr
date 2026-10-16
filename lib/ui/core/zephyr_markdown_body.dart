@@ -63,7 +63,7 @@ class _CodeBlockHorizontalThumb extends StatelessWidget {
         final thumbLeft = track <= 0
             ? 0.0
             : (position.pixels / position.maxScrollExtent).clamp(0.0, 1.0) *
-                track;
+                  track;
 
         return SizedBox(
           height: thickness,
@@ -91,7 +91,8 @@ class _CodeBlockHorizontalThumb extends StatelessWidget {
   }
 }
 
-class _HorizontalCodeBlockScrollState extends State<_HorizontalCodeBlockScroll> {
+class _HorizontalCodeBlockScrollState
+    extends State<_HorizontalCodeBlockScroll> {
   late final ScrollController _controller;
 
   @override
@@ -111,7 +112,9 @@ class _HorizontalCodeBlockScrollState extends State<_HorizontalCodeBlockScroll> 
     final scheme = Theme.of(context).colorScheme;
     final thumbColor = ZephyrScrollbarStyle.editorThumbColor(scheme);
     final thumb = ZephyrScrollbarStyle.horizontalThumbThickness;
-    final contentPad = widget.contentPadding.resolve(Directionality.of(context));
+    final contentPad = widget.contentPadding.resolve(
+      Directionality.of(context),
+    );
     final textPad = EdgeInsets.fromLTRB(
       contentPad.left,
       contentPad.top,
@@ -155,10 +158,7 @@ class _HorizontalCodeBlockScrollState extends State<_HorizontalCodeBlockScroll> 
 
 /// Fenced code blocks: horizontal scroll inside vertical parents (e.g. chat list).
 class _ZephyrPreBlockBuilder extends MarkdownElementBuilder {
-  _ZephyrPreBlockBuilder({
-    required this.styleSheet,
-    required this.selectable,
-  });
+  _ZephyrPreBlockBuilder({required this.styleSheet, required this.selectable});
 
   final MarkdownStyleSheet styleSheet;
   final bool selectable;
@@ -173,8 +173,7 @@ class _ZephyrPreBlockBuilder extends MarkdownElementBuilder {
         ? SelectableText(code, style: style)
         : Text(code, style: style, softWrap: false);
 
-    final sheetPad =
-        styleSheet.codeblockPadding ?? const EdgeInsets.all(10);
+    final sheetPad = styleSheet.codeblockPadding ?? const EdgeInsets.all(10);
     final contentPadding = EdgeInsets.fromLTRB(
       sheetPad.left,
       sheetPad.top,
@@ -224,6 +223,63 @@ String prepareZephyrMarkdownForParse(String markdown) {
   return out;
 }
 
+/// Splits a live reply so finished lines stay put and only the open line grows.
+({String committed, String tail}) splitStreamingMarkdown(String raw) {
+  final newline = raw.lastIndexOf('\n');
+  if (newline < 0) return (committed: '', tail: raw);
+  return (
+    committed: raw.substring(0, newline),
+    tail: raw.substring(newline + 1),
+  );
+}
+
+/// Live markdown: committed lines are parsed once per line; the open line is
+/// plain text with a stable strut so a new line does not reflow the bubble.
+class ZephyrStreamingMarkdownBody extends StatelessWidget {
+  const ZephyrStreamingMarkdownBody({
+    super.key,
+    required this.data,
+    required this.foreground,
+    this.baseStyle,
+  });
+
+  final String data;
+  final Color foreground;
+  final TextStyle? baseStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = splitStreamingMarkdown(data);
+    final style = (baseStyle ?? DefaultTextStyle.of(context).style).copyWith(
+      color: foreground,
+    );
+    final tail = parts.tail.isEmpty ? '\u200b' : parts.tail;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (parts.committed.trim().isNotEmpty)
+          ZephyrMarkdownBody(
+            data: parts.committed,
+            foreground: foreground,
+            baseStyle: baseStyle,
+            selectable: false,
+          ),
+        Text(
+          tail,
+          style: style,
+          strutStyle: StrutStyle(
+            fontFamily: style.fontFamily,
+            fontSize: style.fontSize,
+            height: style.height,
+            forceStrutHeight: true,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// GitHub-flavored Markdown for in-app surfaces (no raw HTML blocks).
 class ZephyrMarkdownBody extends StatefulWidget {
   const ZephyrMarkdownBody({
@@ -233,6 +289,7 @@ class ZephyrMarkdownBody extends StatefulWidget {
     this.baseStyle,
     this.dense = false,
     this.selectable = true,
+
     /// Throttle re-parses while [data] changes rapidly (e.g. LLM streaming).
     this.liveStream = false,
   });
@@ -251,11 +308,8 @@ class ZephyrMarkdownBody extends StatefulWidget {
 }
 
 class _ZephyrMarkdownBodyState extends State<ZephyrMarkdownBody> {
-  static const _streamThrottle = Duration(milliseconds: 90);
-
   MarkdownStyleSheet? _styleSheet;
   String _renderedData = '';
-  Timer? _streamTimer;
 
   @override
   void initState() {
@@ -282,34 +336,20 @@ class _ZephyrMarkdownBodyState extends State<ZephyrMarkdownBody> {
       return;
     }
     if (!widget.liveStream) {
-      _streamTimer?.cancel();
       setState(
         () => _renderedData = prepareZephyrMarkdownForParse(widget.data),
       );
       return;
     }
-    _streamTimer?.cancel();
-    _streamTimer = Timer(_streamThrottle, () {
-      if (!mounted) return;
-      setState(
-        () => _renderedData = prepareZephyrMarkdownForParse(widget.data),
-      );
-    });
-  }
-
-  @override
-  void dispose() {
-    _streamTimer?.cancel();
-    super.dispose();
+    _renderedData = prepareZephyrMarkdownForParse(widget.data);
+    setState(() {});
   }
 
   void _rebuildStyleSheet() {
     final theme = Theme.of(context);
     final base =
         widget.baseStyle ??
-        (widget.dense
-                ? theme.textTheme.bodySmall
-                : theme.textTheme.bodyMedium)!
+        (widget.dense ? theme.textTheme.bodySmall : theme.textTheme.bodyMedium)!
             .copyWith(
               color: widget.foreground,
               height: widget.dense ? 1.4 : 1.45,
