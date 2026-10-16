@@ -14,6 +14,7 @@ import '../../../core/zephyr_chat_bubble_shape.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_markdown_body.dart';
 import '../../../core/zephyr_scope.dart';
+import '../../../core/zephyr_swipe_drawer.dart';
 import '../models/workspace_ai_context_selection.dart';
 import '../../settings/models/llm_thinking_labels.dart';
 import 'workspace_ai_chat_model_sheet.dart';
@@ -68,7 +69,16 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
   /// Invalidates queued [addPostFrameCallback] pin scrolls when the user drags.
   var _scrollPinEpoch = 0;
 
+  var _drawerDragBlockedForList = false;
+
   static const _followSlop = 72.0;
+
+  void _setDrawerDragBlockedForList(bool blocked) {
+    if (_drawerDragBlockedForList == blocked) return;
+    _drawerDragBlockedForList = blocked;
+    if (!mounted) return;
+    ZephyrDrawerDragBlockNotification(blocked: blocked).dispatch(context);
+  }
 
   bool _handleListScrollNotification(ScrollNotification notification) {
     if (notification.depth != 0) return false;
@@ -76,11 +86,16 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
         notification.dragDetails != null) {
       _userInteractingWithScroll = true;
       _scrollPinEpoch++;
+      _setDrawerDragBlockedForList(true);
     } else if (notification is UserScrollNotification) {
       _userInteractingWithScroll =
           notification.direction != ScrollDirection.idle;
+      _setDrawerDragBlockedForList(
+        notification.direction != ScrollDirection.idle,
+      );
     } else if (notification is ScrollEndNotification) {
       _userInteractingWithScroll = false;
+      _setDrawerDragBlockedForList(false);
     }
     return false;
   }
@@ -260,6 +275,9 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
 
   @override
   void dispose() {
+    if (_drawerDragBlockedForList && context.mounted) {
+      ZephyrDrawerDragBlockNotification(blocked: false).dispatch(context);
+    }
     _liveAssistant.dispose();
     _scrollController.dispose();
     _inputController.dispose();
@@ -510,8 +528,13 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
                     ? const Center(child: CircularProgressIndicator())
                     : NotificationListener<ScrollNotification>(
                   onNotification: _handleListScrollNotification,
-                  child: ListView.builder(
+                  child: ScrollConfiguration(
+                    behavior: const _AiChatListScrollBehavior(),
+                    child: ListView.builder(
                     controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: ClampingScrollPhysics(),
+                    ),
                     keyboardDismissBehavior:
                         ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: widget.contentPadding.copyWith(
@@ -549,6 +572,7 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
                         radius: bubbleRadius,
                       );
                     },
+                  ),
                   ),
                 ),
               ),
@@ -912,6 +936,23 @@ class _AiChatComposerPickerButton extends StatelessWidget {
   }
 }
 
+/// Matches the plain-text editor: always scrollable + Material stretch overscroll.
+class _AiChatListScrollBehavior extends ScrollBehavior {
+  const _AiChatListScrollBehavior();
+
+  @override
+  Widget buildOverscrollIndicator(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    return StretchingOverscrollIndicator(
+      axisDirection: details.direction,
+      child: child,
+    );
+  }
+}
+
 enum _AiChatRole { user, assistant }
 
 class _StreamAssistantFrame {
@@ -994,6 +1035,8 @@ class _AiChatBubbleState extends State<_AiChatBubble> {
     final fg = isUser
         ? theme.colorScheme.onPrimaryContainer
         : theme.colorScheme.onSurface;
+    final thinkingFg = theme.textTheme.labelSmall?.color ??
+        theme.colorScheme.onSurfaceVariant;
     final showThinkingUi =
         !isUser && (message.thinkingInProgress || message.hasThinking);
     final thinkingLabel = message.thinkingInProgress
@@ -1004,7 +1047,10 @@ class _AiChatBubbleState extends State<_AiChatBubble> {
         : (message.thinkingInProgress && !message.hasThinking
               ? ''
               : message.text);
-    final assistantMarkdown = !isUser ? _assistantMarkdownBundle(message) : '';
+    final assistantReplyMarkdown =
+        !isUser && message.text.trim().isNotEmpty ? message.text : '';
+    final showThinkingBody =
+        !isUser && _thinkingExpanded && message.hasThinking;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -1063,14 +1109,14 @@ class _AiChatBubbleState extends State<_AiChatBubble> {
                                         height: 14,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: fg.withValues(alpha: 0.7),
+                                          color: thinkingFg,
                                         ),
                                       ),
                                     ),
                                   Text(
                                     thinkingLabel,
                                     style: theme.textTheme.labelLarge?.copyWith(
-                                      color: fg.withValues(alpha: 0.85),
+                                      color: thinkingFg,
                                     ),
                                   ),
                                   const SizedBox(width: 4),
@@ -1079,7 +1125,7 @@ class _AiChatBubbleState extends State<_AiChatBubble> {
                                         ? Icons.expand_less
                                         : Icons.expand_more,
                                     size: 20,
-                                    color: fg.withValues(alpha: 0.7),
+                                    color: thinkingFg,
                                   ),
                                 ],
                               ),
@@ -1100,16 +1146,33 @@ class _AiChatBubbleState extends State<_AiChatBubble> {
                               ),
                             ),
                           )
-                        else if (assistantMarkdown.isNotEmpty)
-                          ZephyrMarkdownBody(
-                            data: assistantMarkdown,
-                            foreground: fg,
-                            baseStyle: theme.textTheme.bodyMedium?.copyWith(
-                              color: fg,
-                              height: 1.45,
+                        else ...[
+                          if (showThinkingBody)
+                            ZephyrMarkdownBody(
+                              data: message.thinking,
+                              foreground: thinkingFg,
+                              baseStyle: theme.textTheme.bodyMedium?.copyWith(
+                                color: thinkingFg,
+                                height: 1.45,
+                              ),
+                              liveStream: widget.markdownLiveStream &&
+                                  message.thinkingInProgress,
                             ),
-                            liveStream: widget.markdownLiveStream,
-                          ),
+                          if (showThinkingBody &&
+                              assistantReplyMarkdown.isNotEmpty)
+                            const SizedBox(height: 8),
+                          if (assistantReplyMarkdown.isNotEmpty)
+                            ZephyrMarkdownBody(
+                              data: assistantReplyMarkdown,
+                              foreground: fg,
+                              baseStyle: theme.textTheme.bodyMedium?.copyWith(
+                                color: fg,
+                                height: 1.45,
+                              ),
+                              liveStream: widget.markdownLiveStream &&
+                                  !message.thinkingInProgress,
+                            ),
+                        ],
                       ],
                     ),
                   ),
