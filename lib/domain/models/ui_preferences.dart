@@ -28,6 +28,7 @@ class UiPreferences {
     required this.fontSize,
     required this.cornerRadius,
     required this.barCornerRadius,
+    required this.chatBubbleCornerRadius,
     required this.showBorders,
     required this.sidebarItemInset,
     required this.sidebarVolumeGap,
@@ -57,6 +58,7 @@ class UiPreferences {
     fontSize: 16,
     cornerRadius: 4,
     barCornerRadius: 4,
+    chatBubbleCornerRadius: 30,
     showBorders: false,
     sidebarItemInset: 0,
     sidebarVolumeGap: 1,
@@ -81,6 +83,8 @@ class UiPreferences {
   static const maxCornerRadius = 20.0;
   static const minBarCornerRadius = 0.0;
   static const maxBarCornerRadius = 24.0;
+  static const minChatBubbleCornerRadius = 0.0;
+  static const maxChatBubbleCornerRadius = 50.0;
   static const minSidebarItemInset = 0.0;
   static const maxSidebarItemInset = 24.0;
   static const minSidebarVolumeGap = 1.0;
@@ -97,6 +101,9 @@ class UiPreferences {
 
   /// Corner radius for the floating editor top bar and the sidebar library dock.
   final double barCornerRadius;
+
+  /// AI chat bubble corner radius (continuous curve; outer top corner is square).
+  final double chatBubbleCornerRadius;
 
   /// When false, chrome controls omit outline borders; volume rows and the
   /// library dock also drop their strokes.
@@ -185,6 +192,7 @@ class UiPreferences {
     double? fontSize,
     double? cornerRadius,
     double? barCornerRadius,
+    double? chatBubbleCornerRadius,
     bool? showBorders,
     double? sidebarItemInset,
     double? sidebarVolumeGap,
@@ -212,6 +220,8 @@ class UiPreferences {
     fontSize: fontSize ?? this.fontSize,
     cornerRadius: cornerRadius ?? this.cornerRadius,
     barCornerRadius: barCornerRadius ?? this.barCornerRadius,
+    chatBubbleCornerRadius:
+        chatBubbleCornerRadius ?? this.chatBubbleCornerRadius,
     showBorders: showBorders ?? this.showBorders,
     sidebarItemInset: sidebarItemInset ?? this.sidebarItemInset,
     sidebarVolumeGap: sidebarVolumeGap ?? this.sidebarVolumeGap,

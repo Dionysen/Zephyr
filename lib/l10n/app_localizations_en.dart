@@ -764,6 +764,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Roundness of the floating editor top bar and sidebar library dock.';
 
   @override
+  String get chatBubbleCornerRadiusTitle => 'Chat bubble corners';
+
+  @override
+  String get chatBubbleCornerRadiusDescription =>
+      'Roundness of AI chat bubbles (smooth continuous corners; the outer top corner stays square).';
+
+  @override
   String get showBordersTitle => 'Show borders';
 
   @override

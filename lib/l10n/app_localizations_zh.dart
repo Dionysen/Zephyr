@@ -716,6 +716,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get barCornerRadiusDescription => '编辑器顶栏与侧边栏底栏的圆角';
 
   @override
+  String get chatBubbleCornerRadiusTitle => '对话气泡圆角';
+
+  @override
+  String get chatBubbleCornerRadiusDescription => 'AI 对话气泡圆角（连续曲率；靠外侧的顶角保持直角）';
+
+  @override
   String get showBordersTitle => '显示边框';
 
   @override

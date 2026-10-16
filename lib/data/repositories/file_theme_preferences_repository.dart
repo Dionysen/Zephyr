@@ -243,6 +243,11 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
       'uiBarCornerRadius',
       UiPreferences.defaults.barCornerRadius,
     );
+    final chatBubbleRadius = _double(
+      values,
+      'uiChatBubbleCornerRadius',
+      UiPreferences.defaults.chatBubbleCornerRadius,
+    );
     final itemInset = _double(
       values,
       'uiSidebarItemInset',
@@ -268,6 +273,12 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
           .clamp(
             UiPreferences.minBarCornerRadius,
             UiPreferences.maxBarCornerRadius,
+          )
+          .toDouble(),
+      chatBubbleCornerRadius: chatBubbleRadius
+          .clamp(
+            UiPreferences.minChatBubbleCornerRadius,
+            UiPreferences.maxChatBubbleCornerRadius,
           )
           .toDouble(),
       showBorders: _bool(
@@ -354,6 +365,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'uiFontSize': ui.fontSize,
     'uiCornerRadius': ui.cornerRadius,
     'uiBarCornerRadius': ui.barCornerRadius,
+    'uiChatBubbleCornerRadius': ui.chatBubbleCornerRadius,
     'uiShowBorders': ui.showBorders,
     'uiSidebarItemInset': ui.sidebarItemInset,
     'uiSidebarVolumeGap': ui.sidebarVolumeGap,

@@ -59,6 +59,7 @@ void main() {
           fontSize: 12,
           cornerRadius: 10,
           barCornerRadius: 14,
+          chatBubbleCornerRadius: 18,
           showBorders: false,
           sidebarItemInset: 12,
           sidebarVolumeGap: 4,
@@ -113,6 +114,10 @@ void main() {
       expect(actual.ui.fontSize, expected.ui.fontSize);
       expect(actual.ui.cornerRadius, expected.ui.cornerRadius);
       expect(actual.ui.barCornerRadius, expected.ui.barCornerRadius);
+      expect(
+        actual.ui.chatBubbleCornerRadius,
+        expected.ui.chatBubbleCornerRadius,
+      );
       expect(actual.ui.showBorders, expected.ui.showBorders);
       expect(actual.ui.sidebarItemInset, expected.ui.sidebarItemInset);
       expect(actual.ui.sidebarVolumeGap, expected.ui.sidebarVolumeGap);
@@ -163,6 +168,10 @@ void main() {
     expect(appearance.ui.fontSize, UiPreferences.defaults.fontSize);
     expect(appearance.ui.cornerRadius, UiPreferences.defaults.cornerRadius);
     expect(appearance.ui.barCornerRadius, UiPreferences.defaults.barCornerRadius);
+    expect(
+      appearance.ui.chatBubbleCornerRadius,
+      UiPreferences.defaults.chatBubbleCornerRadius,
+    );
     expect(appearance.ui.showBorders, UiPreferences.defaults.showBorders);
     expect(
       appearance.ui.sidebarItemInset,

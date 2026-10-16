@@ -320,6 +320,17 @@ class ThemeViewModel extends ChangeNotifier {
     ),
   );
 
+  void updateChatBubbleCornerRadius(double value) => _updateUi(
+    _ui.copyWith(
+      chatBubbleCornerRadius: value
+          .clamp(
+            UiPreferences.minChatBubbleCornerRadius,
+            UiPreferences.maxChatBubbleCornerRadius,
+          )
+          .toDouble(),
+    ),
+  );
+
   void updateShowBorders(bool value) =>
       _updateUi(_ui.copyWith(showBorders: value));
 

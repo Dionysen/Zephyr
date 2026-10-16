@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import '../../../../domain/models/llm_chat.dart';
 import '../../../../domain/models/llm_settings.dart';
 import '../../editor/view_models/library_view_model.dart';
+import '../../../core/zephyr_chat_bubble_shape.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_markdown_body.dart';
 import '../../../core/zephyr_scope.dart';
@@ -20,12 +21,18 @@ class WorkspaceAiChatView extends StatefulWidget {
     super.key,
     this.contentTopInset = 0,
     this.contentPadding = const EdgeInsets.symmetric(horizontal: 16),
+    this.bleedEditorBackground = false,
     this.contextSelection,
     this.libraryModel,
   });
 
   /// Clears floating chrome (e.g. mobile book bar).
   final double contentTopInset;
+
+  /// When true, the list area is transparent so a parent [EditorBackgroundLayer]
+  /// can show through (immersive mobile chrome). Top chrome clearance is applied
+  /// as scroll padding so messages can still move under the status band.
+  final bool bleedEditorBackground;
   final EdgeInsets contentPadding;
   final WorkspaceAiContextSelection? contextSelection;
   final LibraryViewModel? libraryModel;
@@ -113,11 +120,11 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
     });
     _scrollToEnd(animate: true, force: true);
     var assistantIndex = -1;
-    final expectsThinking = llm.isConfigured &&
+    final expectsThinking =
+        llm.isConfigured &&
         llm.preferences.allowThinking &&
         llm.preferences.effectiveThinkingLevel() != LlmThinkingLevel.off;
-    if (llm.isConfigured &&
-        (llm.preferences.streamOutput || expectsThinking)) {
+    if (llm.isConfigured && (llm.preferences.streamOutput || expectsThinking)) {
       setState(() {
         _messages.add(
           _AiChatMessage(
@@ -266,153 +273,180 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final themeVm = ZephyrScope.of(context).theme;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-    final radius = context.zephyrCornerRadius;
+    final shellRadius = context.zephyrCornerRadius;
 
-    return ColoredBox(
-      color: theme.colorScheme.surface,
-      child: Column(
-        children: [
-          SizedBox(height: widget.contentTopInset),
-          Expanded(
-            child: NotificationListener<ScrollNotification>(
-              onNotification: _handleListScrollNotification,
-              child: ListView.builder(
-                controller: _scrollController,
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: widget.contentPadding.copyWith(top: 12, bottom: 12),
-                itemCount: _messages.length,
-                itemBuilder: (context, index) {
-                  if (index == _liveAssistantMessageIndex) {
-                    return ValueListenableBuilder<_StreamAssistantFrame?>(
-                      valueListenable: _liveAssistant,
-                      builder: (context, frame, _) {
-                        final base = _messages[index];
-                        final message = frame == null
-                            ? base
-                            : _AiChatMessage(
-                                role: _AiChatRole.assistant,
-                                text: frame.text,
-                                thinking: frame.thinking,
-                                thinkingInProgress: frame.thinkingInProgress,
-                              );
-                        return _AiChatBubble(
-                          message: message,
-                          radius: radius,
-                          markdownLiveStream: frame != null,
+    return ListenableBuilder(
+      listenable: themeVm,
+      builder: (context, _) {
+        final bubbleRadius = themeVm.ui.chatBubbleCornerRadius;
+        final immersiveChrome = widget.bleedEditorBackground;
+        final listTopPadding = immersiveChrome
+            ? widget.contentTopInset + 12
+            : 12.0;
+        return ColoredBox(
+          color: immersiveChrome
+              ? Colors.transparent
+              : theme.colorScheme.surface,
+          child: Column(
+            children: [
+              if (!immersiveChrome)
+                SizedBox(height: widget.contentTopInset),
+              Expanded(
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: _handleListScrollNotification,
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: widget.contentPadding.copyWith(
+                      top: listTopPadding,
+                      bottom: 12,
+                    ),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      if (index == _liveAssistantMessageIndex) {
+                        return ValueListenableBuilder<_StreamAssistantFrame?>(
+                          valueListenable: _liveAssistant,
+                          builder: (context, frame, _) {
+                            final base = _messages[index];
+                            final message = frame == null
+                                ? base
+                                : _AiChatMessage(
+                                    role: _AiChatRole.assistant,
+                                    text: frame.text,
+                                    thinking: frame.thinking,
+                                    thinkingInProgress:
+                                        frame.thinkingInProgress,
+                                  );
+                            return _AiChatBubble(
+                              message: message,
+                              radius: bubbleRadius,
+                              markdownLiveStream: frame != null,
+                            );
+                          },
                         );
-                      },
-                    );
-                  }
-                  final message = _messages[index];
-                  return _AiChatBubble(
-                    key: ValueKey('chat-msg-$index'),
-                    message: message,
-                    radius: radius,
-                  );
-                },
+                      }
+                      final message = _messages[index];
+                      return _AiChatBubble(
+                        key: ValueKey('chat-msg-$index'),
+                        message: message,
+                        radius: bubbleRadius,
+                      );
+                    },
+                  ),
+                ),
               ),
-            ),
-          ),
-          Material(
-            elevation: 0,
-            color: theme.colorScheme.surfaceContainerHighest,
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(12, 8, 12, 8 + bottomInset),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (widget.contextSelection != null)
-                      ListenableBuilder(
-                        listenable: widget.contextSelection!,
-                        builder: (context, _) {
-                          final articles = widget.contextSelection!.articles;
-                          if (articles.isEmpty) return const SizedBox.shrink();
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Wrap(
-                              spacing: 6,
-                              runSpacing: 6,
-                              children: [
-                                for (final article in articles)
-                                  InputChip(
-                                    label: Text(
-                                      article.title,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+              Material(
+                elevation: 0,
+                color: theme.colorScheme.surfaceContainerHighest,
+                child: SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(12, 8, 12, 8 + bottomInset),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (widget.contextSelection != null)
+                          ListenableBuilder(
+                            listenable: widget.contextSelection!,
+                            builder: (context, _) {
+                              final articles =
+                                  widget.contextSelection!.articles;
+                              if (articles.isEmpty)
+                                return const SizedBox.shrink();
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
+                                  children: [
+                                    for (final article in articles)
+                                      InputChip(
+                                        label: Text(
+                                          article.title,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        onDeleted: () => widget
+                                            .contextSelection!
+                                            .remove(article.id),
+                                        visualDensity: VisualDensity.compact,
+                                        materialTapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _inputController,
+                                focusNode: _inputFocus,
+                                minLines: 1,
+                                maxLines: 5,
+                                textInputAction: TextInputAction.send,
+                                onSubmitted: (_) => _send(),
+                                decoration: InputDecoration(
+                                  hintText: context.l10n.aiChatInputHint,
+                                  filled: true,
+                                  fillColor: theme.colorScheme.surface,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      shellRadius,
                                     ),
-                                    onDeleted: () => widget.contextSelection!
-                                        .remove(article.id),
-                                    visualDensity: VisualDensity.compact,
-                                    materialTapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
+                                    borderSide: BorderSide.none,
                                   ),
-                              ],
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 10,
+                                  ),
+                                ),
+                              ),
                             ),
-                          );
-                        },
-                      ),
-                    Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _inputController,
-                        focusNode: _inputFocus,
-                        minLines: 1,
-                        maxLines: 5,
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => _send(),
-                        decoration: InputDecoration(
-                          hintText: context.l10n.aiChatInputHint,
-                          filled: true,
-                          fillColor: theme.colorScheme.surface,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(radius),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
-                          ),
+                            const SizedBox(width: 4),
+                            IconButton(
+                              onPressed: _sending
+                                  ? null
+                                  : () => unawaited(
+                                      showWorkspaceAiChatOptionsSheet(context),
+                                    ),
+                              tooltip: context.l10n.aiChatSessionOptionsTitle,
+                              icon: const Icon(Icons.tune_rounded),
+                            ),
+                            const SizedBox(width: 4),
+                            IconButton.filled(
+                              onPressed: _sending
+                                  ? null
+                                  : () => unawaited(_send()),
+                              tooltip: context.l10n.aiChatSend,
+                              icon: _sending
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.arrow_upward_rounded),
+                            ),
+                          ],
                         ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(width: 4),
-                    IconButton(
-                      onPressed: _sending
-                          ? null
-                          : () => unawaited(
-                              showWorkspaceAiChatOptionsSheet(context),
-                            ),
-                      tooltip: context.l10n.aiChatSessionOptionsTitle,
-                      icon: const Icon(Icons.tune_rounded),
-                    ),
-                    const SizedBox(width: 4),
-                    IconButton.filled(
-                      onPressed: _sending ? null : () => unawaited(_send()),
-                      tooltip: context.l10n.aiChatSend,
-                      icon: _sending
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.arrow_upward_rounded),
-                    ),
-                  ],
-                ),
-                  ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -491,31 +525,30 @@ class _AiChatBubbleState extends State<_AiChatBubble> {
     final theme = Theme.of(context);
     final l10n = context.l10n;
     final isUser = message.role == _AiChatRole.user;
-    final bubbleRadius = BorderRadius.circular(widget.radius.clamp(8, 20));
     final bg = isUser
         ? theme.colorScheme.primaryContainer
         : theme.colorScheme.surfaceContainerHigh;
     final fg = isUser
         ? theme.colorScheme.onPrimaryContainer
         : theme.colorScheme.onSurface;
-    final showThinkingUi = !isUser &&
-        (message.thinkingInProgress || message.hasThinking);
+    final showThinkingUi =
+        !isUser && (message.thinkingInProgress || message.hasThinking);
     final thinkingLabel = message.thinkingInProgress
         ? l10n.aiChatThinkingInProgress
         : l10n.aiChatThinkingProcess;
     final bodyText = message.text.isNotEmpty
         ? message.text
         : (message.thinkingInProgress && !message.hasThinking
-            ? ''
-            : message.text);
-    final assistantMarkdown =
-        !isUser ? _assistantMarkdownBundle(message) : '';
+              ? ''
+              : message.text);
+    final assistantMarkdown = !isUser ? _assistantMarkdownBundle(message) : '';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
-        mainAxisAlignment:
-            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) ...[
@@ -535,9 +568,10 @@ class _AiChatBubbleState extends State<_AiChatBubble> {
               child: GestureDetector(
                 onLongPress: () => unawaited(_copyBubbleText(message)),
                 child: DecoratedBox(
-                  decoration: BoxDecoration(
+                  decoration: zephyrChatBubbleDecoration(
                     color: bg,
-                    borderRadius: bubbleRadius,
+                    isUser: isUser,
+                    radius: widget.radius,
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(

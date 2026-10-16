@@ -435,6 +435,10 @@ class _WorkspacePageState extends State<WorkspacePage>
                     // under the resize grip so expanding the sidebar does not leave a
                     // solid strip beside the photo.
                     final bleedEditorBackground = editorBackground.hasImage;
+                    final desktopAiImmersiveBleed =
+                        immersiveStatusBar && _desktopAiChatOpen;
+                    final desktopColumnBleed =
+                        bleedEditorBackground || desktopAiImmersiveBleed;
                     final workspace = Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -466,7 +470,7 @@ class _WorkspacePageState extends State<WorkspacePage>
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
-                              if (bleedEditorBackground)
+                              if (desktopColumnBleed)
                                 ListenableBuilder(
                                   listenable: scope.theme,
                                   builder: (context, _) =>
@@ -493,7 +497,9 @@ class _WorkspacePageState extends State<WorkspacePage>
                                         .editorPreferences
                                         .preferences
                                         .typewriterMode,
-                                    transparent: bleedEditorBackground,
+                                    transparent: _desktopAiChatOpen
+                                        ? desktopColumnBleed
+                                        : bleedEditorBackground,
                                     aiActive: _desktopAiChatOpen,
                                     onAiPressed: _toggleDesktopAiChat,
                                     toolsBuilder: (headerContext) =>
@@ -518,6 +524,8 @@ class _WorkspacePageState extends State<WorkspacePage>
                                         Expanded(
                                           child: _desktopAiChatOpen
                                               ? WorkspaceAiChatView(
+                                                  bleedEditorBackground:
+                                                      desktopColumnBleed,
                                                   contextSelection:
                                                       _desktopAiContext,
                                                   libraryModel: model,
@@ -1411,8 +1419,6 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
       _showBar(immediate: true);
     }
     final statusTop = widget.invadeStatusBar ? zephyrTopInset(context) : 0.0;
-    // Keep scroll padding stable — bar show/hide must not reflow the editor.
-    final contentTop = statusTop + _barTravel;
     final barBottom = statusTop + _barInset + WorkspaceMobileBookBar.height;
     final theme = Theme.of(context);
     final surface = theme.colorScheme.surface;
@@ -1424,14 +1430,25 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
       child: AnimatedBuilder(
         animation: _hide,
         builder: (context, _) {
+          // Editor: stable top inset while the bar animates. AI chat: shrink the
+          // book-bar band when it hides; always include [statusTop] so the first
+          // bubble sits below the floating bar at scroll offset zero.
+          final barReserve = _barTravel * (1.0 - _hide.value);
+          final contentTop = widget.aiChatOpen
+              ? statusTop + barReserve
+              : statusTop + _barTravel;
+          final aiBleedsChrome =
+              widget.transparentTopBar || widget.invadeStatusBar;
+          final paintBleedBackground = widget.transparentTopBar ||
+              (widget.aiChatOpen && widget.invadeStatusBar);
           // Match the opaque-band fade: while the bar is visible, hide text
           // above its bottom edge; as it hides, release the clip.
-          final textClipTop = widget.transparentTopBar
+          final textClipTop = paintBleedBackground
               ? barBottom * (1.0 - _hide.value)
               : 0.0;
           return Stack(
             children: [
-              if (widget.transparentTopBar)
+              if (paintBleedBackground)
                 Positioned.fill(
                   child: ListenableBuilder(
                     listenable: themeVm,
@@ -1451,6 +1468,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                   child: widget.aiChatOpen
                       ? WorkspaceAiChatView(
                           contentTopInset: contentTop,
+                          bleedEditorBackground: aiBleedsChrome,
                           contextSelection: widget.aiContextSelection,
                           libraryModel: widget.model,
                         )
@@ -1471,7 +1489,8 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                 ),
               ),
               // Opaque band above the bar when there is no background image.
-              if (!widget.transparentTopBar)
+              if (!widget.transparentTopBar &&
+                  !(widget.aiChatOpen && paintBleedBackground))
                 Positioned(
                   top: 0,
                   left: 0,

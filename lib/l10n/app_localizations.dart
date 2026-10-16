@@ -1472,6 +1472,18 @@ abstract class AppLocalizations {
   /// **'Roundness of the floating editor top bar and sidebar library dock.'**
   String get barCornerRadiusDescription;
 
+  /// No description provided for @chatBubbleCornerRadiusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat bubble corners'**
+  String get chatBubbleCornerRadiusTitle;
+
+  /// No description provided for @chatBubbleCornerRadiusDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Roundness of AI chat bubbles (smooth continuous corners; the outer top corner stays square).'**
+  String get chatBubbleCornerRadiusDescription;
+
   /// No description provided for @showBordersTitle.
   ///
   /// In en, this message translates to:

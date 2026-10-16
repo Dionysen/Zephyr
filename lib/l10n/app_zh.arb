@@ -275,6 +275,8 @@
   "cornerRadiusDescription": "按钮、菜单、卡片与输入框的圆角",
   "barCornerRadiusTitle": "栏圆角",
   "barCornerRadiusDescription": "编辑器顶栏与侧边栏底栏的圆角",
+  "chatBubbleCornerRadiusTitle": "对话气泡圆角",
+  "chatBubbleCornerRadiusDescription": "AI 对话气泡圆角（连续曲率；靠外侧的顶角保持直角）",
   "showBordersTitle": "显示边框",
   "showBordersSubtitle": "关闭后控件无描边，开启时卷与书库栏显示边框",
   "sidebarItemInsetTitle": "侧边栏条目边距",
