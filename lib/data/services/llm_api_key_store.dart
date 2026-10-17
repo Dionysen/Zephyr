@@ -1,14 +1,12 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
 import '../../domain/models/llm_settings.dart';
-import 'zephyr_secure_storage.dart';
+import 'zephyr_key_value_secure_store.dart';
 
 /// API keys per [LlmProviderKind], stored in platform secure storage.
 class LlmApiKeyStore {
-  LlmApiKeyStore({FlutterSecureStorage? storage})
-    : _storage = storage ?? zephyrSecureStorage;
+  LlmApiKeyStore({ZephyrKeyValueSecureStore? storage})
+    : _storage = storage ?? zephyrKeyValueSecureStore;
 
-  final FlutterSecureStorage _storage;
+  final ZephyrKeyValueSecureStore _storage;
 
   String _keyFor(LlmProviderKind provider) => 'zephyr.llm.api_key.${provider.name}';
 
