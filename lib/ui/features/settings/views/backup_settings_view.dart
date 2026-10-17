@@ -91,7 +91,7 @@ class BackupSettingsView extends StatelessWidget {
         );
 
         final cloudSection = ZephyrSettingsSection(
-          icon: Icons.cloud_outlined,
+          icon: Icons.cloud,
           title: l10n.backupGroupCloudTitle,
           children: _cloudSyncTiles(context, cloudSync),
         );
@@ -121,7 +121,7 @@ class BackupSettingsView extends StatelessWidget {
 
     final tiles = <Widget>[
       ZephyrSettingsSwitchTile(
-        icon: Icons.cloud_outlined,
+        icon: Icons.cloud,
         title: l10n.cloudSyncEnableTitle,
         subtitle: l10n.cloudSyncEnableSubtitle,
         value: enabled,
@@ -160,7 +160,7 @@ class BackupSettingsView extends StatelessWidget {
 
     tiles.addAll([
       ZephyrSettingsListTile(
-        icon: Icons.cloud_upload_outlined,
+        icon: Icons.cloud_upload,
         title: l10n.cloudSyncBackupNowTitle,
         subtitle: l10n.cloudSyncBackupNowSubtitle,
         enabled: !cloudSync.busy,
@@ -184,7 +184,7 @@ class BackupSettingsView extends StatelessWidget {
             : null,
       ),
       ZephyrSettingsListTile(
-        icon: Icons.cloud_download_outlined,
+        icon: Icons.cloud_download,
         title: l10n.cloudSyncRestoreTitle,
         subtitle: l10n.cloudSyncRestoreSubtitle,
         enabled: !cloudSync.busy,
@@ -690,8 +690,8 @@ class _CloudBackupListSheet extends StatelessWidget {
                         return ListTile(
                           leading: Icon(
                             entry.isLatestSnapshot
-                                ? Icons.cloud_done_outlined
-                                : Icons.cloud_outlined,
+                                ? Icons.cloud_done
+                                : Icons.cloud,
                             size: ZephyrBottomSheet.rowIconSize,
                           ),
                           title: Text(

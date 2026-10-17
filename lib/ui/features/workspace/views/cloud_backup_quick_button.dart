@@ -68,7 +68,7 @@ class _CloudBackupQuickButtonState extends State<CloudBackupQuickButton> {
                 ),
               )
             : Icon(
-                signedIn ? Icons.cloud_outlined : Icons.cloud_off_outlined,
+                signedIn ? Icons.cloud : Icons.cloud_off,
                 size: widget.iconSize,
                 color: iconColor,
               );
@@ -153,14 +153,14 @@ class _CloudBackupQuickButtonState extends State<CloudBackupQuickButton> {
       actions: [
         WorkspaceMobileDrawerAction(
           id: _CloudBackupMenuId.backup,
-          icon: Icons.cloud_upload_outlined,
+          icon: Icons.cloud_upload,
           label: l10n.cloudSyncBackupNowTitle,
           enabled: !cloudSync.busy,
           onTap: () => unawaited(_runBackup(context, cloudSync)),
         ),
         WorkspaceMobileDrawerAction(
           id: _CloudBackupMenuId.restore,
-          icon: Icons.cloud_download_outlined,
+          icon: Icons.cloud_download,
           label: l10n.cloudSyncRestoreTitle,
           enabled: !cloudSync.busy,
           onTap: () => unawaited(showCloudBackupRestoreFlow(context, cloudSync)),
@@ -211,7 +211,7 @@ class _CloudBackupQuickButtonState extends State<CloudBackupQuickButton> {
           height: itemHeight,
           enabled: !cloudSync.busy,
           child: row(
-            icon: Icons.cloud_upload_outlined,
+            icon: Icons.cloud_upload,
             label: l10n.cloudSyncBackupNowTitle,
           ),
         ),
@@ -220,7 +220,7 @@ class _CloudBackupQuickButtonState extends State<CloudBackupQuickButton> {
           height: itemHeight,
           enabled: !cloudSync.busy,
           child: row(
-            icon: Icons.cloud_download_outlined,
+            icon: Icons.cloud_download,
             label: l10n.cloudSyncRestoreTitle,
           ),
         ),

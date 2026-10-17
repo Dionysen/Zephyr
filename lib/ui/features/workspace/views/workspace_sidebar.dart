@@ -1805,6 +1805,13 @@ class WorkspaceHeader extends StatelessWidget {
                     ),
                   ),
                 const WindowCaptionButtons(),
+                if (WindowChrome.trailingChromeInset > 0)
+                  WindowDragArea(
+                    child: SizedBox(
+                      width: WindowChrome.trailingChromeInset,
+                      height: height,
+                    ),
+                  ),
               ],
             ),
             IgnorePointer(
