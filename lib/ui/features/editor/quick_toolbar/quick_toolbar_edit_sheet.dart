@@ -202,7 +202,7 @@ class _QuickToolbarEditBody extends StatelessWidget {
     String initialLabel = '',
     String initialPayload = '',
   }) {
-    return showDialog<(String, String)>(
+    return showZephyrDialog<(String, String)>(
       context: context,
       builder: (context) => _PhraseDialog(
         initialLabel: initialLabel,

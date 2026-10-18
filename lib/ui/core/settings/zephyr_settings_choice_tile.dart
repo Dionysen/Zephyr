@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../zephyr_bottom_sheet.dart';
+import '../zephyr_dialog.dart';
 import '../zephyr_controls.dart';
 import '../zephyr_l10n.dart';
 import '../zephyr_theme.dart';
@@ -108,7 +109,7 @@ class _ZephyrSettingsChoiceSheetState<T>
   Future<void> _delete(ZephyrSettingsChoice<T> choice) async {
     final onDelete = widget.onDelete;
     if (onDelete == null) return;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showZephyrDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(widget.deleteConfirmTitle),

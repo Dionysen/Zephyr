@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 
 import '../../domain/models/theme_tokens.dart';
 import '../../domain/models/ui_preferences.dart';
+import 'window_chrome.dart';
 import 'zephyr_controls.dart';
+import 'zephyr_dialog.dart';
 import 'zephyr_status_bar.dart';
 
 /// User-owned chrome shape prefs exposed through [ThemeData.extensions].
@@ -362,6 +364,12 @@ ThemeData zephyrTheme(
     dialogTheme: DialogThemeData(
       backgroundColor: control,
       shape: RoundedRectangleBorder(borderRadius: borderRadius, side: hairline),
+      insetPadding: WindowChrome.isDesktop
+          ? ZephyrDialog.desktopInsetPadding
+          : null,
+      constraints: WindowChrome.isDesktop
+          ? ZephyrDialog.desktopConstraints
+          : null,
     ),
     cardTheme: CardThemeData(
       color: control,

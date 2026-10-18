@@ -8,6 +8,7 @@ import '../../../../domain/models/editor_background.dart';
 import '../../../../domain/models/theme_tokens.dart';
 import '../../../core/editor_background_layer.dart';
 import '../../../core/zephyr_bottom_sheet.dart';
+import '../../../core/zephyr_dialog.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_snackbar.dart';
 import '../../../core/zephyr_theme.dart';
@@ -440,7 +441,7 @@ class _LibraryBody extends StatelessWidget {
 
   Future<void> _delete(BuildContext context, BackgroundImage image) async {
     final l10n = context.l10n;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showZephyrDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l10n.editorBackgroundDeleteTitle),

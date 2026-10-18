@@ -12,7 +12,7 @@ Future<Color?> showZephyrColorPicker(
   required Color initialColor,
   String? title,
 }) {
-  return showDialog<Color>(
+  return showZephyrDialog<Color>(
     context: context,
     builder: (context) => _ZephyrColorPickerDialog(
       initialColor: initialColor,

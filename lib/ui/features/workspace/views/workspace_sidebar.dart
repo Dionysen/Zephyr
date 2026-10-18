@@ -1661,7 +1661,7 @@ class _MobileBookSheetState extends State<_MobileBookSheet> {
   }
 
   Future<void> _onAddBook(BuildContext context) async {
-    final result = await showDialog<_BookEditResult>(
+    final result = await showZephyrDialog<_BookEditResult>(
       context: context,
       barrierDismissible: true,
       builder: (context) => _EditBookDialog(
@@ -2111,7 +2111,7 @@ Future<void> _editBook(
   required LibraryViewModel model,
   required WritingFolder book,
 }) async {
-  final result = await showDialog<_BookEditResult>(
+  final result = await showZephyrDialog<_BookEditResult>(
     context: context,
     barrierDismissible: true,
     builder: (context) => _EditBookDialog(book: book),

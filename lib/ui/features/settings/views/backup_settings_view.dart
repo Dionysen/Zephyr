@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../../domain/models/cloud_sync.dart';
 import '../../../../domain/models/library_backup.dart';
 import '../../../core/zephyr_bottom_sheet.dart';
+import '../../../core/zephyr_dialog.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_scope.dart';
 import '../../../core/zephyr_settings.dart';
@@ -228,7 +229,7 @@ Future<void> showNutstoreCredentialsDialog(
   final l10n = context.l10n;
   // Connect / unbind inside the dialog before pop so TextFields are not
   // disposed mid-exit while ListenableBuilder rebuilds the page underneath.
-  final result = await showDialog<_NutstoreCredentialsResult>(
+  final result = await showZephyrDialog<_NutstoreCredentialsResult>(
     context: context,
     barrierDismissible: false,
     builder: (context) =>
@@ -470,7 +471,7 @@ Future<void> showCloudBackupRestoreFlow(
   );
   if (mode == null || !context.mounted) return;
 
-  final confirmed = await showDialog<bool>(
+  final confirmed = await showZephyrDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
       title: Text(l10n.backupRestoreConfirmTitle),
@@ -549,7 +550,7 @@ Future<void> showBackupRestoreFlow(
   );
   if (mode == null || !context.mounted) return;
 
-  final confirmed = await showDialog<bool>(
+  final confirmed = await showZephyrDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
       title: Text(l10n.backupRestoreConfirmTitle),

@@ -314,7 +314,7 @@ Future<String?> showRenameDialog(
   required String label,
   required String initialValue,
 }) {
-  return showDialog<String>(
+  return showZephyrDialog<String>(
     context: context,
     builder: (context) => _RenameDialog(
       title: title,
@@ -332,7 +332,7 @@ Future<bool?> showDeleteChapterDialog(
   final name = chapterTitle.trim().isEmpty
       ? l10n.untitled
       : chapterTitle.trim();
-  return showDialog<bool>(
+  return showZephyrDialog<bool>(
     context: context,
     builder: (context) {
       final theme = Theme.of(context);
@@ -367,7 +367,7 @@ Future<bool?> showDeleteVolumeDialog(
   final name = volumeName.trim().isEmpty
       ? l10n.untitled
       : volumeName.trim();
-  return showDialog<bool>(
+  return showZephyrDialog<bool>(
     context: context,
     builder: (context) {
       final theme = Theme.of(context);

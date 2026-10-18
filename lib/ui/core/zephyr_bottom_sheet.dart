@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'window_chrome.dart';
+import 'zephyr_dialog.dart';
 
 /// Shared density for modal bottom sheets (titles, rows, secondary text).
 abstract final class ZephyrBottomSheet {
@@ -16,7 +17,7 @@ abstract final class ZephyrBottomSheet {
   );
 
   /// Default desktop dialog width for sheet-style panels.
-  static const double desktopDialogWidth = 420;
+  static const double desktopDialogWidth = ZephyrDialog.maxContentWidth;
 
   /// Max height for short, fit-content sheets (choice pickers, brief lists).
   static double fitContentMaxHeight(BuildContext context) =>

@@ -21,6 +21,7 @@ import '../../../../domain/models/workspace_layout.dart';
 import '../../../core/breakpoints.dart';
 import '../../../core/editor_background_layer.dart';
 import '../../../core/window_chrome.dart';
+import '../../../core/zephyr_dialog.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_dual_editor_pager.dart';
 import '../../../core/zephyr_scope.dart';
@@ -188,7 +189,7 @@ class _WorkspacePageState extends State<WorkspacePage>
     for (final draft in drafts) {
       if (!mounted) return;
       final l10n = context.l10n;
-      final action = await showDialog<String>(
+      final action = await showZephyrDialog<String>(
         context: context,
         builder: (context) => AlertDialog(
           title: Text(l10n.draftRecoverTitle),

@@ -58,7 +58,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
   Future<void> _saveAsThemeColor() async {
     final viewModel = widget.viewModel;
     final l10n = context.l10n;
-    final name = await showDialog<String>(
+    final name = await showZephyrDialog<String>(
       context: context,
       builder: (context) => _ThemeNameDialog(
         title: l10n.saveThemeColorTitle,
@@ -97,7 +97,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
     final viewModel = widget.viewModel;
     switch (action) {
       case _PackMenuAction.rename:
-        final name = await showDialog<String>(
+        final name = await showZephyrDialog<String>(
           context: context,
           builder: (context) => _ThemeNameDialog(
             title: l10n.themePackRenameTitle,
@@ -109,7 +109,7 @@ class _ThemeCatalogState extends State<ThemeCatalog> {
       case _PackMenuAction.copy:
         viewModel.copyCustomPack(pack.id, l10n.themePackCopyName(pack.name));
       case _PackMenuAction.delete:
-        final confirmed = await showDialog<bool>(
+        final confirmed = await showZephyrDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: Text(l10n.themePackDeleteTitle),

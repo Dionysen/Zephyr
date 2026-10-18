@@ -23,7 +23,7 @@ Future<double?> showZephyrSettingsNumberPicker(
   String? description,
   ZephyrNumberPickerFormatter? formatValue,
 }) {
-  return showDialog<double>(
+  return showZephyrDialog<double>(
     context: context,
     builder: (context) => _ZephyrSettingsNumberPickerDialog(
       title: title,

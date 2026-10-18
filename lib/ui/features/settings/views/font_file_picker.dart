@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../domain/models/editor_preferences.dart';
+import '../../../core/zephyr_dialog.dart';
 import '../../../core/zephyr_dropdown.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_settings.dart';
@@ -76,7 +77,7 @@ class FontFilePickerRow extends StatelessWidget {
     if (delete == null || !font.imported) return false;
 
     if (!compact) {
-      final confirmed = await showDialog<bool>(
+      final confirmed = await showZephyrDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
           title: Text(l10n.fontDeleteDialogTitle),

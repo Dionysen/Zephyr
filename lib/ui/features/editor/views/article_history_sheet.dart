@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/zephyr_bottom_sheet.dart';
+import '../../../core/zephyr_dialog.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_snackbar.dart';
 import '../view_models/library_view_model.dart';
@@ -66,7 +67,7 @@ Future<void> showArticleHistorySheet(
                         overflow: TextOverflow.ellipsis,
                       ),
                       onTap: () async {
-                        final ok = await showDialog<bool>(
+                        final ok = await showZephyrDialog<bool>(
                           context: context,
                           builder: (context) => AlertDialog(
                             title: Text(l10n.historyRestoreTitle),

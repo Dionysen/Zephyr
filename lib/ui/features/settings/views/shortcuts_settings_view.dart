@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../../domain/models/keyboard_shortcuts.dart';
 import '../../../../domain/use_cases/shortcut_resolver.dart';
+import '../../../core/zephyr_dialog.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_settings.dart';
 import '../../../core/zephyr_snackbar.dart';
@@ -84,7 +85,7 @@ class ShortcutsSettingsView extends StatelessWidget {
 
   Future<void> _record(BuildContext context, ShortcutActionId id) async {
     final l10n = context.l10n;
-    final result = await showDialog<_RecordResult>(
+    final result = await showZephyrDialog<_RecordResult>(
       context: context,
       builder: (context) => _ShortcutRecordDialog(
         title: l10n.shortcutsRecordTitle,

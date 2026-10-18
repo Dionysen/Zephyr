@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../../domain/models/ai_chat_session.dart';
 import '../../../../domain/repositories/writing_library_repository.dart';
 import '../../../core/zephyr_bottom_sheet.dart';
+import '../../../core/zephyr_dialog.dart';
 import '../../../core/zephyr_l10n.dart';
 
 /// Returns the selected session id, or null when dismissed without a change.
@@ -79,7 +80,7 @@ class _WorkspaceAiSessionsSheetState extends State<_WorkspaceAiSessionsSheet> {
 
   Future<void> _delete(AiChatSession session) async {
     final l10n = context.l10n;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showZephyrDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l10n.aiChatDeleteSessionTitle),
