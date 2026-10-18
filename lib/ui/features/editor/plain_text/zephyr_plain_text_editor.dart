@@ -120,8 +120,16 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   /// Pointer id for an in-progress drag-select (mouse or long-press).
   int? _selectPointer;
 
+  /// Touch pointer awaiting long-press (used to route drag-select globally).
+  int? _touchSelectPointer;
+
   /// Last global position while drag-selecting (for edge auto-scroll).
   Offset? _selectGlobal;
+
+  /// Last global position while dragging a mobile selection/caret handle.
+  Offset? _handleDragGlobal;
+  _HandleDragRole _handleDragRole = _HandleDragRole.none;
+
   bool _selectAutoScrollScheduled = false;
   static const double _selectEdgeZone = 48;
   static const double _selectAutoScrollMaxPerFrame = 28;
@@ -538,18 +546,36 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
             event.buttons != kPrimaryButton)) {
       return;
     }
-    _stopSelectionDrag();
+    _armSelectionDrag(
+      pointer: event.pointer,
+      global: event.position,
+      wordSelectOnStart: false,
+    );
+  }
+
+  /// Routes pointer moves/ups globally so edge auto-scroll keeps working off-widget.
+  void _armSelectionDrag({
+    required int pointer,
+    required Offset global,
+    required bool wordSelectOnStart,
+  }) {
+    _stopSelectionDrag(notify: false);
     _selecting = true;
-    _selectPointer = event.pointer;
-    _selectGlobal = event.position;
+    _selectPointer = pointer;
+    _selectGlobal = global;
     GestureBinding.instance.pointerRouter.addRoute(
-      event.pointer,
+      pointer,
       _handleSelectPointerRoute,
     );
-    final local = _documentLocalForGlobal(event.position);
+    final local = _documentLocalForGlobal(global);
     if (local != null) {
-      _gestures.handleDragStart(local);
+      if (wordSelectOnStart) {
+        _gestures.handleLongPressStart(local);
+      } else {
+        _gestures.handleDragStart(local);
+      }
     }
+    if (mounted) setState(() {});
     _scheduleSelectAutoScroll();
   }
 
@@ -559,7 +585,7 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
       // Mouse may release without a clean up if the window loses focus.
       if (event.kind == PointerDeviceKind.mouse &&
           event.buttons != kPrimaryButton) {
-        _stopSelectionDrag();
+        _finishSelectionDrag();
         return;
       }
       _selectGlobal = event.position;
@@ -568,7 +594,18 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
       return;
     }
     if (event is PointerUpEvent || event is PointerCancelEvent) {
-      _stopSelectionDrag();
+      _finishSelectionDrag();
+    }
+  }
+
+  void _finishSelectionDrag() {
+    final reattachIme = _isMobile && _suppressImeAttach;
+    _stopSelectionDrag();
+    if (reattachIme) {
+      _suppressImeAttach = false;
+      if (mounted && _focusNode.hasPrimaryFocus) {
+        _attachIme();
+      }
     }
   }
 
@@ -601,10 +638,18 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   }
 
   Rect? _scrollViewportGlobalRect() {
-    final box = context.findRenderObject() as RenderBox?;
+    final box =
+        _viewportKey.currentContext?.findRenderObject() as RenderBox? ??
+        context.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) return null;
     final origin = box.localToGlobal(Offset.zero);
     return origin & box.size;
+  }
+
+  Offset? get _edgeAutoScrollGlobal {
+    if (_selecting) return _selectGlobal;
+    if (_draggingHandle) return _handleDragGlobal;
+    return null;
   }
 
   /// Scroll delta for a pointer near/outside the viewport edge (px / frame).
@@ -637,8 +682,10 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
 
   void _scheduleSelectAutoScroll() {
     if (_selectAutoScrollScheduled) return;
-    if (!_selecting || _selectGlobal == null) return;
-    if (_selectAutoScrollDelta(_selectGlobal!) == 0) return;
+    final global = _edgeAutoScrollGlobal;
+    if (global == null) return;
+    if (!_selecting && !_draggingHandle) return;
+    if (_selectAutoScrollDelta(global) == 0) return;
     _selectAutoScrollScheduled = true;
     WidgetsBinding.instance.scheduleFrameCallback(_pumpSelectAutoScroll);
     WidgetsBinding.instance.scheduleFrame();
@@ -646,9 +693,10 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
 
   void _pumpSelectAutoScroll(Duration _) {
     _selectAutoScrollScheduled = false;
-    if (!mounted || !_selecting) return;
-    final global = _selectGlobal;
+    if (!mounted) return;
+    final global = _edgeAutoScrollGlobal;
     if (global == null || !_scrollController.hasClients) return;
+    if (!_selecting && !_draggingHandle) return;
     final delta = _selectAutoScrollDelta(global);
     if (delta == 0) return;
     final position = _scrollController.position;
@@ -658,11 +706,25 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     );
     if ((next - position.pixels).abs() > 0.5) {
       _scrollController.jumpTo(next);
-      // Document moves under a stationary pointer — re-hit selection.
-      _applySelectionAtGlobal(global);
+      // Document moves under a stationary pointer — re-hit selection/handle.
+      _applyEdgeAutoScrollAt(global);
     }
-    if (_selecting && _selectAutoScrollDelta(global) != 0) {
+    if ((_selecting || _draggingHandle) &&
+        _selectAutoScrollDelta(global) != 0) {
       _scheduleSelectAutoScroll();
+    }
+  }
+
+  void _applyEdgeAutoScrollAt(Offset global) {
+    switch (_handleDragRole) {
+      case _HandleDragRole.caret:
+        _applyCaretHandleAt(global);
+      case _HandleDragRole.base:
+        _applySelectionHandleAt(global, isBase: true);
+      case _HandleDragRole.extent:
+        _applySelectionHandleAt(global, isBase: false);
+      case _HandleDragRole.none:
+        _applySelectionAtGlobal(global);
     }
   }
 
@@ -1051,6 +1113,10 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                             onPointerDown: widget.readOnly
                                 ? null
                                 : (event) {
+                                    if (event.kind == PointerDeviceKind.touch) {
+                                      _touchSelectPointer = event.pointer;
+                                      return;
+                                    }
                                     if (event.kind == PointerDeviceKind.mouse &&
                                         event.buttons == kPrimaryButton) {
                                       _focusNode.requestFocus();
@@ -1063,6 +1129,24 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                                         event,
                                         fromMouse: true,
                                       );
+                                    }
+                                  },
+                            onPointerUp: widget.readOnly
+                                ? null
+                                : (event) {
+                                    if (event.kind == PointerDeviceKind.touch &&
+                                        event.pointer == _touchSelectPointer &&
+                                        !_selecting) {
+                                      _touchSelectPointer = null;
+                                    }
+                                  },
+                            onPointerCancel: widget.readOnly
+                                ? null
+                                : (event) {
+                                    if (event.kind == PointerDeviceKind.touch &&
+                                        event.pointer == _touchSelectPointer &&
+                                        !_selecting) {
+                                      _touchSelectPointer = null;
                                     }
                                   },
                             child: GestureDetector(
@@ -1081,20 +1165,24 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                                       // the press ends (or a short tap follows).
                                       _suppressImeAttach = true;
                                       _focusNode.requestFocus();
+                                      final pointer = _touchSelectPointer;
+                                      if (isMobile && pointer != null) {
+                                        _armSelectionDrag(
+                                          pointer: pointer,
+                                          global: details.globalPosition,
+                                          wordSelectOnStart: true,
+                                        );
+                                        return;
+                                      }
                                       _selecting = true;
                                       _selectGlobal = details.globalPosition;
-                                      if (isMobile) {
-                                        _gestures.handleLongPressStart(
-                                          details.localPosition,
-                                        );
-                                      } else {
-                                        _gestures.handleDragStart(
-                                          details.localPosition,
-                                        );
-                                      }
+                                      _gestures.handleDragStart(
+                                        details.localPosition,
+                                      );
                                       _scheduleSelectAutoScroll();
                                     },
-                              onLongPressMoveUpdate: widget.readOnly
+                              onLongPressMoveUpdate:
+                                  widget.readOnly || isMobile
                                   ? null
                                   : (details) {
                                       if (!_selecting) return;
@@ -1104,7 +1192,7 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                                       );
                                       _scheduleSelectAutoScroll();
                                     },
-                              onLongPressEnd: widget.readOnly
+                              onLongPressEnd: widget.readOnly || isMobile
                                   ? null
                                   : (_) {
                                       _selectGlobal = null;
@@ -1151,7 +1239,10 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                             showVisual: !_draggingHandle,
                             top: caretHandle.bottom,
                             left: caretHandle.center.dx,
-                            onDragStart: () => _setDraggingHandle(true),
+                            onDragStart: () {
+                              _handleDragRole = _HandleDragRole.caret;
+                              _setDraggingHandle(true);
+                            },
                             onDragEnd: () => _setDraggingHandle(false),
                             onDragGlobal: _moveCaretHandle,
                           ),
@@ -1161,7 +1252,10 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                             showVisual: !_draggingHandle,
                             top: baseCaret.bottom,
                             left: baseCaret.center.dx,
-                            onDragStart: () => _setDraggingHandle(true),
+                            onDragStart: () {
+                              _handleDragRole = _HandleDragRole.base;
+                              _setDraggingHandle(true);
+                            },
                             onDragEnd: () => _setDraggingHandle(false),
                             onDragGlobal: (global) =>
                                 _moveSelectionHandle(global, isBase: true),
@@ -1172,7 +1266,10 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
                             showVisual: !_draggingHandle,
                             top: extentCaret.bottom,
                             left: extentCaret.center.dx,
-                            onDragStart: () => _setDraggingHandle(true),
+                            onDragStart: () {
+                              _handleDragRole = _HandleDragRole.extent;
+                              _setDraggingHandle(true);
+                            },
                             onDragEnd: () => _setDraggingHandle(false),
                             onDragGlobal: (global) =>
                                 _moveSelectionHandle(global, isBase: false),
@@ -1254,7 +1351,12 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     if (_draggingHandle == dragging) return;
     setState(() {
       _draggingHandle = dragging;
-      if (!dragging) _magnifierFocal = null;
+      if (!dragging) {
+        _magnifierFocal = null;
+        _handleDragGlobal = null;
+        _handleDragRole = _HandleDragRole.none;
+        _selectAutoScrollScheduled = false;
+      }
     });
     // Block the compact swipe-drawer open gesture for this pointer. Dispatched
     // on pointer down (before drag slop) so the drawer can ignore the claim.
@@ -1262,28 +1364,42 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
   }
 
   void _moveSelectionHandle(Offset globalPosition, {required bool isBase}) {
+    _handleDragGlobal = globalPosition;
+    final next = _applySelectionHandleAt(globalPosition, isBase: isBase);
+    if (next != null) _updateMagnifierFocal(next);
+    _scheduleSelectAutoScroll();
+  }
+
+  void _moveCaretHandle(Offset globalPosition) {
+    _handleDragGlobal = globalPosition;
+    final next = _applyCaretHandleAt(globalPosition);
+    if (next != null) _updateMagnifierFocal(next);
+    _scheduleSelectAutoScroll();
+  }
+
+  int? _applySelectionHandleAt(Offset globalPosition, {required bool isBase}) {
     final sel = widget.controller.selection;
     final next = _offsetForHandle(
       globalPosition,
       currentOffset: isBase ? sel.baseOffset : sel.extentOffset,
     );
-    if (next == null) return;
+    if (next == null) return null;
     widget.controller.setSelection(
       isBase
           ? TextSelection(baseOffset: next, extentOffset: sel.extentOffset)
           : TextSelection(baseOffset: sel.baseOffset, extentOffset: next),
     );
-    _updateMagnifierFocal(next);
+    return next;
   }
 
-  void _moveCaretHandle(Offset globalPosition) {
+  int? _applyCaretHandleAt(Offset globalPosition) {
     final next = _offsetForHandle(
       globalPosition,
       currentOffset: widget.controller.selection.extentOffset,
     );
-    if (next == null) return;
+    if (next == null) return null;
     widget.controller.setSelection(TextSelection.collapsed(offset: next));
-    _updateMagnifierFocal(next);
+    return next;
   }
 
   int? _offsetForHandle(Offset globalPosition, {required int currentOffset}) {
@@ -1439,6 +1555,8 @@ class _MobileSelectionToolbar extends StatelessWidget {
     );
   }
 }
+
+enum _HandleDragRole { none, caret, base, extent }
 
 /// Material Design edge stretch (same indicator the sidebar ListView uses).
 class _MaterialStretchScrollBehavior extends ScrollBehavior {
