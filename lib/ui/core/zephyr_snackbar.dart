@@ -46,9 +46,20 @@ abstract final class ZephyrSnackBar {
     final background = isDark ? Colors.black : Colors.white;
     final foreground = isDark ? Colors.white : Colors.black87;
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final double? width = WindowChrome.isDesktop
-        ? math.min(screenWidth - 32, desktopMaxWidth)
-        : null;
+    // [SnackBar] allows [width] or [margin], not both — cap width via side margins.
+    final EdgeInsetsGeometry margin;
+    if (WindowChrome.isDesktop) {
+      final barWidth = math.min(screenWidth - 32, desktopMaxWidth);
+      final side = math.max(16.0, (screenWidth - barWidth) / 2);
+      margin = EdgeInsets.fromLTRB(
+        side,
+        insetPadding.top,
+        side,
+        insetPadding.bottom,
+      );
+    } else {
+      margin = insetPadding;
+    }
     return SnackBar(
       content: Text(
         message,
@@ -58,15 +69,7 @@ abstract final class ZephyrSnackBar {
       duration: duration,
       behavior: SnackBarBehavior.floating,
       elevation: 4,
-      width: width,
-      margin: width == null
-          ? insetPadding
-          : EdgeInsets.fromLTRB(
-              (screenWidth - width) / 2,
-              insetPadding.top,
-              (screenWidth - width) / 2,
-              insetPadding.bottom,
-            ),
+      margin: margin,
       shape: RoundedRectangleBorder(
         borderRadius: context.zephyrBorderRadius,
         side: BorderSide(
