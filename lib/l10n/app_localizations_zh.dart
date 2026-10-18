@@ -617,6 +617,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get openSidebarOnStartupSubtitle => '进入工作区后自动展开侧栏章节列表。';
 
   @override
+  String get desktopBehaviorSectionTitle => '桌面工作区';
+
+  @override
+  String get desktopBehaviorSectionSubtitle => '仅影响桌面端写作布局。';
+
+  @override
+  String get desktopFloatingSidebarTitle => '悬停显示浮动侧栏';
+
+  @override
+  String get desktopFloatingSidebarSubtitle =>
+      '鼠标移到屏幕左缘时，在编辑器上方弹出章节目录；移开后自动收起。';
+
+  @override
   String get pressBackAgainToExit => '再按一次返回键退出';
 
   @override

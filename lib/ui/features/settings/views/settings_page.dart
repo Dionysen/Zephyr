@@ -110,10 +110,17 @@ class _SettingsHome extends StatelessWidget {
 
 /// Tabbed settings body with a Material [NavigationBar] at the bottom.
 class CompactSettingsList extends StatelessWidget {
-  const CompactSettingsList({super.key, this.showStatusBarSettings = true});
+  const CompactSettingsList({
+    super.key,
+    this.showStatusBarSettings = true,
+    this.showDesktopBehaviorSettings = false,
+  });
 
   /// When false, omits immersive / hide-icons toggles (desktop panel).
   final bool showStatusBarSettings;
+
+  /// Desktop workspace toggles (sidebar settings panel).
+  final bool showDesktopBehaviorSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -189,6 +196,7 @@ class CompactSettingsList extends StatelessWidget {
           compact: true,
           showStatusBarSettings: showStatusBarSettings,
           showMobileBehaviorSettings: showStatusBarSettings,
+          showDesktopBehaviorSettings: showDesktopBehaviorSettings,
         ),
         ZephyrSettingsSection(
           children: [

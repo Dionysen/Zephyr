@@ -110,7 +110,10 @@ class _PanelSettingsHome extends StatelessWidget {
             color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
           ),
           const Expanded(
-            child: CompactSettingsList(showStatusBarSettings: false),
+            child: CompactSettingsList(
+              showStatusBarSettings: false,
+              showDesktopBehaviorSettings: true,
+            ),
           ),
         ],
       ),

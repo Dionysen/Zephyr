@@ -31,9 +31,10 @@ import 'cloud_backup_quick_button.dart';
 import 'library_search_sheet.dart';
 import 'library_switcher_menu.dart';
 import 'workspace_mobile_tools_drawer.dart';
+import 'desktop_floating_sidebar_scope.dart';
 import 'workspace_sidebar_library_actions.dart';
 
-enum SidebarMode { docked, drawer }
+enum SidebarMode { docked, drawer, floating }
 
 /// Book button clip: left/right ends are arcs of a true circle whose radius is
 /// [radiusFactor] × half the button height (default 3×).
@@ -98,12 +99,16 @@ class WorkspaceSidebar extends StatefulWidget {
     required this.openSettings,
     this.aiContextEnabled = false,
     this.aiContext,
+    this.onCollapse,
   });
 
   final LibraryViewModel model;
   final SidebarMode mode;
   final Future<void> Function() openLibrary;
   final VoidCallback openSettings;
+
+  /// For [SidebarMode.floating]: closes the overlay instead of toggling docked width.
+  final VoidCallback? onCollapse;
 
   /// When true, chapter rows show a checkbox for [aiContext] selection.
   final bool aiContextEnabled;
@@ -125,12 +130,15 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final drawer = widget.mode == SidebarMode.drawer;
+    final floating = widget.mode == SidebarMode.floating;
     return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border(
-          right: BorderSide(color: Theme.of(context).dividerColor),
-        ),
-      ),
+      decoration: floating
+          ? const BoxDecoration()
+          : BoxDecoration(
+              border: Border(
+                right: BorderSide(color: Theme.of(context).dividerColor),
+              ),
+            ),
       child: Material(
         color: Theme.of(context).colorScheme.surfaceContainerLowest,
         child: Column(
@@ -153,7 +161,7 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (WindowChrome.leadingChromeInset > 0)
+                    if (!floating && WindowChrome.leadingChromeInset > 0)
                       WindowDragArea(
                         child: SizedBox(
                           width: WindowChrome.leadingChromeInset,
@@ -167,7 +175,10 @@ class _WorkspaceSidebarState extends State<WorkspaceSidebar> {
                     WindowNonDragArea(
                       child: Center(
                         child: IconButton(
-                          onPressed: model.toggleSidebar,
+                          onPressed:
+                              floating
+                                  ? widget.onCollapse ?? model.collapseSidebar
+                                  : model.toggleSidebar,
                           icon: const Icon(Icons.menu_open),
                           tooltip: l10n.tooltipHideSidebar,
                         ),
@@ -291,6 +302,7 @@ class _ChapterSortMenuButton extends StatelessWidget {
 
     return MenuAnchor(
       builder: (context, controller, _) {
+        syncFloatingSidebarMenu(context, controller);
         return IconButton(
           style: style,
           onPressed: !bookOk
@@ -349,6 +361,7 @@ class _SidebarAddMenuButton extends StatelessWidget {
     final l10n = context.l10n;
     return MenuAnchor(
       builder: (context, controller, _) {
+        syncFloatingSidebarMenu(context, controller);
         return IconButton(
           style: style,
           onPressed: !enabled
@@ -1106,6 +1119,7 @@ class WorkspaceOverflowToolsButton extends StatelessWidget {
             ),
           ),
           builder: (context, controller, _) {
+            syncFloatingSidebarMenu(context, controller);
             return IconButton(
               style: style,
               onPressed: items.isEmpty
@@ -1694,6 +1708,7 @@ class WorkspaceHeader extends StatelessWidget {
     required this.model,
     this.showMenuButton = false,
     this.showSidebarToggle = false,
+    this.onSidebarToggle,
     this.onOpenMenu,
     this.showDocumentTitle = true,
     this.dimDocumentTitle = false,
@@ -1711,6 +1726,7 @@ class WorkspaceHeader extends StatelessWidget {
   final LibraryViewModel model;
   final bool showMenuButton;
   final bool showSidebarToggle;
+  final VoidCallback? onSidebarToggle;
   final VoidCallback? onOpenMenu;
 
   /// When false, the in-editor chapter title is still on screen — hide the
@@ -1772,7 +1788,7 @@ class WorkspaceHeader extends StatelessWidget {
                           ),
                         if (showSidebarToggle)
                           IconButton(
-                            onPressed: model.toggleSidebar,
+                            onPressed: onSidebarToggle ?? model.toggleSidebar,
                             icon: const Icon(Icons.menu_open),
                             tooltip: l10n.tooltipOpenSidebar,
                           ),

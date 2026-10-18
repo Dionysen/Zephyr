@@ -12,6 +12,7 @@ class GeneralSettingsView extends StatelessWidget {
     this.compact = false,
     this.showStatusBarSettings = true,
     this.showMobileBehaviorSettings = false,
+    this.showDesktopBehaviorSettings = false,
   });
 
   final ThemeViewModel viewModel;
@@ -22,6 +23,9 @@ class GeneralSettingsView extends StatelessWidget {
 
   /// Compact-editor behavior toggles (mobile settings only).
   final bool showMobileBehaviorSettings;
+
+  /// Workspace chrome toggles (desktop settings panel only).
+  final bool showDesktopBehaviorSettings;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -54,25 +58,38 @@ class GeneralSettingsView extends StatelessWidget {
           onSelected: viewModel.updateLocalePreference,
         ),
         ZephyrSettingsSwitchTile(
-          icon: Icons.keyboard_hide_outlined,
-          title: l10n.hideQuickToolbarTitle,
-          subtitle: l10n.hideQuickToolbarSubtitle,
-          value: viewModel.ui.hideQuickToolbar,
-          onChanged: viewModel.updateHideQuickToolbar,
-        ),
-        ZephyrSettingsSwitchTile(
           icon: Icons.notes_outlined,
           title: l10n.showChapterDetailsTitle,
           subtitle: l10n.showChapterDetailsSubtitle,
           value: viewModel.ui.showChapterDetails,
           showDivider:
               showStatusBarSettings ||
-              (compact && showMobileBehaviorSettings),
+              showMobileBehaviorSettings ||
+              showDesktopBehaviorSettings,
           onChanged: viewModel.updateShowChapterDetails,
         ),
       ];
+      final desktopChildren = showDesktopBehaviorSettings
+          ? <Widget>[
+              ZephyrSettingsSwitchTile(
+                icon: Icons.view_sidebar_outlined,
+                title: l10n.desktopFloatingSidebarTitle,
+                subtitle: l10n.desktopFloatingSidebarSubtitle,
+                value: viewModel.ui.desktopFloatingSidebar,
+                showDivider: false,
+                onChanged: viewModel.updateDesktopFloatingSidebar,
+              ),
+            ]
+          : const <Widget>[];
       final mobileChildren = showMobileBehaviorSettings
           ? <Widget>[
+          ZephyrSettingsSwitchTile(
+            icon: Icons.keyboard_hide_outlined,
+            title: l10n.hideQuickToolbarTitle,
+            subtitle: l10n.hideQuickToolbarSubtitle,
+            value: viewModel.ui.hideQuickToolbar,
+            onChanged: viewModel.updateHideQuickToolbar,
+          ),
           ZephyrSettingsSwitchTile(
             icon: Icons.vertical_align_top_outlined,
             title: l10n.scrollToHideMobileTopBarTitle,
@@ -140,7 +157,12 @@ class GeneralSettingsView extends StatelessWidget {
 
       if (compact) {
         return ZephyrSettingsSection(
-          children: [...coreChildren, ...mobileChildren, ...statusChildren],
+          children: [
+            ...coreChildren,
+            ...desktopChildren,
+            ...mobileChildren,
+            ...statusChildren,
+          ],
         );
       }
 
@@ -153,6 +175,22 @@ class GeneralSettingsView extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           ZephyrSettingsSection(children: coreChildren),
+          if (desktopChildren.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            Text(
+              l10n.desktopBehaviorSectionTitle,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.desktopBehaviorSectionSubtitle,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ZephyrSettingsSection(children: desktopChildren),
+          ],
           if (mobileChildren.isNotEmpty) ...[
             const SizedBox(height: 24),
             Text(

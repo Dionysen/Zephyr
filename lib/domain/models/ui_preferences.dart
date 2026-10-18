@@ -43,6 +43,7 @@ class UiPreferences {
     required this.doubleBackToExit,
     required this.openBookListOnStartup,
     required this.openSidebarOnStartup,
+    required this.desktopFloatingSidebar,
     required this.editorBackgroundEnabled,
     required this.aiFeaturesEnabled,
     required this.hideAiAssistantAvatar,
@@ -76,6 +77,7 @@ class UiPreferences {
     doubleBackToExit: true,
     openBookListOnStartup: false,
     openSidebarOnStartup: false,
+    desktopFloatingSidebar: false,
     editorBackgroundEnabled: true,
     aiFeaturesEnabled: true,
     hideAiAssistantAvatar: false,
@@ -157,6 +159,10 @@ class UiPreferences {
   /// On launch, open the library swipe drawer once the library is ready.
   final bool openSidebarOnStartup;
 
+  /// Desktop: hover the left screen edge to show a floating chapter sidebar
+  /// over the editor (does not resize the writing column).
+  final bool desktopFloatingSidebar;
+
   /// Master switch for writing-column background images. When false, stored
   /// light/dark configs are kept but not painted.
   final bool editorBackgroundEnabled;
@@ -222,6 +228,7 @@ class UiPreferences {
     bool? doubleBackToExit,
     bool? openBookListOnStartup,
     bool? openSidebarOnStartup,
+    bool? desktopFloatingSidebar,
     bool? editorBackgroundEnabled,
     bool? aiFeaturesEnabled,
     bool? hideAiAssistantAvatar,
@@ -257,6 +264,8 @@ class UiPreferences {
     doubleBackToExit: doubleBackToExit ?? this.doubleBackToExit,
     openBookListOnStartup: openBookListOnStartup ?? this.openBookListOnStartup,
     openSidebarOnStartup: openSidebarOnStartup ?? this.openSidebarOnStartup,
+    desktopFloatingSidebar:
+        desktopFloatingSidebar ?? this.desktopFloatingSidebar,
     editorBackgroundEnabled:
         editorBackgroundEnabled ?? this.editorBackgroundEnabled,
     aiFeaturesEnabled: aiFeaturesEnabled ?? this.aiFeaturesEnabled,

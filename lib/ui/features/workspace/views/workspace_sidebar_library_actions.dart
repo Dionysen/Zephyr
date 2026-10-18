@@ -9,6 +9,7 @@ import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_snackbar.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../../editor/views/article_history_sheet.dart';
+import 'desktop_floating_sidebar_scope.dart';
 
 class SidebarMenuAction {
   const SidebarMenuAction({
@@ -69,7 +70,9 @@ Future<String?> showSidebarLibraryMenu(
         Offset.zero & overlay.size,
       );
   final scheme = Theme.of(context).colorScheme;
-  return showMenu<String>(
+  return DesktopFloatingSidebarScope.guardOverlay(
+    context,
+    showMenu<String>(
     context: context,
     position: rect,
     items: [
@@ -97,6 +100,7 @@ Future<String?> showSidebarLibraryMenu(
           ),
         ),
     ],
+    ),
   );
 }
 

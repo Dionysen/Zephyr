@@ -40,6 +40,7 @@ import 'cloud_backup_quick_button.dart';
 import 'library_search_sheet.dart';
 import '../models/workspace_ai_context_selection.dart';
 import 'workspace_ai_chat_view.dart';
+import 'desktop_floating_sidebar.dart';
 import 'workspace_cloud_backup_shortcut.dart';
 import 'workspace_editor.dart';
 import 'workspace_mobile_body_host.dart';
@@ -80,6 +81,10 @@ class _WorkspacePageState extends State<WorkspacePage>
   Object? _leaveBackupError;
   Object? _reportedSaveError;
 
+  var _desktopFloatingSidebarOpen = false;
+  bool? _lastDesktopFloatingSidebarPref;
+  final _editorChromeFocusNode = FocusScopeNode();
+
   @override
   void initState() {
     super.initState();
@@ -113,17 +118,28 @@ class _WorkspacePageState extends State<WorkspacePage>
     _themeVm?.removeListener(_onThemeAiPreferenceChanged);
     _themeVm = theme;
     _lastAiFeaturesEnabled = theme.ui.aiFeaturesEnabled;
+    _lastDesktopFloatingSidebarPref = theme.ui.desktopFloatingSidebar;
     _themeVm!.addListener(_onThemeAiPreferenceChanged);
   }
 
   void _onThemeAiPreferenceChanged() {
     if (!mounted || _themeVm == null) return;
-    final enabled = _themeVm!.ui.aiFeaturesEnabled;
-    if (_lastAiFeaturesEnabled == enabled) return;
-    _lastAiFeaturesEnabled = enabled;
-    setState(() {
-      if (!enabled) _desktopAiChatOpen = false;
-    });
+    final ui = _themeVm!.ui;
+    var needsSetState = false;
+    if (_lastAiFeaturesEnabled != ui.aiFeaturesEnabled) {
+      _lastAiFeaturesEnabled = ui.aiFeaturesEnabled;
+      needsSetState = true;
+      if (!ui.aiFeaturesEnabled) _desktopAiChatOpen = false;
+    }
+    if (_lastDesktopFloatingSidebarPref != ui.desktopFloatingSidebar) {
+      _lastDesktopFloatingSidebarPref = ui.desktopFloatingSidebar;
+      needsSetState = true;
+      if (ui.desktopFloatingSidebar) {
+        _library?.collapseSidebar();
+        _desktopFloatingSidebarOpen = false;
+      }
+    }
+    if (needsSetState) setState(() {});
   }
 
   void _onDesktopBookChanged() {
@@ -327,6 +343,7 @@ class _WorkspacePageState extends State<WorkspacePage>
       unawaited(library.flushPending().catchError((Object _) {}));
     }
     _themeVm?.removeListener(_onThemeAiPreferenceChanged);
+    _editorChromeFocusNode.dispose();
     _desktopAiContext.dispose();
     super.dispose();
   }
@@ -473,6 +490,10 @@ class _WorkspacePageState extends State<WorkspacePage>
                         immersiveStatusBar && desktopAiChatVisible;
                     final desktopColumnBleed =
                         bleedEditorBackground || desktopAiImmersiveBleed;
+                    final desktopFloatingSidebar =
+                        scope.theme.ui.desktopFloatingSidebar;
+                    final dockedSidebarVisible =
+                        !desktopFloatingSidebar && model.isSidebarExpanded;
                     final workspace = Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -481,7 +502,7 @@ class _WorkspacePageState extends State<WorkspacePage>
                               ? Duration.zero
                               : const Duration(milliseconds: 180),
                           curve: Curves.easeOutCubic,
-                          width: model.isSidebarExpanded
+                          width: dockedSidebarVisible
                               ? model.sidebarWidth
                               : 0,
                           child: ClipRect(
@@ -501,7 +522,20 @@ class _WorkspacePageState extends State<WorkspacePage>
                           ),
                         ),
                         Expanded(
-                          child: Stack(
+                          child: FocusScope(
+                            node: _editorChromeFocusNode,
+                            onFocusChange: (focused) {
+                              if (!desktopFloatingSidebar ||
+                                  !_desktopFloatingSidebarOpen) {
+                                return;
+                              }
+                              if (focused) {
+                                setState(
+                                  () => _desktopFloatingSidebarOpen = false,
+                                );
+                              }
+                            },
+                            child: Stack(
                             fit: StackFit.expand,
                             children: [
                               if (desktopColumnBleed)
@@ -525,7 +559,15 @@ class _WorkspacePageState extends State<WorkspacePage>
                                     ),
                                   WorkspaceHeader(
                                     model: model,
-                                    showSidebarToggle: !model.isSidebarExpanded,
+                                    showSidebarToggle: desktopFloatingSidebar
+                                        ? !_desktopFloatingSidebarOpen
+                                        : !model.isSidebarExpanded,
+                                    onSidebarToggle: desktopFloatingSidebar
+                                        ? () => setState(
+                                            () => _desktopFloatingSidebarOpen =
+                                                !_desktopFloatingSidebarOpen,
+                                          )
+                                        : null,
                                     showDocumentTitle: _showTitleInChrome,
                                     dimDocumentTitle: scope
                                         .editorPreferences
@@ -550,7 +592,7 @@ class _WorkspacePageState extends State<WorkspacePage>
                                       crossAxisAlignment:
                                           CrossAxisAlignment.stretch,
                                       children: [
-                                        if (model.isSidebarExpanded)
+                                        if (dockedSidebarVisible)
                                           SidebarResizeHandle(
                                             model: model,
                                             maxWidth: _maxSidebarWidth(
@@ -604,6 +646,7 @@ class _WorkspacePageState extends State<WorkspacePage>
                                 ),
                             ],
                           ),
+                          ),
                         ),
                       ],
                     );
@@ -626,6 +669,22 @@ class _WorkspacePageState extends State<WorkspacePage>
                       clipBehavior: Clip.none,
                       children: [
                         workspace,
+                        if (desktopFloatingSidebar && !desktopAiChatVisible)
+                          DesktopFloatingSidebar(
+                            model: model,
+                            open: _desktopFloatingSidebarOpen,
+                            onOpenChanged: (open) {
+                              if (_desktopFloatingSidebarOpen == open) return;
+                              setState(() => _desktopFloatingSidebarOpen = open);
+                            },
+                            maxSidebarWidth: _maxSidebarWidth(
+                              constraints.maxWidth,
+                            ),
+                            openLibrary: _openLibrary,
+                            openSettings: _openSettings,
+                            aiContextEnabled: desktopAiChatVisible,
+                            aiContext: _desktopAiContext,
+                          ),
                         if (_settingsOpen)
                           Focus(
                             autofocus: true,
@@ -772,7 +831,10 @@ class _WorkspacePageState extends State<WorkspacePage>
           .push(MaterialPageRoute<void>(builder: (_) => const SettingsPage()));
       return;
     }
-    setState(() => _settingsOpen = !_settingsOpen);
+    setState(() {
+      _settingsOpen = !_settingsOpen;
+      if (_settingsOpen) _desktopFloatingSidebarOpen = false;
+    });
     if (_settingsOpen) {
       prefetchWorkspaceSettingsFonts(context);
     }

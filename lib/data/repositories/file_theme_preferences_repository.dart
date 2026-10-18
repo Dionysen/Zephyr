@@ -358,6 +358,11 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
         'uiOpenSidebarOnStartup',
         UiPreferences.defaults.openSidebarOnStartup,
       ),
+      desktopFloatingSidebar: _bool(
+        values,
+        'uiDesktopFloatingSidebar',
+        UiPreferences.defaults.desktopFloatingSidebar,
+      ),
       editorBackgroundEnabled: _bool(
         values,
         'uiEditorBackgroundEnabled',
@@ -404,6 +409,7 @@ class FileThemePreferencesRepository implements ThemePreferencesRepository {
     'uiDoubleBackToExit': ui.doubleBackToExit,
     'uiOpenBookListOnStartup': ui.openBookListOnStartup,
     'uiOpenSidebarOnStartup': ui.openSidebarOnStartup,
+    'uiDesktopFloatingSidebar': ui.desktopFloatingSidebar,
     'uiEditorBackgroundEnabled': ui.editorBackgroundEnabled,
     'uiAiFeaturesEnabled': ui.aiFeaturesEnabled,
     'uiHideAiAssistantAvatar': ui.hideAiAssistantAvatar,

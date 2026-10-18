@@ -647,6 +647,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show the chapter list when the workspace opens.';
 
   @override
+  String get desktopBehaviorSectionTitle => 'Desktop workspace';
+
+  @override
+  String get desktopBehaviorSectionSubtitle =>
+      'Applies to the desktop writing layout.';
+
+  @override
+  String get desktopFloatingSidebarTitle => 'Floating sidebar on hover';
+
+  @override
+  String get desktopFloatingSidebarSubtitle =>
+      'Move the pointer to the left screen edge to show the chapter list over the editor; hides when the pointer leaves.';
+
+  @override
   String get pressBackAgainToExit => 'Press back again to exit';
 
   @override

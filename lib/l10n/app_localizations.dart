@@ -1268,6 +1268,30 @@ abstract class AppLocalizations {
   /// **'Show the chapter list when the workspace opens.'**
   String get openSidebarOnStartupSubtitle;
 
+  /// No description provided for @desktopBehaviorSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Desktop workspace'**
+  String get desktopBehaviorSectionTitle;
+
+  /// No description provided for @desktopBehaviorSectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Applies to the desktop writing layout.'**
+  String get desktopBehaviorSectionSubtitle;
+
+  /// No description provided for @desktopFloatingSidebarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Floating sidebar on hover'**
+  String get desktopFloatingSidebarTitle;
+
+  /// No description provided for @desktopFloatingSidebarSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Move the pointer to the left screen edge to show the chapter list over the editor; hides when the pointer leaves.'**
+  String get desktopFloatingSidebarSubtitle;
+
   /// No description provided for @pressBackAgainToExit.
   ///
   /// In en, this message translates to:
