@@ -1,0 +1,241 @@
+# Tag push builds all supported native targets and publishes a GitHub Release.
+#
+# Trigger: git tag v1.2.3 && git push origin v1.2.3
+#
+# Optional Android signing secrets (do not commit keystore files):
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
+#   ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+#
+# Web is not included (project is not configured for web).
+# iOS artifact is an unsigned Runner.app zip (device install requires your own signing).
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: "3.47.5"
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y clang cmake ninja-build pkg-config \
+            libgtk-3-dev libblkid-dev liblzma-dev
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter build linux --release
+
+      - name: Package Linux bundle
+        run: |
+          tar -czf zephyr-linux-x64.tar.gz -C build/linux/x64/release bundle
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zephyr-linux-x64
+          path: zephyr-linux-x64.tar.gz
+          if-no-files-found: error
+
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter build windows --release
+
+      - name: Package Windows build
+        shell: pwsh
+        run: |
+          Compress-Archive -Path build/windows/x64/runner/Release/* `
+            -DestinationPath zephyr-windows-x64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zephyr-windows-x64
+          path: zephyr-windows-x64.zip
+          if-no-files-found: error
+
+  build-macos:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter build macos --release
+
+      - name: Package macOS app
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            build/macos/Build/Products/Release/Zephyr.app \
+            zephyr-macos.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zephyr-macos
+          path: zephyr-macos.zip
+          if-no-files-found: error
+
+  build-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Accept Android SDK licenses
+        run: yes | flutter doctor --android-licenses
+
+      - run: flutter pub get
+
+      - name: Configure release signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "${ANDROID_KEYSTORE_BASE64}" ]; then
+            echo "No ANDROID_KEYSTORE_BASE64 secret; APKs use debug signing."
+            exit 0
+          fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/upload-keystore.jks
+          cat > android/key.properties <<EOF
+          storePassword=${ANDROID_KEYSTORE_PASSWORD}
+          keyPassword=${ANDROID_KEY_PASSWORD}
+          keyAlias=${ANDROID_KEY_ALIAS}
+          storeFile=upload-keystore.jks
+          EOF
+
+      - name: Build release APKs (per ABI)
+        env:
+          GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4g
+        run: |
+          flutter build apk --release \
+            --split-per-abi \
+            --target-platform android-arm,android-arm64
+
+      - name: Rename APKs for release
+        run: |
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk \
+            dist/zephyr-android-armeabi-v7a.apk
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk \
+            dist/zephyr-android-arm64-v8a.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zephyr-android
+          path: dist/*.apk
+          if-no-files-found: error
+
+  build-ios:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Build iOS (no codesign)
+        run: flutter build ios --release --no-codesign
+
+      - name: Package unsigned iOS app
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            build/ios/iphoneos/Runner.app \
+            zephyr-ios-unsigned.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zephyr-ios-unsigned
+          path: zephyr-ios-unsigned.zip
+          if-no-files-found: error
+
+  github-release:
+    needs:
+      - build-linux
+      - build-windows
+      - build-macos
+      - build-android
+      - build-ios
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: zephyr-*
+          merge-multiple: true
+          path: release-assets
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Zephyr ${{ github.ref_name }}
+          generate_release_notes: true
+          body: |
+            ## Artifacts
+
+            | File | Platform |
+            | --- | --- |
+            | `zephyr-linux-x64.tar.gz` | Linux x64 |
+            | `zephyr-windows-x64.zip` | Windows x64 |
+            | `zephyr-macos.zip` | macOS (`Zephyr.app`) |
+            | `zephyr-android-arm64-v8a.apk` | Android arm64 (phones) |
+            | `zephyr-android-armeabi-v7a.apk` | Android arm32 (older devices) |
+            | `zephyr-ios-unsigned.zip` | iOS unsigned `Runner.app` (not installable without signing) |
+
+            Web is not built (this repo is not configured for `flutter build web`).
+          files: release-assets/*
+          fail_on_unmatched_files: true
