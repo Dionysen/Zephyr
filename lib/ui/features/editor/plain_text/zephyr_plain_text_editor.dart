@@ -776,6 +776,8 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     return _dispatchEditorAction(action);
   }
 
+  bool _deferEditingKeysToIme() => widget.controller.imeComposingActive;
+
   KeyEventResult _dispatchEditorAction(ShortcutActionId action) {
     final c = widget.controller;
     switch (action) {
@@ -798,15 +800,19 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
         c.redo();
         return KeyEventResult.handled;
       case ShortcutActionId.deleteBackward:
+        if (_deferEditingKeysToIme()) return KeyEventResult.ignored;
         c.deleteBackward();
         return KeyEventResult.handled;
       case ShortcutActionId.deleteForward:
+        if (_deferEditingKeysToIme()) return KeyEventResult.ignored;
         c.deleteForward();
         return KeyEventResult.handled;
       case ShortcutActionId.deleteWordBackward:
+        if (_deferEditingKeysToIme()) return KeyEventResult.ignored;
         c.deleteWordBackward();
         return KeyEventResult.handled;
       case ShortcutActionId.deleteWordForward:
+        if (_deferEditingKeysToIme()) return KeyEventResult.ignored;
         c.deleteWordForward();
         return KeyEventResult.handled;
       case ShortcutActionId.indent:

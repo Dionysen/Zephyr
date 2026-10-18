@@ -126,6 +126,44 @@ void main() {
     expect(setStateCalls, 0);
   });
 
+  testWidgets('backspace is deferred to the IME while composing', (tester) async {
+    final controller = PlainTextEditingController(text: 'hello');
+    controller.applyEditingValue(
+      const TextEditingValue(
+        text: 'helloni',
+        selection: TextSelection.collapsed(offset: 7),
+        composing: TextRange(start: 5, end: 7),
+      ),
+    );
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ZephyrPlainTextEditor(
+            controller: controller,
+            typography: typography,
+            cursorColor: Colors.black,
+            selectionColor: Colors.blue.withValues(alpha: 0.3),
+            onTextChanged: (_) {},
+            onSelectionChanged: (_) {},
+            onShareSelectedText: (_, _) async {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(ZephyrPlainTextEditor));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.backspace);
+    await tester.pump();
+
+    expect(controller.text, 'helloni');
+    expect(controller.composing, const TextRange(start: 5, end: 7));
+  });
+
   testWidgets(
     'mobile selection shows horizontal actions and hides Select all after selecting all',
     (tester) async {

@@ -300,7 +300,7 @@ class PlainTextInputClient with TextInputClient, DeltaTextInputClient {
 
       // During IME composing, apply deltas verbatim — pair rewrite / caret
       // pinning corrupts the platform compose session (caret → doc start).
-      if (_deltaInvolvesComposing(delta) || _isComposing(value)) {
+      if (_shouldApplyImeDeltaVerbatim(delta, value)) {
         value = delta.apply(value);
         controller.applyEditingValue(value, coalesce: true);
         value = controller.editingValue;
@@ -372,6 +372,27 @@ class PlainTextInputClient with TextInputClient, DeltaTextInputClient {
 
   bool _deltaInvolvesComposing(TextEditingDelta delta) =>
       delta.composing.isValid && !delta.composing.isCollapsed;
+
+  bool _shouldApplyImeDeltaVerbatim(
+    TextEditingDelta delta,
+    TextEditingValue value,
+  ) {
+    if (_deltaInvolvesComposing(delta) ||
+        _isComposing(value) ||
+        controller.imeComposingActive) {
+      return true;
+    }
+    if (delta is TextEditingDeltaDeletion) {
+      final comp = value.composing;
+      if (comp.isValid && !comp.isCollapsed) {
+        final deleted = delta.deletedRange;
+        if (deleted.start >= comp.start && deleted.end <= comp.end) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 
   /// After an IME-driven edit: acknowledge remote state, or push only when we
   /// changed text/selection beyond what the platform sent.

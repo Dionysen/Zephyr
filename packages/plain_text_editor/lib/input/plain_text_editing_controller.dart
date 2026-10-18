@@ -29,6 +29,13 @@ class PlainTextEditingController extends ChangeNotifier {
   String get text => _document.text;
   TextSelection get selection => _selection;
   TextRange? get composing => _composing;
+
+  /// True while the platform IME has marked (preedit) text.
+  bool get imeComposingActive {
+    final range = _composing ?? TextRange.empty;
+    return range.isValid && !range.isCollapsed;
+  }
+
   int get firstLineIndent => _firstLineIndent;
 
   set firstLineIndent(int value) {
@@ -75,6 +82,7 @@ class PlainTextEditingController extends ChangeNotifier {
   }
 
   void deleteBackward() {
+    if (imeComposingActive) return;
     if (!_selection.isCollapsed) {
       replaceSelection('');
       return;
@@ -93,6 +101,7 @@ class PlainTextEditingController extends ChangeNotifier {
   }
 
   void deleteForward() {
+    if (imeComposingActive) return;
     if (!_selection.isCollapsed) {
       replaceSelection('');
       return;
@@ -214,6 +223,7 @@ class PlainTextEditingController extends ChangeNotifier {
   }
 
   void deleteWordBackward() {
+    if (imeComposingActive) return;
     if (!_selection.isCollapsed) {
       replaceSelection('');
       return;
@@ -231,6 +241,7 @@ class PlainTextEditingController extends ChangeNotifier {
   }
 
   void deleteWordForward() {
+    if (imeComposingActive) return;
     if (!_selection.isCollapsed) {
       replaceSelection('');
       return;
