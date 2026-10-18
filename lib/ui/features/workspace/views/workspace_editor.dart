@@ -607,20 +607,25 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     _updateDocumentTitleObscured();
   }
 
-  /// Keep the chip while scrolling down; dismiss on scroll-up or reaching end.
+  /// Dismiss at the bottom or on scroll-up; optionally show while scrolling down.
   void _onScrollForJumpChip() {
-    if (_ignoreScrollForJump || !_showJumpToEnd) return;
-    if (!_scrollController.hasClients) return;
+    if (_ignoreScrollForJump || !_scrollController.hasClients) return;
     final offset = _scrollController.offset;
     if (_isScrollAtEnd()) {
       _lastJumpScroll = offset;
-      _dismissJumpToEnd();
+      if (_showJumpToEnd) _dismissJumpToEnd();
       return;
     }
     final delta = offset - _lastJumpScroll;
     _lastJumpScroll = offset;
     if (delta < -1.5) {
-      _dismissJumpToEnd();
+      if (_showJumpToEnd) _dismissJumpToEnd();
+      return;
+    }
+    if (delta > 1.5 &&
+        widget.preferences.preferences.jumpToEndOnScrollDown &&
+        _shouldOfferJumpToEnd(ignoreCaret: true)) {
+      if (!_showJumpToEnd) setState(() => _showJumpToEnd = true);
     }
   }
 

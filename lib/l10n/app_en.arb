@@ -286,6 +286,8 @@
   "editorTitleCenteredSubtitle": "When on, center the title in the reading column; when off, align it to the body left edge.",
   "editorTypewriterModeTitle": "Typewriter mode",
   "editorTypewriterModeSubtitle": "Keeps the editing line centered; dims other paragraphs and the unfocused title.",
+  "editorJumpToEndOnScrollDownTitle": "Focus end while scrolling",
+  "editorJumpToEndOnScrollDownSubtitle": "When on, shows the focus-end button while scrolling down; hides at the bottom or when scrolling up.",
   "editorLineHeightTitle": "Line height",
   "editorLineHeightDescription": "Uniform line-height multiplier within a paragraph.",
   "editorParagraphSpacingTitle": "Paragraph spacing",

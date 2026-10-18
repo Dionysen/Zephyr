@@ -1394,6 +1394,18 @@ abstract class AppLocalizations {
   /// **'Keeps the editing line centered; dims other paragraphs and the unfocused title.'**
   String get editorTypewriterModeSubtitle;
 
+  /// No description provided for @editorJumpToEndOnScrollDownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus end while scrolling'**
+  String get editorJumpToEndOnScrollDownTitle;
+
+  /// No description provided for @editorJumpToEndOnScrollDownSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When on, shows the focus-end button while scrolling down; hides at the bottom or when scrolling up.'**
+  String get editorJumpToEndOnScrollDownSubtitle;
+
   /// No description provided for @editorLineHeightTitle.
   ///
   /// In en, this message translates to:

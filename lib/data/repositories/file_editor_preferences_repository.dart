@@ -38,6 +38,8 @@ class FileEditorPreferencesRepository implements EditorPreferencesRepository {
       typewriterMode: _optionalBool(values, 'typewriterMode') ??
           _optionalBool(values, 'typingMode') ??
           defaults.typewriterMode,
+      jumpToEndOnScrollDown: _optionalBool(values, 'jumpToEndOnScrollDown') ??
+          defaults.jumpToEndOnScrollDown,
     );
   }
 
@@ -63,6 +65,7 @@ class FileEditorPreferencesRepository implements EditorPreferencesRepository {
     'titleFontSize': value.titleFontSize,
     'titleCentered': value.titleCentered,
     'typewriterMode': value.typewriterMode,
+    'jumpToEndOnScrollDown': value.jumpToEndOnScrollDown,
   });
 
   double _double(Map<String, Object?> values, String key) {

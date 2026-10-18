@@ -118,6 +118,9 @@ class EditorPreferencesViewModel extends ChangeNotifier {
   void updateTypewriterMode(bool value) =>
       _update(_preferences.copyWith(typewriterMode: value));
 
+  void updateJumpToEndOnScrollDown(bool value) =>
+      _update(_preferences.copyWith(jumpToEndOnScrollDown: value));
+
   void _update(EditorPreferences value) {
     _preferences = value;
     _pendingSave?.cancel();

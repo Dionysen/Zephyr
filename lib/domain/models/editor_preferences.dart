@@ -14,6 +14,7 @@ class EditorPreferences {
     required this.titleFontSize,
     required this.titleCentered,
     required this.typewriterMode,
+    required this.jumpToEndOnScrollDown,
   });
 
   static const defaults = EditorPreferences(
@@ -29,6 +30,7 @@ class EditorPreferences {
     titleFontSize: 25,
     titleCentered: true,
     typewriterMode: false,
+    jumpToEndOnScrollDown: false,
   );
 
   static const minTitleFontSize = 14.0;
@@ -75,6 +77,11 @@ class EditorPreferences {
   /// other than the caret's, and dims the chapter title while it is unfocused.
   final bool typewriterMode;
 
+  /// When true, the “focus end” chip also appears while scrolling down the
+  /// chapter (not only when opening away from the end). Hidden at the bottom
+  /// or when scrolling up.
+  final bool jumpToEndOnScrollDown;
+
   EditorPreferences copyWith({
     String? fontFamily,
     String? fontPath,
@@ -89,6 +96,7 @@ class EditorPreferences {
     double? titleFontSize,
     bool? titleCentered,
     bool? typewriterMode,
+    bool? jumpToEndOnScrollDown,
   }) => EditorPreferences(
     fontFamily: clearFontFamily
         ? ZephyrBundledFonts.wenkaiLite
@@ -104,6 +112,8 @@ class EditorPreferences {
     titleFontSize: titleFontSize ?? this.titleFontSize,
     titleCentered: titleCentered ?? this.titleCentered,
     typewriterMode: typewriterMode ?? this.typewriterMode,
+    jumpToEndOnScrollDown:
+        jumpToEndOnScrollDown ?? this.jumpToEndOnScrollDown,
   );
 }
 

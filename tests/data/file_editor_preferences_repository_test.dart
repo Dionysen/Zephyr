@@ -44,6 +44,7 @@ void main() {
       titleFontSize: 30,
       titleCentered: false,
       typewriterMode: true,
+      jumpToEndOnScrollDown: true,
     );
     await repository.save(expected);
 
@@ -60,6 +61,7 @@ void main() {
     expect(actual.titleFontSize, expected.titleFontSize);
     expect(actual.titleCentered, expected.titleCentered);
     expect(actual.typewriterMode, expected.typewriterMode);
+    expect(actual.jumpToEndOnScrollDown, expected.jumpToEndOnScrollDown);
   });
 
   test(

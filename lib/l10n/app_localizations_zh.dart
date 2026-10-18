@@ -681,6 +681,13 @@ class AppLocalizationsZh extends AppLocalizations {
       '开启后当前编辑行保持在屏幕中央；非当前段落与未聚焦的标题半透明显示';
 
   @override
+  String get editorJumpToEndOnScrollDownTitle => '向下滚动时显示「聚焦到文末」';
+
+  @override
+  String get editorJumpToEndOnScrollDownSubtitle =>
+      '开启后向下滚动时出现该按钮；滚到底部或向上滚动时隐藏';
+
+  @override
   String get editorLineHeightTitle => '行高';
 
   @override

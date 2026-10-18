@@ -129,6 +129,28 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
               ),
             ),
           ),
+        if (compact)
+          ZephyrSettingsSwitchTile(
+            icon: Icons.keyboard_arrow_down_rounded,
+            title: l10n.editorJumpToEndOnScrollDownTitle,
+            subtitle: l10n.editorJumpToEndOnScrollDownSubtitle,
+            value: preferences.jumpToEndOnScrollDown,
+            onChanged: viewModel.updateJumpToEndOnScrollDown,
+          )
+        else
+          ZephyrSettingsDesktopRow(
+            label: l10n.editorJumpToEndOnScrollDownTitle,
+            description: l10n.editorJumpToEndOnScrollDownSubtitle,
+            child: Transform.scale(
+              scale: ZephyrControls.settingsSwitchScale,
+              alignment: Alignment.centerLeft,
+              child: Switch(
+                value: preferences.jumpToEndOnScrollDown,
+                onChanged: viewModel.updateJumpToEndOnScrollDown,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ),
         ZephyrSettingsAdaptiveNumber(
           compact: compact,
           icon: Icons.format_line_spacing,

@@ -721,6 +721,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Keeps the editing line centered; dims other paragraphs and the unfocused title.';
 
   @override
+  String get editorJumpToEndOnScrollDownTitle => 'Focus end while scrolling';
+
+  @override
+  String get editorJumpToEndOnScrollDownSubtitle =>
+      'When on, shows the focus-end button while scrolling down; hides at the bottom or when scrolling up.';
+
+  @override
   String get editorLineHeightTitle => 'Line height';
 
   @override
