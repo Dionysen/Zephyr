@@ -986,6 +986,8 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
   final _companionAiContext = WorkspaceAiContextSelection();
   String? _primaryBookId;
   String? _companionBookId;
+  String? _primaryArticleId;
+  String? _companionArticleId;
   ThemeViewModel? _themeVm;
   bool? _lastAiFeaturesEnabled;
 
@@ -1001,6 +1003,7 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
       needsLibrarySetup: widget.model.needsLibrarySetup,
     );
     _primaryBookId = widget.model.selectedBook?.id;
+    _primaryArticleId = widget.model.article?.id;
     widget.model.addListener(_onPrimaryBookChanged);
     _companion.addListener(_onCompanionBookChanged);
     _companion.onLocalContentPersisted = () async {
@@ -1094,6 +1097,7 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
     await _restoreCompanionSelection();
     if (!mounted) return;
     _companionBookId = _companion.selectedBook?.id;
+    _companionArticleId = _companion.article?.id;
     _primaryStructure = _structureOf(widget.model);
     _companionStructure = _structureOf(_companion);
     widget.model
@@ -1154,6 +1158,11 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
   }
 
   void _onPrimaryChanged() {
+    final articleId = widget.model.article?.id;
+    if (articleId != _primaryArticleId) {
+      _primaryArticleId = articleId;
+      _showTopBar();
+    }
     final structure = _structureOf(widget.model);
     if (structure != _primaryStructure) {
       _primaryStructure = structure;
@@ -1163,6 +1172,11 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
   }
 
   void _onCompanionChanged() {
+    final articleId = _companion.article?.id;
+    if (articleId != _companionArticleId) {
+      _companionArticleId = articleId;
+      _showTopBar();
+    }
     if (_companion.contentDirtySinceBackup) {
       widget.model.markContentDirtyFromCompanion();
     }
@@ -1633,11 +1647,15 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
     return false;
   }
 
-  Widget _chromeFade({required Widget child, required double travel}) {
+  Widget _chromeFade({
+    required Animation<double> animation,
+    required Widget child,
+    required double travel,
+  }) {
     return AnimatedBuilder(
-      animation: _hide,
+      animation: animation,
       builder: (context, child) {
-        final t = _hide.value;
+        final t = animation.value;
         return IgnorePointer(
           ignoring: t > 0.85,
           child: Opacity(
@@ -1654,11 +1672,14 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
   }
 
   /// Word count: same show/hide gate as the bar, but opacity only (no slide).
-  Widget _wordCountFade({required Widget child}) {
+  Widget _wordCountFade({
+    required Animation<double> animation,
+    required Widget child,
+  }) {
     return AnimatedBuilder(
-      animation: _hide,
+      animation: animation,
       builder: (context, child) {
-        final t = _hide.value;
+        final t = animation.value;
         return IgnorePointer(
           ignoring: true,
           child: Opacity(opacity: (1.0 - t).clamp(0.0, 1.0), child: child),
@@ -1674,6 +1695,10 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
     if (articleId != _articleId) {
       _articleId = articleId;
       _showBar(immediate: true);
+      final shared = widget.sharedTopBarHide;
+      if (shared is AnimationController && shared.value > 0) {
+        shared.value = 0;
+      }
     }
     final statusTop = widget.invadeStatusBar ? zephyrTopInset(context) : 0.0;
     final barBottom = statusTop + _barInset + WorkspaceMobileBookBar.height;
@@ -1682,7 +1707,8 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
     final wordCount = widget.model.article?.wordCount;
     final scope = ZephyrScope.of(context);
     final themeVm = scope.theme;
-    final chromeHide = widget.aiChatOpen && widget.sharedTopBarHide != null
+    final chromeHide = widget.sharedTopBarHide != null &&
+            (!widget.showBookBar || widget.aiChatOpen)
         ? widget.sharedTopBarHide!
         : _hide;
     return NotificationListener<ScrollNotification>(
@@ -1754,6 +1780,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                   right: 0,
                   height: barBottom,
                   child: _chromeFade(
+                    animation: chromeHide,
                     travel: contentTop,
                     child: ColoredBox(color: surface),
                   ),
@@ -1764,6 +1791,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                   left: _barSideInset,
                   right: _barSideInset,
                   child: _chromeFade(
+                    animation: chromeHide,
                     travel: contentTop,
                     child: WorkspaceMobileBookBar(
                       model: widget.model,
@@ -1785,6 +1813,7 @@ class _MobileEditorChromeState extends State<_MobileEditorChrome>
                   top: statusTop + _barTravel,
                   right: 8,
                   child: _wordCountFade(
+                    animation: chromeHide,
                     child: ListenableBuilder(
                       listenable: widget.bridge,
                       builder: (context, _) {
