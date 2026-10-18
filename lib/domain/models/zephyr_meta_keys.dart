@@ -11,4 +11,7 @@ abstract final class ZephyrMetaKeys {
 
   /// AI chat list scroll offsets (`sessionId` or `article:<id>` → pixels).
   static const aiChatScrollOffsets = 'ai_chat_scroll_offsets';
+
+  /// Per-article editor scroll + caret (`articleId` → [ArticleEditorState] JSON).
+  static const articleEditorStates = 'article_editor_states';
 }

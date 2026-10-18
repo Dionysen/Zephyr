@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:plain_text_editor/plain_text_editor.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../../domain/models/article_editor_state.dart';
 import '../../../../domain/models/editor_preferences.dart';
 import 'workspace_cloud_backup_shortcut.dart';
 import 'cloud_backup_quick_button.dart';
@@ -514,12 +515,16 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
   void _persistEditorPosition() {
     final id = _articleId;
     if (id == null) return;
-    _carets[id] = _controller.selection;
-    if (_scrollController.hasClients) {
-      final offset = _scrollController.offset;
-      _scrolls[id] = offset;
-      widget.model.rememberEditorScrollOffset(id, offset);
-    }
+    final selection = _controller.selection;
+    _carets[id] = selection;
+    final offset = _scrollController.hasClients ? _scrollController.offset : 0.0;
+    _scrolls[id] = offset;
+    widget.model.rememberEditorPosition(
+      articleId: id,
+      scrollOffset: offset,
+      selectionBase: selection.baseOffset,
+      selectionExtent: selection.extentOffset,
+    );
   }
 
   void _restoreScroll(String articleId) {
@@ -710,6 +715,18 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
     if (_showJumpToEnd && !_shouldOfferJumpToEnd(selection: selection)) {
       _dismissJumpToEnd();
     }
+    final id = _articleId;
+    if (id != null) {
+      _carets[id] = selection;
+      widget.model.rememberEditorPosition(
+        articleId: id,
+        scrollOffset: _scrollController.hasClients
+            ? _scrollController.offset
+            : (_scrolls[id] ?? widget.model.editorScrollOffset(id) ?? 0),
+        selectionBase: selection.baseOffset,
+        selectionExtent: selection.extentOffset,
+      );
+    }
   }
 
   void _syncFromModel() {
@@ -768,8 +785,12 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
       _searchHighlightEnd = null;
     }
 
+    final remembered = widget.model.articleEditorState(article.id);
     final keepSelection = switching
-        ? _carets[article.id]
+        ? _carets[article.id] ??
+            (remembered != null
+                ? _selectionFromState(remembered, content.length)
+                : null)
         : _controller.selection;
     _articleId = article.id;
     _lastEmitted = content;
@@ -1337,4 +1358,12 @@ class EditorOverlayCapsule extends StatelessWidget {
       child: pill,
     );
   }
+}
+
+TextSelection _selectionFromState(ArticleEditorState state, int textLength) {
+  final end = textLength;
+  return TextSelection(
+    baseOffset: state.selectionBase.clamp(0, end),
+    extentOffset: state.selectionExtent.clamp(0, end),
+  );
 }

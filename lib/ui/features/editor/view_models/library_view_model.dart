@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 
+import '../../../../domain/models/article_editor_state.dart';
 import '../../../../domain/models/chapter_sort_mode.dart';
 import '../../../../domain/models/library_backup.dart';
 import '../../../../domain/models/purewriter_models.dart';
@@ -61,6 +62,7 @@ class LibraryViewModel extends ChangeNotifier {
   Timer? _pendingSave;
   Timer? _pendingTitleSave;
   Timer? _pendingLayoutSave;
+  Timer? _pendingEditorStateSave;
   Future<void> _writeTail = Future<void>.value();
 
   /// Content/title awaiting persistence, keyed by article id (survives chapter switch).
@@ -68,14 +70,43 @@ class LibraryViewModel extends ChangeNotifier {
   String? _dirtyTitleArticleId;
   String? _dirtyTitle;
 
-  /// Scroll offsets kept while the editor widget is replaced by the AI panel.
-  final Map<String, double> _editorScrollOffsets = {};
+  /// Per-chapter scroll + caret (mirrored into Room.db `ZephyrMeta`).
+  Map<String, ArticleEditorState> _articleEditorStates = {};
+
+  final Set<String> _pendingEditorStateArticleIds = {};
 
   double? editorScrollOffset(String articleId) =>
-      _editorScrollOffsets[articleId];
+      _articleEditorStates[articleId]?.scrollOffset;
+
+  ArticleEditorState? articleEditorState(String articleId) =>
+      _articleEditorStates[articleId];
 
   void rememberEditorScrollOffset(String articleId, double offset) {
-    _editorScrollOffsets[articleId] = offset;
+    final existing = _articleEditorStates[articleId];
+    rememberEditorPosition(
+      articleId: articleId,
+      scrollOffset: offset,
+      selectionBase: existing?.selectionBase ?? 0,
+      selectionExtent: existing?.selectionExtent ?? 0,
+    );
+  }
+
+  void rememberEditorPosition({
+    required String articleId,
+    required double scrollOffset,
+    required int selectionBase,
+    required int selectionExtent,
+  }) {
+    if (isReadOnly) return;
+    final updatedAt = DateTime.now().millisecondsSinceEpoch;
+    _articleEditorStates[articleId] = ArticleEditorState(
+      scrollOffset: scrollOffset,
+      selectionBase: selectionBase,
+      selectionExtent: selectionExtent,
+      updatedAt: updatedAt,
+    );
+    _pendingEditorStateArticleIds.add(articleId);
+    _scheduleEditorStateSave();
   }
 
   Object? _saveError;
@@ -611,6 +642,7 @@ class LibraryViewModel extends ChangeNotifier {
       await _repository.openDefaultLibrary();
     }
     _library = await _repository.loadLibrary();
+    _articleEditorStates = await _repository.loadArticleEditorStates();
     _restoreSelection();
     await _restoreArticle();
     _recoverableDrafts = await _repository.listDraftsNewerThanArticles();
@@ -844,6 +876,9 @@ class LibraryViewModel extends ChangeNotifier {
     final book = selectedBook;
     if (book == null || book.isTrash) return;
     await _repository.trashArticle(articleId);
+    _articleEditorStates.remove(articleId);
+    _pendingEditorStateArticleIds.remove(articleId);
+    await _repository.clearArticleEditorState(articleId);
     if (_selectedArticleId == articleId) {
       _selectedArticleId = null;
       _article = null;
@@ -1123,6 +1158,10 @@ class LibraryViewModel extends ChangeNotifier {
     if (_pendingLayoutSave != null) {
       await _flushLayout();
     }
+    if (_pendingEditorStateSave != null ||
+        _pendingEditorStateArticleIds.isNotEmpty) {
+      await _flushEditorStateSave();
+    }
     // Keep the legacy single-editor path synchronous after its own flush; the
     // root back handler intentionally starts its exit work unawaited.
     final companionFlush = flushMobileCompanion;
@@ -1135,6 +1174,33 @@ class LibraryViewModel extends ChangeNotifier {
     _pendingLayoutSave?.cancel();
     _pendingLayoutSave = null;
     await _saveLayout();
+  }
+
+  void _scheduleEditorStateSave() {
+    _pendingEditorStateSave?.cancel();
+    _pendingEditorStateSave = Timer(const Duration(milliseconds: 250), () {
+      unawaited(_flushEditorStateSave());
+    });
+  }
+
+  Future<void> _flushEditorStateSave() async {
+    _pendingEditorStateSave?.cancel();
+    _pendingEditorStateSave = null;
+    if (_pendingEditorStateArticleIds.isEmpty) return;
+    final ids = List<String>.from(_pendingEditorStateArticleIds);
+    _pendingEditorStateArticleIds.clear();
+    for (final articleId in ids) {
+      final state = _articleEditorStates[articleId];
+      if (state == null) continue;
+      try {
+        await _repository.saveArticleEditorState(
+          articleId: articleId,
+          state: state,
+        );
+      } on Object {
+        _pendingEditorStateArticleIds.add(articleId);
+      }
+    }
   }
 
   Future<void> save() async {

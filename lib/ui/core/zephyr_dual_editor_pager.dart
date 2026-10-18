@@ -59,6 +59,8 @@ class ZephyrDualEditorPagerController extends ChangeNotifier {
 
   int get activeEditor => _state?._activeEditor ?? 0;
 
+  bool get drawersOpen => _state?._drawerVisible ?? false;
+
   void openStartDrawer() => _state?._openStartDrawer();
   void openEndDrawer() => _state?._openEndDrawer();
   void closeDrawers() => _state?._closeDrawers();

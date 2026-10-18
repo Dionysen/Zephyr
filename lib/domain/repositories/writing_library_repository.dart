@@ -1,3 +1,4 @@
+import '../models/article_editor_state.dart';
 import '../models/ai_chat_session.dart';
 import '../models/library_backup.dart';
 import '../models/purewriter_models.dart';
@@ -217,4 +218,16 @@ abstract interface class WritingLibraryRepository {
     String? sessionId,
     required double offset,
   });
+
+  /// All remembered editor viewport/caret positions for this library.
+  Future<Map<String, ArticleEditorState>> loadArticleEditorStates();
+
+  Future<ArticleEditorState?> loadArticleEditorState(String articleId);
+
+  Future<void> saveArticleEditorState({
+    required String articleId,
+    required ArticleEditorState state,
+  });
+
+  Future<void> clearArticleEditorState(String articleId);
 }

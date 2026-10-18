@@ -84,6 +84,7 @@ class _WorkspacePageState extends State<WorkspacePage>
   var _desktopFloatingSidebarOpen = false;
   bool? _lastDesktopFloatingSidebarPref;
   final _editorChromeFocusNode = FocusScopeNode();
+  ZephyrDualEditorPagerController? _mobilePagerController;
 
   @override
   void initState() {
@@ -362,6 +363,13 @@ class _WorkspacePageState extends State<WorkspacePage>
               if (scope.quickToolbar.handleAuxiliaryPanelBack?.call() == true) {
                 return;
               }
+              final pager = _mobilePagerController;
+              if (!WindowChrome.isDesktop &&
+                  pager != null &&
+                  pager.drawersOpen) {
+                pager.closeDrawers();
+                return;
+              }
               unawaited(_onRootBack());
             },
             child: ListenableBuilder(
@@ -464,6 +472,9 @@ class _WorkspacePageState extends State<WorkspacePage>
                                             bleedEditorBackground,
                                         openLibrary: _openLibrary,
                                         openSettings: _openSettings,
+                                        onMobilePagerController: (controller) {
+                                          _mobilePagerController = controller;
+                                        },
                                       ),
                                     ),
                                   ],
@@ -887,6 +898,7 @@ class _MobileTwoEditorWorkspace extends StatefulWidget {
     required this.transparentTopBar,
     required this.openLibrary,
     required this.openSettings,
+    required this.onMobilePagerController,
   });
 
   final LibraryViewModel model;
@@ -898,10 +910,45 @@ class _MobileTwoEditorWorkspace extends StatefulWidget {
   final bool transparentTopBar;
   final Future<void> Function() openLibrary;
   final VoidCallback openSettings;
+  final ValueChanged<ZephyrDualEditorPagerController?> onMobilePagerController;
 
   @override
   State<_MobileTwoEditorWorkspace> createState() =>
       _MobileTwoEditorWorkspaceState();
+}
+
+/// Publishes [ZephyrDualEditorPagerController] to the workspace root back handler.
+class _MobilePagerControllerBinder extends StatefulWidget {
+  const _MobilePagerControllerBinder({
+    required this.onAttached,
+    required this.child,
+  });
+
+  final ValueChanged<ZephyrDualEditorPagerController?> onAttached;
+  final Widget child;
+
+  @override
+  State<_MobilePagerControllerBinder> createState() =>
+      _MobilePagerControllerBinderState();
+}
+
+class _MobilePagerControllerBinderState
+    extends State<_MobilePagerControllerBinder> {
+  @override
+  void dispose() {
+    widget.onAttached(null);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Builder(
+      builder: (inner) {
+        widget.onAttached(ZephyrDualEditorPager.maybeOf(inner));
+        return widget.child;
+      },
+    );
+  }
 }
 
 /// Negative scroll delta while pinned at the list bottom (stretch / settle).
@@ -1402,15 +1449,18 @@ class _MobileTwoEditorWorkspaceState extends State<_MobileTwoEditorWorkspace>
       child: ValueListenableBuilder<int>(
         valueListenable: _activeEditor,
         child: pager,
-        builder: (context, activeEditor, pager) => QuickToolbarHost(
-          toolbar: scope.quickToolbar,
-          bridge: activeEditor == 0 ? _primaryBridge : _companionBridge,
-          library: activeEditor == 0 ? widget.model : _companion,
-          foreground: Theme.of(context).colorScheme.onSurface,
-          editorPreferences: widget.preferences,
-          bodyFontFamily: widget.preferences.preferences.fontFamily,
-          hidden: scope.theme.ui.hideQuickToolbar,
-          child: pager!,
+        builder: (context, activeEditor, pager) => _MobilePagerControllerBinder(
+          onAttached: widget.onMobilePagerController,
+          child: QuickToolbarHost(
+            toolbar: scope.quickToolbar,
+            bridge: activeEditor == 0 ? _primaryBridge : _companionBridge,
+            library: activeEditor == 0 ? widget.model : _companion,
+            foreground: Theme.of(context).colorScheme.onSurface,
+            editorPreferences: widget.preferences,
+            bodyFontFamily: widget.preferences.preferences.fontFamily,
+            hidden: scope.theme.ui.hideQuickToolbar,
+            child: pager!,
+          ),
         ),
       ),
     );

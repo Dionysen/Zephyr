@@ -7,6 +7,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:text_editor_foundation/text/three_way_text_merge.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../domain/models/article_editor_state.dart';
 import '../../domain/models/ai_chat_session.dart';
 import '../../domain/models/library_backup.dart';
 import '../../domain/models/purewriter_models.dart';
@@ -17,6 +18,7 @@ import '../../domain/use_cases/article_preview_summary.dart';
 import '../services/device_label.dart';
 import '../services/purewriter_database.dart';
 import 'zephyr_ai_chat_store.dart';
+import 'zephyr_article_editor_state_store.dart';
 
 class _ArticleTextPlan {
   const _ArticleTextPlan.metadata() : row = null, keepLocal = false;
@@ -32,7 +34,8 @@ class _ArticleTextPlan {
 class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   PureWriterWritingLibraryRepository(this._store, {Uuid? uuid})
     : _uuid = uuid ?? Uuid(),
-      _aiChat = ZephyrAiChatStore(_store, uuid: uuid);
+      _aiChat = ZephyrAiChatStore(_store, uuid: uuid),
+      _editorState = ZephyrArticleEditorStateStore(_store);
 
   /// Article columns for sidebar lists — never load [content] in bulk (Android
   /// CursorWindow limit per row).
@@ -50,6 +53,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   final PureWriterDatabase _store;
   final Uuid _uuid;
   final ZephyrAiChatStore _aiChat;
+  final ZephyrArticleEditorStateStore _editorState;
 
   @override
   LibraryLocation? get location => _store.location;
@@ -1518,6 +1522,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
       await _mergeHistory(backupDb);
       await _mergeZephyrDrafts(backupDb);
       await _aiChat.mergeFromBackupDatabase(backupDb);
+      await _editorState.mergeFromBackupDatabase(backupDb);
       return articleStats;
     } finally {
       await backupDb?.close();
@@ -2187,4 +2192,22 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
     sessionId: sessionId,
     offset: offset,
   );
+
+  @override
+  Future<Map<String, ArticleEditorState>> loadArticleEditorStates() =>
+      _editorState.readAll();
+
+  @override
+  Future<ArticleEditorState?> loadArticleEditorState(String articleId) =>
+      _editorState.read(articleId);
+
+  @override
+  Future<void> saveArticleEditorState({
+    required String articleId,
+    required ArticleEditorState state,
+  }) => _editorState.write(articleId: articleId, state: state);
+
+  @override
+  Future<void> clearArticleEditorState(String articleId) =>
+      _editorState.remove(articleId);
 }

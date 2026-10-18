@@ -8,6 +8,7 @@ import 'package:zephyr/l10n/app_localizations_en.dart';
 import 'package:zephyr/domain/repositories/writing_library_repository.dart';
 
 import '../support/ai_chat_repository_test_stubs.dart';
+import '../support/article_editor_state_repository_test_stubs.dart';
 import 'package:zephyr/ui/features/editor/view_models/library_view_model.dart';
 import 'package:zephyr/ui/features/settings/view_models/cloud_sync_view_model.dart';
 
@@ -181,7 +182,7 @@ class _DirtyLibrary extends LibraryViewModel {
 }
 
 class _UnusedLibraryRepository
-    with AiChatRepositoryMethods
+    with AiChatRepositoryMethods, ArticleEditorStateRepositoryMethods
     implements WritingLibraryRepository {
   @override
   LibraryLocation? get location => null;

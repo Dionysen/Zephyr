@@ -23,6 +23,7 @@ import 'package:zephyr/domain/repositories/theme_preferences_repository.dart';
 import 'package:zephyr/domain/repositories/writing_library_repository.dart';
 
 import '../support/ai_chat_repository_test_stubs.dart';
+import '../support/article_editor_state_repository_test_stubs.dart';
 import 'package:zephyr/ui/core/zephyr_scope.dart';
 import 'package:zephyr/ui/core/zephyr_theme.dart';
 import 'package:zephyr/ui/features/editor/view_models/editor_preferences_view_model.dart';
@@ -838,7 +839,7 @@ Widget _app({
 }
 
 class _LibraryRepository
-    with AiChatRepositoryMethods
+    with AiChatRepositoryMethods, ArticleEditorStateRepositoryMethods
     implements WritingLibraryRepository {
   _LibraryRepository({this.scrollingSections = false});
 
