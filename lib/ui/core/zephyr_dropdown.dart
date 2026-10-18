@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'zephyr_controls.dart';
 import 'zephyr_floating_chrome.dart';
+import 'zephyr_floating_overlay_latch.dart';
 import 'zephyr_l10n.dart';
 import 'zephyr_menu.dart';
 import 'zephyr_theme.dart';
@@ -85,6 +86,7 @@ class _ZephyrDropdownState<T> extends State<ZephyrDropdown<T>> {
   final _link = LayerLink();
   final _triggerKey = GlobalKey();
   OverlayEntry? _entry;
+  var _overlayRetained = false;
 
   bool get _isOpen => _entry != null;
 
@@ -103,8 +105,15 @@ class _ZephyrDropdownState<T> extends State<ZephyrDropdown<T>> {
 
   @override
   void dispose() {
+    _releaseOverlayLatch();
     _removeEntry();
     super.dispose();
+  }
+
+  void _releaseOverlayLatch() {
+    if (!_overlayRetained) return;
+    ZephyrFloatingOverlayScope.releaseOverlay(context);
+    _overlayRetained = false;
   }
 
   void _toggle() {
@@ -138,11 +147,16 @@ class _ZephyrDropdownState<T> extends State<ZephyrDropdown<T>> {
         onDismiss: _close,
       ),
     );
+    if (!_overlayRetained) {
+      ZephyrFloatingOverlayScope.retainOverlay(context);
+      _overlayRetained = true;
+    }
     Overlay.of(context, debugRequiredFor: widget).insert(_entry!);
     setState(() {});
   }
 
   void _close() {
+    _releaseOverlayLatch();
     _removeEntry();
     if (mounted) {
       setState(() {});

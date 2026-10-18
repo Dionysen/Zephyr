@@ -1,17 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/zephyr_floating_overlay_latch.dart';
+
 /// Tracks sidebar popup menus / sheets so the floating sidebar stays open.
-class DesktopFloatingSidebarLatch {
-  int _holds = 0;
-
-  bool get isHeld => _holds > 0;
-
-  void retain() => _holds++;
-
-  void release() {
-    if (_holds > 0) _holds--;
-  }
-}
+typedef DesktopFloatingSidebarLatch = ZephyrFloatingOverlayLatch;
 
 /// Provided around the floating sidebar panel (see [DesktopFloatingSidebar]).
 class DesktopFloatingSidebarScope extends InheritedWidget {

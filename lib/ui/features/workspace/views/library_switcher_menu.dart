@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/zephyr_floating_chrome.dart';
+import '../../../core/zephyr_floating_overlay_latch.dart';
 import '../../../core/zephyr_l10n.dart';
 import '../../../core/zephyr_theme.dart';
 import '../../editor/view_models/library_view_model.dart';
@@ -39,6 +40,9 @@ class _LibrarySwitcherMenuState extends State<LibrarySwitcherMenu> {
 
   @override
   void dispose() {
+    if (_open) {
+      ZephyrFloatingOverlayScope.releaseOverlay(context);
+    }
     _removeEntry();
     super.dispose();
   }
@@ -158,12 +162,14 @@ class _LibrarySwitcherMenuState extends State<LibrarySwitcherMenu> {
         );
       },
     );
+    ZephyrFloatingOverlayScope.retainOverlay(context);
     overlay.insert(_entry!);
     setState(() => _open = true);
   }
 
   void close() {
     if (!_open) return;
+    ZephyrFloatingOverlayScope.releaseOverlay(context);
     _removeEntry();
     if (mounted) setState(() => _open = false);
   }

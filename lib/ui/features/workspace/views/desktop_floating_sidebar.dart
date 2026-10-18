@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../editor/view_models/library_view_model.dart';
 import '../models/workspace_ai_context_selection.dart';
 import '../../../core/zephyr_floating_chrome.dart';
+import '../../../core/zephyr_floating_overlay_latch.dart';
 import '../../../core/zephyr_theme.dart';
 import 'desktop_floating_sidebar_scope.dart';
 import 'workspace_sidebar.dart';
@@ -148,10 +149,12 @@ class _DesktopFloatingSidebarState extends State<DesktopFloatingSidebar> {
                     focusNode: _panelFocusNode,
                     canRequestFocus: false,
                     descendantsAreFocusable: true,
-                    child: DesktopFloatingSidebarScope(
+                    child: ZephyrFloatingOverlayScope(
                       latch: _latch,
-                      syncMenuController: _syncMenuController,
-                      child: SizedBox(
+                      child: DesktopFloatingSidebarScope(
+                        latch: _latch,
+                        syncMenuController: _syncMenuController,
+                        child: SizedBox(
                       width: panelWidth,
                       child: ZephyrFloatingChrome(
                         borderRadius: BorderRadius.only(
@@ -186,7 +189,8 @@ class _DesktopFloatingSidebarState extends State<DesktopFloatingSidebar> {
                           ),
                         ),
                       ),
-                    ),
+                      ),
+                      ),
                     ),
                   ),
                 ),
