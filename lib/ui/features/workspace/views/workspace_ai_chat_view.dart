@@ -82,6 +82,9 @@ class _AiChatTailScrollPosition extends ScrollPositionWithSingleContext {
 
 /// Demo AI chat surface that replaces the plain-text editor while active.
 class WorkspaceAiChatView extends StatefulWidget {
+  /// Width of the desktop docked AI column (editor stays visible beside it).
+  static const double desktopSidebarWidth = 360;
+
   const WorkspaceAiChatView({
     super.key,
     this.contentTopInset = 0,

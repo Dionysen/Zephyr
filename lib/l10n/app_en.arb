@@ -269,6 +269,8 @@
   "desktopBehaviorSectionSubtitle": "Applies to the desktop writing layout.",
   "desktopFloatingSidebarTitle": "Floating sidebar on hover",
   "desktopFloatingSidebarSubtitle": "Move the pointer to the left screen edge to show the chapter list over the editor; hides when the pointer leaves.",
+  "desktopFloatingAiPanelTitle": "Floating AI panel",
+  "desktopFloatingAiPanelSubtitle": "Show AI chat over the editor on the right instead of resizing the writing column.",
   "pressBackAgainToExit": "Press back again to exit",
   "aiFeaturesEnabledTitle": "AI assistant",
   "aiFeaturesEnabledSubtitle": "When off, the AI button is hidden in the workspace and any open assistant returns to the book.",

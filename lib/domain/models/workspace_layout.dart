@@ -59,6 +59,7 @@ class LibraryRegistryEntry {
 class WorkspaceLayout {
   const WorkspaceLayout({
     required this.sidebarWidth,
+    this.aiPanelWidth = defaultAiPanelWidth,
     this.lastLibraryRoot,
     this.lastLibraryBookmark,
     this.activeLibraryId,
@@ -79,12 +80,19 @@ class WorkspaceLayout {
   static const maxSidebarWidth = 520.0;
   static const defaultSidebarWidth = 334.0;
 
+  static const minAiPanelWidth = 280.0;
+  static const maxAiPanelWidth = 520.0;
+  static const defaultAiPanelWidth = 360.0;
+
   /// Compact swipe-drawer width. Independent of desktop [sidebarWidth] so a
   /// resized dock (or a desktop cloud settings restore) cannot shrink mobile.
   static const mobileDrawerWidth = defaultSidebarWidth;
   static const defaults = WorkspaceLayout(sidebarWidth: defaultSidebarWidth);
 
   final double sidebarWidth;
+
+  /// Desktop docked or floating AI chat panel width.
+  final double aiPanelWidth;
   final String? lastLibraryRoot;
   final String? lastLibraryBookmark;
 
@@ -130,8 +138,12 @@ class WorkspaceLayout {
     sidebarWidth: width.clamp(minSidebarWidth, maxSidebarWidth).toDouble(),
   );
 
+  static double clampAiPanelWidth(double width) =>
+      width.clamp(minAiPanelWidth, maxAiPanelWidth).toDouble();
+
   WorkspaceLayout copyWith({
     double? sidebarWidth,
+    double? aiPanelWidth,
     String? lastLibraryRoot,
     String? lastLibraryBookmark,
     String? activeLibraryId,
@@ -152,6 +164,7 @@ class WorkspaceLayout {
     bool clearMobileCompanionArticleId = false,
   }) => WorkspaceLayout(
     sidebarWidth: sidebarWidth ?? this.sidebarWidth,
+    aiPanelWidth: aiPanelWidth ?? this.aiPanelWidth,
     lastLibraryRoot: clearLastLibraryRoot
         ? null
         : lastLibraryRoot ?? this.lastLibraryRoot,

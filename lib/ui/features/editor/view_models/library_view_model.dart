@@ -116,7 +116,9 @@ class LibraryViewModel extends ChangeNotifier {
   bool _isSidebarExpanded = true;
   bool _isReorderMode = false;
   bool _isResizingSidebar = false;
+  bool _isResizingAiPanel = false;
   double _sidebarWidth = WorkspaceLayout.defaults.sidebarWidth;
+  double _aiPanelWidth = WorkspaceLayout.defaults.aiPanelWidth;
   bool _booksSheetDualColumn = true;
   bool _booksSheetDualColumnHydrated = false;
   String? _lastLibraryRoot;
@@ -138,6 +140,9 @@ class LibraryViewModel extends ChangeNotifier {
   static const minSidebarWidth = WorkspaceLayout.minSidebarWidth;
   static const maxSidebarWidth = WorkspaceLayout.maxSidebarWidth;
   static const defaultSidebarWidth = WorkspaceLayout.defaultSidebarWidth;
+  static const minAiPanelWidth = WorkspaceLayout.minAiPanelWidth;
+  static const maxAiPanelWidth = WorkspaceLayout.maxAiPanelWidth;
+  static const defaultAiPanelWidth = WorkspaceLayout.defaultAiPanelWidth;
   WritingLibrary? get library => _library;
   WritingArticle? get article => _article;
   Object? get error => _error;
@@ -183,6 +188,8 @@ class LibraryViewModel extends ChangeNotifier {
 
   bool get isResizingSidebar => _isResizingSidebar;
   double get sidebarWidth => _sidebarWidth;
+  bool get isResizingAiPanel => _isResizingAiPanel;
+  double get aiPanelWidth => _aiPanelWidth;
 
   /// Mobile books sheet two-column grid layout (persisted in workspace layout).
   bool get booksSheetDualColumn => _booksSheetDualColumn;
@@ -427,6 +434,25 @@ class LibraryViewModel extends ChangeNotifier {
     _booksSheetDualColumn = value;
     _booksSheetDualColumnHydrated = true;
     _scheduleLayoutSave();
+    notifyListeners();
+  }
+
+  void resizeAiPanel(double width) {
+    final next = WorkspaceLayout.clampAiPanelWidth(width);
+    if (next == _aiPanelWidth) return;
+    _aiPanelWidth = next;
+    if (!_isResizingAiPanel) {
+      _scheduleLayoutSave();
+    }
+    notifyListeners();
+  }
+
+  void setAiPanelResizing(bool value) {
+    if (_isResizingAiPanel == value) return;
+    _isResizingAiPanel = value;
+    if (!value) {
+      _scheduleLayoutSave();
+    }
     notifyListeners();
   }
 
@@ -1483,6 +1509,7 @@ class LibraryViewModel extends ChangeNotifier {
       final layout = await layoutRepository.load();
       final selected = layout.activeLibrary ?? layout.libraries.firstOrNull;
       _sidebarWidth = layout.sidebarWidth;
+      _aiPanelWidth = layout.aiPanelWidth;
       _lastLibraryRoot = selected?.rootPath ?? layout.lastLibraryRoot;
       _lastLibraryBookmark = selected?.bookmark ?? layout.lastLibraryBookmark;
       _activeLibraryId = selected?.id;
@@ -1541,6 +1568,7 @@ class LibraryViewModel extends ChangeNotifier {
       await _layoutRepository?.save(
         WorkspaceLayout(
           sidebarWidth: _sidebarWidth,
+          aiPanelWidth: _aiPanelWidth,
           lastLibraryRoot: _lastLibraryRoot,
           lastLibraryBookmark: _lastLibraryBookmark,
           activeLibraryId: _activeLibraryId,

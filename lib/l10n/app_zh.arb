@@ -266,6 +266,8 @@
   "desktopBehaviorSectionSubtitle": "仅影响桌面端写作布局。",
   "desktopFloatingSidebarTitle": "悬停显示浮动侧栏",
   "desktopFloatingSidebarSubtitle": "鼠标移到屏幕左缘时，在编辑器上方弹出章节目录；移开后自动收起。",
+  "desktopFloatingAiPanelTitle": "浮动 AI 面板",
+  "desktopFloatingAiPanelSubtitle": "在编辑器右侧以浮层显示 AI 对话，不挤压写作区域宽度。",
   "pressBackAgainToExit": "再按一次返回键退出",
   "aiFeaturesEnabledTitle": "AI 助手",
   "aiFeaturesEnabledSubtitle": "关闭后，工作区顶栏不再显示 AI 按钮，已打开的助手会回到书籍界面。",

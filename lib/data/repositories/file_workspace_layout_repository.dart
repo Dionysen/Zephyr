@@ -19,6 +19,7 @@ class FileWorkspaceLayoutRepository implements WorkspaceLayoutRepository {
       return WorkspaceLayout.defaults;
     }
     final width = values['sidebarWidth'];
+    final aiWidth = values['aiPanelWidth'];
     final lastRoot = values['lastLibraryRoot'];
     final bookmark = values['lastLibraryBookmark'];
     final selectedBookId = values['selectedBookId'];
@@ -84,6 +85,9 @@ class FileWorkspaceLayoutRepository implements WorkspaceLayoutRepository {
       sidebarWidth: width is num
           ? WorkspaceLayout.clamped(width.toDouble()).sidebarWidth
           : WorkspaceLayout.defaultSidebarWidth,
+      aiPanelWidth: aiWidth is num
+          ? WorkspaceLayout.clampAiPanelWidth(aiWidth.toDouble())
+          : WorkspaceLayout.defaultAiPanelWidth,
       lastLibraryRoot: active?.rootPath ?? lastLibraryRoot,
       lastLibraryBookmark: active?.bookmark ?? lastLibraryBookmark,
       activeLibraryId: activeLibraryId,
@@ -116,6 +120,7 @@ class FileWorkspaceLayoutRepository implements WorkspaceLayoutRepository {
   @override
   Future<void> save(WorkspaceLayout layout) => _storage.write({
     'sidebarWidth': layout.sidebarWidth,
+    'aiPanelWidth': layout.aiPanelWidth,
     'lastLibraryRoot': layout.lastLibraryRoot,
     'lastLibraryBookmark': layout.lastLibraryBookmark,
     'activeLibraryId': layout.activeLibraryId,

@@ -19,6 +19,7 @@ void main() {
     await repository.save(
       const WorkspaceLayout(
         sidebarWidth: 412,
+        aiPanelWidth: 400,
         lastLibraryRoot: '/lib/a',
         lastLibraryBookmark: 'bookmark-data',
         activeLibraryId: 'lib-1',
@@ -54,6 +55,7 @@ void main() {
     expect((await storage.read())?['libraries'], hasLength(1));
 
     expect(actual.sidebarWidth, 412);
+    expect(actual.aiPanelWidth, 400);
     expect(actual.lastLibraryRoot, '/lib/a');
     expect(actual.lastLibraryBookmark, 'bookmark-data');
     expect(actual.activeLibraryId, 'lib-1');

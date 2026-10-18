@@ -1292,6 +1292,18 @@ abstract class AppLocalizations {
   /// **'Move the pointer to the left screen edge to show the chapter list over the editor; hides when the pointer leaves.'**
   String get desktopFloatingSidebarSubtitle;
 
+  /// No description provided for @desktopFloatingAiPanelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Floating AI panel'**
+  String get desktopFloatingAiPanelTitle;
+
+  /// No description provided for @desktopFloatingAiPanelSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show AI chat over the editor on the right instead of resizing the writing column.'**
+  String get desktopFloatingAiPanelSubtitle;
+
   /// No description provided for @pressBackAgainToExit.
   ///
   /// In en, this message translates to:

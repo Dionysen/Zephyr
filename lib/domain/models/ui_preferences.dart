@@ -44,6 +44,7 @@ class UiPreferences {
     required this.openBookListOnStartup,
     required this.openSidebarOnStartup,
     required this.desktopFloatingSidebar,
+    required this.desktopFloatingAiPanel,
     required this.editorBackgroundEnabled,
     required this.aiFeaturesEnabled,
     required this.hideAiAssistantAvatar,
@@ -78,6 +79,7 @@ class UiPreferences {
     openBookListOnStartup: false,
     openSidebarOnStartup: false,
     desktopFloatingSidebar: false,
+    desktopFloatingAiPanel: false,
     editorBackgroundEnabled: true,
     aiFeaturesEnabled: true,
     hideAiAssistantAvatar: false,
@@ -163,6 +165,10 @@ class UiPreferences {
   /// over the editor (does not resize the writing column).
   final bool desktopFloatingSidebar;
 
+  /// Desktop: AI chat overlays the editor on the right instead of resizing the
+  /// writing column.
+  final bool desktopFloatingAiPanel;
+
   /// Master switch for writing-column background images. When false, stored
   /// light/dark configs are kept but not painted.
   final bool editorBackgroundEnabled;
@@ -229,6 +235,7 @@ class UiPreferences {
     bool? openBookListOnStartup,
     bool? openSidebarOnStartup,
     bool? desktopFloatingSidebar,
+    bool? desktopFloatingAiPanel,
     bool? editorBackgroundEnabled,
     bool? aiFeaturesEnabled,
     bool? hideAiAssistantAvatar,
@@ -266,6 +273,8 @@ class UiPreferences {
     openSidebarOnStartup: openSidebarOnStartup ?? this.openSidebarOnStartup,
     desktopFloatingSidebar:
         desktopFloatingSidebar ?? this.desktopFloatingSidebar,
+    desktopFloatingAiPanel:
+        desktopFloatingAiPanel ?? this.desktopFloatingAiPanel,
     editorBackgroundEnabled:
         editorBackgroundEnabled ?? this.editorBackgroundEnabled,
     aiFeaturesEnabled: aiFeaturesEnabled ?? this.aiFeaturesEnabled,

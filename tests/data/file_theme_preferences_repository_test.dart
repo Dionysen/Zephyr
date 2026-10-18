@@ -75,6 +75,8 @@ void main() {
           doubleBackToExit: false,
           openBookListOnStartup: true,
           openSidebarOnStartup: true,
+          desktopFloatingSidebar: true,
+          desktopFloatingAiPanel: true,
           editorBackgroundEnabled: false,
           aiFeaturesEnabled: false,
           hideAiAssistantAvatar: true,

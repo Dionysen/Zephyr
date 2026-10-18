@@ -41,6 +41,7 @@ import 'cloud_backup_quick_button.dart';
 import 'library_search_sheet.dart';
 import '../models/workspace_ai_context_selection.dart';
 import 'workspace_ai_chat_view.dart';
+import 'desktop_floating_ai_panel.dart';
 import 'desktop_floating_sidebar.dart';
 import 'workspace_cloud_backup_shortcut.dart';
 import 'workspace_editor.dart';
@@ -83,6 +84,7 @@ class _WorkspacePageState extends State<WorkspacePage>
   Object? _reportedSaveError;
 
   var _desktopFloatingSidebarOpen = false;
+  var _desktopFloatingAiPanelOpen = false;
   bool? _lastDesktopFloatingSidebarPref;
   final _editorChromeFocusNode = FocusScopeNode();
   ZephyrDualEditorPagerController? _mobilePagerController;
@@ -131,7 +133,10 @@ class _WorkspacePageState extends State<WorkspacePage>
     if (_lastAiFeaturesEnabled != ui.aiFeaturesEnabled) {
       _lastAiFeaturesEnabled = ui.aiFeaturesEnabled;
       needsSetState = true;
-      if (!ui.aiFeaturesEnabled) _desktopAiChatOpen = false;
+      if (!ui.aiFeaturesEnabled) {
+        _desktopAiChatOpen = false;
+        _desktopFloatingAiPanelOpen = false;
+      }
     }
     if (_lastDesktopFloatingSidebarPref != ui.desktopFloatingSidebar) {
       _lastDesktopFloatingSidebarPref = ui.desktopFloatingSidebar;
@@ -498,14 +503,25 @@ class _WorkspacePageState extends State<WorkspacePage>
                     final aiFeaturesEnabled = scope.theme.ui.aiFeaturesEnabled;
                     final desktopAiChatVisible =
                         aiFeaturesEnabled && _desktopAiChatOpen;
-                    final desktopAiImmersiveBleed =
-                        immersiveStatusBar && desktopAiChatVisible;
-                    final desktopColumnBleed =
-                        bleedEditorBackground || desktopAiImmersiveBleed;
+                    final desktopColumnBleed = bleedEditorBackground;
                     final desktopFloatingSidebar =
                         scope.theme.ui.desktopFloatingSidebar;
+                    final desktopFloatingAiPanel =
+                        scope.theme.ui.desktopFloatingAiPanel;
                     final dockedSidebarVisible =
                         !desktopFloatingSidebar && model.isSidebarExpanded;
+                    final dockedAiVisible =
+                        desktopAiChatVisible && !desktopFloatingAiPanel;
+                    final maxSidebarWidth = _maxSidebarWidth(
+                      constraints.maxWidth,
+                      dockedAi: dockedAiVisible,
+                      aiPanelWidth: model.aiPanelWidth,
+                    );
+                    final maxAiPanelWidth = _maxAiPanelWidth(
+                      constraints.maxWidth,
+                      dockedSidebar: dockedSidebarVisible,
+                      sidebarWidth: model.sidebarWidth,
+                    );
                     final workspace = Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -537,15 +553,19 @@ class _WorkspacePageState extends State<WorkspacePage>
                           child: FocusScope(
                             node: _editorChromeFocusNode,
                             onFocusChange: (focused) {
-                              if (!desktopFloatingSidebar ||
-                                  !_desktopFloatingSidebarOpen) {
-                                return;
+                              if (!focused) return;
+                              var changed = false;
+                              if (desktopFloatingSidebar &&
+                                  _desktopFloatingSidebarOpen) {
+                                _desktopFloatingSidebarOpen = false;
+                                changed = true;
                               }
-                              if (focused) {
-                                setState(
-                                  () => _desktopFloatingSidebarOpen = false,
-                                );
+                              if (desktopFloatingAiPanel &&
+                                  _desktopFloatingAiPanelOpen) {
+                                _desktopFloatingAiPanelOpen = false;
+                                changed = true;
                               }
+                              if (changed) setState(() {});
                             },
                             child: Stack(
                             fit: StackFit.expand,
@@ -585,9 +605,7 @@ class _WorkspacePageState extends State<WorkspacePage>
                                         .editorPreferences
                                         .preferences
                                         .typewriterMode,
-                                    transparent: desktopAiChatVisible
-                                        ? desktopColumnBleed
-                                        : bleedEditorBackground,
+                                    transparent: bleedEditorBackground,
                                     aiActive: desktopAiChatVisible,
                                     onAiPressed: aiFeaturesEnabled
                                         ? _toggleDesktopAiChat
@@ -607,55 +625,68 @@ class _WorkspacePageState extends State<WorkspacePage>
                                         if (dockedSidebarVisible)
                                           SidebarResizeHandle(
                                             model: model,
-                                            maxWidth: _maxSidebarWidth(
-                                              constraints.maxWidth,
-                                            ),
+                                            maxWidth: maxSidebarWidth,
                                           ),
                                         Expanded(
-                                          child: desktopAiChatVisible
-                                              ? WorkspaceAiChatView(
-                                                  bleedEditorBackground:
-                                                      desktopColumnBleed,
-                                                  contextSelection:
-                                                      _desktopAiContext,
-                                                  libraryModel: model,
-                                                  onOpenDesktopAiSettings:
-                                                      _openDesktopAiSettings,
-                                                )
-                                              : WorkspaceEditor(
-                                                  model: model,
-                                                  preferences:
-                                                      scope.editorPreferences,
-                                                  showBackground:
-                                                      !bleedEditorBackground,
-                                                  onDocumentTitleObscured:
-                                                      (obscured) {
-                                                        if (_showTitleInChrome ==
-                                                            obscured) {
-                                                          return;
-                                                        }
-                                                        setState(
-                                                          () =>
-                                                              _showTitleInChrome =
-                                                                  obscured,
-                                                        );
-                                                      },
-                                                ),
+                                          child: WorkspaceEditor(
+                                            model: model,
+                                            preferences:
+                                                scope.editorPreferences,
+                                            showBackground:
+                                                !bleedEditorBackground,
+                                            onDocumentTitleObscured:
+                                                (obscured) {
+                                              if (_showTitleInChrome ==
+                                                  obscured) {
+                                                return;
+                                              }
+                                              setState(
+                                                () => _showTitleInChrome =
+                                                    obscured,
+                                              );
+                                            },
+                                          ),
                                         ),
+                                        if (dockedAiVisible) ...[
+                                          AiPanelResizeHandle(
+                                            model: model,
+                                            maxWidth: maxAiPanelWidth,
+                                          ),
+                                          AnimatedContainer(
+                                            duration: model.isResizingAiPanel
+                                                ? Duration.zero
+                                                : const Duration(
+                                                    milliseconds: 180,
+                                                  ),
+                                            curve: Curves.easeOutCubic,
+                                            width: model.aiPanelWidth,
+                                            child: ColoredBox(
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.surface,
+                                              child: WorkspaceAiChatView(
+                                                contextSelection:
+                                                    _desktopAiContext,
+                                                libraryModel: model,
+                                                onOpenDesktopAiSettings:
+                                                    _openDesktopAiSettings,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ],
                                     ),
                                   ),
                                 ],
                               ),
-                              if (!desktopAiChatVisible)
-                                const Positioned(
-                                  left: 12,
-                                  bottom: 12,
-                                  child: CloudBackupQuickButton(
-                                    iconSize: 16,
-                                    hoverBorder: true,
-                                  ),
+                              const Positioned(
+                                left: 12,
+                                bottom: 12,
+                                child: CloudBackupQuickButton(
+                                  iconSize: 16,
+                                  hoverBorder: true,
                                 ),
+                              ),
                             ],
                           ),
                           ),
@@ -681,7 +712,7 @@ class _WorkspacePageState extends State<WorkspacePage>
                       clipBehavior: Clip.none,
                       children: [
                         workspace,
-                        if (desktopFloatingSidebar && !desktopAiChatVisible)
+                        if (desktopFloatingSidebar)
                           DesktopFloatingSidebar(
                             model: model,
                             open: _desktopFloatingSidebarOpen,
@@ -689,13 +720,25 @@ class _WorkspacePageState extends State<WorkspacePage>
                               if (_desktopFloatingSidebarOpen == open) return;
                               setState(() => _desktopFloatingSidebarOpen = open);
                             },
-                            maxSidebarWidth: _maxSidebarWidth(
-                              constraints.maxWidth,
-                            ),
+                            maxSidebarWidth: maxSidebarWidth,
                             openLibrary: _openLibrary,
                             openSettings: _openSettings,
                             aiContextEnabled: desktopAiChatVisible,
                             aiContext: _desktopAiContext,
+                          ),
+                        if (desktopFloatingAiPanel && desktopAiChatVisible)
+                          DesktopFloatingAiPanel(
+                            model: model,
+                            open: _desktopFloatingAiPanelOpen,
+                            onOpenChanged: (open) {
+                              if (_desktopFloatingAiPanelOpen == open) return;
+                              setState(
+                                () => _desktopFloatingAiPanelOpen = open,
+                              );
+                            },
+                            maxAiPanelWidth: maxAiPanelWidth,
+                            contextSelection: _desktopAiContext,
+                            onOpenDesktopAiSettings: _openDesktopAiSettings,
                           ),
                         if (_settingsOpen)
                           Focus(
@@ -845,7 +888,10 @@ class _WorkspacePageState extends State<WorkspacePage>
     }
     setState(() {
       _settingsOpen = !_settingsOpen;
-      if (_settingsOpen) _desktopFloatingSidebarOpen = false;
+      if (_settingsOpen) {
+        _desktopFloatingSidebarOpen = false;
+        _desktopFloatingAiPanelOpen = false;
+      }
     });
     if (_settingsOpen) {
       prefetchWorkspaceSettingsFonts(context);
@@ -868,16 +914,52 @@ class _WorkspacePageState extends State<WorkspacePage>
   }
 
   void _toggleDesktopAiChat() {
-    if (!ZephyrScope.of(context).theme.ui.aiFeaturesEnabled) return;
+    final ui = ZephyrScope.of(context).theme.ui;
+    if (!ui.aiFeaturesEnabled) return;
     FocusManager.instance.primaryFocus?.unfocus();
-    setState(() => _desktopAiChatOpen = !_desktopAiChatOpen);
+    if (ui.desktopFloatingAiPanel &&
+        _desktopAiChatOpen &&
+        !_desktopFloatingAiPanelOpen) {
+      setState(() => _desktopFloatingAiPanelOpen = true);
+      return;
+    }
+    setState(() {
+      _desktopAiChatOpen = !_desktopAiChatOpen;
+      if (!_desktopAiChatOpen) {
+        _desktopFloatingAiPanelOpen = false;
+      } else if (ui.desktopFloatingAiPanel) {
+        _desktopFloatingAiPanelOpen = true;
+      }
+    });
   }
 
-  double _maxSidebarWidth(double workspaceWidth) {
-    final available = workspaceWidth - 360 - SidebarResizeHandle.width;
+  double _maxSidebarWidth(
+    double workspaceWidth, {
+    required bool dockedAi,
+    required double aiPanelWidth,
+  }) {
+    var available = workspaceWidth - SidebarResizeHandle.width;
+    if (dockedAi) {
+      available -= aiPanelWidth + AiPanelResizeHandle.width;
+    }
     return available.clamp(
       LibraryViewModel.minSidebarWidth,
       LibraryViewModel.maxSidebarWidth,
+    );
+  }
+
+  double _maxAiPanelWidth(
+    double workspaceWidth, {
+    required bool dockedSidebar,
+    required double sidebarWidth,
+  }) {
+    var available = workspaceWidth - AiPanelResizeHandle.width;
+    if (dockedSidebar) {
+      available -= sidebarWidth + SidebarResizeHandle.width;
+    }
+    return available.clamp(
+      LibraryViewModel.minAiPanelWidth,
+      LibraryViewModel.maxAiPanelWidth,
     );
   }
 }

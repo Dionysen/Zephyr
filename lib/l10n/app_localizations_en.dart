@@ -661,6 +661,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Move the pointer to the left screen edge to show the chapter list over the editor; hides when the pointer leaves.';
 
   @override
+  String get desktopFloatingAiPanelTitle => 'Floating AI panel';
+
+  @override
+  String get desktopFloatingAiPanelSubtitle =>
+      'Show AI chat over the editor on the right instead of resizing the writing column.';
+
+  @override
   String get pressBackAgainToExit => 'Press back again to exit';
 
   @override

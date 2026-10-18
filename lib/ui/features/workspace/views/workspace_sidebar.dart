@@ -3469,3 +3469,39 @@ class _SidebarResizeHandleState extends State<SidebarResizeHandle> {
     onDragCancel: () => widget.model.setSidebarResizing(false),
   );
 }
+
+class AiPanelResizeHandle extends StatefulWidget {
+  const AiPanelResizeHandle({
+    super.key,
+    required this.model,
+    required this.maxWidth,
+  });
+
+  static const width = ZephyrResizeHandle.width;
+
+  final LibraryViewModel model;
+  final double maxWidth;
+
+  @override
+  State<AiPanelResizeHandle> createState() => _AiPanelResizeHandleState();
+}
+
+class _AiPanelResizeHandleState extends State<AiPanelResizeHandle> {
+  double _widthAtDragStart = 0;
+
+  @override
+  Widget build(BuildContext context) => ZephyrResizeHandle(
+    onDragStart: () {
+      _widthAtDragStart = widget.model.aiPanelWidth;
+      widget.model.setAiPanelResizing(true);
+    },
+    onDragUpdate: (dxFromOrigin) => widget.model.resizeAiPanel(
+      (_widthAtDragStart - dxFromOrigin).clamp(
+        LibraryViewModel.minAiPanelWidth,
+        widget.maxWidth,
+      ),
+    ),
+    onDragEnd: () => widget.model.setAiPanelResizing(false),
+    onDragCancel: () => widget.model.setAiPanelResizing(false),
+  );
+}

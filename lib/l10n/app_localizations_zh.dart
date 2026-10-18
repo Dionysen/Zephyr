@@ -630,6 +630,12 @@ class AppLocalizationsZh extends AppLocalizations {
       '鼠标移到屏幕左缘时，在编辑器上方弹出章节目录；移开后自动收起。';
 
   @override
+  String get desktopFloatingAiPanelTitle => '浮动 AI 面板';
+
+  @override
+  String get desktopFloatingAiPanelSubtitle => '在编辑器右侧以浮层显示 AI 对话，不挤压写作区域宽度。';
+
+  @override
   String get pressBackAgainToExit => '再按一次返回键退出';
 
   @override

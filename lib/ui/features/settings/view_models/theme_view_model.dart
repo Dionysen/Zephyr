@@ -397,6 +397,9 @@ class ThemeViewModel extends ChangeNotifier {
   void updateDesktopFloatingSidebar(bool value) =>
       _updateUi(_ui.copyWith(desktopFloatingSidebar: value));
 
+  void updateDesktopFloatingAiPanel(bool value) =>
+      _updateUi(_ui.copyWith(desktopFloatingAiPanel: value));
+
   void updateEditorBackgroundEnabled(bool value) =>
       _updateUi(_ui.copyWith(editorBackgroundEnabled: value));
 

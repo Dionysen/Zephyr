@@ -76,8 +76,15 @@ class GeneralSettingsView extends StatelessWidget {
                 title: l10n.desktopFloatingSidebarTitle,
                 subtitle: l10n.desktopFloatingSidebarSubtitle,
                 value: viewModel.ui.desktopFloatingSidebar,
-                showDivider: false,
                 onChanged: viewModel.updateDesktopFloatingSidebar,
+              ),
+              ZephyrSettingsSwitchTile(
+                icon: Icons.auto_awesome_outlined,
+                title: l10n.desktopFloatingAiPanelTitle,
+                subtitle: l10n.desktopFloatingAiPanelSubtitle,
+                value: viewModel.ui.desktopFloatingAiPanel,
+                showDivider: false,
+                onChanged: viewModel.updateDesktopFloatingAiPanel,
               ),
             ]
           : const <Widget>[];
