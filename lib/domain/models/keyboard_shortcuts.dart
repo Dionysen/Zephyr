@@ -40,6 +40,7 @@ enum ShortcutActionId {
   selectDocumentStart,
   selectDocumentEnd,
   closeSettings,
+  cloudBackupNow,
 }
 
 enum ShortcutGroup {
@@ -92,7 +93,8 @@ extension ShortcutActionIdX on ShortcutActionId {
     ShortcutActionId.selectPageDown ||
     ShortcutActionId.selectDocumentStart ||
     ShortcutActionId.selectDocumentEnd => ShortcutGroup.select,
-    ShortcutActionId.closeSettings => ShortcutGroup.workspace,
+    ShortcutActionId.closeSettings ||
+    ShortcutActionId.cloudBackupNow => ShortcutGroup.workspace,
   };
 
   static ShortcutActionId? tryParse(String raw) {
@@ -306,6 +308,7 @@ ShortcutBindings defaultShortcutBindings(TargetPlatform platform) {
         ? [p('arrowDown', shift: true)]
         : [c('end', control: true, shift: true)],
     ShortcutActionId.closeSettings: [c('escape')],
+    ShortcutActionId.cloudBackupNow: [p('keyS')],
   };
 
   return ShortcutBindings(map);

@@ -35,6 +35,7 @@ class ZephyrPlainTextEditor extends StatefulWidget {
     this.suppressIme = false,
     this.consumeNewline,
     this.shortcuts,
+    this.onCloudBackupShortcut,
   });
 
   final PlainTextEditingController controller;
@@ -74,6 +75,9 @@ class ZephyrPlainTextEditor extends StatefulWidget {
 
   /// Customizable shortcuts; null uses platform defaults.
   final KeyboardShortcutsViewModel? shortcuts;
+
+  /// Invoked for [ShortcutActionId.cloudBackupNow] (e.g. Ctrl/Cmd+S).
+  final VoidCallback? onCloudBackupShortcut;
 
   @override
   State<ZephyrPlainTextEditor> createState() => ZephyrPlainTextEditorState();
@@ -763,6 +767,12 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
     if (action == ShortcutActionId.closeSettings) {
       return KeyEventResult.ignored;
     }
+    if (action == ShortcutActionId.cloudBackupNow) {
+      if (event is KeyDownEvent) {
+        widget.onCloudBackupShortcut?.call();
+      }
+      return KeyEventResult.handled;
+    }
     return _dispatchEditorAction(action);
   }
 
@@ -882,6 +892,7 @@ class ZephyrPlainTextEditorState extends State<ZephyrPlainTextEditor>
         c.moveDocumentEnd(extend: true);
         return KeyEventResult.handled;
       case ShortcutActionId.closeSettings:
+      case ShortcutActionId.cloudBackupNow:
         return KeyEventResult.ignored;
     }
   }

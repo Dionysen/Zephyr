@@ -1088,6 +1088,12 @@ abstract class AppLocalizations {
   /// **'Close settings'**
   String get shortcutActionCloseSettings;
 
+  /// No description provided for @shortcutActionCloudBackupNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Back up to cloud now'**
+  String get shortcutActionCloudBackupNow;
+
   /// No description provided for @settingsSectionTheme.
   ///
   /// In en, this message translates to:

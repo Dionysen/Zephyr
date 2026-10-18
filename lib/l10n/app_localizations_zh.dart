@@ -525,6 +525,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shortcutActionCloseSettings => '关闭设置';
 
   @override
+  String get shortcutActionCloudBackupNow => '立即云备份';
+
+  @override
   String get settingsSectionTheme => '外观';
 
   @override

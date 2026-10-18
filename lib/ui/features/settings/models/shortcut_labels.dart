@@ -52,6 +52,7 @@ extension ShortcutLabels on AppLocalizations {
     ShortcutActionId.selectDocumentStart => shortcutActionSelectDocumentStart,
     ShortcutActionId.selectDocumentEnd => shortcutActionSelectDocumentEnd,
     ShortcutActionId.closeSettings => shortcutActionCloseSettings,
+    ShortcutActionId.cloudBackupNow => shortcutActionCloudBackupNow,
   };
 }
 

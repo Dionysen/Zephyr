@@ -228,6 +228,7 @@
   "shortcutActionSelectDocumentStart": "Select to document start",
   "shortcutActionSelectDocumentEnd": "Select to document end",
   "shortcutActionCloseSettings": "Close settings",
+  "shortcutActionCloudBackupNow": "Back up to cloud now",
   "settingsSectionTheme": "Theme",
   "settingsSectionAbout": "About",
   "settingsSectionAi": "AI",

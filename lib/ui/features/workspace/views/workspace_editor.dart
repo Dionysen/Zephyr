@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -5,6 +6,8 @@ import 'package:plain_text_editor/plain_text_editor.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../domain/models/editor_preferences.dart';
+import 'workspace_cloud_backup_shortcut.dart';
+import 'cloud_backup_quick_button.dart';
 import '../../../../domain/use_cases/plain_text_word_count.dart';
 import '../../editor/plain_text/zephyr_plain_text_editor.dart';
 import '../../editor/quick_toolbar/quick_toolbar_host.dart';
@@ -1049,10 +1052,15 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
       });
     }
 
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: ListenableBuilder(
+    return Focus(
+      onKeyEvent: (node, event) {
+        final result = handleCloudBackupShortcut(context, event);
+        return result ?? KeyEventResult.ignored;
+      },
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: ListenableBuilder(
             listenable: Listenable.merge([
               themeVm,
               if (widget.bridge != null) widget.bridge!,
@@ -1085,6 +1093,8 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
                       ShareParams(text: text, sharePositionOrigin: origin),
                     );
                   },
+                  onCloudBackupShortcut: () =>
+                      unawaited(runCloudBackupNow(context)),
                 ),
               );
               if (!widget.showBackground) {
@@ -1147,7 +1157,8 @@ class _WorkspaceEditorState extends State<WorkspaceEditor> {
               ),
             ),
           ),
-      ],
+        ],
+      ),
     );
   }
 }

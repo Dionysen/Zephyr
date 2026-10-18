@@ -40,6 +40,7 @@ import 'cloud_backup_quick_button.dart';
 import 'library_search_sheet.dart';
 import '../models/workspace_ai_context_selection.dart';
 import 'workspace_ai_chat_view.dart';
+import 'workspace_cloud_backup_shortcut.dart';
 import 'workspace_editor.dart';
 import 'workspace_mobile_body_host.dart';
 import 'workspace_settings_panel.dart';
@@ -635,6 +636,11 @@ class _WorkspacePageState extends State<WorkspacePage>
                                 _closeSettings();
                                 return KeyEventResult.handled;
                               }
+                              final cloud = handleCloudBackupShortcut(
+                                context,
+                                event,
+                              );
+                              if (cloud != null) return cloud;
                               return KeyEventResult.ignored;
                             },
                             child: Stack(

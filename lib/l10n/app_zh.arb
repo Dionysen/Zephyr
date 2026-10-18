@@ -225,6 +225,7 @@
   "shortcutActionSelectDocumentStart": "选至文首",
   "shortcutActionSelectDocumentEnd": "选至文末",
   "shortcutActionCloseSettings": "关闭设置",
+  "shortcutActionCloudBackupNow": "立即云备份",
   "settingsSectionTheme": "外观",
   "settingsSectionAbout": "关于",
   "settingsSectionAi": "AI",

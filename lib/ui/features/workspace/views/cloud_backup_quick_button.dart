@@ -156,7 +156,7 @@ class _CloudBackupQuickButtonState extends State<CloudBackupQuickButton> {
           icon: Icons.cloud_upload,
           label: l10n.cloudSyncBackupNowTitle,
           enabled: !cloudSync.busy,
-          onTap: () => unawaited(_runBackup(context, cloudSync)),
+          onTap: () => unawaited(runCloudBackupNow(context)),
         ),
         WorkspaceMobileDrawerAction(
           id: _CloudBackupMenuId.restore,
@@ -229,24 +229,24 @@ class _CloudBackupQuickButtonState extends State<CloudBackupQuickButton> {
     if (!context.mounted || action == null) return;
     switch (action) {
       case _CloudBackupMenuId.backup:
-        await _runBackup(context, cloudSync);
+        await runCloudBackupNow(context);
       case _CloudBackupMenuId.restore:
         await showCloudBackupRestoreFlow(context, cloudSync);
     }
   }
 
-  Future<void> _runBackup(
-    BuildContext context,
-    CloudSyncViewModel cloudSync,
-  ) async {
-    final l10n = context.l10n;
-    await cloudSync.backupNow();
-    if (!context.mounted) return;
-    ZephyrSnackBar.show(
-      context,
-      cloudSync.error == null
-          ? l10n.cloudSyncBackupNowSuccess
-          : cloudSync.errorMessage(l10n)!,
-    );
-  }
+}
+
+/// Flushes pending edits and uploads a cloud backup (same as the cloud menu).
+Future<void> runCloudBackupNow(BuildContext context) async {
+  final cloudSync = ZephyrScope.of(context).cloudSync;
+  final l10n = context.l10n;
+  await cloudSync.backupNow();
+  if (!context.mounted) return;
+  ZephyrSnackBar.show(
+    context,
+    cloudSync.error == null
+        ? l10n.cloudSyncBackupNowSuccess
+        : cloudSync.errorMessage(l10n)!,
+  );
 }

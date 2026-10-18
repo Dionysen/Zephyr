@@ -4,6 +4,14 @@ import 'package:zephyr/domain/models/keyboard_shortcuts.dart';
 import 'package:zephyr/domain/use_cases/shortcut_resolver.dart';
 
 void main() {
+  test('PC defaults bind cloud backup to control+S', () {
+    final bindings = defaultShortcutBindings(TargetPlatform.windows);
+    final save = bindings.chordsFor(ShortcutActionId.cloudBackupNow).single;
+    expect(save.control, isTrue);
+    expect(save.meta, isFalse);
+    expect(save.keyId, 'keyS');
+  });
+
   test('PC defaults use control as primary for copy', () {
     final bindings = defaultShortcutBindings(TargetPlatform.windows);
     final copy = bindings.chordsFor(ShortcutActionId.copy).single;

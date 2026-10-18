@@ -545,6 +545,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shortcutActionCloseSettings => 'Close settings';
 
   @override
+  String get shortcutActionCloudBackupNow => 'Back up to cloud now';
+
+  @override
   String get settingsSectionTheme => 'Theme';
 
   @override
