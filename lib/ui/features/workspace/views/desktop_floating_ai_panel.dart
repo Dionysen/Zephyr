@@ -164,7 +164,7 @@ class _DesktopFloatingAiPanelState extends State<DesktopFloatingAiPanel> {
                                   child: ColoredBox(
                                     color: Theme.of(
                                       context,
-                                    ).colorScheme.surface,
+                                    ).colorScheme.surfaceContainerLowest,
                                     child: WorkspaceAiChatView(
                                       contextSelection:
                                           widget.contextSelection,

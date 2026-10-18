@@ -663,7 +663,7 @@ class _WorkspacePageState extends State<WorkspacePage>
                                             child: ColoredBox(
                                               color: Theme.of(
                                                 context,
-                                              ).colorScheme.surface,
+                                              ).colorScheme.surfaceContainerLowest,
                                               child: WorkspaceAiChatView(
                                                 contextSelection:
                                                     _desktopAiContext,

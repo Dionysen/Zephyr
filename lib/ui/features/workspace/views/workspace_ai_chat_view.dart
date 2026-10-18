@@ -842,7 +842,7 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
         return ColoredBox(
           color: immersiveChrome
               ? Colors.transparent
-              : theme.colorScheme.surface,
+              : theme.colorScheme.surfaceContainerLowest,
           child: Stack(
             fit: StackFit.expand,
             children: [
