@@ -19,6 +19,7 @@ import '../services/device_label.dart';
 import '../services/purewriter_database.dart';
 import 'zephyr_ai_chat_store.dart';
 import 'zephyr_article_editor_state_store.dart';
+import 'zephyr_sidebar_volume_expansion_store.dart';
 
 class _ArticleTextPlan {
   const _ArticleTextPlan.metadata() : row = null, keepLocal = false;
@@ -35,7 +36,8 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   PureWriterWritingLibraryRepository(this._store, {Uuid? uuid})
     : _uuid = uuid ?? Uuid(),
       _aiChat = ZephyrAiChatStore(_store, uuid: uuid),
-      _editorState = ZephyrArticleEditorStateStore(_store);
+      _editorState = ZephyrArticleEditorStateStore(_store),
+      _volumeExpansion = ZephyrSidebarVolumeExpansionStore(_store);
 
   /// Article columns for sidebar lists — never load [content] in bulk (Android
   /// CursorWindow limit per row).
@@ -54,6 +56,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   final Uuid _uuid;
   final ZephyrAiChatStore _aiChat;
   final ZephyrArticleEditorStateStore _editorState;
+  final ZephyrSidebarVolumeExpansionStore _volumeExpansion;
 
   @override
   LibraryLocation? get location => _store.location;
@@ -1523,6 +1526,7 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
       await _mergeZephyrDrafts(backupDb);
       await _aiChat.mergeFromBackupDatabase(backupDb);
       await _editorState.mergeFromBackupDatabase(backupDb);
+      await _volumeExpansion.mergeFromBackupDatabase(backupDb);
       return articleStats;
     } finally {
       await backupDb?.close();
@@ -2210,4 +2214,13 @@ class PureWriterWritingLibraryRepository implements WritingLibraryRepository {
   @override
   Future<void> clearArticleEditorState(String articleId) =>
       _editorState.remove(articleId);
+
+  @override
+  Future<Map<String, Set<String>>> loadSidebarVolumeExpansionByBook() =>
+      _volumeExpansion.readExpandedSetsByBook();
+
+  @override
+  Future<void> saveSidebarVolumeExpansionByBook(
+    Map<String, Set<String>> byBook,
+  ) => _volumeExpansion.replaceAll(byBook);
 }

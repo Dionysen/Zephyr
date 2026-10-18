@@ -14,4 +14,7 @@ abstract final class ZephyrMetaKeys {
 
   /// Per-article editor scroll + caret (`articleId` → [ArticleEditorState] JSON).
   static const articleEditorStates = 'article_editor_states';
+
+  /// Per-book sidebar volume expansion (`bookId` → [SidebarVolumeExpansionEntry] JSON).
+  static const sidebarVolumeExpansionByBook = 'sidebar_volume_expansion_by_book';
 }

@@ -230,4 +230,11 @@ abstract interface class WritingLibraryRepository {
   });
 
   Future<void> clearArticleEditorState(String articleId);
+
+  /// Per-book expanded volume ids (`bookId` → expanded volume id set).
+  Future<Map<String, Set<String>>> loadSidebarVolumeExpansionByBook();
+
+  Future<void> saveSidebarVolumeExpansionByBook(
+    Map<String, Set<String>> byBook,
+  );
 }

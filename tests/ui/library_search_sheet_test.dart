@@ -5,6 +5,7 @@ import 'package:zephyr/domain/repositories/writing_library_repository.dart';
 
 import '../support/ai_chat_repository_test_stubs.dart';
 import '../support/article_editor_state_repository_test_stubs.dart';
+import '../support/sidebar_volume_expansion_repository_test_stubs.dart';
 import 'package:zephyr/l10n/app_localizations.dart';
 import 'package:zephyr/ui/features/editor/view_models/library_view_model.dart';
 import 'package:zephyr/ui/features/workspace/views/library_search_sheet.dart';
@@ -53,7 +54,10 @@ void main() {
 }
 
 class _SearchRepository
-    with AiChatRepositoryMethods, ArticleEditorStateRepositoryMethods
+    with
+        AiChatRepositoryMethods,
+        ArticleEditorStateRepositoryMethods,
+        SidebarVolumeExpansionRepositoryMethods
     implements WritingLibraryRepository {
   static final article = WritingArticle(
     id: 'article',

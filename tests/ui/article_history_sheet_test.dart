@@ -5,6 +5,7 @@ import 'package:zephyr/domain/repositories/writing_library_repository.dart';
 
 import '../support/ai_chat_repository_test_stubs.dart';
 import '../support/article_editor_state_repository_test_stubs.dart';
+import '../support/sidebar_volume_expansion_repository_test_stubs.dart';
 import 'package:zephyr/l10n/app_localizations.dart';
 import 'package:zephyr/ui/features/editor/view_models/library_view_model.dart';
 import 'package:zephyr/ui/features/editor/views/article_history_sheet.dart';
@@ -70,7 +71,10 @@ void main() {
 }
 
 class _HistoryRepository
-    with AiChatRepositoryMethods, ArticleEditorStateRepositoryMethods
+    with
+        AiChatRepositoryMethods,
+        ArticleEditorStateRepositoryMethods,
+        SidebarVolumeExpansionRepositoryMethods
     implements WritingLibraryRepository {
   static final revision = ArticleHistory(
     createdAt: DateTime.utc(2026, 1, 2),

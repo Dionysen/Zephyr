@@ -12,6 +12,7 @@ import 'package:zephyr/domain/repositories/writing_library_repository.dart';
 
 import '../support/ai_chat_repository_test_stubs.dart';
 import '../support/article_editor_state_repository_test_stubs.dart';
+import '../support/sidebar_volume_expansion_repository_test_stubs.dart';
 import 'package:zephyr/domain/use_cases/article_preview_summary.dart';
 import 'package:zephyr/ui/features/editor/view_models/library_view_model.dart';
 
@@ -626,7 +627,10 @@ void main() {
 }
 
 class FakeLibraryRepository
-    with AiChatRepositoryMethods, ArticleEditorStateRepositoryMethods
+    with
+        AiChatRepositoryMethods,
+        ArticleEditorStateRepositoryMethods,
+        SidebarVolumeExpansionRepositoryMethods
     implements WritingLibraryRepository {
   WritingArticle saved = WritingArticle(
     id: 'article',

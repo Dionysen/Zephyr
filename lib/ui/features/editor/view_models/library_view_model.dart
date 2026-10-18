@@ -63,6 +63,7 @@ class LibraryViewModel extends ChangeNotifier {
   Timer? _pendingTitleSave;
   Timer? _pendingLayoutSave;
   Timer? _pendingEditorStateSave;
+  Timer? _pendingVolumeExpansionSave;
   Future<void> _writeTail = Future<void>.value();
 
   /// Content/title awaiting persistence, keyed by article id (survives chapter switch).
@@ -132,6 +133,7 @@ class LibraryViewModel extends ChangeNotifier {
 
   /// Snapshot of expanded volume ids while a volume drag temporarily collapses all.
   Set<String>? _volumeExpandSnapshotDuringDrag;
+  var _volumeExpansionHydrated = false;
   SearchHighlight? _pendingSearchHighlight;
   static const minSidebarWidth = WorkspaceLayout.minSidebarWidth;
   static const maxSidebarWidth = WorkspaceLayout.maxSidebarWidth;
@@ -375,6 +377,7 @@ class LibraryViewModel extends ChangeNotifier {
       set.remove(volumeId);
     }
     _scheduleLayoutSave();
+    _scheduleVolumeExpansionSave();
     notifyListeners();
   }
 
@@ -396,6 +399,7 @@ class LibraryViewModel extends ChangeNotifier {
           .toSet();
     }
     _scheduleLayoutSave();
+    _scheduleVolumeExpansionSave();
     notifyListeners();
   }
 
@@ -576,6 +580,7 @@ class LibraryViewModel extends ChangeNotifier {
 
   void _resetBookUiState() {
     _expandedVolumesByBook.clear();
+    _volumeExpansionHydrated = false;
     _sidebarScrollOffsetByBook.clear();
     _chapterSortByBook.clear();
     _selectedBookId = null;
@@ -643,6 +648,10 @@ class LibraryViewModel extends ChangeNotifier {
     }
     _library = await _repository.loadLibrary();
     _articleEditorStates = await _repository.loadArticleEditorStates();
+    if (!_volumeExpansionHydrated) {
+      await _hydrateVolumeExpansionFromRepository();
+      _volumeExpansionHydrated = true;
+    }
     _restoreSelection();
     await _restoreArticle();
     _recoverableDrafts = await _repository.listDraftsNewerThanArticles();
@@ -756,6 +765,7 @@ class LibraryViewModel extends ChangeNotifier {
       expanded.add(volume.id);
     }
     _scheduleLayoutSave();
+    _scheduleVolumeExpansionSave();
     await load();
     notifyListeners();
   }
@@ -774,6 +784,7 @@ class LibraryViewModel extends ChangeNotifier {
       expanded.add(volume.id);
     }
     _scheduleLayoutSave();
+    _scheduleVolumeExpansionSave();
     await load();
     notifyListeners();
   }
@@ -815,6 +826,7 @@ class LibraryViewModel extends ChangeNotifier {
     _selectedArticleId = _article?.id;
     _expandedVolumesByBook[book.id]?.add(volumeId);
     _scheduleLayoutSave();
+    _scheduleVolumeExpansionSave();
     await load();
     notifyListeners();
   }
@@ -909,6 +921,7 @@ class LibraryViewModel extends ChangeNotifier {
       _article = await _repository.getArticle(articleId);
     }
     _scheduleLayoutSave();
+    _scheduleVolumeExpansionSave();
     await load();
     notifyListeners();
   }
@@ -947,6 +960,7 @@ class LibraryViewModel extends ChangeNotifier {
     );
     _expandedVolumesByBook[source.id]?.remove(volumeId);
     _scheduleLayoutSave();
+    _scheduleVolumeExpansionSave();
     await load();
     await selectBook(folder.id);
     return folder;
@@ -977,6 +991,7 @@ class LibraryViewModel extends ChangeNotifier {
       _selectedBookId = folderId;
     }
     _scheduleLayoutSave();
+    _scheduleVolumeExpansionSave();
     await load();
     notifyListeners();
   }
@@ -1162,6 +1177,9 @@ class LibraryViewModel extends ChangeNotifier {
         _pendingEditorStateArticleIds.isNotEmpty) {
       await _flushEditorStateSave();
     }
+    if (_pendingVolumeExpansionSave != null) {
+      await _flushVolumeExpansionSave();
+    }
     // Keep the legacy single-editor path synchronous after its own flush; the
     // root back handler intentionally starts its exit work unawaited.
     final companionFlush = flushMobileCompanion;
@@ -1181,6 +1199,41 @@ class LibraryViewModel extends ChangeNotifier {
     _pendingEditorStateSave = Timer(const Duration(milliseconds: 250), () {
       unawaited(_flushEditorStateSave());
     });
+  }
+
+  Future<void> _hydrateVolumeExpansionFromRepository() async {
+    try {
+      final fromDb = await _repository.loadSidebarVolumeExpansionByBook();
+      if (fromDb.isNotEmpty) {
+        for (final entry in fromDb.entries) {
+          _expandedVolumesByBook[entry.key] = Set<String>.from(entry.value);
+        }
+      } else if (_expandedVolumesByBook.isNotEmpty) {
+        _scheduleVolumeExpansionSave();
+      }
+    } on Object {
+      // Volume expansion must not block library open.
+    }
+  }
+
+  void _scheduleVolumeExpansionSave() {
+    _pendingVolumeExpansionSave?.cancel();
+    _pendingVolumeExpansionSave = Timer(const Duration(milliseconds: 250), () {
+      unawaited(_flushVolumeExpansionSave());
+    });
+  }
+
+  Future<void> _flushVolumeExpansionSave() async {
+    _pendingVolumeExpansionSave?.cancel();
+    _pendingVolumeExpansionSave = null;
+    try {
+      await _repository.saveSidebarVolumeExpansionByBook({
+        for (final entry in _expandedVolumesByBook.entries)
+          entry.key: Set<String>.from(entry.value),
+      });
+    } on Object {
+      _scheduleVolumeExpansionSave();
+    }
   }
 
   Future<void> _flushEditorStateSave() async {
