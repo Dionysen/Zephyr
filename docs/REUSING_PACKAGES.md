@@ -10,3 +10,37 @@
 这些包目前使用 Melos/Dart workspace。新产品若也是 workspace，把复制的目录加入根 `workspace:` 列表；若不是 workspace，删除各包 `pubspec.yaml` 中的 `resolution: workspace`，并把 `plain_text_editor` 对基础包的相对 path 保持为有效路径。运行 `dart pub get` 或 `flutter pub get` 解析依赖。
 
 新产品从包的公共入口导入 API，例如 `package:flutter_primitives/flutter_primitives.dart`、`package:local_json_store/local_json_store.dart`。应用自行提供主题颜色、业务数据、平台目录与编辑器外壳；Zephyr 的兼容导出路径仅供旧代码使用。统一的控件尺寸、浮层阴影、滚动条和工具栏样式位于 `flutter_primitives`，可直接用在新产品的主题组合中。
+
+设置页可直接传入条目，页面按可用宽度选择桌面或移动布局，无需平台判断：
+
+```dart
+AdaptiveSettingsPage(
+  title: 'Settings',
+  groups: [
+    SettingsGroup(
+      title: 'Editor',
+      icon: Icons.edit,
+      items: [
+        SettingsToggleItem(
+          title: 'Auto save',
+          icon: Icons.save,
+          value: autoSave,
+          onChanged: (value) => setState(() => autoSave = value),
+        ),
+        SettingsChoiceItem<String>(
+          title: 'Format',
+          icon: Icons.description,
+          value: format,
+          choices: const [
+            SettingsChoice(value: 'plain', label: 'Plain'),
+            SettingsChoice(value: 'markdown', label: 'Markdown'),
+          ],
+          onChanged: (value) => setState(() => format = value),
+        ),
+      ],
+    ),
+  ],
+)
+```
+
+`SettingsNumberItem` 自动使用宽屏行内滑杆或窄屏数值对话框；`SettingsActionItem` 用于操作或子页面。只需要提供状态与保存回调。应用已有 `Scaffold` 时使用 `AdaptiveSettingsView`。

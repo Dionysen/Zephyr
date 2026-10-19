@@ -25,6 +25,8 @@ flowchart LR
 
 `packages/local_json_store` 是纯 Dart 的 JSON map 文件读写模块。应用层负责注入支持目录、相对文件路径、错误文案及配置模型；包不依赖 `path_provider` 或 Zephyr。七个 Zephyr 配置存储类保留原有路径和公开构造函数，委托给 `JsonMapFileStore`。
 
+通用设置 UI 的公共入口是 `package:flutter_primitives/settings/adaptive_settings.dart`：新产品向 `AdaptiveSettingsPage` 或可嵌入的 `AdaptiveSettingsView` 传入 `SettingsGroup` 和 toggle、choice、number、action 设置项，组件按可用宽度自动选择列表卡片、底部选项面板、桌面对话框或行内控件。值、持久化回调和文案由宿主提供。Zephyr 原设置控件的旧类名保留兼容别名；含 Zephyr 本地化、主题令牌和复杂配置流程的适配器仍在应用层。
+
 旧的 `apps/zephyr/lib/domain/...` 和 `apps/zephyr/lib/ui/features/editor/plain_text/{document,input,layout,render,gestures,decoration}/...` 路径保留兼容导出；现有外部调用与测试不需迁移。新代码直接导入相应的 `package:text_editor_foundation/...`、`package:plain_text_editor/...` 或 `package:flutter_primitives/...`。每个包的 `lib/<package-name>.dart` 是公共入口。
 
 ## 数据与状态
