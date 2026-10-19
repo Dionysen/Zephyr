@@ -251,7 +251,18 @@ class ZephyrApp extends StatelessWidget {
 Locale? _localeFor(AppLocalePreference preference) => switch (preference) {
   AppLocalePreference.system => null,
   AppLocalePreference.chinese => const Locale('zh'),
+  AppLocalePreference.chineseTraditional => const Locale('zh', 'TW'),
   AppLocalePreference.english => const Locale('en'),
+  AppLocalePreference.japanese => const Locale('ja'),
+  AppLocalePreference.korean => const Locale('ko'),
+  AppLocalePreference.spanish => const Locale('es'),
+  AppLocalePreference.french => const Locale('fr'),
+  AppLocalePreference.german => const Locale('de'),
+  AppLocalePreference.portuguese => const Locale('pt'),
+  AppLocalePreference.russian => const Locale('ru'),
+  AppLocalePreference.arabic => const Locale('ar'),
+  AppLocalePreference.hindi => const Locale('hi'),
+  AppLocalePreference.italian => const Locale('it'),
 };
 
 Future<void> initializeDesktopWindow({

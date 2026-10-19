@@ -3,6 +3,7 @@
 *.lock
 !pubspec.lock
 *.log
+apps/zephyr/lib/l10n/.translate_cache.json
 *.pyc
 *.swp
 .DS_Store

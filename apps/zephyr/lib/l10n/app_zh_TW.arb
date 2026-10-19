@@ -1,0 +1,729 @@
+{
+  "@@locale": "zh_TW",
+  "appTitle": "Zephyr",
+  "actionCancel": "取消",
+  "actionSave": "保存",
+  "actionDelete": "刪除",
+  "actionDone": "完成",
+  "actionRename": "重命名",
+  "actionBack": "返回",
+  "untitled": "未命名",
+  "untitledLibrary": "未命名書庫",
+  "temporaryLibraryName": "臨時書庫",
+  "platformDefaultFont": "LXGW WenKai (default)",
+  "searchHint": "搜索",
+  "dropdownHintSelect": "請選擇",
+  "dropdownNoMatches": "無匹配項",
+  "languageTitle": "語言",
+  "languageSubtitle": "應用界面顯示語言",
+  "languageSystem": "跟隨系統",
+  "languageChinese": "简体中文",
+  "languageEnglish": "English",
+  "languageJapanese": "日本語",
+  "languageKorean": "한국어",
+  "languageSpanish": "Español",
+  "languageFrench": "Français",
+  "languageGerman": "Deutsch",
+  "languagePortuguese": "Português",
+  "languageRussian": "Русский",
+  "languageArabic": "العربية",
+  "languageHindi": "हिन्दी",
+  "languageItalian": "Italiano",
+  "languageChineseTraditional": "繁體中文",
+  "settingsTitle": "設置",
+  "settingsDesktopHeader": "設置",
+  "settingsSearchHint": "搜索設置",
+  "settingsBackTooltip": "返回",
+  "settingsCustomColorsTitle": "自定義顏色",
+  "settingsComingSoonTitle": "即將推出",
+  "settingsComingSoonSubtitle": "這裏的選項還在準備中",
+  "settingsPlaceholderBody": "相關選項稍後會出現在這裏",
+  "settingsSectionGeneral": "通用",
+  "settingsSectionCloud": "備份與同步",
+  "backupGroupLocalTitle": "本地備份",
+  "backupGroupCloudTitle": "雲同步",
+  "cloudSyncSubtitleSignedOut": "連接堅果雲 WebDAV 後即可使用雲備份與同步",
+  "cloudSyncSubtitleSignedIn": "已登錄：{name}",
+  "@cloudSyncSubtitleSignedIn": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudBackupQuickTooltip": "雲備份",
+  "cloudBackupQuickTooltipUnconfigured": "綁定堅果雲以使用雲備份",
+  "cloudSyncEnableTitle": "開啓雲備份",
+  "cloudSyncEnableSubtitle": "退出時或移動端有改動進入後臺後，將本地備份上傳到堅果雲",
+  "cloudSyncLoginTitle": "綁定堅果雲",
+  "cloudSyncLoginSubtitle": "輸入堅果雲賬號、WebDAV 網址和應用密碼",
+  "cloudSyncSettingsTitle": "堅果雲設置",
+  "cloudSyncSettingsSubtitle": "已登錄：{name}",
+  "@cloudSyncSettingsSubtitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncUnbindTitle": "解除綁定",
+  "cloudSyncLogoutTitle": "斷開連接",
+  "cloudSyncLogoutSubtitle": "斷開後停止雲備份",
+  "cloudSyncBackupNowTitle": "立即雲備份",
+  "cloudSyncBackupNowSubtitle": "先在本機做一份備份，再上傳到堅果雲裏的 Zephyr 文件夾",
+  "cloudSyncBackupNowSuccess": "雲備份已完成",
+  "cloudSyncRestoreTitle": "雲備份恢復",
+  "cloudSyncRestoreSubtitle": "從堅果雲選擇備份，可覆蓋或合併",
+  "cloudSyncRestoreEmpty": "雲盤中尚未找到備份",
+  "cloudSyncLatestSnapshotTitle": "最新雲備份",
+  "cloudSyncLatestSnapshotSubtitle": "堅果雲上的當前快照",
+  "cloudSyncRestoreSuccess": "已從雲備份恢復",
+  "cloudSyncFailed": "雲同步失敗：{error}",
+  "cloudSyncAnotherLibrary": "雲端 Zephyr 目錄屬於另一文庫。請選擇原本地目錄或其他 WebDAV 賬號；雲同步已停止。",
+  "cloudSyncMissingManifest": "雲端的 Zephyr 文件夾不完整，請先整理後再同步。",
+  "cloudSyncWaitBeforeChoosingDirectory": "請等待雲同步完成後再選擇其他目錄。",
+  "@cloudSyncFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncCredentialsTitle": "連接堅果雲 WebDAV",
+  "cloudSyncCredentialsEditTitle": "堅果雲設置",
+  "cloudSyncCredentialsSubtitle": "請使用堅果雲第三方應用密碼，而非賬號登錄密碼。憑據安全保存在本機。",
+  "cloudSyncCredentialsPasswordHint": "留空則保持當前應用密碼不變",
+  "cloudSyncCredentialsSave": "連接",
+  "cloudSyncCredentialsSaveEdit": "保存",
+  "cloudSyncCredentialsSaved": "堅果雲已連接",
+  "cloudSyncCredentialsUpdated": "堅果雲設置已保存",
+  "cloudSyncClientIdLabel": "堅果雲賬號",
+  "cloudSyncClientSecretLabel": "應用密碼",
+  "backupAutoTitle": "自動備份",
+  "backupAutoSubtitle": "內容有變更時每小時自動備份；移動端進入後臺時也會備份。本地共保留最近 25 份",
+  "backupNowTitle": "立即備份",
+  "backupNowSubtitle": "立刻做一份手動備份。手動和自動備份一共保留最近 25 份",
+  "backupNowSuccess": "備份已完成",
+  "backupFailed": "備份失敗：{error}",
+  "saveFailed": "保存失敗，編輯仍在當前窗口中；退出前請重試：{error}",
+  "exitBackupInProgress": "正在保存…",
+  "@saveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@backupFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "backupRestoreTitle": "恢復備份",
+  "backupRestoreSubtitle": "共 {count} 份備份，可覆蓋或合併",
+  "@backupRestoreSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupRestoreEmpty": "還沒有找到備份文件",
+  "backupRestoreModeTitle": "恢復方式",
+  "backupRestoreModeMerge": "合併（保留較新的內容）",
+  "backupRestoreModeOverwrite": "覆蓋（替換整個文庫）",
+  "backupRestoreConfirmTitle": "確認恢復",
+  "backupRestoreConfirmMerge": "將把所選備份與當前文庫合併。恢復前會先創建一份安全備份。",
+  "backupRestoreConfirmOverwrite": "將用所選備份完整替換當前文庫。恢復前會先創建一份安全備份。",
+  "backupRestoreAction": "恢復",
+  "backupRestoreSuccess": "已從備份恢復",
+  "backupMergeResultTitle": "合併完成",
+  "backupMergeResultSeparator": "，",
+  "backupMergeResultNoChanges": "合併完成，章節無變化",
+  "backupMergeResultAdded": "新增 {count} 篇",
+  "@backupMergeResultAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupMergeResultUpdated": "更新 {count} 篇",
+  "@backupMergeResultUpdated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupMergeResultRemoved": "刪除 {count} 篇",
+  "@backupMergeResultRemoved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupKindAuto": "自動",
+  "backupKindManual": "手動",
+  "backupFooter": "請不要和純純寫作同時打開同一書庫。備份可以在純純寫作裏打開。",
+  "historyTitle": "時光機",
+  "historyEmpty": "暫無歷史版本",
+  "historyEmptyRevision": "（空內容）",
+  "historyRestoreTitle": "恢復此版本？",
+  "historyRestoreBody": "當前正文將替換爲所選歷史版本，並記入時光機。",
+  "historyRestoreAction": "恢復",
+  "historyRestoreSuccess": "已恢復到所選版本",
+  "historyMenuLabel": "時光機",
+  "draftRecoverTitle": "發現未保存草稿",
+  "draftRecoverBody": "檢測到比文庫更新的草稿，是否恢復？",
+  "draftRecoverAction": "恢復",
+  "draftDismissAction": "丟棄",
+  "settingsSectionEditor": "編輯器",
+  "settingsSectionShortcuts": "快捷鍵",
+  "shortcutsManageTitle": "自定義快捷鍵",
+  "shortcutsManageSubtitle": "查看與修改按鍵綁定",
+  "shortcutsResetAll": "全部恢復默認",
+  "shortcutsResetAction": "恢復默認",
+  "shortcutsClearAction": "清除",
+  "shortcutsRecordTitle": "按下新的快捷鍵",
+  "shortcutsRecordHint": "Esc 取消 · Backspace 清除",
+  "shortcutsUnbound": "未綁定",
+  "shortcutsConflictHint": "已覆蓋衝突的快捷鍵",
+  "shortcutGroupClipboard": "剪貼板",
+  "shortcutGroupHistory": "歷史",
+  "shortcutGroupDelete": "刪除",
+  "shortcutGroupIndent": "縮進",
+  "shortcutGroupNewline": "換行",
+  "shortcutGroupNavigate": "導航",
+  "shortcutGroupSelect": "選擇",
+  "shortcutGroupWorkspace": "工作區",
+  "shortcutActionCopy": "複製",
+  "shortcutActionCut": "剪切",
+  "shortcutActionPaste": "粘貼",
+  "shortcutActionSelectAll": "全選",
+  "shortcutActionUndo": "撤銷",
+  "shortcutActionRedo": "重做",
+  "shortcutActionDeleteBackward": "向前刪除",
+  "shortcutActionDeleteForward": "向後刪除",
+  "shortcutActionDeleteWordBackward": "刪除前一詞",
+  "shortcutActionDeleteWordForward": "刪除後一詞",
+  "shortcutActionIndent": "增加縮進",
+  "shortcutActionOutdent": "減少縮進",
+  "shortcutActionNewline": "換行",
+  "shortcutActionMoveLeft": "左移",
+  "shortcutActionMoveRight": "右移",
+  "shortcutActionMoveUp": "上移",
+  "shortcutActionMoveDown": "下移",
+  "shortcutActionMoveWordLeft": "左移一詞",
+  "shortcutActionMoveWordRight": "右移一詞",
+  "shortcutActionMoveLineStart": "行首",
+  "shortcutActionMoveLineEnd": "行末",
+  "shortcutActionMovePageUp": "上一頁",
+  "shortcutActionMovePageDown": "下一頁",
+  "shortcutActionMoveDocumentStart": "文首",
+  "shortcutActionMoveDocumentEnd": "文末",
+  "shortcutActionSelectLeft": "向左選擇",
+  "shortcutActionSelectRight": "向右選擇",
+  "shortcutActionSelectUp": "向上選擇",
+  "shortcutActionSelectDown": "向下選擇",
+  "shortcutActionSelectWordLeft": "向左選一詞",
+  "shortcutActionSelectWordRight": "向右選一詞",
+  "shortcutActionSelectLineStart": "選至行首",
+  "shortcutActionSelectLineEnd": "選至行末",
+  "shortcutActionSelectPageUp": "向上選一頁",
+  "shortcutActionSelectPageDown": "向下選一頁",
+  "shortcutActionSelectDocumentStart": "選至文首",
+  "shortcutActionSelectDocumentEnd": "選至文末",
+  "shortcutActionCloseSettings": "關閉設置",
+  "shortcutActionCloudBackupNow": "立即雲備份",
+  "settingsSectionTheme": "外觀",
+  "settingsSectionAbout": "關於",
+  "settingsSectionAi": "AI",
+  "aboutSettingsListSubtitle": "版本、更新與鏈接",
+  "aboutVersionLabel": "版本 {version}",
+  "@aboutVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutGitHubTitle": "GitHub",
+  "aboutCheckUpdatesTitle": "檢查更新",
+  "aboutCheckUpdatesSubtitle": "從 GitHub 獲取最新版本信息",
+  "aboutCheckUpdatesComingSoon": "更新檢查即將推出",
+  "aboutOpenLinkFailed": "無法打開鏈接",
+  "generalSectionTitle": "通用",
+  "immersiveStatusBarTitle": "沉浸式通知欄",
+  "immersiveStatusBarSubtitle": "開啓後，界面會延伸到透明通知欄下面，正文可以滑進這塊區域",
+  "hideStatusBarIconsTitle": "隱藏通知欄圖標",
+  "hideStatusBarIconsSubtitle": "僅在沉浸式通知欄開啓時生效，圖標自動隱藏，邊緣滑動可臨時顯示",
+  "mobileBehaviorSectionTitle": "移動端",
+  "mobileBehaviorSectionSubtitle": "僅影響手機和平板上的緊湊編輯界面。",
+  "scrollToHideMobileTopBarTitle": "滾動以隱藏頂欄",
+  "scrollToHideMobileTopBarSubtitle": "向下閱讀時收起浮動書名欄，向上滾動時再次顯示。",
+  "openSidebarAfterBookSwitchTitle": "切換書籍後打開文章列表",
+  "openSidebarAfterBookSwitchSubtitle": "選擇另一本書後自動展開側欄章節列表。",
+  "keepScreenOnTitle": "屏幕常亮",
+  "keepScreenOnSubtitle": "應用在前臺時保持屏幕點亮。",
+  "doubleBackToExitTitle": "雙擊返回鍵退出應用",
+  "doubleBackToExitSubtitle": "關閉後，按一次返回就會離開應用。",
+  "openBookListOnStartupTitle": "啓動時打開書籍列表",
+  "openBookListOnStartupSubtitle": "進入工作區後自動打開書籍選擇面板。",
+  "openSidebarOnStartupTitle": "啓動時打開文章列表",
+  "openSidebarOnStartupSubtitle": "進入工作區後自動展開側欄章節列表。",
+  "desktopBehaviorSectionTitle": "桌面工作區",
+  "desktopBehaviorSectionSubtitle": "僅影響桌面端寫作佈局。",
+  "desktopFloatingSidebarTitle": "懸停顯示浮動側欄",
+  "desktopFloatingSidebarSubtitle": "鼠標移到屏幕左緣時，在編輯器上方彈出章節目錄；移開後自動收起。",
+  "desktopFloatingAiPanelTitle": "浮動 AI 面板",
+  "desktopFloatingAiPanelSubtitle": "在編輯器右側以浮層顯示 AI 對話，不擠壓寫作區域寬度。",
+  "pressBackAgainToExit": "再按一次返回鍵退出",
+  "aiFeaturesEnabledTitle": "AI 助手",
+  "aiFeaturesEnabledSubtitle": "關閉後，工作區頂欄不再顯示 AI 按鈕，已打開的助手會回到書籍界面。",
+  "hideAiAssistantAvatarTitle": "隱藏助手頭像",
+  "hideAiAssistantAvatarSubtitle": "開啓後不再顯示頭像，氣泡兩邊對齊。",
+  "hideQuickToolbarTitle": "隱藏快捷輸入欄",
+  "hideQuickToolbarSubtitle": "開啓後，鍵盤上方不再顯示快捷工具欄",
+  "showChapterDetailsTitle": "顯示章節詳細信息",
+  "showChapterDetailsSubtitle": "關閉後側邊欄只顯示章節名，不顯示預覽與時間、字數等信息",
+  "editorSectionTitle": "編輯器",
+  "editorSectionIntro": "字體與閱讀欄偏好會立即生效",
+  "editorSectionFooter": "更改會立即應用到寫作區",
+  "editorFontLabel": "字體",
+  "editorFontDescription": "寫作時使用的字體。導入後，界面也可以選用",
+  "editorFontSizeTitle": "字體大小",
+  "editorFontSizeDescription": "寫作區正文字號",
+  "editorTitleSizeTitle": "標題字號",
+  "editorTitleSizeDescription": "文章標題塊字號",
+  "editorTitleCenteredTitle": "標題居中",
+  "editorTitleCenteredSubtitle": "開則居中，關則與正文左邊界對齊",
+  "editorTypewriterModeTitle": "打字機模式",
+  "editorTypewriterModeSubtitle": "開啓後當前編輯行保持在屏幕中央；非當前段落與未聚焦的標題半透明顯示",
+  "editorJumpToEndOnScrollDownTitle": "向下滾動時顯示「聚焦到文末」",
+  "editorJumpToEndOnScrollDownSubtitle": "開啓後向下滾動時出現該按鈕；滾到底部或向上滾動時隱藏",
+  "editorLineHeightTitle": "行高",
+  "editorLineHeightDescription": "段內行距倍數",
+  "editorParagraphSpacingTitle": "段間距",
+  "editorParagraphSpacingDescription": "段落之間的間距（字號倍數）",
+  "editorFirstLineIndentTitle": "首行縮進",
+  "editorFirstLineIndentDescription": "Tab 插入的縮進寬度，打開章節時也會應用，回車會複製上一段縮進",
+  "editorMarginLeftTitle": "左邊距",
+  "editorMarginLeftDescription": "正文左側邊距，空間不足時與右邊距按比例縮小",
+  "editorMarginRightTitle": "右邊距",
+  "editorMarginRightDescription": "正文右側邊距，與左邊距相等時始終嚴格對稱",
+  "editorWidthTitle": "編輯器寬度",
+  "editorWidthDescription": "正文區域的寬度，在窗口裏始終居中。窗口變窄時會一起變窄",
+  "appearanceSectionTitle": "外觀",
+  "appearanceSectionIntro": "選擇一套配色，也可以逐項調整顏色。字體和圓角保持你單獨的設置",
+  "themeModeTitle": "主題模式",
+  "themeModeSubtitle": "選擇淺色、深色，或跟隨系統外觀",
+  "themeModeSystem": "跟隨系統",
+  "themeModeLight": "淺色",
+  "themeModeDark": "深色",
+  "uiFontLabel": "UI 字體",
+  "uiFontDescription": "界面和側邊欄使用的字體。導入後，正文也可以選用",
+  "uiFontSizeTitle": "UI 字體大小",
+  "uiFontSizeDescription": "側邊欄、設置與界面文字大小",
+  "cornerRadiusTitle": "圓角",
+  "cornerRadiusDescription": "按鈕、菜單、卡片與輸入框的圓角",
+  "barCornerRadiusTitle": "欄圓角",
+  "barCornerRadiusDescription": "編輯器頂部欄和側邊欄底部欄的圓角",
+  "chatBubbleCornerRadiusTitle": "對話氣泡圓角",
+  "chatBubbleCornerRadiusDescription": "AI 對話氣泡的圓角。靠外側的上角保持直角",
+  "showBordersTitle": "顯示邊框",
+  "showBordersSubtitle": "關閉後按鈕和卡片沒有邊框。開啓後，卷和書庫欄會顯示邊框",
+  "sidebarItemInsetTitle": "側邊欄條目邊距",
+  "sidebarItemInsetDescription": "卷與章節左右邊距（相等）",
+  "sidebarItemCornerRadiusTitle": "側邊欄卷與章節圓角",
+  "sidebarItemCornerRadiusDescription": "書庫側欄中卷標題與章節行的圓角",
+  "sidebarVolumeGapTitle": "側邊欄內容上下間距",
+  "sidebarVolumeGapDescription": "卷與卷之間的間距。章節之間只留一條分隔線",
+  "themePresetsSectionTitle": "主題顏色",
+  "actionCopy": "複製",
+  "themePackRenameTitle": "重命名主題",
+  "themePackCopyName": "{name} 副本",
+  "@themePackCopyName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themePackDeleteTitle": "刪除主題？",
+  "themePackDeleteBody": "刪除「{name}」後無法恢復",
+  "@themePackDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themeCurrentCustom": "當前：自定義",
+  "themeCurrentPreset": "當前：{preset}",
+  "themeCurrentCustomLong": "當前配色：自定義",
+  "themeCurrentPresetLong": "當前配色：{preset}",
+  "themePresetsFooter": "配色只改變顏色。字體、圓角等保持你單獨的設置",
+  "customColorsTitle": "自定義顏色",
+  "customColorsSubtitle": "調整當前外觀下的各項顏色，修改後立即生效",
+  "customizeTokensButton": "自定義顏色",
+  "backToThemesButton": "返回主題",
+  "themeTokensTitle": "主題色",
+  "themeTokensIntro": "填寫顏色代碼，例如 #336699。修改後立即生效",
+  "restoreDefaultColors": "恢復默認",
+  "saveAsThemeColor": "保存爲主題",
+  "saveThemeColorTitle": "保存爲主題顏色",
+  "saveThemeColorNameLabel": "主題名稱",
+  "themePackNameDefault": "主題{n}",
+  "@themePackNameDefault": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "themePresetLight": "淺色",
+  "themePresetGrey": "灰色",
+  "themePresetSlate": "石板",
+  "themePresetClaude": "Claude Code",
+  "themePresetMint": "薄荷",
+  "themePresetPurple": "紫色",
+  "themePresetHermes": "Hermes",
+  "themePresetOcean": "海洋",
+  "themePresetDarkModern": "深色現代",
+  "tokenEditorSurface": "寫作區背景",
+  "tokenSidebarSurface": "側邊欄背景",
+  "tokenControlSurface": "按鈕和輸入框",
+  "tokenBorder": "邊框",
+  "tokenDivider": "分割線",
+  "tokenPrimaryText": "主文字",
+  "tokenMutedText": "次要文字",
+  "tokenAccent": "強調色",
+  "tokenCursor": "光標",
+  "tokenEditorSurfaceDescription": "寫作欄背景色",
+  "tokenSidebarSurfaceDescription": "側欄與界面背景色",
+  "tokenControlSurfaceDescription": "輸入框、菜單與卡片的填充色",
+  "tokenBorderDescription": "按鈕和輸入框的邊框",
+  "tokenDividerDescription": "側邊欄章節分隔線",
+  "tokenPrimaryTextDescription": "默認標題與正文字色",
+  "tokenMutedTextDescription": "設置說明與說明文字的較淡色",
+  "tokenAccentDescription": "按鈕高亮和選中狀態",
+  "tokenCursorDescription": "寫作區光標顏色",
+  "fontImportSuccess": "已導入到應用字體庫，可在 UI 與正文字體中選用",
+  "fontImportFailure": "無法導入該字體文件",
+  "fontDeleteSuccess": "已從應用字體庫刪除",
+  "fontDeleteFailure": "無法刪除該字體",
+  "fontImportFromFile": "從文件導入…",
+  "fontDeleteFromLibrary": "從字體庫刪除",
+  "fontDeleteDialogTitle": "刪除字體？",
+  "fontDeleteDialogBody": "從應用字體庫中移除“{family}”以釋放空間？",
+  "fontDeleteDialogBodyCompact": "從應用字體庫中移除以釋放空間？",
+  "editorBackgroundSectionTitle": "編輯器背景圖片",
+  "editorBackgroundEnabledTitle": "使用背景圖片",
+  "editorBackgroundEnabledSubtitle": "關閉後暫不顯示，已選圖片會保留",
+  "themeColorsSectionTitle": "主題顏色",
+  "editorBackgroundLightTitle": "亮色背景",
+  "editorBackgroundDarkTitle": "暗色背景",
+  "editorBackgroundNone": "未設置",
+  "editorBackgroundCurrentBadge": "當前",
+  "editorBackgroundChoose": "選擇",
+  "editorBackgroundClear": "清除",
+  "editorBackgroundSelectTitle": "選擇背景圖",
+  "editorBackgroundAddFromFile": "從文件添加…",
+  "editorBackgroundEmptyLibrary": "還沒有圖片，點上方添加",
+  "editorBackgroundNoImagePreview": "無背景圖",
+  "editorBackgroundPreviewSample": "輕舟已過萬重山。\n人不可有傲氣，但不可無傲骨。",
+  "editorBackgroundFitTitle": "鋪放方式",
+  "editorBackgroundFitCover": "覆蓋",
+  "editorBackgroundFitContain": "包含",
+  "editorBackgroundFitFill": "拉伸",
+  "editorBackgroundFitTile": "平鋪",
+  "editorBackgroundFitCenter": "居中",
+  "editorBackgroundOpacityTitle": "背景不透明度",
+  "editorBackgroundBlurTitle": "背景模糊",
+  "editorBackgroundBlurDescription": "只模糊背景圖，文字保持清晰",
+  "editorBackgroundImportSuccess": "已添加到應用圖庫",
+  "editorBackgroundImportFailure": "無法導入該圖片",
+  "editorBackgroundDeleteSuccess": "已從應用圖庫刪除",
+  "editorBackgroundDeleteFailure": "無法刪除該圖片",
+  "editorBackgroundDeleteTitle": "刪除圖片？",
+  "editorBackgroundDeleteBody": "刪除「{name}」？正在使用的模式將恢復爲無背景。",
+  "@editorBackgroundDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "editorBackgroundSummary": "{name} · {fit} · {opacity}%",
+  "@editorBackgroundSummary": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "fit": {
+        "type": "String"
+      },
+      "opacity": {
+        "type": "int"
+      }
+    }
+  },
+  "editorBackgroundSummaryWithBlur": "{name} · {fit} · {opacity}% · 模糊 {blur}",
+  "@editorBackgroundSummaryWithBlur": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "fit": {
+        "type": "String"
+      },
+      "opacity": {
+        "type": "int"
+      },
+      "blur": {
+        "type": "int"
+      }
+    }
+  },
+  "choiceDeleteTitle": "刪除？",
+  "choiceDeleteBody": "移除此項？",
+  "numberPickerDefaultLabel": "默認 {value}",
+  "numberPickerRestoreDefault": "恢復默認（{value}）",
+  "tempLibraryBannerTitle": "當前使用臨時書庫",
+  "tempLibraryBannerSubtitle": "選擇 PureWriter 書庫目錄以打開你的作品",
+  "chooseLibraryButton": "選擇書庫",
+  "librarySetupTitle": "歡迎使用 Zephyr",
+  "librarySetupBody": "可直接在本地臨時書庫開始寫作，準備好後再連接純純寫作的書庫文件夾。",
+  "startTemporaryLibraryButton": "開始寫作",
+  "libraryLoadFailedHint": "無法打開上次的書庫。可以重新開始，或選擇其他書庫目錄。",
+  "libraryRecoveredToTemporary": "已改用臨時書庫。你仍可通過頂部橫幅重新連接 PureWriter 書庫。",
+  "chooseLibraryDirectoryButton": "選擇 PureWriter 書庫",
+  "editorEmptyState": "選擇或創建章節以開始寫作",
+  "jumpToEnd": "聚焦到文末",
+  "volumeInsertBelow": "下方插入卷",
+  "volumeAppendChapter": "在卷末尾插入章節",
+  "chapterInsertBelow": "下方插入章節",
+  "actionMoveToVolume": "移動到卷",
+  "actionMoveToBook": "移動到書",
+  "actionConvertVolumeToBook": "將此卷轉化爲一本書",
+  "moveToBookSheetTitle": "移動到書",
+  "moveToBookNoTargets": "沒有可移動到的其他書。",
+  "renameVolumeTitle": "重命名卷",
+  "renameChapterTitle": "重命名章節",
+  "volumeNameLabel": "卷名",
+  "chapterNameLabel": "章節名",
+  "validationNameRequired": "請輸入名稱",
+  "deleteChapterTitle": "刪除章節",
+  "deleteChapterBody": "將“{name}”移入回收站？",
+  "deleteVolumeTitle": "刪除卷",
+  "deleteVolumeBody": "刪除“{name}”時，請選擇如何處理卷內章節",
+  "deleteVolumeOnly": "僅刪除卷",
+  "deleteVolumeAndChapters": "刪除卷及章節",
+  "moveToVolumeSheetTitle": "移動到卷",
+  "unfiledVolume": "未分卷",
+  "unfiledChaptersHeader": "未分卷章節",
+  "tooltipHideSidebar": "隱藏側邊欄",
+  "tooltipNewVolume": "新建卷",
+  "tooltipNewChapter": "新建章節",
+  "tooltipAdd": "添加",
+  "tooltipSearchChapters": "搜索",
+  "searchSheetTitle": "搜索",
+  "searchSheetHint": "搜索標題與正文",
+  "searchSheetEmptyQuery": "輸入關鍵詞開始搜索。",
+  "searchSheetNoResults": "沒有匹配結果。",
+  "searchScopeArticle": "本章",
+  "searchScopeVolume": "本卷",
+  "searchScopeBook": "本書",
+  "searchScopeAllBooks": "全部書",
+  "tooltipLocateCurrentChapter": "定位到當前章節",
+  "tooltipCollapseAll": "全部摺疊",
+  "tooltipExpandAll": "全部展開",
+  "tooltipReorder": "排序方式",
+  "tooltipDoneReordering": "完成調整順序",
+  "chapterSortManual": "手動排序",
+  "chapterSortAdjustOrder": "調整順序",
+  "chapterSortCreatedAsc": "創建時間 · 升序",
+  "chapterSortCreatedDesc": "創建時間 · 降序",
+  "chapterSortUpdatedAsc": "修改時間 · 升序",
+  "chapterSortUpdatedDesc": "修改時間 · 降序",
+  "chapterSortTitleAsc": "名稱 · A→Z",
+  "chapterSortTitleDesc": "名稱 · Z→A",
+  "tooltipAiAssistant": "AI 助手",
+  "aiChatWelcome": "有什麼想寫的，直接發給我。",
+  "aiChatInputHint": "輸入消息…",
+  "aiChatSend": "發送",
+  "aiChatStopGenerating": "停止生成",
+  "aiContextRemoveArticle": "從上下文中移除",
+  "llmSettingsTitle": "AI 模型",
+  "llmSettingsSubtitle": "供應商、API Key 與模型",
+  "llmSettingsIntro": "密鑰只保存在這臺設備上。其他設置會隨備份一起保存。",
+  "llmBehaviorSectionTitle": "對話行爲",
+  "llmStreamOutputTitle": "流式輸出",
+  "llmStreamOutputSubtitle": "回覆會一邊生成一邊顯示",
+  "llmAllowThinkingTitle": "允許思考",
+  "llmAllowThinkingSubtitle": "讓可以深度思考的模型先想清楚再回答",
+  "llmPresetPromptTitle": "預設提示詞",
+  "llmPresetPromptDescription": "每次對話都會作爲系統說明發給模型，可固定體裁、文風、人稱等偏好。",
+  "llmPresetPromptHint": "例如：你是寫作助手，用簡潔中文回答；續寫時保持現有人稱、時態與語氣。",
+  "llmMaxInputTokensTitle": "上下文上限（輸入）",
+  "llmMaxInputTokensSubtitle": "超出後會自動精簡較早的對話",
+  "llmMaxOutputTokensTitle": "回覆上限（輸出）",
+  "llmMaxOutputTokensSubtitle": "單次回覆最多寫多長",
+  "llmThinkingLevelTitle": "思考程度",
+  "llmThinkingLevelSubtitle": "思考越深，回答通常越慢",
+  "llmDefaultThinkingLevelTitle": "默認思考程度",
+  "llmDefaultThinkingLevelSubtitle": "新對話一開始的思考程度，也可以在輸入框旁邊再改",
+  "llmThinkingDisabledInSettings": "請在 AI 模型設置中開啓「允許思考」",
+  "llmThinkingOff": "關閉",
+  "llmThinkingMinimal": "極低",
+  "llmThinkingLow": "低",
+  "llmThinkingMedium": "中",
+  "llmThinkingHigh": "高",
+  "llmThinkingAuto": "自動",
+  "aiChatAiSettingsEntry": "AI 設置",
+  "aiChatSessionOptionsTitle": "對話選項",
+  "aiChatSessionProviderTitle": "模型供應商",
+  "aiChatSessionProviderSubtitle": "選擇已在 AI 設置中配置並測試通過的供應商",
+  "aiChatSessionOptionsNeedTest": "請先在 AI 模型設置中連接測試並獲取模型列表。",
+  "aiChatSessionModelSubtitle": "可覆蓋設置中的默認模型",
+  "aiChatThinkingForModel": "模型：{model}",
+  "@aiChatThinkingForModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatSessionsTitle": "對話列表",
+  "aiChatSessionsSubtitle": "切換、歸檔或刪除本章已保存的對話",
+  "aiChatNewSession": "新對話",
+  "aiChatShowArchivedSessions": "顯示已歸檔",
+  "aiChatNoSessions": "還沒有保存的對話。",
+  "aiChatSessionUpdated": "更新於 {time}",
+  "@aiChatSessionUpdated": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatOpenSession": "打開",
+  "aiChatArchiveSession": "歸檔",
+  "aiChatUnarchiveSession": "取消歸檔",
+  "aiChatDeleteSession": "刪除",
+  "aiChatDeleteSessionTitle": "刪除對話？",
+  "aiChatDeleteSessionBody": "將刪除「{title}」及其全部消息，且無法恢復。",
+  "@aiChatDeleteSessionBody": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatCompressedContextHeader": "以下是較早對話的摘要：",
+  "llmProviderTitle": "模型供應商",
+  "llmProviderSubtitle": "可分別配置各供應商，切換時保留其他已保存的配置",
+  "llmApiKeyTitle": "API Key",
+  "llmApiKeyHint": "粘貼密鑰",
+  "llmBaseUrlTitle": "API 地址",
+  "llmBaseUrlHint": "例如 https://api.example.com/v1",
+  "llmTestConnection": "連接測試",
+  "llmTestSuccess": "連接成功，發現 {count} 個模型",
+  "@llmTestSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "llmModelTitle": "對話模型",
+  "llmModelSubtitle": "連接測試後可選",
+  "llmModelNotSelected": "未選擇",
+  "aiChatNotConfigured": "請先在設置中配置 API Key 並完成連接測試。",
+  "aiChatThinkingInProgress": "思考中…",
+  "aiChatThinkingProcess": "思考過程",
+  "aiChatError": "請求失敗：{error}",
+  "@aiChatError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatDemoReply": "已收到：{message}",
+  "@aiChatDemoReply": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "tooltipOpenLibrary": "打開書庫",
+  "librarySwitcherChooseDirectory": "重新選擇目錄",
+  "tooltipOpenSidebar": "打開側邊欄",
+  "tooltipMore": "更多",
+  "mobileToolsDrawerReorderHint": "長按拖動可調整順序",
+  "tooltipEditBook": "編輯書籍",
+  "tooltipSettings": "設置",
+  "selectBook": "選擇書籍",
+  "booksSheetTitle": "書籍",
+  "booksSheetTagAll": "全部",
+  "newBookTitle": "新建書籍",
+  "moreSheetTitle": "快捷工具",
+  "mobileToolThemeMode": "主題模式",
+  "mobileToolSwitchTheme": "切換主題",
+  "noMobileTools": "暫無可用工具",
+  "editBookTitle": "編輯書籍",
+  "bookNameLabel": "書名",
+  "bookNameHint": "輸入書名",
+  "bookNameRequired": "請輸入書名",
+  "tooltipNewBook": "新增書籍",
+  "tooltipBookGridLayout": "雙列列表",
+  "tooltipBookListLayout": "單列列表",
+  "tooltipDeleteBook": "刪除書籍",
+  "deleteBookNotEmpty": "請先清空該書中的章節後再刪除",
+  "bookTagsLabel": "標籤",
+  "bookTagsHint": "例如：文學",
+  "bookDescriptionLabel": "簡介",
+  "bookDescriptionHint": "簡要說明這本書",
+  "bookStatsMeta": "{volumes}卷 {chapters}章",
+  "chapterMeta": "創建於{created} - 修改於{modified} - {wordCount}字",
+  "themeSlotLight": "亮色",
+  "themeSlotDark": "暗色",
+  "themePresetsSubtitle": "點按展開選擇配色，會應用到當前亮色或暗色模式",
+  "quickToolbarToolsTooltip": "快捷工具",
+  "quickToolbarUndoTooltip": "撤回",
+  "quickToolbarPasteTooltip": "粘貼",
+  "quickToolbarIndentTooltip": "縮進",
+  "quickToolbarFormatTooltip": "一鍵格式化",
+  "quickToolbarSearchTooltip": "搜索",
+  "quickToolbarTimestampTooltip": "插入時間戳",
+  "quickToolbarBackupTooltip": "立即備份",
+  "quickToolbarRestoreTooltip": "恢復備份",
+  "quickToolbarEdit": "編輯工具欄",
+  "quickToolbarEditHint": "在工具欄上長按拖動可排序；也可在此頁拖拽，或在固定欄與自定義欄之間移動。",
+  "quickToolbarPinnedSection": "固定欄",
+  "quickToolbarCustomSection": "自定義欄",
+  "quickToolbarAddSection": "添加工具",
+  "quickToolbarSectionEmpty": "暫無工具",
+  "quickToolbarAddPhrase": "快捷短語",
+  "quickToolbarPhraseName": "顯示名稱",
+  "quickToolbarPhraseContent": "插入內容",
+  "quickToolbarMoveToPinned": "移到固定欄",
+  "quickToolbarMoveToCustom": "移到自定義欄",
+  "quickToolbarDrawerEmpty": "這裏還沒有工具",
+  "quickToolbarFormatApplyAll": "一鍵排版",
+  "quickToolbarFormatKeepParagraphBlanks": "段間保留空行",
+  "quickToolbarFormatRemoveParagraphBlanks": "段間刪除空行",
+  "quickToolbarFormatInsertCjkLatinSpaces": "中英文之間插入空格",
+  "quickToolbarFormatAddParagraphIndent": "段首插入縮進",
+  "quickToolbarFormatRemoveParagraphIndent": "去除段首縮進",
+  "quickToolbarFormatSimplifiedToTraditional": "簡體轉繁體",
+  "quickToolbarFormatTraditionalToSimplified": "繁體轉簡體",
+  "quickToolbarFormatHalfwidthToFullwidth": "半角符號轉全角符號",
+  "cloudSyncServerUrlLabel": "WebDAV 網址"
+}

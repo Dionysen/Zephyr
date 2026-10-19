@@ -42,18 +42,11 @@ class GeneralSettingsView extends StatelessWidget {
           selected: locale,
           valueLabel: _localeLabel(l10n, locale),
           choices: [
-            ZephyrSettingsChoice(
-              value: AppLocalePreference.system,
-              label: l10n.languageSystem,
-            ),
-            ZephyrSettingsChoice(
-              value: AppLocalePreference.chinese,
-              label: l10n.languageChinese,
-            ),
-            ZephyrSettingsChoice(
-              value: AppLocalePreference.english,
-              label: l10n.languageEnglish,
-            ),
+            for (final option in AppLocalePreference.selectable)
+              ZephyrSettingsChoice(
+                value: option,
+                label: _localeLabel(l10n, option),
+              ),
           ],
           onSelected: viewModel.updateLocalePreference,
         ),
@@ -228,5 +221,16 @@ String _localeLabel(AppLocalizations l10n, AppLocalePreference preference) =>
     switch (preference) {
       AppLocalePreference.system => l10n.languageSystem,
       AppLocalePreference.chinese => l10n.languageChinese,
+      AppLocalePreference.chineseTraditional => l10n.languageChineseTraditional,
       AppLocalePreference.english => l10n.languageEnglish,
+      AppLocalePreference.japanese => l10n.languageJapanese,
+      AppLocalePreference.korean => l10n.languageKorean,
+      AppLocalePreference.spanish => l10n.languageSpanish,
+      AppLocalePreference.french => l10n.languageFrench,
+      AppLocalePreference.german => l10n.languageGerman,
+      AppLocalePreference.portuguese => l10n.languagePortuguese,
+      AppLocalePreference.russian => l10n.languageRussian,
+      AppLocalePreference.arabic => l10n.languageArabic,
+      AppLocalePreference.hindi => l10n.languageHindi,
+      AppLocalePreference.italian => l10n.languageItalian,
     };

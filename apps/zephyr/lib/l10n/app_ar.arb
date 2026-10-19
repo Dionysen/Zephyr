@@ -1,0 +1,801 @@
+{
+  "@@locale": "ar",
+  "appTitle": "Zephyr",
+  "actionCancel": "Cancel",
+  "actionSave": "Save",
+  "actionDelete": "Delete",
+  "actionDone": "Done",
+  "actionRename": "Rename",
+  "actionBack": "Back",
+  "untitled": "Untitled",
+  "untitledLibrary": "Untitled library",
+  "temporaryLibraryName": "Temporary library",
+  "platformDefaultFont": "LXGW WenKai (default)",
+  "searchHint": "Search",
+  "dropdownHintSelect": "Select",
+  "dropdownNoMatches": "No matches",
+  "languageTitle": "Language",
+  "languageSubtitle": "App interface language.",
+  "languageSystem": "System default",
+  "languageChinese": "简体中文",
+  "languageEnglish": "English",
+  "languageJapanese": "日本語",
+  "languageKorean": "한국어",
+  "languageSpanish": "Español",
+  "languageFrench": "Français",
+  "languageGerman": "Deutsch",
+  "languagePortuguese": "Português",
+  "languageRussian": "Русский",
+  "languageArabic": "العربية",
+  "languageHindi": "हिन्दी",
+  "languageItalian": "Italiano",
+  "languageChineseTraditional": "繁體中文",
+  "settingsTitle": "Settings",
+  "settingsDesktopHeader": "Settings",
+  "settingsSearchHint": "Search settings",
+  "settingsBackTooltip": "Back",
+  "settingsCustomColorsTitle": "Custom colors",
+  "settingsComingSoonTitle": "Coming soon",
+  "settingsComingSoonSubtitle": "These options are still being prepared.",
+  "settingsPlaceholderBody": "Related options will appear here later.",
+  "settingsSectionGeneral": "General",
+  "settingsSectionCloud": "Backup",
+  "backupGroupLocalTitle": "Local backup",
+  "backupGroupCloudTitle": "Cloud sync",
+  "cloudSyncSubtitleSignedOut": "Connect Nutstore WebDAV for cloud backup and sync",
+  "cloudSyncSubtitleSignedIn": "Signed in as {name}",
+  "@cloudSyncSubtitleSignedIn": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudBackupQuickTooltip": "Cloud backup",
+  "cloudBackupQuickTooltipUnconfigured": "Connect Nutstore for cloud backup",
+  "cloudSyncEnableTitle": "Enable cloud backup",
+  "cloudSyncEnableSubtitle": "Upload local backups to Nutstore on exit or after mobile backgrounding with edits",
+  "cloudSyncLoginTitle": "Connect Nutstore",
+  "cloudSyncLoginSubtitle": "Enter your account, WebDAV URL, and app password",
+  "cloudSyncSettingsTitle": "Nutstore settings",
+  "cloudSyncSettingsSubtitle": "Signed in as {name}",
+  "@cloudSyncSettingsSubtitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncUnbindTitle": "Disconnect",
+  "cloudSyncLogoutTitle": "Sign out",
+  "cloudSyncLogoutSubtitle": "Stops cloud backup",
+  "cloudSyncBackupNowTitle": "Back up to cloud now",
+  "cloudSyncBackupNowSubtitle": "Create a backup on this device, then upload it to the Zephyr folder on Nutstore",
+  "cloudSyncBackupNowSuccess": "Cloud backup completed.",
+  "cloudSyncRestoreTitle": "Restore from cloud",
+  "cloudSyncRestoreSubtitle": "Pick a backup from Nutstore — overwrite or merge",
+  "cloudSyncRestoreEmpty": "No cloud backups found.",
+  "cloudSyncLatestSnapshotTitle": "Latest cloud backup",
+  "cloudSyncLatestSnapshotSubtitle": "Current snapshot on Nutstore",
+  "cloudSyncRestoreSuccess": "Library restored from cloud backup.",
+  "cloudSyncFailed": "Cloud sync failed: {error}",
+  "cloudSyncAnotherLibrary": "This Zephyr cloud folder belongs to another library. Choose the original local directory or another WebDAV account; cloud sync has stopped.",
+  "cloudSyncMissingManifest": "The Zephyr folder in the cloud looks incomplete. Sort it out before syncing again.",
+  "cloudSyncWaitBeforeChoosingDirectory": "Wait for cloud sync to finish before choosing another directory.",
+  "@cloudSyncFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncCredentialsTitle": "Connect Nutstore WebDAV",
+  "cloudSyncCredentialsEditTitle": "Nutstore settings",
+  "cloudSyncCredentialsSubtitle": "Use a Nutstore app password, not your account password. Stored securely on this device.",
+  "cloudSyncCredentialsPasswordHint": "Leave blank to keep the current app password",
+  "cloudSyncCredentialsSave": "Connect",
+  "cloudSyncCredentialsSaveEdit": "Save",
+  "cloudSyncCredentialsSaved": "Nutstore connected",
+  "cloudSyncCredentialsUpdated": "Nutstore settings saved",
+  "cloudSyncClientIdLabel": "Nutstore account",
+  "cloudSyncServerUrlLabel": "WebDAV URL",
+  "cloudSyncClientSecretLabel": "App password",
+  "backupAutoTitle": "Automatic backup",
+  "backupAutoSubtitle": "Back up edited content hourly, and on mobile backgrounding. Keep the latest 25 local backups.",
+  "backupNowTitle": "Back up now",
+  "backupNowSubtitle": "Create a manual backup now. Manual and automatic backups together keep the latest 25.",
+  "backupNowSuccess": "Backup completed.",
+  "backupFailed": "Backup failed: {error}",
+  "saveFailed": "Saving failed. Your edits remain open; retry before exiting: {error}",
+  "exitBackupInProgress": "Saving…",
+  "@saveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@backupFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "backupRestoreTitle": "Restore backup",
+  "backupRestoreSubtitle": "{count} backups available — overwrite or merge.",
+  "@backupRestoreSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupRestoreEmpty": "No backup files found.",
+  "backupRestoreModeTitle": "Restore mode",
+  "backupRestoreModeMerge": "Merge (keep the newer version)",
+  "backupRestoreModeOverwrite": "Overwrite (replace the whole library)",
+  "backupRestoreConfirmTitle": "Confirm restore",
+  "backupRestoreConfirmMerge": "Merge the selected backup into the current library. A safety backup is created first.",
+  "backupRestoreConfirmOverwrite": "Replace the current library with the selected backup. A safety backup is created first.",
+  "backupRestoreAction": "Restore",
+  "backupRestoreSuccess": "Library restored from backup.",
+  "backupMergeResultTitle": "Merge complete",
+  "backupMergeResultSeparator": ", ",
+  "backupMergeResultNoChanges": "Merge complete. No chapter changes.",
+  "backupMergeResultAdded": "Added {count}",
+  "@backupMergeResultAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupMergeResultUpdated": "Updated {count}",
+  "@backupMergeResultUpdated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupMergeResultRemoved": "Deleted {count}",
+  "@backupMergeResultRemoved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupKindAuto": "Auto",
+  "backupKindManual": "Manual",
+  "backupFooter": "Don't open the same library in Pure Writer at the same time. Backup files can be opened in Pure Writer.",
+  "historyTitle": "History",
+  "historyEmpty": "No history revisions yet.",
+  "historyEmptyRevision": "(empty)",
+  "historyRestoreTitle": "Restore this revision?",
+  "historyRestoreBody": "The current chapter text will be replaced by this revision and recorded in History.",
+  "historyRestoreAction": "Restore",
+  "historyRestoreSuccess": "Restored to the selected revision.",
+  "historyMenuLabel": "History",
+  "draftRecoverTitle": "Unsaved draft found",
+  "draftRecoverBody": "A draft newer than the library was found. Restore it?",
+  "draftRecoverAction": "Restore",
+  "draftDismissAction": "Discard",
+  "settingsSectionEditor": "Editor",
+  "settingsSectionShortcuts": "Shortcuts",
+  "shortcutsManageTitle": "Customize shortcuts",
+  "shortcutsManageSubtitle": "View and change key bindings",
+  "shortcutsResetAll": "Reset all to defaults",
+  "shortcutsResetAction": "Reset",
+  "shortcutsClearAction": "Clear",
+  "shortcutsRecordTitle": "Press a new shortcut",
+  "shortcutsRecordHint": "Esc to cancel · Backspace to clear",
+  "shortcutsUnbound": "Unbound",
+  "shortcutsConflictHint": "Conflicting shortcuts were replaced",
+  "shortcutGroupClipboard": "Clipboard",
+  "shortcutGroupHistory": "History",
+  "shortcutGroupDelete": "Delete",
+  "shortcutGroupIndent": "Indent",
+  "shortcutGroupNewline": "Newline",
+  "shortcutGroupNavigate": "Navigate",
+  "shortcutGroupSelect": "Select",
+  "shortcutGroupWorkspace": "Workspace",
+  "shortcutActionCopy": "Copy",
+  "shortcutActionCut": "Cut",
+  "shortcutActionPaste": "Paste",
+  "shortcutActionSelectAll": "Select all",
+  "shortcutActionUndo": "Undo",
+  "shortcutActionRedo": "Redo",
+  "shortcutActionDeleteBackward": "Delete backward",
+  "shortcutActionDeleteForward": "Delete forward",
+  "shortcutActionDeleteWordBackward": "Delete word backward",
+  "shortcutActionDeleteWordForward": "Delete word forward",
+  "shortcutActionIndent": "Indent",
+  "shortcutActionOutdent": "Outdent",
+  "shortcutActionNewline": "Newline",
+  "shortcutActionMoveLeft": "Move left",
+  "shortcutActionMoveRight": "Move right",
+  "shortcutActionMoveUp": "Move up",
+  "shortcutActionMoveDown": "Move down",
+  "shortcutActionMoveWordLeft": "Move word left",
+  "shortcutActionMoveWordRight": "Move word right",
+  "shortcutActionMoveLineStart": "Line start",
+  "shortcutActionMoveLineEnd": "Line end",
+  "shortcutActionMovePageUp": "Page up",
+  "shortcutActionMovePageDown": "Page down",
+  "shortcutActionMoveDocumentStart": "Document start",
+  "shortcutActionMoveDocumentEnd": "Document end",
+  "shortcutActionSelectLeft": "Select left",
+  "shortcutActionSelectRight": "Select right",
+  "shortcutActionSelectUp": "Select up",
+  "shortcutActionSelectDown": "Select down",
+  "shortcutActionSelectWordLeft": "Select word left",
+  "shortcutActionSelectWordRight": "Select word right",
+  "shortcutActionSelectLineStart": "Select to line start",
+  "shortcutActionSelectLineEnd": "Select to line end",
+  "shortcutActionSelectPageUp": "Select page up",
+  "shortcutActionSelectPageDown": "Select page down",
+  "shortcutActionSelectDocumentStart": "Select to document start",
+  "shortcutActionSelectDocumentEnd": "Select to document end",
+  "shortcutActionCloseSettings": "Close settings",
+  "shortcutActionCloudBackupNow": "Back up to cloud now",
+  "settingsSectionTheme": "Theme",
+  "settingsSectionAbout": "About",
+  "settingsSectionAi": "AI",
+  "aboutSettingsListSubtitle": "Version, updates, and links",
+  "aboutVersionLabel": "Version {version}",
+  "@aboutVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutGitHubTitle": "GitHub",
+  "aboutCheckUpdatesTitle": "Check for updates",
+  "aboutCheckUpdatesSubtitle": "Fetch the latest release info from GitHub.",
+  "aboutCheckUpdatesComingSoon": "Update checks are coming soon.",
+  "aboutOpenLinkFailed": "Could not open the link.",
+  "generalSectionTitle": "General",
+  "immersiveStatusBarTitle": "Immersive status bar",
+  "immersiveStatusBarSubtitle": "The app extends under a transparent status bar, and text can scroll into that area.",
+  "hideStatusBarIconsTitle": "Hide status bar icons",
+  "hideStatusBarIconsSubtitle": "Only while the immersive status bar is on. Icons hide on their own; swipe from the edge to show them briefly.",
+  "mobileBehaviorSectionTitle": "Mobile",
+  "mobileBehaviorSectionSubtitle": "Applies to phones and tablets.",
+  "scrollToHideMobileTopBarTitle": "Hide top bar while scrolling",
+  "scrollToHideMobileTopBarSubtitle": "Collapse the floating book bar when scrolling down; show it when scrolling up.",
+  "openSidebarAfterBookSwitchTitle": "Open chapter list after switching books",
+  "openSidebarAfterBookSwitchSubtitle": "Show the chapter list after you pick another book.",
+  "keepScreenOnTitle": "Keep screen on",
+  "keepScreenOnSubtitle": "Prevent the display from sleeping while the app is open.",
+  "doubleBackToExitTitle": "Press back twice to exit",
+  "doubleBackToExitSubtitle": "When off, a single back press exits the app.",
+  "openBookListOnStartupTitle": "Open book list on launch",
+  "openBookListOnStartupSubtitle": "Show the book picker when the workspace opens.",
+  "openSidebarOnStartupTitle": "Open chapter list on launch",
+  "openSidebarOnStartupSubtitle": "Show the chapter list when the workspace opens.",
+  "desktopBehaviorSectionTitle": "Desktop workspace",
+  "desktopBehaviorSectionSubtitle": "Applies to the desktop writing layout.",
+  "desktopFloatingSidebarTitle": "Floating sidebar on hover",
+  "desktopFloatingSidebarSubtitle": "Move the pointer to the left screen edge to show the chapter list over the editor; hides when the pointer leaves.",
+  "desktopFloatingAiPanelTitle": "Floating AI panel",
+  "desktopFloatingAiPanelSubtitle": "Show AI chat over the editor on the right instead of resizing the writing column.",
+  "pressBackAgainToExit": "Press back again to exit",
+  "aiFeaturesEnabledTitle": "AI assistant",
+  "aiFeaturesEnabledSubtitle": "When off, the AI button is hidden in the workspace and any open assistant returns to the book.",
+  "hideAiAssistantAvatarTitle": "Hide assistant avatar",
+  "hideAiAssistantAvatarSubtitle": "Hide the avatar so chat bubbles line up on both sides.",
+  "hideQuickToolbarTitle": "Hide quick input bar",
+  "hideQuickToolbarSubtitle": "When on, the accessory toolbar above the keyboard is hidden.",
+  "showChapterDetailsTitle": "Show chapter details",
+  "showChapterDetailsSubtitle": "When off, the sidebar shows chapter titles only.",
+  "editorSectionTitle": "Editor",
+  "editorSectionIntro": "Font and layout preferences apply right away.",
+  "editorSectionFooter": "Changes apply to the writing area immediately.",
+  "editorFontLabel": "Font",
+  "editorFontDescription": "Font used while writing. Imported fonts can also be used in the interface.",
+  "editorFontSizeTitle": "Font size",
+  "editorFontSizeDescription": "Size of the writing-column body text.",
+  "editorTitleSizeTitle": "Title size",
+  "editorTitleSizeDescription": "Font size of the chapter title above the body.",
+  "editorTitleCenteredTitle": "Center title",
+  "editorTitleCenteredSubtitle": "When on, center the title in the reading column; when off, align it to the body left edge.",
+  "editorTypewriterModeTitle": "Typewriter mode",
+  "editorTypewriterModeSubtitle": "Keeps the editing line centered; dims other paragraphs and the unfocused title.",
+  "editorJumpToEndOnScrollDownTitle": "Focus end while scrolling",
+  "editorJumpToEndOnScrollDownSubtitle": "When on, shows the focus-end button while scrolling down; hides at the bottom or when scrolling up.",
+  "editorLineHeightTitle": "Line height",
+  "editorLineHeightDescription": "Uniform line-height multiplier within a paragraph.",
+  "editorParagraphSpacingTitle": "Paragraph spacing",
+  "editorParagraphSpacingDescription": "Gap between paragraphs, as a font-size multiplier.",
+  "editorFirstLineIndentTitle": "First-line indent",
+  "editorFirstLineIndentDescription": "Width inserted by Tab, and applied when opening chapters. Enter copies the previous paragraph's indent.",
+  "editorMarginLeftTitle": "Left margin",
+  "editorMarginLeftDescription": "Left inset of the reading column. When space is tight, both margins shrink in proportion.",
+  "editorMarginRightTitle": "Right margin",
+  "editorMarginRightDescription": "Right inset of the reading column. Equal values stay strictly symmetric.",
+  "editorWidthTitle": "Editor width",
+  "editorWidthDescription": "Width of the text column, always centered. It narrows when the window is too small.",
+  "appearanceSectionTitle": "Appearance",
+  "appearanceSectionIntro": "Choose a palette, or adjust individual colors. Fonts and corner radius stay as you set them.",
+  "themeModeTitle": "Theme mode",
+  "themeModeSubtitle": "Choose light, dark, or follow the system appearance.",
+  "themeModeSystem": "System",
+  "themeModeLight": "Light",
+  "themeModeDark": "Dark",
+  "uiFontLabel": "UI font",
+  "uiFontDescription": "Font used for the sidebar, settings, and other interface text. Imported fonts can also be used while writing.",
+  "uiFontSizeTitle": "UI font size",
+  "uiFontSizeDescription": "Size of text in the sidebar, settings, and the rest of the interface.",
+  "cornerRadiusTitle": "Corner radius",
+  "cornerRadiusDescription": "Shared roundness for buttons, menus, cards, and fields.",
+  "barCornerRadiusTitle": "Bar corner radius",
+  "barCornerRadiusDescription": "Roundness of the editor top bar and the bar at the bottom of the sidebar.",
+  "chatBubbleCornerRadiusTitle": "Chat bubble corners",
+  "chatBubbleCornerRadiusDescription": "Roundness of AI chat bubbles. The outer top corner stays square.",
+  "showBordersTitle": "Show borders",
+  "showBordersSubtitle": "When off, buttons and cards have no outline. When on, volumes and the library bar show a border.",
+  "sidebarItemInsetTitle": "Sidebar item inset",
+  "sidebarItemInsetDescription": "Equal left/right padding for volumes and chapters.",
+  "sidebarItemCornerRadiusTitle": "Sidebar volume & chapter corners",
+  "sidebarItemCornerRadiusDescription": "Corner radius for volume headers and chapter rows in the library sidebar.",
+  "sidebarVolumeGapTitle": "Sidebar volume spacing",
+  "sidebarVolumeGapDescription": "Space between volumes. Chapters stay close, separated by a line.",
+  "themePresetsSectionTitle": "Theme colors",
+  "actionCopy": "Copy",
+  "themePackRenameTitle": "Rename theme",
+  "themePackCopyName": "{name} copy",
+  "@themePackCopyName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themePackDeleteTitle": "Delete theme?",
+  "themePackDeleteBody": "“{name}” will be removed permanently.",
+  "@themePackDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themeCurrentCustom": "Current: Custom",
+  "themeCurrentPreset": "Current: {preset}",
+  "@themeCurrentPreset": {
+    "placeholders": {
+      "preset": {
+        "type": "String"
+      }
+    }
+  },
+  "themeCurrentCustomLong": "Current palette: Custom",
+  "themeCurrentPresetLong": "Current palette: {preset}",
+  "@themeCurrentPresetLong": {
+    "placeholders": {
+      "preset": {
+        "type": "String"
+      }
+    }
+  },
+  "themePresetsFooter": "Palettes only change colors. Fonts, corners, and other layout stay as you set them.",
+  "customColorsTitle": "Custom colors",
+  "customColorsSubtitle": "Adjust colors for the current appearance. Changes apply right away.",
+  "customizeTokensButton": "Customize colors",
+  "backToThemesButton": "Back to themes",
+  "themeTokensTitle": "Theme colors",
+  "themeTokensIntro": "Enter a color code such as #336699. Changes apply right away.",
+  "restoreDefaultColors": "Restore defaults",
+  "saveAsThemeColor": "Save as theme",
+  "saveThemeColorTitle": "Save as theme color",
+  "saveThemeColorNameLabel": "Theme name",
+  "themePackNameDefault": "Theme {n}",
+  "@themePackNameDefault": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "themePresetLight": "Light",
+  "themePresetGrey": "Grey",
+  "themePresetSlate": "Slate",
+  "themePresetClaude": "Claude Code",
+  "themePresetMint": "Mint",
+  "themePresetPurple": "Purple",
+  "themePresetHermes": "Hermes",
+  "themePresetOcean": "Ocean",
+  "themePresetDarkModern": "Dark Modern",
+  "tokenEditorSurface": "Writing background",
+  "tokenSidebarSurface": "Sidebar background",
+  "tokenControlSurface": "Buttons and fields",
+  "tokenBorder": "Border",
+  "tokenDivider": "Divider",
+  "tokenPrimaryText": "Primary text",
+  "tokenMutedText": "Muted text",
+  "tokenAccent": "Accent",
+  "tokenCursor": "Cursor",
+  "tokenEditorSurfaceDescription": "Background of the writing column.",
+  "tokenSidebarSurfaceDescription": "Background of the sidebar and surrounding panels.",
+  "tokenControlSurfaceDescription": "Fill color for fields, menus, and cards.",
+  "tokenBorderDescription": "Outlines around buttons and fields.",
+  "tokenDividerDescription": "Sidebar chapter separators.",
+  "tokenPrimaryTextDescription": "Default title and body copy color.",
+  "tokenMutedTextDescription": "Softer color for hints and captions.",
+  "tokenAccentDescription": "Highlights and selected items.",
+  "tokenCursorDescription": "Caret color in the writing editor.",
+  "fontImportSuccess": "Font imported into the app library.",
+  "fontImportFailure": "Could not import that font file.",
+  "fontDeleteSuccess": "Removed from the app font library.",
+  "fontDeleteFailure": "Could not delete that font.",
+  "fontImportFromFile": "Choose font file…",
+  "fontDeleteFromLibrary": "Delete from library",
+  "fontDeleteDialogTitle": "Delete font?",
+  "fontDeleteDialogBody": "Remove “{family}” from the app font library to free space?",
+  "@fontDeleteDialogBody": {
+    "placeholders": {
+      "family": {
+        "type": "String"
+      }
+    }
+  },
+  "fontDeleteDialogBodyCompact": "Remove it from the app font library to free space?",
+  "editorBackgroundSectionTitle": "Editor background image",
+  "editorBackgroundEnabledTitle": "Use background image",
+  "editorBackgroundEnabledSubtitle": "Turn off to hide without clearing your picks",
+  "themeColorsSectionTitle": "Theme colors",
+  "editorBackgroundLightTitle": "Light background",
+  "editorBackgroundDarkTitle": "Dark background",
+  "editorBackgroundNone": "None",
+  "editorBackgroundCurrentBadge": "Current",
+  "editorBackgroundChoose": "Choose",
+  "editorBackgroundClear": "Clear",
+  "editorBackgroundSelectTitle": "Choose background",
+  "editorBackgroundAddFromFile": "Add from file…",
+  "editorBackgroundEmptyLibrary": "No images yet. Tap above to add one.",
+  "editorBackgroundNoImagePreview": "No background image",
+  "editorBackgroundPreviewSample": "The quick brown fox jumps over the lazy dog.\nWriting stays sharp above a soft backdrop.",
+  "editorBackgroundFitTitle": "Image fit",
+  "editorBackgroundFitCover": "Cover",
+  "editorBackgroundFitContain": "Contain",
+  "editorBackgroundFitFill": "Stretch",
+  "editorBackgroundFitTile": "Tile",
+  "editorBackgroundFitCenter": "Center",
+  "editorBackgroundOpacityTitle": "Background opacity",
+  "editorBackgroundBlurTitle": "Background blur",
+  "editorBackgroundBlurDescription": "Softens the image only. Text stays sharp.",
+  "editorBackgroundImportSuccess": "Image added to the app library.",
+  "editorBackgroundImportFailure": "Could not import that image.",
+  "editorBackgroundDeleteSuccess": "Removed from the app library.",
+  "editorBackgroundDeleteFailure": "Could not delete that image.",
+  "editorBackgroundDeleteTitle": "Delete image?",
+  "editorBackgroundDeleteBody": "Delete “{name}”? Modes using it will reset to no background.",
+  "@editorBackgroundDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "editorBackgroundSummary": "{name} · {fit} · {opacity}%",
+  "@editorBackgroundSummary": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "fit": {
+        "type": "String"
+      },
+      "opacity": {
+        "type": "int"
+      }
+    }
+  },
+  "editorBackgroundSummaryWithBlur": "{name} · {fit} · {opacity}% · blur {blur}",
+  "@editorBackgroundSummaryWithBlur": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "fit": {
+        "type": "String"
+      },
+      "opacity": {
+        "type": "int"
+      },
+      "blur": {
+        "type": "int"
+      }
+    }
+  },
+  "choiceDeleteTitle": "Delete?",
+  "choiceDeleteBody": "Remove this item?",
+  "numberPickerDefaultLabel": "Default {value}",
+  "@numberPickerDefaultLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "numberPickerRestoreDefault": "Restore default ({value})",
+  "@numberPickerRestoreDefault": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "tempLibraryBannerTitle": "Using a temporary library",
+  "tempLibraryBannerSubtitle": "Choose a PureWriter library folder to open your work",
+  "chooseLibraryButton": "Choose library",
+  "librarySetupTitle": "Welcome to Zephyr",
+  "librarySetupBody": "Start writing in a local temporary library, or connect an existing PureWriter folder when you are ready.",
+  "startTemporaryLibraryButton": "Start writing",
+  "libraryLoadFailedHint": "Could not open the last library. Start fresh or choose another folder.",
+  "libraryRecoveredToTemporary": "Opened the temporary library instead. You can reconnect your PureWriter folder from the banner.",
+  "chooseLibraryDirectoryButton": "Choose PureWriter folder",
+  "editorEmptyState": "Choose or create a chapter to begin writing.",
+  "jumpToEnd": "Focus end",
+  "volumeInsertBelow": "Insert volume below",
+  "volumeAppendChapter": "Insert chapter at end of volume",
+  "chapterInsertBelow": "Insert chapter below",
+  "actionMoveToVolume": "Move to volume",
+  "actionMoveToBook": "Move to book",
+  "actionConvertVolumeToBook": "Convert this volume to a book",
+  "moveToBookSheetTitle": "Move to book",
+  "moveToBookNoTargets": "There are no other books to move into.",
+  "renameVolumeTitle": "Rename volume",
+  "renameChapterTitle": "Rename chapter",
+  "volumeNameLabel": "Volume name",
+  "chapterNameLabel": "Chapter name",
+  "validationNameRequired": "Please enter a name",
+  "deleteChapterTitle": "Delete chapter",
+  "deleteChapterBody": "Move “{name}” to the trash?",
+  "@deleteChapterBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteVolumeTitle": "Delete volume",
+  "deleteVolumeBody": "When deleting “{name}”, choose what to do with its chapters.",
+  "@deleteVolumeBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteVolumeOnly": "Delete volume only",
+  "deleteVolumeAndChapters": "Delete volume and chapters",
+  "moveToVolumeSheetTitle": "Move to volume",
+  "unfiledVolume": "Unfiled",
+  "unfiledChaptersHeader": "Unfiled chapters",
+  "tooltipHideSidebar": "Hide sidebar",
+  "tooltipNewVolume": "New volume",
+  "tooltipNewChapter": "New chapter",
+  "tooltipAdd": "Add",
+  "tooltipSearchChapters": "Search",
+  "searchSheetTitle": "Search",
+  "searchSheetHint": "Search titles and content",
+  "searchSheetEmptyQuery": "Enter a keyword to search.",
+  "searchSheetNoResults": "No matching results.",
+  "searchScopeArticle": "Chapter",
+  "searchScopeVolume": "Volume",
+  "searchScopeBook": "Book",
+  "searchScopeAllBooks": "All books",
+  "tooltipLocateCurrentChapter": "Locate current chapter",
+  "tooltipCollapseAll": "Collapse all",
+  "tooltipExpandAll": "Expand all",
+  "tooltipReorder": "Sort order",
+  "tooltipDoneReordering": "Done adjusting order",
+  "chapterSortManual": "Manual order",
+  "chapterSortAdjustOrder": "Adjust order",
+  "chapterSortCreatedAsc": "Created · Oldest first",
+  "chapterSortCreatedDesc": "Created · Newest first",
+  "chapterSortUpdatedAsc": "Modified · Oldest first",
+  "chapterSortUpdatedDesc": "Modified · Newest first",
+  "chapterSortTitleAsc": "Name · A→Z",
+  "chapterSortTitleDesc": "Name · Z→A",
+  "tooltipAiAssistant": "AI assistant",
+  "aiChatWelcome": "Tell me what you're working on.",
+  "aiChatInputHint": "Type a message…",
+  "aiChatSend": "Send",
+  "aiChatStopGenerating": "Stop generating",
+  "aiContextRemoveArticle": "Remove from context",
+  "llmSettingsTitle": "AI models",
+  "llmSettingsSubtitle": "Provider, API key, and model",
+  "llmSettingsIntro": "Your key stays on this device. Other settings are included in backups.",
+  "llmBehaviorSectionTitle": "Chat behavior",
+  "llmStreamOutputTitle": "Streaming output",
+  "llmStreamOutputSubtitle": "Show the reply as it is written",
+  "llmAllowThinkingTitle": "Allow thinking",
+  "llmAllowThinkingSubtitle": "Let models that can reason think before they answer",
+  "llmPresetPromptTitle": "Preset prompt",
+  "llmPresetPromptDescription": "Sent as system instructions on every chat—use it for genre, tone, POV, and other standing preferences.",
+  "llmPresetPromptHint": "e.g. You are a writing assistant. Reply concisely; when continuing prose, match POV, tense, and voice.",
+  "llmMaxInputTokensTitle": "Context limit (input)",
+  "llmMaxInputTokensSubtitle": "Older messages are shortened once this limit is reached",
+  "llmMaxOutputTokensTitle": "Reply limit (output)",
+  "llmMaxOutputTokensSubtitle": "How long a single reply can be",
+  "llmThinkingLevelTitle": "Thinking intensity",
+  "llmThinkingLevelSubtitle": "Deeper thinking usually takes longer",
+  "llmDefaultThinkingLevelTitle": "Default thinking intensity",
+  "llmDefaultThinkingLevelSubtitle": "Starting level for new chats. You can change it beside the message box.",
+  "llmThinkingDisabledInSettings": "Turn on “Allow thinking” in AI model settings first",
+  "llmThinkingOff": "Off",
+  "llmThinkingMinimal": "Minimal",
+  "llmThinkingLow": "Low",
+  "llmThinkingMedium": "Medium",
+  "llmThinkingHigh": "High",
+  "llmThinkingAuto": "Auto",
+  "aiChatAiSettingsEntry": "AI settings",
+  "aiChatSessionOptionsTitle": "Chat options",
+  "aiChatSessionProviderTitle": "Provider",
+  "aiChatSessionProviderSubtitle": "Use a vendor you configured in AI settings",
+  "aiChatSessionOptionsNeedTest": "Run a connection test in AI model settings first.",
+  "aiChatSessionModelSubtitle": "Override the default model from settings",
+  "aiChatThinkingForModel": "Model: {model}",
+  "@aiChatThinkingForModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatSessionsTitle": "Conversations",
+  "aiChatSessionsSubtitle": "Switch, archive, or delete saved chats for this chapter",
+  "aiChatNewSession": "New chat",
+  "aiChatShowArchivedSessions": "Show archived",
+  "aiChatNoSessions": "No saved conversations yet.",
+  "aiChatSessionUpdated": "Updated {time}",
+  "@aiChatSessionUpdated": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatOpenSession": "Open",
+  "aiChatArchiveSession": "Archive",
+  "aiChatUnarchiveSession": "Restore from archive",
+  "aiChatDeleteSession": "Delete",
+  "aiChatDeleteSessionTitle": "Delete conversation?",
+  "aiChatDeleteSessionBody": "Delete “{title}” and all messages in it? This cannot be undone.",
+  "@aiChatDeleteSessionBody": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatCompressedContextHeader": "Summary of the earlier conversation:",
+  "llmProviderTitle": "Provider",
+  "llmProviderSubtitle": "Configure each vendor; switch without losing other profiles",
+  "llmApiKeyTitle": "API key",
+  "llmApiKeyHint": "Paste your key",
+  "llmBaseUrlTitle": "API base URL",
+  "llmBaseUrlHint": "e.g. https://api.example.com/v1",
+  "llmTestConnection": "Test connection",
+  "llmTestSuccess": "Connected — {count} models available",
+  "@llmTestSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "llmModelTitle": "Chat model",
+  "llmModelSubtitle": "Available after a successful test",
+  "llmModelNotSelected": "Not selected",
+  "aiChatNotConfigured": "Set up your API key and run a connection test in Settings first.",
+  "aiChatThinkingInProgress": "Thinking…",
+  "aiChatThinkingProcess": "Thinking process",
+  "aiChatError": "Request failed: {error}",
+  "@aiChatError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatDemoReply": "Received: {message}",
+  "@aiChatDemoReply": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "tooltipOpenLibrary": "Open library",
+  "librarySwitcherChooseDirectory": "Choose another directory",
+  "tooltipOpenSidebar": "Open sidebar",
+  "tooltipMore": "More",
+  "mobileToolsDrawerReorderHint": "Long-press and drag to reorder.",
+  "tooltipEditBook": "Edit book",
+  "tooltipSettings": "Settings",
+  "selectBook": "Select a book",
+  "booksSheetTitle": "Books",
+  "booksSheetTagAll": "All",
+  "newBookTitle": "New book",
+  "moreSheetTitle": "Quick tools",
+  "mobileToolThemeMode": "Theme mode",
+  "mobileToolSwitchTheme": "Switch theme",
+  "noMobileTools": "No tools available",
+  "editBookTitle": "Edit book",
+  "bookNameLabel": "Book title",
+  "bookNameHint": "Enter a book title",
+  "bookNameRequired": "Please enter a book title",
+  "tooltipNewBook": "New book",
+  "tooltipBookGridLayout": "Two-column layout",
+  "tooltipBookListLayout": "Single-column list",
+  "tooltipDeleteBook": "Delete book",
+  "deleteBookNotEmpty": "Clear all chapters in this book before deleting it.",
+  "bookTagsLabel": "Tags",
+  "bookTagsHint": "e.g. Literature",
+  "bookDescriptionLabel": "Description",
+  "bookDescriptionHint": "Briefly describe this book",
+  "bookStatsMeta": "{volumes} volumes · {chapters} chapters",
+  "@bookStatsMeta": {
+    "placeholders": {
+      "volumes": {
+        "type": "int"
+      },
+      "chapters": {
+        "type": "int"
+      }
+    }
+  },
+  "chapterMeta": "Created {created} · Edited {modified} · {wordCount} words",
+  "@chapterMeta": {
+    "placeholders": {
+      "created": {
+        "type": "String"
+      },
+      "modified": {
+        "type": "String"
+      },
+      "wordCount": {
+        "type": "int"
+      }
+    }
+  },
+  "themeSlotLight": "Light",
+  "themeSlotDark": "Dark",
+  "themePresetsSubtitle": "Tap to apply a palette to the current light or dark mode.",
+  "quickToolbarToolsTooltip": "Tools",
+  "quickToolbarUndoTooltip": "Undo",
+  "quickToolbarPasteTooltip": "Paste",
+  "quickToolbarIndentTooltip": "Indent",
+  "quickToolbarFormatTooltip": "Format",
+  "quickToolbarSearchTooltip": "Search",
+  "quickToolbarTimestampTooltip": "Insert timestamp",
+  "quickToolbarBackupTooltip": "Back up now",
+  "quickToolbarRestoreTooltip": "Restore backup",
+  "quickToolbarEdit": "Edit toolbar",
+  "quickToolbarEditHint": "Long-press and drag on the toolbar to reorder. You can also drag here, or move tools between the fixed and custom zones.",
+  "quickToolbarPinnedSection": "Fixed bar",
+  "quickToolbarCustomSection": "Custom bar",
+  "quickToolbarAddSection": "Add tool",
+  "quickToolbarSectionEmpty": "No tools yet",
+  "quickToolbarAddPhrase": "Quick phrase",
+  "quickToolbarPhraseName": "Display name",
+  "quickToolbarPhraseContent": "Inserted text",
+  "quickToolbarMoveToPinned": "Move to fixed bar",
+  "quickToolbarMoveToCustom": "Move to custom bar",
+  "quickToolbarDrawerEmpty": "Nothing here yet",
+  "quickToolbarFormatApplyAll": "Format document",
+  "quickToolbarFormatKeepParagraphBlanks": "Keep blank lines between paragraphs",
+  "quickToolbarFormatRemoveParagraphBlanks": "Remove blank lines between paragraphs",
+  "quickToolbarFormatInsertCjkLatinSpaces": "Space between Chinese and English",
+  "quickToolbarFormatAddParagraphIndent": "Indent paragraph starts",
+  "quickToolbarFormatRemoveParagraphIndent": "Remove paragraph indents",
+  "quickToolbarFormatSimplifiedToTraditional": "Simplified to Traditional Chinese",
+  "quickToolbarFormatTraditionalToSimplified": "Traditional to Simplified Chinese",
+  "quickToolbarFormatHalfwidthToFullwidth": "Halfwidth to fullwidth symbols"
+}

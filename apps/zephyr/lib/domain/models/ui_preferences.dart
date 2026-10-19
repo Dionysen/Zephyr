@@ -5,17 +5,69 @@ import 'zephyr_bundled_fonts.dart';
 enum AppLocalePreference {
   system,
   chinese,
-  english;
+  english,
+  japanese,
+  korean,
+  spanish,
+  french,
+  german,
+  portuguese,
+  russian,
+  arabic,
+  hindi,
+  italian,
+  chineseTraditional;
+
+  /// User-facing choices in settings (system first, then alphabetical by label).
+  static const List<AppLocalePreference> selectable = [
+    AppLocalePreference.system,
+    AppLocalePreference.arabic,
+    AppLocalePreference.chinese,
+    AppLocalePreference.chineseTraditional,
+    AppLocalePreference.english,
+    AppLocalePreference.french,
+    AppLocalePreference.german,
+    AppLocalePreference.hindi,
+    AppLocalePreference.italian,
+    AppLocalePreference.japanese,
+    AppLocalePreference.korean,
+    AppLocalePreference.portuguese,
+    AppLocalePreference.russian,
+    AppLocalePreference.spanish,
+  ];
 
   String get storageValue => switch (this) {
     AppLocalePreference.system => 'system',
     AppLocalePreference.chinese => 'zh',
     AppLocalePreference.english => 'en',
+    AppLocalePreference.japanese => 'ja',
+    AppLocalePreference.korean => 'ko',
+    AppLocalePreference.spanish => 'es',
+    AppLocalePreference.french => 'fr',
+    AppLocalePreference.german => 'de',
+    AppLocalePreference.portuguese => 'pt',
+    AppLocalePreference.russian => 'ru',
+    AppLocalePreference.arabic => 'ar',
+    AppLocalePreference.hindi => 'hi',
+    AppLocalePreference.italian => 'it',
+    AppLocalePreference.chineseTraditional => 'zh_TW',
   };
 
   static AppLocalePreference fromStorage(String? value) => switch (value) {
     'zh' || 'zh_CN' || 'zh-CN' || 'chinese' => AppLocalePreference.chinese,
+    'zh_TW' || 'zh-Hant' || 'zh_Hant' || 'chineseTraditional' =>
+      AppLocalePreference.chineseTraditional,
     'en' || 'en_US' || 'en-US' || 'english' => AppLocalePreference.english,
+    'ja' || 'japanese' => AppLocalePreference.japanese,
+    'ko' || 'korean' => AppLocalePreference.korean,
+    'es' || 'spanish' => AppLocalePreference.spanish,
+    'fr' || 'french' => AppLocalePreference.french,
+    'de' || 'german' => AppLocalePreference.german,
+    'pt' || 'pt_BR' || 'portuguese' => AppLocalePreference.portuguese,
+    'ru' || 'russian' => AppLocalePreference.russian,
+    'ar' || 'arabic' => AppLocalePreference.arabic,
+    'hi' || 'hindi' => AppLocalePreference.hindi,
+    'it' || 'italian' => AppLocalePreference.italian,
     _ => AppLocalePreference.system,
   };
 }
@@ -179,7 +231,7 @@ class UiPreferences {
   /// When true, AI chat omits the assistant avatar so bubble insets match.
   final bool hideAiAssistantAvatar;
 
-  /// App UI language: system, Simplified Chinese, or English.
+  /// App UI language; [AppLocalePreference.system] follows the OS locale.
   final AppLocalePreference localePreference;
 
   /// Stable ids for the compact editor “more” tools sheet order.

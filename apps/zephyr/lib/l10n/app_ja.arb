@@ -1,0 +1,801 @@
+{
+  "@@locale": "ja",
+  "appTitle": "Zephyr",
+  "actionCancel": "キャンセル",
+  "actionSave": "保存",
+  "actionDelete": "削除",
+  "actionDone": "完了",
+  "actionRename": "名前を変更する",
+  "actionBack": "戻る",
+  "untitled": "名称未設定",
+  "untitledLibrary": "無題のライブラリ",
+  "temporaryLibraryName": "一時ライブラリ",
+  "platformDefaultFont": "LXGW WenKai (default)",
+  "searchHint": "検索する",
+  "dropdownHintSelect": "選択",
+  "dropdownNoMatches": "該当するものがありません",
+  "languageTitle": "言語",
+  "languageSubtitle": "管理画面の言語",
+  "languageSystem": "システムの初期設定",
+  "languageChinese": "简体中文",
+  "languageEnglish": "English",
+  "languageJapanese": "日本語",
+  "languageKorean": "한국어",
+  "languageSpanish": "Español",
+  "languageFrench": "Français",
+  "languageGerman": "Deutsch",
+  "languagePortuguese": "Português",
+  "languageRussian": "Русский",
+  "languageArabic": "العربية",
+  "languageHindi": "हिन्दी",
+  "languageItalian": "Italiano",
+  "languageChineseTraditional": "繁體中文",
+  "settingsTitle": "設定",
+  "settingsDesktopHeader": "設定",
+  "settingsSearchHint": "検索設定",
+  "settingsBackTooltip": "戻る",
+  "settingsCustomColorsTitle": "カスタム色",
+  "settingsComingSoonTitle": "近日登場",
+  "settingsComingSoonSubtitle": "これらのオプションはまだ準備中です。",
+  "settingsPlaceholderBody": "関連オプションは後でここに表示されます。",
+  "settingsSectionGeneral": "一般",
+  "settingsSectionCloud": "バックアップ",
+  "backupGroupLocalTitle": "ローカルバックアップ",
+  "backupGroupCloudTitle": "Cloud Sync",
+  "cloudSyncSubtitleSignedOut": "クラウドバックアップと同期のためにNutstore WebDAVに接続する",
+  "cloudSyncSubtitleSignedIn": "ログインアカウント:",
+  "@cloudSyncSubtitleSignedIn": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudBackupQuickTooltip": "クラウドバックアップ",
+  "cloudBackupQuickTooltipUnconfigured": "クラウドバックアップのためにNutstoreに接続する",
+  "cloudSyncEnableTitle": "クラウドバックアップを有効にする",
+  "cloudSyncEnableSubtitle": "終了時または編集を伴うモバイルバックグラウンド後にローカルバックアップをNutstoreにアップロードする",
+  "cloudSyncLoginTitle": "Nutstoreに接続",
+  "cloudSyncLoginSubtitle": "アカウント、WebDAV URL、アプリのパスワードを入力してください",
+  "cloudSyncSettingsTitle": "Nutstoreの設定",
+  "cloudSyncSettingsSubtitle": "ログインアカウント:",
+  "@cloudSyncSettingsSubtitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncUnbindTitle": "接続を解除",
+  "cloudSyncLogoutTitle": "サインアウト",
+  "cloudSyncLogoutSubtitle": "クラウドバックアップを停止",
+  "cloudSyncBackupNowTitle": "今すぐクラウドにバックアップ",
+  "cloudSyncBackupNowSubtitle": "このデバイスにバックアップを作成し、NutstoreのZephyrフォルダーにアップロードします",
+  "cloudSyncBackupNowSuccess": "クラウドバックアップが完了しました。",
+  "cloudSyncRestoreTitle": "クラウドから復元",
+  "cloudSyncRestoreSubtitle": "Nutstoreからバックアップを選択—上書きまたはマージ",
+  "cloudSyncRestoreEmpty": "クラウドバックアップが見つかりません。",
+  "cloudSyncLatestSnapshotTitle": "最新のクラウドバックアップ",
+  "cloudSyncLatestSnapshotSubtitle": "Nutstoreの現在のスナップショット",
+  "cloudSyncRestoreSuccess": "ライブラリはクラウドバックアップから復元されました。",
+  "cloudSyncFailed": "クラウド同期に失敗しました： {error}",
+  "cloudSyncAnotherLibrary": "このZephyrクラウドフォルダは別のライブラリに属しています。元のローカルディレクトリまたは別のWebDAVアカウントを選択します。クラウド同期は停止しました。",
+  "cloudSyncMissingManifest": "クラウドのZephyrフォルダーが不完全に見えます。再度同期する前に並べ替えます。",
+  "cloudSyncWaitBeforeChoosingDirectory": "別のディレクトリを選択する前に、クラウド同期が完了するまで待ちます。",
+  "@cloudSyncFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncCredentialsTitle": "Nutstore WebDAVに接続",
+  "cloudSyncCredentialsEditTitle": "Nutstoreの設定",
+  "cloudSyncCredentialsSubtitle": "アカウントのパスワードではなく、Nutstoreアプリのパスワードを使用してください。このデバイスに安全に保管されています。",
+  "cloudSyncCredentialsPasswordHint": "現在のアプリのパスワードを保持するには、空白のままにします",
+  "cloudSyncCredentialsSave": "接続",
+  "cloudSyncCredentialsSaveEdit": "保存",
+  "cloudSyncCredentialsSaved": "Nutstoreが接続されました",
+  "cloudSyncCredentialsUpdated": "Nutstoreの設定が保存されました",
+  "cloudSyncClientIdLabel": "Nutstoreアカウント",
+  "cloudSyncServerUrlLabel": "WebDAV URL",
+  "cloudSyncClientSecretLabel": "アプリ パスワード",
+  "backupAutoTitle": "自動バックアップ",
+  "backupAutoSubtitle": "編集したコンテンツを1時間ごとにバックアップし、モバイルのバックグラウンドでバックアップします。最新の25個のローカルバックアップを保持します。",
+  "backupNowTitle": "今すぐバックアップ",
+  "backupNowSubtitle": "今すぐ手動バックアップを作成してください。手動バックアップと自動バックアップを組み合わせると、最新の25を保持できます。",
+  "backupNowSuccess": "バックアップ完了。",
+  "backupFailed": "バックアップに失敗しました",
+  "saveFailed": "保存に失敗しました。編集は開いたままです。終了する前に再試行してください： {error}",
+  "exitBackupInProgress": "保存中…",
+  "@saveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@backupFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "backupRestoreTitle": "バックアップを復元",
+  "backupRestoreSubtitle": "⟦0件の⟧バックアップが利用可能—上書きまたはマージ。",
+  "@backupRestoreSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupRestoreEmpty": "バックアップファイルが見つかりません。",
+  "backupRestoreModeTitle": "復元モード",
+  "backupRestoreModeMerge": "統合（新しいバージョンを維持）",
+  "backupRestoreModeOverwrite": "上書き（ライブラリ全体を置き換える）",
+  "backupRestoreConfirmTitle": "サイト復元を確認",
+  "backupRestoreConfirmMerge": "選択したバックアップを現在のライブラリにマージします。安全バックアップが最初に作成されます。",
+  "backupRestoreConfirmOverwrite": "現在のライブラリを選択したバックアップに置き換えます。安全バックアップが最初に作成されます。",
+  "backupRestoreAction": "リストア",
+  "backupRestoreSuccess": "ライブラリがバックアップから復元されました。",
+  "backupMergeResultTitle": "マージ完了",
+  "backupMergeResultSeparator": "を含み、",
+  "backupMergeResultNoChanges": "マージが完了しました。チャプターの変更はありません。",
+  "backupMergeResultAdded": "⟦0を追加しました⟧",
+  "@backupMergeResultAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupMergeResultUpdated": "更新情報",
+  "@backupMergeResultUpdated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupMergeResultRemoved": "削除された",
+  "@backupMergeResultRemoved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupKindAuto": "自動",
+  "backupKindManual": "手動",
+  "backupFooter": "Pure Writerで同じライブラリを同時に開かないでください。バックアップファイルはPure Writerで開くことができます。",
+  "historyTitle": "歴史",
+  "historyEmpty": "履歴の改訂はまだありません。",
+  "historyEmptyRevision": "(空)",
+  "historyRestoreTitle": "このリビジョンを復元",
+  "historyRestoreBody": "現在の章のテキストはこの改訂版に置き換えられ、履歴に記録されます。",
+  "historyRestoreAction": "リストア",
+  "historyRestoreSuccess": "選択したリビジョンに復元されました。",
+  "historyMenuLabel": "歴史",
+  "draftRecoverTitle": "未保存の下書きが見つかりました",
+  "draftRecoverBody": "ライブラリより新しい下書きが見つかりました。復元しますか？",
+  "draftRecoverAction": "リストア",
+  "draftDismissAction": "破棄",
+  "settingsSectionEditor": "編集者",
+  "settingsSectionShortcuts": "ショートカット",
+  "shortcutsManageTitle": "すべてのショートカットをカスタマイズする",
+  "shortcutsManageSubtitle": "キーバインディングの表示と変更",
+  "shortcutsResetAll": "デフォルトに戻す",
+  "shortcutsResetAction": "リセット",
+  "shortcutsClearAction": "クリア",
+  "shortcutsRecordTitle": "新しいショートカットを押す",
+  "shortcutsRecordHint": "Escでキャンセル· Backspaceでクリア",
+  "shortcutsUnbound": "アンバウンド",
+  "shortcutsConflictHint": "競合するショートカットが置き換えられました",
+  "shortcutGroupClipboard": "クリップボード",
+  "shortcutGroupHistory": "歴史",
+  "shortcutGroupDelete": "削除",
+  "shortcutGroupIndent": "インデント",
+  "shortcutGroupNewline": "改行コード",
+  "shortcutGroupNavigate": "移動",
+  "shortcutGroupSelect": "選択",
+  "shortcutGroupWorkspace": "ワークスペース",
+  "shortcutActionCopy": "コピー",
+  "shortcutActionCut": "切断",
+  "shortcutActionPaste": "ペースト",
+  "shortcutActionSelectAll": "すべて選択",
+  "shortcutActionUndo": "取り消し",
+  "shortcutActionRedo": "やり直し",
+  "shortcutActionDeleteBackward": "後方に削除",
+  "shortcutActionDeleteForward": "右側の 1 単語を削除@action",
+  "shortcutActionDeleteWordBackward": "単語を逆方向に削除",
+  "shortcutActionDeleteWordForward": "右側の 1 単語を削除@action",
+  "shortcutActionIndent": "インデント",
+  "shortcutActionOutdent": "インデント解除",
+  "shortcutActionNewline": "改行コード",
+  "shortcutActionMoveLeft": "左に移動",
+  "shortcutActionMoveRight": "右に移動",
+  "shortcutActionMoveUp": "上へ移動",
+  "shortcutActionMoveDown": "下へ移動",
+  "shortcutActionMoveWordLeft": "左側の単語の先頭に移動",
+  "shortcutActionMoveWordRight": "右側の単語の先頭に移動",
+  "shortcutActionMoveLineStart": "行頭",
+  "shortcutActionMoveLineEnd": "線の終点",
+  "shortcutActionMovePageUp": "PageUp",
+  "shortcutActionMovePageDown": "æ¬¡ã®ãã¼ã¸QWebPage",
+  "shortcutActionMoveDocumentStart": "ドキュメントの開始",
+  "shortcutActionMoveDocumentEnd": "ドキュメント末尾へ",
+  "shortcutActionSelectLeft": "左方向に選択",
+  "shortcutActionSelectRight": "右方向に選択",
+  "shortcutActionSelectUp": "上を選択",
+  "shortcutActionSelectDown": "1 画面下まで選択",
+  "shortcutActionSelectWordLeft": "左側の単語の先頭まで選択",
+  "shortcutActionSelectWordRight": "右側の単語の先頭まで選択",
+  "shortcutActionSelectLineStart": "選択して行頭へ",
+  "shortcutActionSelectLineEnd": "行末まで選択",
+  "shortcutActionSelectPageUp": "1 画面上まで選択",
+  "shortcutActionSelectPageDown": "1 画面下まで選択",
+  "shortcutActionSelectDocumentStart": "選択して文書化開始",
+  "shortcutActionSelectDocumentEnd": "ドキュメント末尾まで選択",
+  "shortcutActionCloseSettings": "設定を閉じる",
+  "shortcutActionCloudBackupNow": "今すぐクラウドにバックアップ",
+  "settingsSectionTheme": "テーマ",
+  "settingsSectionAbout": "詳細",
+  "settingsSectionAi": "エーアイ",
+  "aboutSettingsListSubtitle": "バージョン、更新、およびリンク",
+  "aboutVersionLabel": "バージョン 0",
+  "@aboutVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutGitHubTitle": "GitHub",
+  "aboutCheckUpdatesTitle": "アップデートを確認",
+  "aboutCheckUpdatesSubtitle": "GitHubから最新のリリース情報を取得します。",
+  "aboutCheckUpdatesComingSoon": "アップデートの確認がまもなく行われます。",
+  "aboutOpenLinkFailed": "リンクを開けませんでした。",
+  "generalSectionTitle": "一般",
+  "immersiveStatusBarTitle": "没入型ステータスバー",
+  "immersiveStatusBarSubtitle": "アプリは透明なステータスバーの下に拡張され、テキストはその領域にスクロールできます。",
+  "hideStatusBarIconsTitle": "ステータスバーアイコンを非表示にする",
+  "hideStatusBarIconsSubtitle": "没入型ステータスバーがオンになっている間のみ。アイコンは自動的に非表示になります。エッジからスワイプすると簡単に表示されます。",
+  "mobileBehaviorSectionTitle": "モバイル版",
+  "mobileBehaviorSectionSubtitle": "スマートフォンやタブレットに適用されます。",
+  "scrollToHideMobileTopBarTitle": "スクロール中はトップバーを非表示にする",
+  "scrollToHideMobileTopBarSubtitle": "下にスクロールするとフローティングブックバーが折りたたまれ、上にスクロールすると表示されます。",
+  "openSidebarAfterBookSwitchTitle": "本を切り替えた後に章リストを開く",
+  "openSidebarAfterBookSwitchSubtitle": "別の本を選んだ後、章リストを表示します。",
+  "keepScreenOnTitle": "画面をONのままにする",
+  "keepScreenOnSubtitle": "アプリが開いている間、ディスプレイがスリープ状態にならないようにします。",
+  "doubleBackToExitTitle": "[戻る]を2回押して終了します",
+  "doubleBackToExitSubtitle": "オフの場合、1回のバックプレスでアプリを終了します。",
+  "openBookListOnStartupTitle": "立ち上げ時に本のリストを開く",
+  "openBookListOnStartupSubtitle": "ワークスペースが開いたら、ブックピッカーを表示します。",
+  "openSidebarOnStartupTitle": "起動時にチャプターリストを開く",
+  "openSidebarOnStartupSubtitle": "ワークスペースが開いたら、チャプターリストを表示します。",
+  "desktopBehaviorSectionTitle": "デスクトップワークスペース",
+  "desktopBehaviorSectionSubtitle": "デスクトップのライティングレイアウトに適用されます。",
+  "desktopFloatingSidebarTitle": "ホバー時のフローティングサイドバー",
+  "desktopFloatingSidebarSubtitle": "ポインタを画面の左端に移動すると、エディタの上にチャプターリストが表示されます。ポインタが離れると非表示になります。",
+  "desktopFloatingAiPanelTitle": "フローティングAIパネル",
+  "desktopFloatingAiPanelSubtitle": "ライティングカラムのサイズを変更する代わりに、右側のエディターにAIチャットを表示します。",
+  "pressBackAgainToExit": "もう一度戻るを押して終了します",
+  "aiFeaturesEnabledTitle": "WP 人工知能アシスタント",
+  "aiFeaturesEnabledSubtitle": "オフの場合、AIボタンはワークスペースに隠され、開いているアシスタントはブックに戻ります。",
+  "hideAiAssistantAvatarTitle": "アシスタントのアバターを非表示にする",
+  "hideAiAssistantAvatarSubtitle": "チャットバブルが両側に並ぶようにアバターを非表示にします。",
+  "hideQuickToolbarTitle": "クイック入力バーを非表示にする",
+  "hideQuickToolbarSubtitle": "オンにすると、キーボードの上にあるアクセサリツールバーが非表示になります。",
+  "showChapterDetailsTitle": "チャプターの詳細を表示",
+  "showChapterDetailsSubtitle": "オフの場合、サイドバーには章のタイトルのみが表示されます。",
+  "editorSectionTitle": "編集者",
+  "editorSectionIntro": "フォントとレイアウトの設定がすぐに適用されます。",
+  "editorSectionFooter": "変更はすぐに書き込み領域に適用されます。",
+  "editorFontLabel": "フォント",
+  "editorFontDescription": "書き込み中に使用されたフォント。インポートされたフォントは、インターフェースでも使用できます。",
+  "editorFontSizeTitle": "フォントサイズ",
+  "editorFontSizeDescription": "書き込み列の本文テキストのサイズ。",
+  "editorTitleSizeTitle": "タイトルサイズ",
+  "editorTitleSizeDescription": "本文の上の章タイトルのフォントサイズ。",
+  "editorTitleCenteredTitle": "中央のタイトル",
+  "editorTitleCenteredSubtitle": "オンの場合は、タイトルを読み取り列の中央に配置します。オフの場合は、タイトルを本文の左端に揃えます。",
+  "editorTypewriterModeTitle": "タイプライターモード",
+  "editorTypewriterModeSubtitle": "編集行を中央に保ち、他の段落とフォーカスされていないタイトルを暗くします。",
+  "editorJumpToEndOnScrollDownTitle": "スクロール中のフォーカスエンド",
+  "editorJumpToEndOnScrollDownSubtitle": "オンにすると、下にスクロールしながらフォーカスエンドボタンが表示されます。下部または上にスクロールすると非表示になります。",
+  "editorLineHeightTitle": "線の高さ",
+  "editorLineHeightDescription": "段落内の均一行高乗数。",
+  "editorParagraphSpacingTitle": "段落の間隔",
+  "editorParagraphSpacingDescription": "フォントサイズの乗数として、段落間のギャップ。",
+  "editorFirstLineIndentTitle": "本文インデント",
+  "editorFirstLineIndentDescription": "タブによって挿入され、チャプターを開くときに適用される幅。前の段落のインデントをコピーします。",
+  "editorMarginLeftTitle": "左から",
+  "editorMarginLeftDescription": "読み取り列の左挿入。スペースが狭いと、両方のマージンが比例して縮小します。",
+  "editorMarginRightTitle": "右マージン",
+  "editorMarginRightDescription": "読み取り列の右挿入。等しい値は厳密に対称的なままです。",
+  "editorWidthTitle": "エディター幅",
+  "editorWidthDescription": "常に中央に配置されたテキスト列の幅。窓が小さすぎると狭くなります。",
+  "appearanceSectionTitle": "外観",
+  "appearanceSectionIntro": "パレットを選択するか、個々の色を調整します。設定したフォントと角の半径はそのままにしておきます。",
+  "themeModeTitle": "Theme mode",
+  "themeModeSubtitle": "Choose light, dark, or follow the system appearance.",
+  "themeModeSystem": "System",
+  "themeModeLight": "Light",
+  "themeModeDark": "Dark",
+  "uiFontLabel": "UI font",
+  "uiFontDescription": "Font used for the sidebar, settings, and other interface text. Imported fonts can also be used while writing.",
+  "uiFontSizeTitle": "UI font size",
+  "uiFontSizeDescription": "Size of text in the sidebar, settings, and the rest of the interface.",
+  "cornerRadiusTitle": "Corner radius",
+  "cornerRadiusDescription": "Shared roundness for buttons, menus, cards, and fields.",
+  "barCornerRadiusTitle": "Bar corner radius",
+  "barCornerRadiusDescription": "Roundness of the editor top bar and the bar at the bottom of the sidebar.",
+  "chatBubbleCornerRadiusTitle": "Chat bubble corners",
+  "chatBubbleCornerRadiusDescription": "Roundness of AI chat bubbles. The outer top corner stays square.",
+  "showBordersTitle": "Show borders",
+  "showBordersSubtitle": "When off, buttons and cards have no outline. When on, volumes and the library bar show a border.",
+  "sidebarItemInsetTitle": "Sidebar item inset",
+  "sidebarItemInsetDescription": "Equal left/right padding for volumes and chapters.",
+  "sidebarItemCornerRadiusTitle": "Sidebar volume & chapter corners",
+  "sidebarItemCornerRadiusDescription": "Corner radius for volume headers and chapter rows in the library sidebar.",
+  "sidebarVolumeGapTitle": "Sidebar volume spacing",
+  "sidebarVolumeGapDescription": "Space between volumes. Chapters stay close, separated by a line.",
+  "themePresetsSectionTitle": "Theme colors",
+  "actionCopy": "Copy",
+  "themePackRenameTitle": "Rename theme",
+  "themePackCopyName": "{name} copy",
+  "@themePackCopyName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themePackDeleteTitle": "Delete theme?",
+  "themePackDeleteBody": "“{name}” will be removed permanently.",
+  "@themePackDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themeCurrentCustom": "Current: Custom",
+  "themeCurrentPreset": "Current: {preset}",
+  "@themeCurrentPreset": {
+    "placeholders": {
+      "preset": {
+        "type": "String"
+      }
+    }
+  },
+  "themeCurrentCustomLong": "Current palette: Custom",
+  "themeCurrentPresetLong": "Current palette: {preset}",
+  "@themeCurrentPresetLong": {
+    "placeholders": {
+      "preset": {
+        "type": "String"
+      }
+    }
+  },
+  "themePresetsFooter": "Palettes only change colors. Fonts, corners, and other layout stay as you set them.",
+  "customColorsTitle": "Custom colors",
+  "customColorsSubtitle": "Adjust colors for the current appearance. Changes apply right away.",
+  "customizeTokensButton": "Customize colors",
+  "backToThemesButton": "Back to themes",
+  "themeTokensTitle": "Theme colors",
+  "themeTokensIntro": "Enter a color code such as #336699. Changes apply right away.",
+  "restoreDefaultColors": "Restore defaults",
+  "saveAsThemeColor": "Save as theme",
+  "saveThemeColorTitle": "Save as theme color",
+  "saveThemeColorNameLabel": "Theme name",
+  "themePackNameDefault": "Theme {n}",
+  "@themePackNameDefault": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "themePresetLight": "Light",
+  "themePresetGrey": "Grey",
+  "themePresetSlate": "Slate",
+  "themePresetClaude": "Claude Code",
+  "themePresetMint": "Mint",
+  "themePresetPurple": "Purple",
+  "themePresetHermes": "Hermes",
+  "themePresetOcean": "Ocean",
+  "themePresetDarkModern": "Dark Modern",
+  "tokenEditorSurface": "Writing background",
+  "tokenSidebarSurface": "Sidebar background",
+  "tokenControlSurface": "Buttons and fields",
+  "tokenBorder": "Border",
+  "tokenDivider": "Divider",
+  "tokenPrimaryText": "Primary text",
+  "tokenMutedText": "Muted text",
+  "tokenAccent": "Accent",
+  "tokenCursor": "Cursor",
+  "tokenEditorSurfaceDescription": "Background of the writing column.",
+  "tokenSidebarSurfaceDescription": "Background of the sidebar and surrounding panels.",
+  "tokenControlSurfaceDescription": "Fill color for fields, menus, and cards.",
+  "tokenBorderDescription": "Outlines around buttons and fields.",
+  "tokenDividerDescription": "Sidebar chapter separators.",
+  "tokenPrimaryTextDescription": "Default title and body copy color.",
+  "tokenMutedTextDescription": "Softer color for hints and captions.",
+  "tokenAccentDescription": "Highlights and selected items.",
+  "tokenCursorDescription": "Caret color in the writing editor.",
+  "fontImportSuccess": "Font imported into the app library.",
+  "fontImportFailure": "Could not import that font file.",
+  "fontDeleteSuccess": "Removed from the app font library.",
+  "fontDeleteFailure": "Could not delete that font.",
+  "fontImportFromFile": "Choose font file…",
+  "fontDeleteFromLibrary": "Delete from library",
+  "fontDeleteDialogTitle": "Delete font?",
+  "fontDeleteDialogBody": "Remove “{family}” from the app font library to free space?",
+  "@fontDeleteDialogBody": {
+    "placeholders": {
+      "family": {
+        "type": "String"
+      }
+    }
+  },
+  "fontDeleteDialogBodyCompact": "Remove it from the app font library to free space?",
+  "editorBackgroundSectionTitle": "Editor background image",
+  "editorBackgroundEnabledTitle": "Use background image",
+  "editorBackgroundEnabledSubtitle": "Turn off to hide without clearing your picks",
+  "themeColorsSectionTitle": "Theme colors",
+  "editorBackgroundLightTitle": "Light background",
+  "editorBackgroundDarkTitle": "Dark background",
+  "editorBackgroundNone": "None",
+  "editorBackgroundCurrentBadge": "Current",
+  "editorBackgroundChoose": "Choose",
+  "editorBackgroundClear": "Clear",
+  "editorBackgroundSelectTitle": "Choose background",
+  "editorBackgroundAddFromFile": "Add from file…",
+  "editorBackgroundEmptyLibrary": "No images yet. Tap above to add one.",
+  "editorBackgroundNoImagePreview": "No background image",
+  "editorBackgroundPreviewSample": "The quick brown fox jumps over the lazy dog.\nWriting stays sharp above a soft backdrop.",
+  "editorBackgroundFitTitle": "Image fit",
+  "editorBackgroundFitCover": "Cover",
+  "editorBackgroundFitContain": "Contain",
+  "editorBackgroundFitFill": "Stretch",
+  "editorBackgroundFitTile": "Tile",
+  "editorBackgroundFitCenter": "Center",
+  "editorBackgroundOpacityTitle": "Background opacity",
+  "editorBackgroundBlurTitle": "Background blur",
+  "editorBackgroundBlurDescription": "Softens the image only. Text stays sharp.",
+  "editorBackgroundImportSuccess": "Image added to the app library.",
+  "editorBackgroundImportFailure": "Could not import that image.",
+  "editorBackgroundDeleteSuccess": "Removed from the app library.",
+  "editorBackgroundDeleteFailure": "Could not delete that image.",
+  "editorBackgroundDeleteTitle": "Delete image?",
+  "editorBackgroundDeleteBody": "Delete “{name}”? Modes using it will reset to no background.",
+  "@editorBackgroundDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "editorBackgroundSummary": "{name} · {fit} · {opacity}%",
+  "@editorBackgroundSummary": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "fit": {
+        "type": "String"
+      },
+      "opacity": {
+        "type": "int"
+      }
+    }
+  },
+  "editorBackgroundSummaryWithBlur": "{name} · {fit} · {opacity}% · blur {blur}",
+  "@editorBackgroundSummaryWithBlur": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "fit": {
+        "type": "String"
+      },
+      "opacity": {
+        "type": "int"
+      },
+      "blur": {
+        "type": "int"
+      }
+    }
+  },
+  "choiceDeleteTitle": "Delete?",
+  "choiceDeleteBody": "Remove this item?",
+  "numberPickerDefaultLabel": "Default {value}",
+  "@numberPickerDefaultLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "numberPickerRestoreDefault": "Restore default ({value})",
+  "@numberPickerRestoreDefault": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "tempLibraryBannerTitle": "Using a temporary library",
+  "tempLibraryBannerSubtitle": "Choose a PureWriter library folder to open your work",
+  "chooseLibraryButton": "Choose library",
+  "librarySetupTitle": "Welcome to Zephyr",
+  "librarySetupBody": "Start writing in a local temporary library, or connect an existing PureWriter folder when you are ready.",
+  "startTemporaryLibraryButton": "Start writing",
+  "libraryLoadFailedHint": "Could not open the last library. Start fresh or choose another folder.",
+  "libraryRecoveredToTemporary": "Opened the temporary library instead. You can reconnect your PureWriter folder from the banner.",
+  "chooseLibraryDirectoryButton": "Choose PureWriter folder",
+  "editorEmptyState": "Choose or create a chapter to begin writing.",
+  "jumpToEnd": "Focus end",
+  "volumeInsertBelow": "Insert volume below",
+  "volumeAppendChapter": "Insert chapter at end of volume",
+  "chapterInsertBelow": "Insert chapter below",
+  "actionMoveToVolume": "Move to volume",
+  "actionMoveToBook": "Move to book",
+  "actionConvertVolumeToBook": "Convert this volume to a book",
+  "moveToBookSheetTitle": "Move to book",
+  "moveToBookNoTargets": "There are no other books to move into.",
+  "renameVolumeTitle": "Rename volume",
+  "renameChapterTitle": "Rename chapter",
+  "volumeNameLabel": "Volume name",
+  "chapterNameLabel": "Chapter name",
+  "validationNameRequired": "Please enter a name",
+  "deleteChapterTitle": "Delete chapter",
+  "deleteChapterBody": "Move “{name}” to the trash?",
+  "@deleteChapterBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteVolumeTitle": "Delete volume",
+  "deleteVolumeBody": "When deleting “{name}”, choose what to do with its chapters.",
+  "@deleteVolumeBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteVolumeOnly": "Delete volume only",
+  "deleteVolumeAndChapters": "Delete volume and chapters",
+  "moveToVolumeSheetTitle": "Move to volume",
+  "unfiledVolume": "Unfiled",
+  "unfiledChaptersHeader": "Unfiled chapters",
+  "tooltipHideSidebar": "Hide sidebar",
+  "tooltipNewVolume": "New volume",
+  "tooltipNewChapter": "New chapter",
+  "tooltipAdd": "Add",
+  "tooltipSearchChapters": "Search",
+  "searchSheetTitle": "Search",
+  "searchSheetHint": "Search titles and content",
+  "searchSheetEmptyQuery": "Enter a keyword to search.",
+  "searchSheetNoResults": "No matching results.",
+  "searchScopeArticle": "Chapter",
+  "searchScopeVolume": "Volume",
+  "searchScopeBook": "Book",
+  "searchScopeAllBooks": "All books",
+  "tooltipLocateCurrentChapter": "Locate current chapter",
+  "tooltipCollapseAll": "Collapse all",
+  "tooltipExpandAll": "Expand all",
+  "tooltipReorder": "Sort order",
+  "tooltipDoneReordering": "Done adjusting order",
+  "chapterSortManual": "Manual order",
+  "chapterSortAdjustOrder": "Adjust order",
+  "chapterSortCreatedAsc": "Created · Oldest first",
+  "chapterSortCreatedDesc": "Created · Newest first",
+  "chapterSortUpdatedAsc": "Modified · Oldest first",
+  "chapterSortUpdatedDesc": "Modified · Newest first",
+  "chapterSortTitleAsc": "Name · A→Z",
+  "chapterSortTitleDesc": "Name · Z→A",
+  "tooltipAiAssistant": "AI assistant",
+  "aiChatWelcome": "Tell me what you're working on.",
+  "aiChatInputHint": "Type a message…",
+  "aiChatSend": "Send",
+  "aiChatStopGenerating": "Stop generating",
+  "aiContextRemoveArticle": "Remove from context",
+  "llmSettingsTitle": "AI models",
+  "llmSettingsSubtitle": "Provider, API key, and model",
+  "llmSettingsIntro": "Your key stays on this device. Other settings are included in backups.",
+  "llmBehaviorSectionTitle": "Chat behavior",
+  "llmStreamOutputTitle": "Streaming output",
+  "llmStreamOutputSubtitle": "Show the reply as it is written",
+  "llmAllowThinkingTitle": "Allow thinking",
+  "llmAllowThinkingSubtitle": "Let models that can reason think before they answer",
+  "llmPresetPromptTitle": "Preset prompt",
+  "llmPresetPromptDescription": "Sent as system instructions on every chat—use it for genre, tone, POV, and other standing preferences.",
+  "llmPresetPromptHint": "e.g. You are a writing assistant. Reply concisely; when continuing prose, match POV, tense, and voice.",
+  "llmMaxInputTokensTitle": "Context limit (input)",
+  "llmMaxInputTokensSubtitle": "Older messages are shortened once this limit is reached",
+  "llmMaxOutputTokensTitle": "Reply limit (output)",
+  "llmMaxOutputTokensSubtitle": "How long a single reply can be",
+  "llmThinkingLevelTitle": "Thinking intensity",
+  "llmThinkingLevelSubtitle": "Deeper thinking usually takes longer",
+  "llmDefaultThinkingLevelTitle": "Default thinking intensity",
+  "llmDefaultThinkingLevelSubtitle": "Starting level for new chats. You can change it beside the message box.",
+  "llmThinkingDisabledInSettings": "Turn on “Allow thinking” in AI model settings first",
+  "llmThinkingOff": "Off",
+  "llmThinkingMinimal": "Minimal",
+  "llmThinkingLow": "Low",
+  "llmThinkingMedium": "Medium",
+  "llmThinkingHigh": "High",
+  "llmThinkingAuto": "Auto",
+  "aiChatAiSettingsEntry": "AI settings",
+  "aiChatSessionOptionsTitle": "Chat options",
+  "aiChatSessionProviderTitle": "Provider",
+  "aiChatSessionProviderSubtitle": "Use a vendor you configured in AI settings",
+  "aiChatSessionOptionsNeedTest": "Run a connection test in AI model settings first.",
+  "aiChatSessionModelSubtitle": "Override the default model from settings",
+  "aiChatThinkingForModel": "Model: {model}",
+  "@aiChatThinkingForModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatSessionsTitle": "Conversations",
+  "aiChatSessionsSubtitle": "Switch, archive, or delete saved chats for this chapter",
+  "aiChatNewSession": "New chat",
+  "aiChatShowArchivedSessions": "Show archived",
+  "aiChatNoSessions": "No saved conversations yet.",
+  "aiChatSessionUpdated": "Updated {time}",
+  "@aiChatSessionUpdated": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatOpenSession": "Open",
+  "aiChatArchiveSession": "Archive",
+  "aiChatUnarchiveSession": "Restore from archive",
+  "aiChatDeleteSession": "Delete",
+  "aiChatDeleteSessionTitle": "Delete conversation?",
+  "aiChatDeleteSessionBody": "Delete “{title}” and all messages in it? This cannot be undone.",
+  "@aiChatDeleteSessionBody": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatCompressedContextHeader": "Summary of the earlier conversation:",
+  "llmProviderTitle": "Provider",
+  "llmProviderSubtitle": "Configure each vendor; switch without losing other profiles",
+  "llmApiKeyTitle": "API key",
+  "llmApiKeyHint": "Paste your key",
+  "llmBaseUrlTitle": "API base URL",
+  "llmBaseUrlHint": "e.g. https://api.example.com/v1",
+  "llmTestConnection": "Test connection",
+  "llmTestSuccess": "Connected — {count} models available",
+  "@llmTestSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "llmModelTitle": "Chat model",
+  "llmModelSubtitle": "Available after a successful test",
+  "llmModelNotSelected": "Not selected",
+  "aiChatNotConfigured": "Set up your API key and run a connection test in Settings first.",
+  "aiChatThinkingInProgress": "Thinking…",
+  "aiChatThinkingProcess": "Thinking process",
+  "aiChatError": "Request failed: {error}",
+  "@aiChatError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatDemoReply": "Received: {message}",
+  "@aiChatDemoReply": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "tooltipOpenLibrary": "Open library",
+  "librarySwitcherChooseDirectory": "Choose another directory",
+  "tooltipOpenSidebar": "Open sidebar",
+  "tooltipMore": "More",
+  "mobileToolsDrawerReorderHint": "Long-press and drag to reorder.",
+  "tooltipEditBook": "Edit book",
+  "tooltipSettings": "Settings",
+  "selectBook": "Select a book",
+  "booksSheetTitle": "Books",
+  "booksSheetTagAll": "All",
+  "newBookTitle": "New book",
+  "moreSheetTitle": "Quick tools",
+  "mobileToolThemeMode": "Theme mode",
+  "mobileToolSwitchTheme": "Switch theme",
+  "noMobileTools": "No tools available",
+  "editBookTitle": "Edit book",
+  "bookNameLabel": "Book title",
+  "bookNameHint": "Enter a book title",
+  "bookNameRequired": "Please enter a book title",
+  "tooltipNewBook": "New book",
+  "tooltipBookGridLayout": "Two-column layout",
+  "tooltipBookListLayout": "Single-column list",
+  "tooltipDeleteBook": "Delete book",
+  "deleteBookNotEmpty": "Clear all chapters in this book before deleting it.",
+  "bookTagsLabel": "Tags",
+  "bookTagsHint": "e.g. Literature",
+  "bookDescriptionLabel": "Description",
+  "bookDescriptionHint": "Briefly describe this book",
+  "bookStatsMeta": "{volumes} volumes · {chapters} chapters",
+  "@bookStatsMeta": {
+    "placeholders": {
+      "volumes": {
+        "type": "int"
+      },
+      "chapters": {
+        "type": "int"
+      }
+    }
+  },
+  "chapterMeta": "Created {created} · Edited {modified} · {wordCount} words",
+  "@chapterMeta": {
+    "placeholders": {
+      "created": {
+        "type": "String"
+      },
+      "modified": {
+        "type": "String"
+      },
+      "wordCount": {
+        "type": "int"
+      }
+    }
+  },
+  "themeSlotLight": "Light",
+  "themeSlotDark": "Dark",
+  "themePresetsSubtitle": "Tap to apply a palette to the current light or dark mode.",
+  "quickToolbarToolsTooltip": "Tools",
+  "quickToolbarUndoTooltip": "Undo",
+  "quickToolbarPasteTooltip": "Paste",
+  "quickToolbarIndentTooltip": "Indent",
+  "quickToolbarFormatTooltip": "Format",
+  "quickToolbarSearchTooltip": "Search",
+  "quickToolbarTimestampTooltip": "Insert timestamp",
+  "quickToolbarBackupTooltip": "Back up now",
+  "quickToolbarRestoreTooltip": "Restore backup",
+  "quickToolbarEdit": "Edit toolbar",
+  "quickToolbarEditHint": "Long-press and drag on the toolbar to reorder. You can also drag here, or move tools between the fixed and custom zones.",
+  "quickToolbarPinnedSection": "Fixed bar",
+  "quickToolbarCustomSection": "Custom bar",
+  "quickToolbarAddSection": "Add tool",
+  "quickToolbarSectionEmpty": "No tools yet",
+  "quickToolbarAddPhrase": "Quick phrase",
+  "quickToolbarPhraseName": "Display name",
+  "quickToolbarPhraseContent": "Inserted text",
+  "quickToolbarMoveToPinned": "Move to fixed bar",
+  "quickToolbarMoveToCustom": "Move to custom bar",
+  "quickToolbarDrawerEmpty": "Nothing here yet",
+  "quickToolbarFormatApplyAll": "Format document",
+  "quickToolbarFormatKeepParagraphBlanks": "Keep blank lines between paragraphs",
+  "quickToolbarFormatRemoveParagraphBlanks": "Remove blank lines between paragraphs",
+  "quickToolbarFormatInsertCjkLatinSpaces": "Space between Chinese and English",
+  "quickToolbarFormatAddParagraphIndent": "Indent paragraph starts",
+  "quickToolbarFormatRemoveParagraphIndent": "Remove paragraph indents",
+  "quickToolbarFormatSimplifiedToTraditional": "Simplified to Traditional Chinese",
+  "quickToolbarFormatTraditionalToSimplified": "Traditional to Simplified Chinese",
+  "quickToolbarFormatHalfwidthToFullwidth": "Halfwidth to fullwidth symbols"
+}
