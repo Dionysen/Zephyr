@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../chrome_controls.dart';
+import '../design/design_controls.dart';
 
 /// Desktop settings row with an inline [Slider] and numeric readout.
 class SettingsSliderRow extends StatelessWidget {
@@ -68,7 +69,7 @@ class SettingsSliderRow extends StatelessWidget {
                             enabledThumbRadius: 7,
                           ),
                         ),
-                        child: Slider(
+                        child: DesignSlider(
                           padding: EdgeInsets.zero,
                           value: value,
                           min: min,

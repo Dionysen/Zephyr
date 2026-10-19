@@ -13,6 +13,8 @@ dart run melos bootstrap
 
 日常运行与调试在 `apps/zephyr` 下执行（`flutter devices`、`flutter run -d <device-id>`）。修改任意 `pubspec.yaml` 后重新 `dart run melos bootstrap` 或在该包目录执行 `flutter pub get`。Windows、macOS、Linux、Android 和 iOS 的原生工程在 `apps/zephyr/` 下同名目录；iOS 构建需要 macOS。
 
+产品 UI 风格默认是现有 Zephyr 外观。可在运行或构建命令中加 `--dart-define=ZEPHYR_DESIGN_STYLE=material` 或 `cupertino`，也可在 `apps/zephyr/lib/app/zephyr_design_config.dart` 改唯一默认值。当前覆盖范围和迁移边界见 [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)。
+
 根目录 `pubspec.lock` 锁定整个 workspace（应用 + 本地包），由 `dart pub get` / `dart run melos bootstrap` 生成，不要手工编辑。
 
 ```sh

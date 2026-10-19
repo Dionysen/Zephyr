@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_primitives/design/design_style.dart';
 
 import '../zephyr_bottom_sheet.dart';
 import '../zephyr_dialog.dart';
 import '../zephyr_controls.dart';
 import '../zephyr_l10n.dart';
 import '../zephyr_theme.dart';
+import '../window_chrome.dart';
 import 'zephyr_settings_value_tile.dart';
 
 class ZephyrSettingsChoice<T> {
@@ -40,6 +43,48 @@ Future<T?> showZephyrSettingsChoicePicker<T>(
   String? deleteCancelAction,
 }) {
   final l10n = context.l10n;
+  if (DesignStyleScope.of(context) == DesignStyle.cupertino &&
+      onAction == null &&
+      onDelete == null) {
+    if (WindowChrome.isDesktop) {
+      return showCupertinoDialog<T>(
+        context: context,
+        builder: (dialogContext) => CupertinoAlertDialog(
+          title: Text(title),
+          content: subtitle == null ? null : Text(subtitle),
+          actions: [
+            for (final choice in choices)
+              CupertinoDialogAction(
+                onPressed: () => Navigator.of(dialogContext).pop(choice.value),
+                child: Text(choice.label),
+              ),
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(l10n.actionCancel),
+            ),
+          ],
+        ),
+      );
+    }
+    return showCupertinoModalPopup<T>(
+      context: context,
+      builder: (popupContext) => CupertinoActionSheet(
+        title: Text(title),
+        message: subtitle == null ? null : Text(subtitle),
+        actions: [
+          for (final choice in choices)
+            CupertinoActionSheetAction(
+              onPressed: () => Navigator.of(popupContext).pop(choice.value),
+              child: Text(choice.label),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.of(popupContext).pop(),
+          child: Text(l10n.actionCancel),
+        ),
+      ),
+    );
+  }
   final confirmTitle = deleteConfirmTitle ?? l10n.choiceDeleteTitle;
   final confirmBody = deleteConfirmBody ?? l10n.choiceDeleteBody;
   final confirmAction = deleteConfirmAction ?? l10n.actionDelete;
@@ -220,8 +265,7 @@ class _ZephyrSettingsChoiceSheetState<T>
                                 ),
                             ],
                           ),
-                          onTap: () =>
-                              Navigator.of(context).pop(choice.value),
+                          onTap: () => Navigator.of(context).pop(choice.value),
                         ),
                       );
                     },

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../chrome_controls.dart';
+import '../design/design_controls.dart';
 import 'settings_list_tile.dart';
 
-/// Horizontal settings row with a Material [Switch] as the only control.
+/// Horizontal settings row with a switch selected by the design style.
 class SettingsSwitchTile extends StatelessWidget {
   const SettingsSwitchTile({
     super.key,
@@ -31,16 +32,11 @@ class SettingsSwitchTile extends StatelessWidget {
       showDivider: showDivider,
       enabled: onChanged != null,
       onTap: onChanged == null ? null : () => onChanged!(!value),
-      // Always Material (not Cupertino / platform-adaptive); M3 track size is
-      // fixed, so scale for denser settings chrome.
-      trailing: Transform.scale(
-        scale: ChromeControls.settingsSwitchScale,
-        alignment: Alignment.centerRight,
-        child: Switch(
-          value: value,
-          onChanged: onChanged,
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
+      trailing: DesignSwitch(
+        value: value,
+        onChanged: onChanged,
+        materialScale: ChromeControls.settingsSwitchScale,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
     );
   }

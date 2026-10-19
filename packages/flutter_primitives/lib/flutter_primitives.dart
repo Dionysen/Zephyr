@@ -11,6 +11,8 @@ export 'chrome_controls.dart';
 export 'floating_chrome.dart';
 export 'scrollbar_style.dart';
 export 'icon_toolbar.dart';
+export 'design/design_style.dart';
+export 'design/design_controls.dart';
 export 'settings/settings_list_tile.dart';
 export 'settings/settings_switch_tile.dart';
 export 'settings/settings_value_tile.dart';

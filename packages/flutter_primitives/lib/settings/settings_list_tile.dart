@@ -1,4 +1,7 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+
+import '../design/design_style.dart';
 
 /// Horizontal settings row: leading icon, title, optional trailing.
 ///
@@ -32,6 +35,23 @@ class SettingsListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (DesignStyleScope.of(context) == DesignStyle.cupertino) {
+      final tile = CupertinoListTile(
+        leading: Icon(icon, size: iconSize),
+        title: Text(title),
+        subtitle: subtitle == null || subtitle!.isEmpty
+            ? null
+            : Text(subtitle!),
+        trailing: trailing,
+        onTap: enabled ? onTap : null,
+      );
+      return onLongPress == null
+          ? tile
+          : GestureDetector(
+              onLongPress: enabled ? onLongPress : null,
+              child: tile,
+            );
+    }
     final theme = Theme.of(context);
     final iconColor = enabled
         ? theme.colorScheme.onSurface

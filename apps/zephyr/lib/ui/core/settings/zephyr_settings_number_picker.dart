@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_primitives/design/design_style.dart';
 
 import '../zephyr_dialog.dart';
 import '../zephyr_l10n.dart';
@@ -98,9 +100,10 @@ class _ZephyrSettingsNumberPickerDialogState
     final step = _step();
     final snapped = widget.divisions == null
         ? next
-        : (widget.min +
-                  (((next - widget.min) / step).round() * step))
-              .clamp(widget.min, widget.max);
+        : (widget.min + (((next - widget.min) / step).round() * step)).clamp(
+            widget.min,
+            widget.max,
+          );
     setState(() => _value = snapped.toDouble());
   }
 
@@ -111,8 +114,62 @@ class _ZephyrSettingsNumberPickerDialogState
     final radius = context.zephyrCornerRadius;
     final defaultLabel = _format(widget.defaultValue);
 
+    if (DesignStyleScope.of(context) == DesignStyle.cupertino) {
+      return CupertinoAlertDialog(
+        title: Text(widget.title),
+        content: Column(
+          children: [
+            if (widget.description != null) Text(widget.description!),
+            Text(_format(_value)),
+            Text(l10n.numberPickerDefaultLabel(defaultLabel)),
+            Row(
+              children: [
+                CupertinoButton(
+                  onPressed: _value <= widget.min
+                      ? null
+                      : () => _nudge(-_step()),
+                  child: const Icon(CupertinoIcons.minus_circle),
+                ),
+                Expanded(
+                  child: CupertinoSlider(
+                    value: _value,
+                    min: widget.min,
+                    max: widget.max,
+                    divisions: widget.divisions,
+                    onChanged: (next) => setState(() => _value = next),
+                  ),
+                ),
+                CupertinoButton(
+                  onPressed: _value >= widget.max
+                      ? null
+                      : () => _nudge(_step()),
+                  child: const Icon(CupertinoIcons.plus_circle),
+                ),
+              ],
+            ),
+            CupertinoButton(
+              onPressed: () => setState(() => _value = widget.defaultValue),
+              child: Text(l10n.numberPickerRestoreDefault(defaultLabel)),
+            ),
+          ],
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.actionCancel),
+          ),
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(context).pop(_value),
+            child: Text(l10n.actionDone),
+          ),
+        ],
+      );
+    }
+
     return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(radius),
+      ),
       title: Text(widget.title),
       content: zephyrDialogScrollableContent(
         context: context,

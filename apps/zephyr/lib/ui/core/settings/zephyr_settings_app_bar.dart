@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_primitives/design/design_style.dart';
 
 import '../zephyr_l10n.dart';
 
@@ -25,6 +27,17 @@ class ZephyrSettingsAppBar extends StatelessWidget
 
   @override
   Widget build(BuildContext context) {
+    if (DesignStyleScope.of(context) == DesignStyle.cupertino) {
+      return CupertinoNavigationBar(
+        middle: Text(title),
+        leading: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: onBack,
+          child: const Icon(CupertinoIcons.back),
+        ),
+        backgroundColor: backgroundColor(context),
+      );
+    }
     final theme = Theme.of(context);
     final background = backgroundColor(context);
     final foreground = theme.colorScheme.onSurface;

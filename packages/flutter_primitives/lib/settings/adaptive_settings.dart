@@ -1,6 +1,9 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../adaptive_breakpoints.dart';
+import '../design/design_controls.dart';
+import '../design/design_style.dart';
 import 'settings_desktop_row.dart';
 import 'settings_section.dart';
 import 'settings_slider_row.dart';
@@ -70,7 +73,7 @@ class SettingsToggleItem extends SettingsItem {
       label: title,
       description: subtitle,
       showDivider: !last,
-      child: Switch(value: value, onChanged: onChanged),
+      child: DesignSwitch(value: value, onChanged: onChanged),
     );
   }
 }
@@ -91,12 +94,14 @@ class SettingsChoiceItem<T> extends SettingsItem {
     required this.value,
     required this.choices,
     required this.onChanged,
+    this.cancelLabel,
     super.subtitle,
   });
 
   final T value;
   final List<SettingsChoice<T>> choices;
   final ValueChanged<T>? onChanged;
+  final String? cancelLabel;
 
   String get valueLabel {
     for (final choice in choices) {
@@ -107,6 +112,48 @@ class SettingsChoiceItem<T> extends SettingsItem {
 
   Future<void> _pick(BuildContext context, bool compact) async {
     if (onChanged == null || choices.isEmpty) return;
+    if (DesignStyleScope.of(context) == DesignStyle.cupertino) {
+      final nextIndex = compact
+          ? await showCupertinoModalPopup<int>(
+              context: context,
+              builder: (popupContext) => CupertinoActionSheet(
+                title: Text(title),
+                actions: [
+                  for (var index = 0; index < choices.length; index++)
+                    CupertinoActionSheetAction(
+                      onPressed: () => Navigator.of(popupContext).pop(index),
+                      child: Text(choices[index].label),
+                    ),
+                ],
+                cancelButton: CupertinoActionSheetAction(
+                  onPressed: () => Navigator.of(popupContext).pop(),
+                  child: Text(
+                    cancelLabel ??
+                        CupertinoLocalizations.of(popupContext)
+                            .cancelButtonLabel,
+                  ),
+                ),
+              ),
+            )
+          : await showCupertinoDialog<int>(
+              context: context,
+              builder: (dialogContext) => CupertinoAlertDialog(
+                title: Text(title),
+                actions: [
+                  for (var index = 0; index < choices.length; index++)
+                    CupertinoDialogAction(
+                      onPressed: () => Navigator.of(dialogContext).pop(index),
+                      child: Text(choices[index].label),
+                    ),
+                ],
+              ),
+            );
+      if (context.mounted && nextIndex != null) {
+        final next = choices[nextIndex].value;
+        if (next != value) onChanged?.call(next);
+      }
+      return;
+    }
     final options = ListView.builder(
       shrinkWrap: true,
       itemCount: choices.length,
@@ -192,12 +239,19 @@ class SettingsChoiceItem<T> extends SettingsItem {
       label: title,
       description: subtitle,
       showDivider: !last,
-      child: OutlinedButton(
-        onPressed: onChanged == null || choices.isEmpty
-            ? null
-            : () => _pick(context, false),
-        child: Text(valueLabel),
-      ),
+      child: DesignStyleScope.of(context) == DesignStyle.cupertino
+          ? CupertinoButton(
+              onPressed: onChanged == null || choices.isEmpty
+                  ? null
+                  : () => _pick(context, false),
+              child: Text(valueLabel),
+            )
+          : OutlinedButton(
+              onPressed: onChanged == null || choices.isEmpty
+                  ? null
+                  : () => _pick(context, false),
+              child: Text(valueLabel),
+            ),
     );
   }
 }
@@ -211,6 +265,7 @@ class SettingsNumberItem extends SettingsItem {
     required this.min,
     required this.max,
     required this.onChanged,
+    this.confirmLabel,
     this.divisions,
     this.suffix = '',
     super.subtitle,
@@ -223,6 +278,7 @@ class SettingsNumberItem extends SettingsItem {
   final int? divisions;
   final String suffix;
   final ValueChanged<double>? onChanged;
+  final String? confirmLabel;
 
   String _format(double number) =>
       '${number.toStringAsFixed(divisions == null ? 1 : 0)}$suffix';
@@ -230,6 +286,44 @@ class SettingsNumberItem extends SettingsItem {
   Future<void> _pick(BuildContext context) async {
     if (onChanged == null) return;
     var selected = value.clamp(min, max);
+    if (DesignStyleScope.of(context) == DesignStyle.cupertino) {
+      final next = await showCupertinoDialog<double>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (dialogContext, setDialogState) => CupertinoAlertDialog(
+            title: Text(title),
+            content: Column(
+              children: [
+                Text(_format(selected)),
+                CupertinoSlider(
+                  value: selected,
+                  min: min,
+                  max: max,
+                  divisions: divisions,
+                  onChanged: (next) => setDialogState(() => selected = next),
+                ),
+              ],
+            ),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(
+                  CupertinoLocalizations.of(dialogContext).cancelButtonLabel,
+                ),
+              ),
+              CupertinoDialogAction(
+                onPressed: () => Navigator.of(dialogContext).pop(selected),
+                child: Text(confirmLabel ?? 'OK'),
+              ),
+            ],
+          ),
+        ),
+      );
+      if (context.mounted && next != null && next != value) {
+        onChanged?.call(next);
+      }
+      return;
+    }
     final next = await showDialog<double>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -261,7 +355,8 @@ class SettingsNumberItem extends SettingsItem {
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(selected),
               child: Text(
-                MaterialLocalizations.of(dialogContext).okButtonLabel,
+                confirmLabel ??
+                    MaterialLocalizations.of(dialogContext).okButtonLabel,
               ),
             ),
           ],
@@ -334,11 +429,16 @@ class SettingsActionItem extends SettingsItem {
       label: title,
       description: subtitle,
       showDivider: !last,
-      child: IconButton(
-        onPressed: onPressed,
-        tooltip: title,
-        icon: const Icon(Icons.chevron_right),
-      ),
+      child: DesignStyleScope.of(context) == DesignStyle.cupertino
+          ? CupertinoButton(
+              onPressed: onPressed,
+              child: const Icon(CupertinoIcons.chevron_right),
+            )
+          : IconButton(
+              onPressed: onPressed,
+              tooltip: title,
+              icon: const Icon(Icons.chevron_right),
+            ),
     );
   }
 }
@@ -422,18 +522,36 @@ class AdaptiveSettingsPage extends StatelessWidget {
   final double cornerRadius;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: Text(title),
-      leading: onBack == null
-          ? null
-          : IconButton(onPressed: onBack, icon: const Icon(Icons.arrow_back)),
-    ),
-    body: AdaptiveSettingsView(
+  Widget build(BuildContext context) {
+    final body = AdaptiveSettingsView(
       groups: groups,
       breakpoint: breakpoint,
       maxContentWidth: maxContentWidth,
       cornerRadius: cornerRadius,
-    ),
-  );
+    );
+    if (DesignStyleScope.of(context) == DesignStyle.cupertino) {
+      return CupertinoPageScaffold(
+        navigationBar: CupertinoNavigationBar(
+          middle: Text(title),
+          leading: onBack == null
+              ? null
+              : CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: onBack,
+                  child: const Icon(CupertinoIcons.back),
+                ),
+        ),
+        child: SafeArea(child: body),
+      );
+    }
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+        leading: onBack == null
+            ? null
+            : IconButton(onPressed: onBack, icon: const Icon(Icons.arrow_back)),
+      ),
+      body: body,
+    );
+  }
 }

@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_primitives/design/design_style.dart';
 
 import 'window_chrome.dart';
 
@@ -29,6 +31,18 @@ Future<T?> showZephyrDialog<T>({
   RouteSettings? routeSettings,
   Offset? anchorPoint,
 }) {
+  if (DesignStyleScope.of(context) == DesignStyle.cupertino) {
+    return showCupertinoDialog<T>(
+      context: context,
+      barrierDismissible: barrierDismissible,
+      useRootNavigator: useRootNavigator,
+      routeSettings: routeSettings,
+      anchorPoint: anchorPoint,
+      builder: (dialogContext) => zephyrConstrainDialogChild(
+        _cupertinoDialogChild(builder(dialogContext)),
+      ),
+    );
+  }
   return showDialog<T>(
     context: context,
     barrierDismissible: barrierDismissible,
@@ -39,8 +53,50 @@ Future<T?> showZephyrDialog<T>({
   );
 }
 
+/// Convert common confirmation dialogs without changing their callbacks.
+/// Complex or specially styled dialogs keep their Material implementation.
+Widget _cupertinoDialogChild(Widget child) {
+  if (child is! AlertDialog || child.icon != null || child.actions == null) {
+    return child;
+  }
+  final actions = child.actions!;
+  if (actions.any((action) => !_isPlainDialogAction(action))) return child;
+  return CupertinoAlertDialog(
+    title: child.title,
+    content: child.content,
+    actions: [
+      for (final action in actions)
+        CupertinoDialogAction(
+          onPressed: switch (action) {
+            TextButton button => button.onPressed,
+            FilledButton button => button.onPressed,
+            OutlinedButton button => button.onPressed,
+            _ => null,
+          },
+          child: switch (action) {
+            TextButton button => button.child!,
+            FilledButton button => button.child!,
+            OutlinedButton button => button.child!,
+            _ => const SizedBox.shrink(),
+          },
+        ),
+    ],
+  );
+}
+
+bool _isPlainDialogAction(Widget action) => switch (action) {
+  TextButton button =>
+    button.style == null && button.onLongPress == null && button.child != null,
+  FilledButton button =>
+    button.style == null && button.onLongPress == null && button.child != null,
+  OutlinedButton button =>
+    button.style == null && button.onLongPress == null && button.child != null,
+  _ => false,
+};
+
 /// Applies [ZephyrDialog.desktopConstraints] on desktop for common dialog types.
 Widget zephyrConstrainDialogChild(Widget child) {
+  if (child is CupertinoAlertDialog) return child;
   if (!WindowChrome.isDesktop) return child;
   if (child is AlertDialog) {
     return _constrainAlertDialog(child);
@@ -144,7 +200,8 @@ Widget zephyrDialogScrollableContent({
 }) {
   final media = MediaQuery.of(context);
   final keyboard = zephyrKeyboardBottom(context);
-  final available = media.size.height -
+  final available =
+      media.size.height -
       media.viewPadding.vertical -
       keyboard -
       _dialogChromeReserve;

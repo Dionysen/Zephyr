@@ -1,5 +1,7 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../design/design_style.dart';
 import 'settings_category_header.dart';
 
 /// Grouped block of settings tiles with an optional icon + title header.
@@ -23,6 +25,26 @@ class SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (DesignStyleScope.of(context) == DesignStyle.cupertino) {
+      return Padding(
+        padding: margin,
+        child: CupertinoListSection.insetGrouped(
+          header: title == null
+              ? null
+              : Row(
+                  children: [
+                    if (icon != null) ...[
+                      Icon(icon, size: 18),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(title!),
+                  ],
+                ),
+          footer: footer == null ? null : Text(footer!),
+          children: children,
+        ),
+      );
+    }
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final radius = cornerRadius;

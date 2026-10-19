@@ -44,3 +44,5 @@ AdaptiveSettingsPage(
 ```
 
 `SettingsNumberItem` 自动使用宽屏行内滑杆或窄屏数值对话框；`SettingsActionItem` 用于操作或子页面。只需要提供状态与保存回调。应用已有 `Scaffold` 时使用 `AdaptiveSettingsView`。
+
+产品级风格在应用根节点选择一次：`DesignStyleScope(style: DesignStyle.cupertino, child: app)`。可用 `material`、`cupertino` 或 `custom`；前两种设置项有独立的 Material / Cupertino 控件实现，`custom` 由宿主的主题和扩展组件实现。风格与窗口宽度独立，修改风格不需要改变设置项列表。Zephyr 的实现及尚待迁移的应用专用页面见 [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)。

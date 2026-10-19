@@ -27,6 +27,8 @@ flowchart LR
 
 通用设置 UI 的公共入口是 `package:flutter_primitives/settings/adaptive_settings.dart`：新产品向 `AdaptiveSettingsPage` 或可嵌入的 `AdaptiveSettingsView` 传入 `SettingsGroup` 和 toggle、choice、number、action 设置项，组件按可用宽度自动选择列表卡片、底部选项面板、桌面对话框或行内控件。值、持久化回调和文案由宿主提供。Zephyr 原设置控件的旧类名保留兼容别名；含 Zephyr 本地化、主题令牌和复杂配置流程的适配器仍在应用层。
 
+产品级设计风格的入口、渲染边界和迁移状态见 [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)。`DesignStyleScope` 是共享包的公共 API；Zephyr 的单点构建配置与主题组装留在应用层。
+
 旧的 `apps/zephyr/lib/domain/...` 和 `apps/zephyr/lib/ui/features/editor/plain_text/{document,input,layout,render,gestures,decoration}/...` 路径保留兼容导出；现有外部调用与测试不需迁移。新代码直接导入相应的 `package:text_editor_foundation/...`、`package:plain_text_editor/...` 或 `package:flutter_primitives/...`。每个包的 `lib/<package-name>.dart` 是公共入口。
 
 ## 数据与状态

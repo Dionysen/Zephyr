@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_primitives/design/design_controls.dart';
 
 import '../../../../domain/models/editor_preferences.dart';
 import '../../../core/zephyr_controls.dart';
@@ -80,9 +81,10 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
           max: EditorPreferences.maxTitleFontSize,
           defaultValue: defaults.titleFontSize,
           suffix: 'px',
-          divisions: (EditorPreferences.maxTitleFontSize -
-                  EditorPreferences.minTitleFontSize)
-              .round(),
+          divisions:
+              (EditorPreferences.maxTitleFontSize -
+                      EditorPreferences.minTitleFontSize)
+                  .round(),
           onChanged: viewModel.updateTitleFontSize,
         ),
         if (compact)
@@ -97,14 +99,12 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
           ZephyrSettingsDesktopRow(
             label: l10n.editorTitleCenteredTitle,
             description: l10n.editorTitleCenteredSubtitle,
-            child: Transform.scale(
-              scale: ZephyrControls.settingsSwitchScale,
+            child: DesignSwitch(
+              value: preferences.titleCentered,
+              onChanged: viewModel.updateTitleCentered,
+              materialScale: ZephyrControls.settingsSwitchScale,
               alignment: Alignment.centerLeft,
-              child: Switch(
-                value: preferences.titleCentered,
-                onChanged: viewModel.updateTitleCentered,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),
         if (compact)
@@ -119,14 +119,12 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
           ZephyrSettingsDesktopRow(
             label: l10n.editorTypewriterModeTitle,
             description: l10n.editorTypewriterModeSubtitle,
-            child: Transform.scale(
-              scale: ZephyrControls.settingsSwitchScale,
+            child: DesignSwitch(
+              value: preferences.typewriterMode,
+              onChanged: viewModel.updateTypewriterMode,
+              materialScale: ZephyrControls.settingsSwitchScale,
               alignment: Alignment.centerLeft,
-              child: Switch(
-                value: preferences.typewriterMode,
-                onChanged: viewModel.updateTypewriterMode,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),
         if (compact)
@@ -141,14 +139,12 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
           ZephyrSettingsDesktopRow(
             label: l10n.editorJumpToEndOnScrollDownTitle,
             description: l10n.editorJumpToEndOnScrollDownSubtitle,
-            child: Transform.scale(
-              scale: ZephyrControls.settingsSwitchScale,
+            child: DesignSwitch(
+              value: preferences.jumpToEndOnScrollDown,
+              onChanged: viewModel.updateJumpToEndOnScrollDown,
+              materialScale: ZephyrControls.settingsSwitchScale,
               alignment: Alignment.centerLeft,
-              child: Switch(
-                value: preferences.jumpToEndOnScrollDown,
-                onChanged: viewModel.updateJumpToEndOnScrollDown,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),
         ZephyrSettingsAdaptiveNumber(
@@ -242,9 +238,7 @@ class _EditorSettingsViewState extends State<EditorSettingsView> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ZephyrSettingsSection(
-              children: [fontPicker, ...numbers],
-            ),
+            ZephyrSettingsSection(children: [fontPicker, ...numbers]),
           ],
         );
       }

@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_primitives/design/design_style.dart';
 
 import 'window_chrome.dart';
 import 'zephyr_dialog.dart';
@@ -7,6 +9,7 @@ import 'zephyr_dialog.dart';
 abstract final class ZephyrBottomSheet {
   static const double rowHeight = 38;
   static const double rowIconSize = 20;
+
   /// Header inset. Top is roomy enough for desktop dialogs (no drag handle);
   /// mobile sheets still look fine because the handle sits above the builder.
   static const EdgeInsets titlePadding = EdgeInsets.fromLTRB(20, 16, 20, 12);
@@ -29,19 +32,14 @@ abstract final class ZephyrBottomSheet {
   static const double sheetMaxSize = 0.95;
 
   /// Sheet header — slightly smaller than [TextTheme.titleMedium], semibold.
-  static TextStyle? titleStyle(ThemeData theme) =>
-      theme.textTheme.titleSmall?.copyWith(
-        fontWeight: FontWeight.w600,
-        height: 1.2,
-      );
+  static TextStyle? titleStyle(ThemeData theme) => theme.textTheme.titleSmall
+      ?.copyWith(fontWeight: FontWeight.w600, height: 1.2);
 
   /// Primary label on a sheet row.
-  static TextStyle? rowTitleStyle(ThemeData theme, {Color? color}) =>
-      theme.textTheme.bodyMedium?.copyWith(
-        fontSize: 14,
-        height: 1.25,
-        color: color,
-      );
+  static TextStyle? rowTitleStyle(ThemeData theme, {Color? color}) => theme
+      .textTheme
+      .bodyMedium
+      ?.copyWith(fontSize: 14, height: 1.25, color: color);
 
   /// Secondary / subtitle under a row title.
   static TextStyle? rowSubtitleStyle(ThemeData theme, {Color? color}) {
@@ -81,10 +79,7 @@ abstract final class ZephyrBottomSheet {
     required Widget child,
   }) {
     final theme = Theme.of(context);
-    return ListTileTheme(
-      data: listTileTheme(theme),
-      child: child,
-    );
+    return ListTileTheme(data: listTileTheme(theme), child: child);
   }
 
   /// Hairline between sheet rows (matches settings list density).
@@ -107,10 +102,7 @@ abstract final class ZephyrBottomSheet {
     if (!showDivider) return child;
     return Column(
       mainAxisSize: MainAxisSize.min,
-      children: [
-        child,
-        rowDivider(context),
-      ],
+      children: [child, rowDivider(context)],
     );
   }
 }
@@ -127,11 +119,57 @@ Future<T?> showZephyrModalSheet<T>({
   ShapeBorder? shape,
   double desktopWidth = ZephyrBottomSheet.desktopDialogWidth,
   double desktopMaxHeightFraction = 0.72,
+
   /// When true, the desktop dialog shrink-wraps short menus instead of
   /// using a fixed panel height (still capped by [desktopMaxHeightFraction]).
   bool desktopFitContent = false,
   bool barrierDismissible = true,
 }) {
+  if (DesignStyleScope.of(context) == DesignStyle.cupertino) {
+    if (WindowChrome.isDesktop) {
+      return showCupertinoDialog<T>(
+        context: context,
+        barrierDismissible: barrierDismissible,
+        builder: (dialogContext) {
+          final maxHeight =
+              MediaQuery.sizeOf(dialogContext).height *
+              desktopMaxHeightFraction;
+          return Center(
+            child: CupertinoPopupSurface(
+              child: desktopFitContent
+                  ? ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: desktopWidth,
+                        maxHeight: maxHeight,
+                      ),
+                      child: builder(dialogContext),
+                    )
+                  : SizedBox(
+                      width: desktopWidth,
+                      height: maxHeight,
+                      child: builder(dialogContext),
+                    ),
+            ),
+          );
+        },
+      );
+    }
+    return showCupertinoModalPopup<T>(
+      context: context,
+      barrierDismissible: barrierDismissible,
+      builder: (popupContext) => Align(
+        alignment: Alignment.bottomCenter,
+        child: CupertinoPopupSurface(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(popupContext).height * 0.9,
+            ),
+            child: builder(popupContext),
+          ),
+        ),
+      ),
+    );
+  }
   if (WindowChrome.isDesktop) {
     return showDialog<T>(
       context: context,

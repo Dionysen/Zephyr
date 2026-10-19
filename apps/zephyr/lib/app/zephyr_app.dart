@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_primitives/design/design_style.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../data/repositories/file_backup_preferences_repository.dart';
@@ -36,7 +38,6 @@ import '../ui/core/zephyr_controls.dart';
 import '../ui/core/zephyr_l10n.dart';
 import '../ui/core/zephyr_snackbar.dart';
 import '../ui/core/zephyr_scope.dart';
-import '../ui/core/zephyr_theme.dart';
 import '../ui/features/editor/view_models/editor_preferences_view_model.dart';
 import '../ui/features/editor/view_models/library_view_model.dart';
 import '../ui/features/editor/quick_toolbar/quick_toolbar_library_sync.dart';
@@ -50,6 +51,8 @@ import '../ui/features/settings/view_models/llm_settings_view_model.dart';
 import '../ui/features/settings/view_models/settings_view_model.dart';
 import '../ui/features/settings/view_models/theme_view_model.dart';
 import '../ui/features/workspace/views/workspace_page.dart';
+import 'product_theme.dart';
+import 'zephyr_design_config.dart';
 
 void runZephyr(
   PureWriterDatabase database, {
@@ -219,29 +222,46 @@ class ZephyrApp extends StatelessWidget {
     backup: backup,
     cloudSync: cloudSync,
     llmSettings: llmSettings,
-    child: ListenableBuilder(
-      listenable: theme,
-      builder: (context, _) => MaterialApp(
-        scaffoldMessengerKey: messengerKey,
-        title: kReleaseMode
-            ? 'Zephyr'
-            : kProfileMode
-            ? 'Zephyr Profile'
-            : 'Zephyr Debug',
-        debugShowCheckedModeBanner: false,
-        theme: zephyrTheme(theme.tokens, ui: theme.ui),
-        locale: _localeFor(theme.ui.localePreference),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        builder: (context, child) {
-          theme.syncPlatformBrightness(
-            MediaQuery.platformBrightnessOf(context),
-          );
-          return child ?? const SizedBox.shrink();
-        },
-        home: DesktopWindowBackdrop(
-          color: Color(theme.tokens.editorSurface),
-          child: const WorkspacePage(),
+    child: DesignStyleScope(
+      style: ZephyrDesignConfig.style,
+      child: ListenableBuilder(
+        listenable: theme,
+        builder: (context, _) => MaterialApp(
+          scaffoldMessengerKey: messengerKey,
+          title: kReleaseMode
+              ? 'Zephyr'
+              : kProfileMode
+              ? 'Zephyr Profile'
+              : 'Zephyr Debug',
+          debugShowCheckedModeBanner: false,
+          theme: productTheme(
+            ZephyrDesignConfig.style,
+            theme.tokens,
+            ui: theme.ui,
+          ),
+          locale: _localeFor(theme.ui.localePreference),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) {
+            theme.syncPlatformBrightness(
+              MediaQuery.platformBrightnessOf(context),
+            );
+            final content = child ?? const SizedBox.shrink();
+            if (ZephyrDesignConfig.style != DesignStyle.cupertino) {
+              return content;
+            }
+            return CupertinoTheme(
+              data: CupertinoThemeData(
+                brightness: Theme.of(context).brightness,
+                primaryColor: Theme.of(context).colorScheme.primary,
+              ),
+              child: content,
+            );
+          },
+          home: DesktopWindowBackdrop(
+            color: Color(theme.tokens.editorSurface),
+            child: const WorkspacePage(),
+          ),
         ),
       ),
     ),

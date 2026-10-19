@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_primitives/design/design_controls.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../../domain/models/editor_background.dart';
@@ -57,10 +58,10 @@ class EditorBackgroundSettingsView extends StatelessWidget {
   final ThemeViewModel viewModel;
   final bool dark;
 
-  EditorBackgroundConfig get _config =>
-      viewModel.editorBackground(dark: dark);
+  EditorBackgroundConfig get _config => viewModel.editorBackground(dark: dark);
 
-  ThemeTokens get _tokens => dark ? viewModel.darkTokens : viewModel.lightTokens;
+  ThemeTokens get _tokens =>
+      dark ? viewModel.darkTokens : viewModel.lightTokens;
 
   void _update(EditorBackgroundConfig config) {
     viewModel.updateEditorBackground(dark: dark, config: config);
@@ -211,7 +212,10 @@ class _ImageRow extends StatelessWidget {
             style: theme.textTheme.bodyMedium,
           ),
         ),
-        TextButton(onPressed: onChoose, child: Text(l10n.editorBackgroundChoose)),
+        TextButton(
+          onPressed: onChoose,
+          child: Text(l10n.editorBackgroundChoose),
+        ),
         if (onClear != null)
           TextButton(
             onPressed: onClear,
@@ -364,7 +368,7 @@ class _SliderBlock extends StatelessWidget {
                 trackHeight: 3,
                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
               ),
-              child: Slider(
+              child: DesignSlider(
                 padding: EdgeInsets.zero,
                 value: value.clamp(min, max),
                 min: min,

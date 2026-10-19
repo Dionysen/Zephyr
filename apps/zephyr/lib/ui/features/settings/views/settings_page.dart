@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_primitives/design/design_style.dart';
 import 'package:flutter_primitives/nested_back_navigator.dart';
 
 import '../../../core/zephyr_l10n.dart';
@@ -58,24 +60,26 @@ class _SettingsPageState extends State<SettingsPage> {
             immersive: immersiveStatusBar,
             hideIcons: hideStatusBarIcons,
             statusBarColor: immersiveStatusBar ? surface : barColor,
-            child: Scaffold(
-              backgroundColor: surface,
-              // Nested navigator + PopScope: gesture back pops sub-pages /
-              // sheets before leaving settings.
-              body: NestedBackNavigator(
-                onGenerateRoute: (settings) {
-                  return MaterialPageRoute<void>(
-                    settings: settings,
-                    builder: (_) => const _SettingsHome(),
-                  );
-                },
-              ),
-            ),
+            child: DesignStyleScope.of(context) == DesignStyle.cupertino
+                ? CupertinoPageScaffold(child: _settingsNavigator())
+                : Scaffold(
+                    backgroundColor: surface,
+                    body: _settingsNavigator(),
+                  ),
           ),
         );
       },
     );
   }
+
+  Widget _settingsNavigator() => NestedBackNavigator(
+    onGenerateRoute: (settings) {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const _SettingsHome(),
+      );
+    },
+  );
 }
 
 class _SettingsHome extends StatelessWidget {
@@ -152,30 +156,45 @@ class CompactSettingsList extends StatelessWidget {
             // NavigationBar's SafeArea also applies top view padding; when the
             // bar sits in a Column (not Scaffold.bottomNavigationBar) that
             // leaves a large empty band above the destinations.
-            MediaQuery.removePadding(
-              context: context,
-              removeTop: true,
-              child: NavigationBar(
-                height: 78,
-                backgroundColor: ZephyrSettingsAppBar.backgroundColor(context),
-                elevation: 0,
-                shadowColor: Colors.transparent,
-                surfaceTintColor: Colors.transparent,
-                selectedIndex: tab.index,
-                onDestinationSelected: (index) {
-                  settings.selectTab(SettingsTab.values[index]);
-                },
-                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-                destinations: [
+            if (DesignStyleScope.of(context) == DesignStyle.cupertino)
+              CupertinoTabBar(
+                currentIndex: tab.index,
+                onTap: (index) => settings.selectTab(SettingsTab.values[index]),
+                items: [
                   for (final item in SettingsTab.values)
-                    NavigationDestination(
-                      key: ValueKey('settings-tab-${item.name}'),
+                    BottomNavigationBarItem(
                       icon: Icon(item.icon, size: 22),
                       label: item.title(l10n),
                     ),
                 ],
+              )
+            else
+              MediaQuery.removePadding(
+                context: context,
+                removeTop: true,
+                child: NavigationBar(
+                  height: 78,
+                  backgroundColor: ZephyrSettingsAppBar.backgroundColor(
+                    context,
+                  ),
+                  elevation: 0,
+                  shadowColor: Colors.transparent,
+                  surfaceTintColor: Colors.transparent,
+                  selectedIndex: tab.index,
+                  onDestinationSelected: (index) {
+                    settings.selectTab(SettingsTab.values[index]);
+                  },
+                  labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                  destinations: [
+                    for (final item in SettingsTab.values)
+                      NavigationDestination(
+                        key: ValueKey('settings-tab-${item.name}'),
+                        icon: Icon(item.icon, size: 22),
+                        label: item.title(l10n),
+                      ),
+                  ],
+                ),
               ),
-            ),
           ],
         );
       },
