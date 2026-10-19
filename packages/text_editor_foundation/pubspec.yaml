@@ -1,4 +1,5 @@
 name: text_editor_foundation
+resolution: workspace
 description: Pure Dart text editing and layout calculations.
 version: 0.1.0
 publish_to: none

@@ -1,4 +1,5 @@
 name: plain_text_editor
+resolution: workspace
 description: Reusable plain-text editing, input, layout, and rendering primitives.
 version: 0.1.0
 publish_to: none

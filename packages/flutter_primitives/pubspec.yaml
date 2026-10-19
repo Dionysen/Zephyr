@@ -1,4 +1,5 @@
 name: flutter_primitives
+resolution: workspace
 description: Reusable Flutter layout and navigation components.
 version: 0.1.0
 publish_to: none

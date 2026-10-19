@@ -8,21 +8,21 @@ In `plain_text_editor`, selection boxes fill line leading and paragraph gaps, wh
 
 ```mermaid
 flowchart LR
-  App["lib/app + lib/ui/features"] --> Domain["lib/domain"]
-  Data["lib/data"] --> Domain
+  App["apps/zephyr/lib/app + ui/features"] --> Domain["apps/zephyr/lib/domain"]
+  Data["apps/zephyr/lib/data"] --> Domain
   App --> Editor["packages/plain_text_editor"]
   App --> Widgets["packages/flutter_primitives"]
   Domain --> Foundation["packages/text_editor_foundation"]
   Editor --> Foundation
 ```
 
-`lib/domain` 描述 Zephyr 书库、配置和仓储协议；`lib/data` 实现 SQLite、文件、备份及云端适配器；`lib/ui/features` 负责界面和 ViewModel；`lib/app` 负责组装。UI 调用仓储接口，不在 Widget 中直接写 `Room.db`。
+`apps/zephyr/lib/domain` 描述 Zephyr 书库、配置和仓储协议；`apps/zephyr/lib/data` 实现 SQLite、文件、备份及云端适配器；`apps/zephyr/lib/ui/features` 负责界面和 ViewModel；`apps/zephyr/lib/app` 负责组装。UI 调用仓储接口，不在 Widget 中直接写 `Room.db`。
 
 `packages/text_editor_foundation` 是纯 Dart 的缩进、词边界和边距计算，可供领域层与非 Flutter 工具复用。`packages/plain_text_editor` 是 Flutter 编辑内核：文档与选区、输入控制器、段落布局、装饰绘制、手势和渲染对象。它只依赖 Flutter 和基础包，不导入 Zephyr 的书库、设置、主题或云服务。Zephyr 特有的编辑器外壳 `zephyr_plain_text_editor.dart` 负责键盘快捷键、工作区交互和应用样式。
 
-`packages/flutter_primitives` 放与业务无关的响应式阈值、可拖动分栏把手和嵌套返回导航。Zephyr 的主题、控件风格、状态栏和书库组件仍在 `lib/ui/core`，因为它们使用应用设计令牌或业务状态。
+`packages/flutter_primitives` 放与业务无关的响应式阈值、可拖动分栏把手和嵌套返回导航。Zephyr 的主题、控件风格、状态栏和书库组件仍在 `apps/zephyr/lib/ui/core`，因为它们使用应用设计令牌或业务状态。
 
-旧的 `lib/domain/...` 和 `lib/ui/features/editor/plain_text/{document,input,layout,render,gestures,decoration}/...` 路径保留兼容导出；现有外部调用与测试不需迁移。新代码直接导入相应的 `package:text_editor_foundation/...`、`package:plain_text_editor/...` 或 `package:flutter_primitives/...`。每个包的 `lib/<package-name>.dart` 是公共入口。
+旧的 `apps/zephyr/lib/domain/...` 和 `apps/zephyr/lib/ui/features/editor/plain_text/{document,input,layout,render,gestures,decoration}/...` 路径保留兼容导出；现有外部调用与测试不需迁移。新代码直接导入相应的 `package:text_editor_foundation/...`、`package:plain_text_editor/...` 或 `package:flutter_primitives/...`。每个包的 `lib/<package-name>.dart` 是公共入口。
 
 ## 数据与状态
 
@@ -38,7 +38,7 @@ WebDAV 历史备份列表只接受当前账号 `Zephyr/Backups/` 的直接子文
 
 设置通过独立仓储保存到应用支持目录，并经 `CloudSettingsBundle` 按平台上传（不含 WebDAV 凭据与 `cloud_sync_preferences`）。LLM 供应商与非敏感选项写入 `zephyr/llm_preferences.json`（含在 `CloudSettingsBundle` 云/本地设置备份中）；各供应商 API Key 仅存 `flutter_secure_storage`，不进入云设置包。`LlmGateway` 负责列出模型与对话请求（OpenAI 兼容、Anthropic、Google Gemini）。每章 AI 对话保存在书库 `Room.db` 的 Zephyr 表 `ZephyrAiSession` / `ZephyrAiMessage`（随 `.pwb` 备份与合并恢复）；长会话在发送前可自动摘要旧轮次写入 `context_summary`。视图只持有 ViewModel 与临时交互状态；可单测的规则留在 domain 或独立包。跨功能复用的 Flutter 组件应先判断是否依赖 Zephyr 品牌：无依赖则进入 `flutter_primitives`，依赖主题令牌则留在 `lib/ui/core`。
 
-列表式面板统一经 `showZephyrModalSheet`（`lib/ui/core/zephyr_bottom_sheet.dart`）弹出：移动端仍为底部抽屉，桌面端为居中模态对话框；勿直接调用 `showModalBottomSheet`。
+列表式面板统一经 `showZephyrModalSheet`（`apps/zephyr/lib/ui/core/zephyr_bottom_sheet.dart`）弹出：移动端仍为底部抽屉，桌面端为居中模态对话框；勿直接调用 `showModalBottomSheet`。
 
 ## 扩展新产品
 
