@@ -87,6 +87,7 @@ class _ZephyrDropdownState<T> extends State<ZephyrDropdown<T>> {
   final _triggerKey = GlobalKey();
   OverlayEntry? _entry;
   var _overlayRetained = false;
+  ZephyrFloatingOverlayLatch? _heldLatch;
 
   bool get _isOpen => _entry != null;
 
@@ -112,7 +113,8 @@ class _ZephyrDropdownState<T> extends State<ZephyrDropdown<T>> {
 
   void _releaseOverlayLatch() {
     if (!_overlayRetained) return;
-    ZephyrFloatingOverlayScope.releaseOverlay(context);
+    _heldLatch?.release();
+    _heldLatch = null;
     _overlayRetained = false;
   }
 
@@ -148,7 +150,8 @@ class _ZephyrDropdownState<T> extends State<ZephyrDropdown<T>> {
       ),
     );
     if (!_overlayRetained) {
-      ZephyrFloatingOverlayScope.retainOverlay(context);
+      _heldLatch = ZephyrFloatingOverlayScope.maybeOf(context)?.latch;
+      _heldLatch?.retain();
       _overlayRetained = true;
     }
     Overlay.of(context, debugRequiredFor: widget).insert(_entry!);

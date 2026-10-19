@@ -210,7 +210,7 @@ String prepareZephyrMarkdownForParse(String markdown) {
   );
   out = out.replaceAllMapped(
     RegExp('(?<=[$closeQuote])(?<!\\*)\\*(?!\\*)'),
-    (_) => '${zwsp}*',
+    (_) => '$zwsp*',
   );
   out = out.replaceAllMapped(
     RegExp('(?<!_)_(?!_)(?=[$openQuote])'),

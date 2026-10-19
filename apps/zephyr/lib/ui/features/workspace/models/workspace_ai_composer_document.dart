@@ -109,11 +109,13 @@ class AiComposerTokenFormatter extends TextInputFormatter {
 /// Renders object chars as inline capsules while editing.
 class AiComposerTextEditingController extends TextEditingController {
   AiComposerTextEditingController({
-    required AiComposerTokenCatalog catalog,
+    required this.catalog,
     Color? capsuleFill,
     Color? capsuleForeground,
-  }) : catalog = catalog,
+  }) : // Keep the public color arguments while storing mutable private state.
+       // ignore: prefer_initializing_formals
        _capsuleFill = capsuleFill,
+       // ignore: prefer_initializing_formals
        _capsuleForeground = capsuleForeground;
 
   final AiComposerTokenCatalog catalog;

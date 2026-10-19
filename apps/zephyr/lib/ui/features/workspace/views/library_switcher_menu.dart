@@ -34,15 +34,14 @@ class LibrarySwitcherMenu extends StatefulWidget {
 class _LibrarySwitcherMenuState extends State<LibrarySwitcherMenu> {
   final _dockKey = GlobalKey();
   OverlayEntry? _entry;
+  ZephyrFloatingOverlayLatch? _heldLatch;
   var _open = false;
 
   bool get isOpen => _open;
 
   @override
   void dispose() {
-    if (_open) {
-      ZephyrFloatingOverlayScope.releaseOverlay(context);
-    }
+    _releaseOverlayLatch();
     _removeEntry();
     super.dispose();
   }
@@ -162,14 +161,15 @@ class _LibrarySwitcherMenuState extends State<LibrarySwitcherMenu> {
         );
       },
     );
-    ZephyrFloatingOverlayScope.retainOverlay(context);
+    _heldLatch = ZephyrFloatingOverlayScope.maybeOf(context)?.latch;
+    _heldLatch?.retain();
     overlay.insert(_entry!);
     setState(() => _open = true);
   }
 
   void close() {
     if (!_open) return;
-    ZephyrFloatingOverlayScope.releaseOverlay(context);
+    _releaseOverlayLatch();
     _removeEntry();
     if (mounted) setState(() => _open = false);
   }
@@ -177,6 +177,11 @@ class _LibrarySwitcherMenuState extends State<LibrarySwitcherMenu> {
   void _removeEntry() {
     _entry?.remove();
     _entry = null;
+  }
+
+  void _releaseOverlayLatch() {
+    _heldLatch?.release();
+    _heldLatch = null;
   }
 
   @override

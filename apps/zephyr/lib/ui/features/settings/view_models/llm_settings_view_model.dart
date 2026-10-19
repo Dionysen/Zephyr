@@ -11,7 +11,9 @@ class LlmSettingsViewModel extends ChangeNotifier {
   LlmSettingsViewModel({
     required LlmSettingsRepository repository,
     LlmGateway? gateway,
-  }) : _repository = repository,
+  }) : // Keep the public repository argument for callers.
+       // ignore: prefer_initializing_formals
+       _repository = repository,
        _gateway = gateway ?? LlmGateway();
 
   final LlmSettingsRepository _repository;

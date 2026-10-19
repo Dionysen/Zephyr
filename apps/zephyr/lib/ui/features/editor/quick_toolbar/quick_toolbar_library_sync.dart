@@ -7,7 +7,10 @@ class QuickToolbarLibrarySync {
   QuickToolbarLibrarySync({
     required QuickToolbarViewModel toolbar,
     required WritingLibraryRepository libraryRepository,
-  }) : _toolbar = toolbar,
+  }) : // Keep public named arguments while storing private collaborators.
+       // ignore: prefer_initializing_formals
+       _toolbar = toolbar,
+       // ignore: prefer_initializing_formals
        _repository = libraryRepository;
 
   final QuickToolbarViewModel _toolbar;

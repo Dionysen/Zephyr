@@ -25,7 +25,7 @@ void main() {
       void walk(InlineSpan span) {
         if (span is TextSpan) {
           final w = span.style?.fontWeight;
-          if (w != null && w.index >= FontWeight.w700.index) {
+          if (w != null && w.value >= FontWeight.w700.value) {
             if (span.text?.contains('重要') ?? false) found = true;
           }
           for (final c in span.children ?? const <InlineSpan>[]) {

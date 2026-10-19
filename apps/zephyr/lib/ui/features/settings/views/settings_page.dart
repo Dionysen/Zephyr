@@ -113,11 +113,15 @@ class CompactSettingsList extends StatelessWidget {
   const CompactSettingsList({
     super.key,
     this.showStatusBarSettings = true,
+    this.showMobileBehaviorSettings = true,
     this.showDesktopBehaviorSettings = false,
   });
 
   /// When false, omits immersive / hide-icons toggles (desktop panel).
   final bool showStatusBarSettings;
+
+  /// Mobile editing preferences remain configurable from desktop settings.
+  final bool showMobileBehaviorSettings;
 
   /// Desktop workspace toggles (sidebar settings panel).
   final bool showDesktopBehaviorSettings;
@@ -195,7 +199,7 @@ class CompactSettingsList extends StatelessWidget {
           viewModel: scope.theme,
           compact: true,
           showStatusBarSettings: showStatusBarSettings,
-          showMobileBehaviorSettings: showStatusBarSettings,
+          showMobileBehaviorSettings: showMobileBehaviorSettings,
           showDesktopBehaviorSettings: showDesktopBehaviorSettings,
         ),
         ZephyrSettingsSection(

@@ -107,6 +107,7 @@ class _WorkspaceAiSessionsSheetState extends State<_WorkspaceAiSessionsSheet> {
       if (!mounted) return;
       if (remaining.isEmpty) {
         await widget.repository.beginNewAiChatConversation(widget.articleId);
+        if (!mounted) return;
         Navigator.of(context).pop(kAiChatNewConversation);
       } else {
         Navigator.of(context).pop(remaining.first.id);

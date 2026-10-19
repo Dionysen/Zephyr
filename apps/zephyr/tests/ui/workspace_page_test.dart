@@ -93,6 +93,9 @@ void main() {
     expect(cloud.backupCalls, 0);
     expect(find.byType(WorkspacePage), findsOneWidget);
     expect(find.byType(SnackBar), findsOneWidget);
+    // Dispose the tree and drain pending widget timers after the assertions.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 1));
   });
 
   testWidgets('root exit leaves without waiting for in-process cloud upload', (

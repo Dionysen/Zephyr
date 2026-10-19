@@ -509,6 +509,7 @@ class _WorkspaceAiChatViewState extends State<WorkspaceAiChatView>
       },
     );
     if (llmUserText.isEmpty) return;
+    if (!mounted) return;
     final l10n = context.l10n;
     final llm = ZephyrScope.of(context).llmSettings;
     final repo = _repository();

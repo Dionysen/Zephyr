@@ -10,6 +10,7 @@ workspace:
   - packages/plain_text_editor
   - packages/text_editor_foundation
   - packages/flutter_primitives
+  - packages/local_json_store
 
 dev_dependencies:
   melos: ^7.0.0
@@ -32,6 +33,6 @@ melos:
       run: dart run melos exec --dir-exists=lib -- dart format lib
       description: Format Dart sources in the app and packages.
 
-    run:
+    launch:
       run: dart run melos exec --scope=zephyr -- flutter run
-      description: Run Zephyr from repo root (e.g. dart run melos run run -- -d windows).
+      description: Run Zephyr from repo root (e.g. dart run melos run launch -- -d windows).

@@ -5,6 +5,7 @@ Zephyr 是本地优先的跨平台纯文本编辑器。书库存储为兼容纯�
 - [用户指南](docs/USER_GUIDE.md)：书库、编辑、备份和恢复。
 - [开发指南](docs/DEVELOPMENT.md)：运行、测试和常见改动入口。
 - [架构说明](docs/ARCHITECTURE.md)：模块边界、可复用包和数据安全约束。
+- [模块复用指南](docs/REUSING_PACKAGES.md)：复制共享包到新产品的方法。
 - [AI 协作约定](AGENTS.md)：修改代码时必须遵守的仓库规则。
 
 ## 仓库布局
@@ -12,7 +13,7 @@ Zephyr 是本地优先的跨平台纯文本编辑器。书库存储为兼容纯�
 | 路径 | 内容 |
 | --- | --- |
 | `apps/zephyr/` | Flutter 应用（`lib/`、各平台工程、`tests/`） |
-| `packages/` | 可复用的 `plain_text_editor`、`text_editor_foundation`、`flutter_primitives` |
+| `packages/` | 可复用的编辑、Flutter 交互样式与 JSON 文件存储包 |
 | `docs/` | 文档 |
 | 根目录 `pubspec.yaml` | Pub workspace + Melos 脚本（分析、测试、bootstrap） |
 
@@ -32,7 +33,7 @@ flutter run -d <device-id>
 在仓库根目录也可以（等价于在 `apps/zephyr` 里跑）：
 
 ```sh
-dart run melos run run -- -d windows
+dart run melos run launch -- -d windows
 ```
 
 Windows 桌面需要 Visual Studio 的 Desktop development with C++ 工作负载；Android 需要 Android SDK；iOS 和 macOS 需要 Xcode；Linux 需要对应的 Flutter 桌面工具链。
@@ -55,7 +56,7 @@ flutter test tests
 flutter analyze lib tests
 ```
 
-纯 Dart 文本规则位于 `packages/text_editor_foundation`，Flutter 编辑引擎位于 `packages/plain_text_editor`，通用组件位于 `packages/flutter_primitives`。Zephyr 的书库、同步、主题和业务界面在 `apps/zephyr/lib/`。
+纯 Dart 文本规则位于 `packages/text_editor_foundation`，Flutter 编辑引擎位于 `packages/plain_text_editor`，通用交互与样式位于 `packages/flutter_primitives`，JSON 文件存储位于 `packages/local_json_store`。Zephyr 的书库、同步、主题组装和业务界面在 `apps/zephyr/lib/`。
 
 ## 书库安全
 

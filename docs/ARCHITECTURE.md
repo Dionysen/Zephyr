@@ -12,15 +12,18 @@ flowchart LR
   Data["apps/zephyr/lib/data"] --> Domain
   App --> Editor["packages/plain_text_editor"]
   App --> Widgets["packages/flutter_primitives"]
+  Data --> Storage["packages/local_json_store"]
   Domain --> Foundation["packages/text_editor_foundation"]
   Editor --> Foundation
 ```
 
 `apps/zephyr/lib/domain` 描述 Zephyr 书库、配置和仓储协议；`apps/zephyr/lib/data` 实现 SQLite、文件、备份及云端适配器；`apps/zephyr/lib/ui/features` 负责界面和 ViewModel；`apps/zephyr/lib/app` 负责组装。UI 调用仓储接口，不在 Widget 中直接写 `Room.db`。
 
-`packages/text_editor_foundation` 是纯 Dart 的缩进、词边界和边距计算，可供领域层与非 Flutter 工具复用。`packages/plain_text_editor` 是 Flutter 编辑内核：文档与选区、输入控制器、段落布局、装饰绘制、手势和渲染对象。它只依赖 Flutter 和基础包，不导入 Zephyr 的书库、设置、主题或云服务。Zephyr 特有的编辑器外壳 `zephyr_plain_text_editor.dart` 负责键盘快捷键、工作区交互和应用样式。
+`packages/text_editor_foundation` 是纯 Dart 的缩进、词边界、字数和边距计算，可供领域层与非 Flutter 工具复用。`packages/plain_text_editor` 是 Flutter 编辑内核：文档与选区、输入控制器、段落布局、装饰绘制、手势和渲染对象。它只依赖 Flutter 和基础包，不导入 Zephyr 的书库、设置、主题或云服务。Zephyr 特有的编辑器外壳 `zephyr_plain_text_editor.dart` 负责键盘快捷键、工作区交互和应用样式。
 
-`packages/flutter_primitives` 放与业务无关的响应式阈值、可拖动分栏把手和嵌套返回导航。Zephyr 的主题、控件风格、状态栏和书库组件仍在 `apps/zephyr/lib/ui/core`，因为它们使用应用设计令牌或业务状态。
+`packages/flutter_primitives` 放与业务无关的响应式阈值、可拖动分栏把手、嵌套返回导航、滑动抽屉、双页编辑容器和悬浮层保持机制。无需 Zephyr 主题模型的尺寸、形状、浮层阴影、滚动条颜色和图标工具栏样式也在此包。应用保留旧 `Zephyr*` 名称作为类型别名，新产品直接使用包内 `SwipeDrawer`、`DualEditorPager`、`FloatingOverlayScope`、`ChromeControls`、`FloatingChrome` 等 API。Zephyr 的主题组装、状态栏和书库组件仍在 `apps/zephyr/lib/ui/core`，因为它们使用应用设计令牌或业务状态。
+
+`packages/local_json_store` 是纯 Dart 的 JSON map 文件读写模块。应用层负责注入支持目录、相对文件路径、错误文案及配置模型；包不依赖 `path_provider` 或 Zephyr。七个 Zephyr 配置存储类保留原有路径和公开构造函数，委托给 `JsonMapFileStore`。
 
 旧的 `apps/zephyr/lib/domain/...` 和 `apps/zephyr/lib/ui/features/editor/plain_text/{document,input,layout,render,gestures,decoration}/...` 路径保留兼容导出；现有外部调用与测试不需迁移。新代码直接导入相应的 `package:text_editor_foundation/...`、`package:plain_text_editor/...` 或 `package:flutter_primitives/...`。每个包的 `lib/<package-name>.dart` 是公共入口。
 
@@ -42,4 +45,4 @@ WebDAV 历史备份列表只接受当前账号 `Zephyr/Backups/` 的直接子文
 
 ## 扩展新产品
 
-新产品可通过 path 或发布版本依赖所需的 `packages/` 包。非 Flutter 工具只需基础包；Flutter 产品可再选编辑内核和通用组件。它自行实现书库/数据适配器、主题、快捷键与编辑器外壳；不要依赖 `package:zephyr/...` 的兼容导出。复用编辑内核时，以 `PlainTextEditingController`、`EditorTypography` 和 `PlainTextLayoutEngine` 为入口，并在所有有 `dispose` 的对象结束使用时释放资源。
+新产品可通过 path 或发布版本依赖所需的 `packages/` 包。非 Flutter 工具可选文本基础包和 JSON 文件存储包；Flutter 产品可再选编辑内核和通用组件。它自行实现书库/数据适配器、主题、快捷键与编辑器外壳；不要依赖 `package:zephyr/...` 的兼容导出。复用编辑内核时，以 `PlainTextEditingController`、`EditorTypography` 和 `PlainTextLayoutEngine` 为入口，并在所有有 `dispose` 的对象结束使用时释放资源。

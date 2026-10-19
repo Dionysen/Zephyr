@@ -1,0 +1,11 @@
+name: local_json_store
+resolution: workspace
+description: Small, platform-independent JSON file storage for app preferences.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.13.4
+
+dependencies:
+  path: ^1.9.1

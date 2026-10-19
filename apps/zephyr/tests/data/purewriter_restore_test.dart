@@ -95,6 +95,8 @@ void main() {
   test(
     'merge restore does not bulk-read article content from backup',
     () async {
+      // This suite uses the package's test-only mock API from tests/.
+      // ignore: invalid_use_of_visible_for_testing_member
       PackageInfo.setMockInitialValues(
         appName: 'Zephyr',
         packageName: 'zephyr',
@@ -140,6 +142,8 @@ void main() {
   test(
     'merge restore does not bulk-read huge article content from local library',
     () async {
+      // This suite uses the package's test-only mock API from tests/.
+      // ignore: invalid_use_of_visible_for_testing_member
       PackageInfo.setMockInitialValues(
         appName: 'Zephyr',
         packageName: 'zephyr',

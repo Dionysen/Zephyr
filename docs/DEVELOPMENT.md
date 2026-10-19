@@ -74,6 +74,7 @@ git push origin v1.0.4
 | 纯 Dart 文本规则 | `packages/text_editor_foundation/lib/` |
 | 可复用 Flutter 编辑内核 | `packages/plain_text_editor/lib/` |
 | 通用 Flutter 组件 | `packages/flutter_primitives/lib/` |
+| 通用 JSON 文件存储 | `packages/local_json_store/lib/` |
 | Zephyr 设计组件 | `apps/zephyr/lib/ui/core/` |
 
 先把 Zephyr 业务规则放在 `domain`，I/O 放在 `data`，可观察 UI 状态放在 ViewModel。跨产品纯 Dart 文本规则进入基础包；跨产品 Flutter 编辑或 Widget 逻辑进入相应 Flutter 包。包内不能导入 Zephyr。保留兼容导出以免破坏调用方，新增调用直接使用包入口。
