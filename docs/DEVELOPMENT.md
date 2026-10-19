@@ -25,6 +25,43 @@ dart run melos run format
 
 `melos run analyze` 会分析应用（`lib`、`tests`）与各 `packages/*/lib`。新代码不要引入 analyzer 错误。测试在 `apps/zephyr/tests/domain`、`tests/data`、`tests/ui`，使用 `package:flutter_test/flutter_test.dart`。布局测试先初始化 binding；有 `dispose` 的对象与临时目录使用 `addTearDown` 清理。
 
+## 发版
+
+正式发版由 **Git tag** 触发 [`.github/workflows/release.yml`](../.github/workflows/release.yml)：推送 `v*` 标签后，CI 会构建 Linux / Windows / macOS / Android / iOS（未签名）并创建 GitHub Release。
+
+发版前建议：
+
+1. 在 `main` 上，工作区已提交，且与 `origin/main` 同步（不要落后远程）。
+2. 视需要更新 `CHANGELOG.md`（将 `Unreleased` 挪到新版本小节）。
+3. 确认仓库 Secrets 已配置（可选）：`ANDROID_KEYSTORE_BASE64` 等，否则 APK 为 debug 签名。
+
+一键脚本（只需版本号，可带或不带前缀 `v`）：
+
+```powershell
+# Windows（仓库根目录）
+.\tool\release.ps1 1.0.4
+```
+
+```sh
+# macOS / Linux
+chmod +x tool/release.sh
+./tool/release.sh 1.0.4
+```
+
+脚本会：把 `apps/zephyr/pubspec.yaml` 的 `version` 设为 `X.Y.Z+N`（同版本号时递增 `+N`）、提交、`git tag -a vX.Y.Z`、`git push origin main` 与 `git push origin vX.Y.Z`。加 `-DryRun` / `--dry-run` 只预览不执行。若不想改 pubspec，仅对当前 HEAD 打 tag：`-TagOnly` / `--tag-only`。
+
+手动等价步骤：
+
+```sh
+git checkout main && git pull
+# 编辑 apps/zephyr/pubspec.yaml 与 CHANGELOG.md，提交
+git tag -a v1.0.4 -m "Zephyr v1.0.4"
+git push origin main
+git push origin v1.0.4
+```
+
+已有标签：`v1.0.1`、`v1.0.2`、`v1.0.3`。下一版请使用未占用的版本号（例如 `1.0.4`）。
+
 ## 代码入口
 
 | 任务 | 入口 |

@@ -1,6 +1,6 @@
 # Tag push builds all supported native targets and publishes a GitHub Release.
 #
-# Trigger: git tag v1.2.3 && git push origin v1.2.3
+# Trigger: push tag v* (see tool/release.ps1 or tool/release.sh).
 #
 # Optional Android signing secrets (do not commit keystore files):
 #   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
