@@ -31,3 +31,7 @@ melos:
     format:
       run: dart run melos exec --dir-exists=lib -- dart format lib
       description: Format Dart sources in the app and packages.
+
+    run:
+      run: dart run melos exec --scope=zephyr -- flutter run
+      description: Run Zephyr from repo root (e.g. dart run melos run run -- -d windows).

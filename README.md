@@ -29,6 +29,12 @@ flutter devices
 flutter run -d <device-id>
 ```
 
+在仓库根目录也可以（等价于在 `apps/zephyr` 里跑）：
+
+```sh
+dart run melos run run -- -d windows
+```
+
 Windows 桌面需要 Visual Studio 的 Desktop development with C++ 工作负载；Android 需要 Android SDK；iOS 和 macOS 需要 Xcode；Linux 需要对应的 Flutter 桌面工具链。
 
 在 IDE 中打开 Flutter 项目时，将 **`apps/zephyr`** 作为应用根目录（或打开整个 monorepo 并在该目录下运行 `flutter run`）。
